@@ -133,10 +133,7 @@ export const ControlPanel: React.FC<Props> = ({
       {/* Worktree agent controls */}
       <div>
         {worktreeIds.map((id) => (
-          <div
-            key={id}
-            className="mb-1 pb-1 border-b border-[rgba(0,255,0,0.08)]"
-          >
+          <div key={id} className="mb-1 pb-1 border-b border-[rgba(0,255,0,0.08)]">
             <div className="text-[9px] text-[rgba(0,255,0,0.4)] mb-[2px]">{id}</div>
             <div className="flex gap-[3px] items-center">
               {PERSONAS.map((persona) => (

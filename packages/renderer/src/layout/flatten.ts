@@ -72,7 +72,18 @@ export function flattenRect(
   for (const child of rect.children) {
     const isFileChild = child.node.kind === 'file';
     const suppress = isFileChild && firstFileEdgeEmitted;
-    flattenRect(child, rect.node.id, false, offsetX, offsetY, wtId, onFileClick, nodes, edges, suppress);
+    flattenRect(
+      child,
+      rect.node.id,
+      false,
+      offsetX,
+      offsetY,
+      wtId,
+      onFileClick,
+      nodes,
+      edges,
+      suppress
+    );
     if (isFileChild) firstFileEdgeEmitted = true;
   }
 }

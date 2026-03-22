@@ -156,9 +156,7 @@ export function layoutWorktreeContents(
   }
 
   const folderMaxH =
-    folderLayouts.length > 0
-      ? Math.max(...folderLayouts.map((c) => c.subtreeH))
-      : 0;
+    folderLayouts.length > 0 ? Math.max(...folderLayouts.map((c) => c.subtreeH)) : 0;
   const totalH = Math.max(folderMaxH, rootFileColumnH);
 
   return {

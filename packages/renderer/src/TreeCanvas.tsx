@@ -40,16 +40,12 @@ function smoothstepPath(x1: number, y1: number, x2: number, y2: number): string 
 
 function fitViewToNodes(nodes: LayoutNode[], w: number, h: number): Transform {
   if (nodes.length === 0) return { x: 0, y: 0, zoom: 1 };
-  const minX = Math.min(...nodes.map(n => n.position.x));
-  const minY = Math.min(...nodes.map(n => n.position.y));
-  const maxX = Math.max(...nodes.map(n => n.position.x + n.width));
-  const maxY = Math.max(...nodes.map(n => n.position.y + n.height));
+  const minX = Math.min(...nodes.map((n) => n.position.x));
+  const minY = Math.min(...nodes.map((n) => n.position.y));
+  const maxX = Math.max(...nodes.map((n) => n.position.x + n.width));
+  const maxY = Math.max(...nodes.map((n) => n.position.y + n.height));
   const PADDING = 40;
-  const zoom = Math.min(
-    (w - PADDING * 2) / (maxX - minX),
-    (h - PADDING * 2) / (maxY - minY),
-    1
-  );
+  const zoom = Math.min((w - PADDING * 2) / (maxX - minX), (h - PADDING * 2) / (maxY - minY), 1);
   return {
     zoom,
     x: (w - (maxX - minX) * zoom) / 2 - minX * zoom,
@@ -119,7 +115,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
   const transformRef = useRef(transform);
   transformRef.current = transform;
 
-  const nodeMap = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
+  const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
   // fitView on first data load
   useEffect(() => {
@@ -139,7 +135,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
       const rect = el.getBoundingClientRect();
       const cursorX = e.clientX - rect.left;
       const cursorY = e.clientY - rect.top;
-      setTransform(prev => {
+      setTransform((prev) => {
         const newZoom = Math.min(Math.max(prev.zoom * (1 - e.deltaY * 0.001), 0.1), 3);
         const canvasX = (cursorX - prev.x) / prev.zoom;
         const canvasY = (cursorY - prev.y) / prev.zoom;
@@ -175,8 +171,11 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
         const rect = el.getBoundingClientRect();
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-        setTransform(prev => {
-          const newZoom = Math.min(Math.max(prev.zoom * (newDist / lastTouchDistRef.current!), 0.1), 3);
+        setTransform((prev) => {
+          const newZoom = Math.min(
+            Math.max(prev.zoom * (newDist / lastTouchDistRef.current!), 0.1),
+            3
+          );
           const canvasX = (midX - prev.x) / prev.zoom;
           const canvasY = (midY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: midX - canvasX * newZoom, y: midY - canvasY * newZoom };
@@ -215,7 +214,11 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
     if (!isPanningRef.current) return;
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
-    setTransform(prev => ({ ...prev, x: panStartRef.current.tx + dx, y: panStartRef.current.ty + dy }));
+    setTransform((prev) => ({
+      ...prev,
+      x: panStartRef.current.tx + dx,
+      y: panStartRef.current.ty + dy,
+    }));
   }
 
   function handlePointerUp() {
@@ -248,9 +251,11 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
         }}
       >
         {/* Worktree containers render first (bottom layer) */}
-        {nodes.filter(n => n.type === 'worktreeNode').map(node => (
-          <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
-        ))}
+        {nodes
+          .filter((n) => n.type === 'worktreeNode')
+          .map((node) => (
+            <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
+          ))}
         {/* SVG edges render above containers but below folder/file nodes */}
         <svg
           style={{
@@ -261,14 +266,16 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
             height: 0,
           }}
         >
-          {edges.map(edge => (
+          {edges.map((edge) => (
             <EdgePath key={edge.id} edge={edge} nodeMap={nodeMap} />
           ))}
         </svg>
         {/* Folder and file nodes render on top */}
-        {nodes.filter(n => n.type !== 'worktreeNode').map(node => (
-          <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
-        ))}
+        {nodes
+          .filter((n) => n.type !== 'worktreeNode')
+          .map((node) => (
+            <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
+          ))}
       </div>
     </div>
   );

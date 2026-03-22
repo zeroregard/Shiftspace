@@ -1,4 +1,10 @@
-import type { WorktreeState, FileChange, ShiftspaceEvent, DiffHunk, DiffLine } from '@shiftspace/renderer';
+import type {
+  WorktreeState,
+  FileChange,
+  ShiftspaceEvent,
+  DiffHunk,
+  DiffLine,
+} from '@shiftspace/renderer';
 import type { AgentConfig, AgentPersona } from './types';
 import { FILE_TREE_TEMPLATES, WORKTREE_PRESETS, type TemplateKey } from './templates';
 
@@ -11,7 +17,7 @@ const SAMPLE_LINES: Record<string, string[]> = {
     '  return data;',
     '}',
     'async function fetchData(id: string) {',
-    "  return fetch(`/api/data/${id}`).then(r => r.json());",
+    '  return fetch(`/api/data/${id}`).then(r => r.json());',
   ],
   tsx: [
     "import React from 'react';",
@@ -72,13 +78,17 @@ function makeDiff(
 
   if (status === 'added') {
     const count = cap(linesAdded);
-    const diffLines: DiffLine[] = lines.slice(0, count).map((content) => ({ type: 'added', content }));
+    const diffLines: DiffLine[] = lines
+      .slice(0, count)
+      .map((content) => ({ type: 'added', content }));
     return [{ header: `@@ -0,0 +1,${count} @@`, lines: diffLines }];
   }
 
   if (status === 'deleted') {
     const count = cap(linesRemoved);
-    const diffLines: DiffLine[] = lines.slice(0, count).map((content) => ({ type: 'removed', content }));
+    const diffLines: DiffLine[] = lines
+      .slice(0, count)
+      .map((content) => ({ type: 'removed', content }));
     return [{ header: `@@ -1,${count} +0,0 @@`, lines: diffLines }];
   }
 
@@ -96,7 +106,9 @@ function makeDiff(
   ];
 
   if (total <= 10) {
-    return [{ header: `@@ -1,${2 + removeCount + 1} +1,${2 + addCount + 1} @@`, lines: hunk1Lines }];
+    return [
+      { header: `@@ -1,${2 + removeCount + 1} +1,${2 + addCount + 1} @@`, lines: hunk1Lines },
+    ];
   }
 
   const hunk2Lines: DiffLine[] = [

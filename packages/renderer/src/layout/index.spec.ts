@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { WorktreeState, FileChange } from '../types';
 import { buildTree } from '../layout/tree';
-import {
-  layoutFolder,
-  layoutWorktreeContents,
-} from '../layout/algorithm';
+import { layoutFolder, layoutWorktreeContents } from '../layout/algorithm';
 import { computeFullLayout } from '../layout/index';
 import {
   FILE_NODE_H,
@@ -310,8 +307,12 @@ describe('computeFullLayout — edge rules', () => {
 
   it('creates an edge from a root folder to each of its nested folder children', () => {
     const { edges } = layout([f('src/components/Button.tsx'), f('src/utils/helper.ts')]);
-    expect(edges.find((e) => e.source === 'folder-wt1-src' && e.target === 'folder-wt1-src/components')).toBeDefined();
-    expect(edges.find((e) => e.source === 'folder-wt1-src' && e.target === 'folder-wt1-src/utils')).toBeDefined();
+    expect(
+      edges.find((e) => e.source === 'folder-wt1-src' && e.target === 'folder-wt1-src/components')
+    ).toBeDefined();
+    expect(
+      edges.find((e) => e.source === 'folder-wt1-src' && e.target === 'folder-wt1-src/utils')
+    ).toBeDefined();
   });
 
   it('creates exactly one edge per nested folder child', () => {
@@ -349,12 +350,8 @@ describe('computeFullLayout — edge rules', () => {
     // folder-to-folder edges
     expect(edges.find((e) => e.source === 'folder-wt1-src')).toBeDefined();
     // folder-to-file edges
-    expect(
-      edges.find((e) => e.target === 'file-wt1-src/components/Button.tsx')
-    ).toBeDefined();
-    expect(
-      edges.find((e) => e.target === 'file-wt1-src/utils/helper.ts')
-    ).toBeDefined();
+    expect(edges.find((e) => e.target === 'file-wt1-src/components/Button.tsx')).toBeDefined();
+    expect(edges.find((e) => e.target === 'file-wt1-src/utils/helper.ts')).toBeDefined();
   });
 });
 
@@ -400,20 +397,14 @@ describe('computeFullLayout — positions', () => {
   });
 
   it('second worktree container starts to the right of the first with CONTAINER_GAP', () => {
-    const { nodes } = computeFullLayout([
-      wt('wt1', [f('src/A.ts')]),
-      wt('wt2', [f('src/B.ts')]),
-    ]);
+    const { nodes } = computeFullLayout([wt('wt1', [f('src/A.ts')]), wt('wt2', [f('src/B.ts')])]);
     const wt1 = nodes.find((n) => n.id === 'wt-wt1')!;
     const wt2 = nodes.find((n) => n.id === 'wt-wt2')!;
     expect(wt2.position.x).toBe(wt1.position.x + wt1.width + CONTAINER_GAP);
   });
 
   it('the two worktrees are centered: wt1.x + wt1.w/2 < 0, wt2.x + wt2.w/2 > 0', () => {
-    const { nodes } = computeFullLayout([
-      wt('wt1', [f('src/A.ts')]),
-      wt('wt2', [f('src/B.ts')]),
-    ]);
+    const { nodes } = computeFullLayout([wt('wt1', [f('src/A.ts')]), wt('wt2', [f('src/B.ts')])]);
     const wt1 = nodes.find((n) => n.id === 'wt-wt1')!;
     const wt2 = nodes.find((n) => n.id === 'wt-wt2')!;
     expect(wt1.position.x + wt1.width / 2).toBeLessThan(0);

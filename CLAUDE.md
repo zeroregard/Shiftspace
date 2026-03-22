@@ -39,13 +39,13 @@ Shift+Space toggles the full-screen Shiftspace view. Hit it again to return to y
 
 #### Connector handle rules
 
-| Node type | Top handle | Bottom handle |
-|---|---|---|
-| Worktree base node | No | No |
-| Root folder (direct child of worktree) | No | Yes (connects down to its children) |
-| Root file (direct child of worktree) | No | No |
-| Nested folder | Yes (connects to parent) | Yes (connects to children) |
-| Leaf file inside a folder | Yes (connects to parent folder) | No |
+| Node type                              | Top handle                      | Bottom handle                       |
+| -------------------------------------- | ------------------------------- | ----------------------------------- |
+| Worktree base node                     | No                              | No                                  |
+| Root folder (direct child of worktree) | No                              | Yes (connects down to its children) |
+| Root file (direct child of worktree)   | No                              | No                                  |
+| Nested folder                          | Yes (connects to parent)        | Yes (connects to children)          |
+| Leaf file inside a folder              | Yes (connects to parent folder) | No                                  |
 
 Being inside the dashed worktree container already implies membership — root-level items don't need an edge up to the worktree header.
 

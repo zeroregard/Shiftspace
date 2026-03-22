@@ -35,7 +35,12 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
           onClick={() => onFileClick?.(worktreeId, file.path)}
         >
           <div className="flex items-center gap-1">
-            <span className={clsx('size-2 rounded-full inline-block shrink-0', STATUS_CLASSES[file.status])} />
+            <span
+              className={clsx(
+                'size-2 rounded-full inline-block shrink-0',
+                STATUS_CLASSES[file.status]
+              )}
+            />
             <span className="text-11 text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap max-w-30">
               {fileName}
             </span>
