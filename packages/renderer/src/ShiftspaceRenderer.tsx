@@ -1,19 +1,9 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  Handle,
-  Position,
-  useNodesState,
-  useEdgesState,
-  type Node,
-  type Edge,
-  type NodeProps,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
+import clsx from 'clsx';
 import type { WorktreeState, FileChange, ShiftspaceEvent } from './types';
 import { useShiftspaceStore } from './store';
+import { STATUS_CLASSES } from './utils/statusClasses';
+import { TreeCanvas, type LayoutNode, type LayoutEdge, type NodeComponentProps } from './TreeCanvas';
 
 interface Props {
   initialWorktrees?: WorktreeState[];
@@ -38,51 +28,29 @@ const CONTAINER_PAD_BOTTOM = 20;
 const CONTAINER_GAP = 60;
 const FILES_TOP_GAP = 40; // gap between folder node and first file below it
 
-// ---- Custom node types for connector handle control ----
+// ---- Custom node types ----
 
 interface WtNodeData { label: React.ReactNode; [key: string]: unknown }
-interface FolderNodeData { label: React.ReactNode; hasTopHandle?: boolean; hasBottomHandle?: boolean; [key: string]: unknown }
-interface FileNodeData { label: React.ReactNode; hasTopHandle?: boolean; [key: string]: unknown }
+interface FolderNodeData { label: React.ReactNode; [key: string]: unknown }
+interface FileNodeData { label: React.ReactNode; staged?: boolean; [key: string]: unknown }
 
-// Worktree container header — NO handles at all
-const WorktreeNode = React.memo(({ data }: NodeProps<Node<WtNodeData>>) => (
+// Worktree container header
+const WorktreeNode = React.memo(({ data }: NodeComponentProps<WtNodeData>) => (
   <div>{data.label}</div>
 ));
 WorktreeNode.displayName = 'WorktreeNode';
 
-// Folder node — conditional top/bottom handles
-const FolderNode = React.memo(({ data }: NodeProps<Node<FolderNodeData>>) => (
-  <div>
-    {data.hasTopHandle && (
-      <Handle type="target" position={Position.Top} style={handleStyle} />
-    )}
-    {data.label}
-    {data.hasBottomHandle && (
-      <Handle type="source" position={Position.Bottom} style={handleStyle} />
-    )}
-  </div>
+// Folder node
+const FolderNode = React.memo(({ data }: NodeComponentProps<FolderNodeData>) => (
+  <div>{data.label}</div>
 ));
 FolderNode.displayName = 'FolderNode';
 
-// File node — conditional top handle only, never bottom
-const FileNodeComponent = React.memo(({ data }: NodeProps<Node<FileNodeData>>) => (
-  <div>
-    {data.hasTopHandle && (
-      <Handle type="target" position={Position.Top} style={handleStyle} />
-    )}
-    {data.label}
-  </div>
+// File node
+const FileNodeComponent = React.memo(({ data }: NodeComponentProps<FileNodeData>) => (
+  <div>{data.label}</div>
 ));
 FileNodeComponent.displayName = 'FileNodeComponent';
-
-const handleStyle: React.CSSProperties = {
-  width: 4,
-  height: 4,
-  background: '#3a3a5a',
-  border: 'none',
-  minWidth: 4,
-  minHeight: 4,
-};
 
 const NODE_TYPES = {
   worktreeNode: WorktreeNode,
@@ -361,7 +329,7 @@ function layoutWorktreeContents(
   };
 }
 
-// ---- Flatten layout to React Flow nodes and edges ----
+// ---- Flatten layout to LayoutNode and LayoutEdge arrays ----
 
 function flattenRect(
   rect: LayoutRect,
@@ -371,55 +339,42 @@ function flattenRect(
   offsetY: number,
   wtId: string,
   onFileClick: ((wtId: string, filePath: string) => void) | undefined,
-  nodes: Node[],
-  edges: Edge[]
+  nodes: LayoutNode[],
+  edges: LayoutEdge[]
 ) {
   const absX = offsetX + rect.x;
   const absY = offsetY + rect.y;
   const isFile = rect.node.kind === 'file';
   const file = rect.node.file;
-  const hasChildren = rect.children.length > 0;
-
-  // Determine handle rules
-  const needsTopHandle = !isRootChild && parentId !== null;
-  const needsBottomHandle = !isFile && hasChildren;
 
   if (isFile && file) {
     nodes.push({
       id: rect.node.id,
       type: 'fileNode',
       position: { x: absX, y: absY },
+      width: FILE_NODE_W,
+      height: FILE_NODE_H,
       data: {
         label: fileLabelJsx(file, onFileClick, wtId),
-        hasTopHandle: needsTopHandle,
+        staged: file.staged,
       },
-      style: {
-        background: '#141428',
-        border: `1px solid ${file.staged ? '#4a6baa' : '#3a3a4a'}`,
-        borderRadius: 6,
-        color: '#c0c0e0',
-        opacity: file.staged ? 1 : 0.75,
-        width: FILE_NODE_W,
-      },
+      className: clsx(
+        'border rounded-md text-text-secondary transition-[background,opacity] duration-300',
+        file.staged ? '!border-border-staged !opacity-100' : '!border-border-default !opacity-75',
+        Date.now() - file.lastChangedAt < 3000 ? '!bg-node-file-pulse' : '!bg-node-file'
+      ),
     });
   } else {
     nodes.push({
       id: rect.node.id,
       type: 'folderNode',
       position: { x: absX, y: absY },
+      width: FOLDER_NODE_W,
+      height: FOLDER_NODE_H,
       data: {
         label: folderLabelJsx(rect.node.name),
-        hasTopHandle: needsTopHandle,
-        hasBottomHandle: needsBottomHandle,
       },
-      style: {
-        background: '#151522',
-        border: '1px dashed #2a2a4a',
-        borderRadius: 6,
-        color: '#8a8ab0',
-        width: FOLDER_NODE_W,
-        opacity: 0.85,
-      },
+      className: 'border border-dashed border-border-dashed rounded-md bg-node-folder text-text-dim !opacity-85',
     });
   }
 
@@ -429,8 +384,7 @@ function flattenRect(
       id: `edge-${parentId}-${rect.node.id}`,
       source: parentId,
       target: rect.node.id,
-      type: 'smoothstep',
-      style: { stroke: '#2a2a4a', strokeWidth: 1 },
+      style: { stroke: 'var(--color-border-dashed)', strokeWidth: 1 },
     });
   }
 
@@ -453,32 +407,22 @@ function worktreeLabelJsx(wt: WorktreeState): React.ReactNode {
   const pathPart = isMain ? null : wt.id;
 
   return (
-    <div style={{ textAlign: 'left' }}>
-      <div style={{ fontWeight: 600, color: '#e0e0ff', fontSize: 13 }}>
+    <div className="text-left">
+      <div className="font-semibold text-text-primary text-[13px]">
         {pathPart && <span>{pathPart} </span>}
         {pathPart ? (
-          <span style={{ color: '#6b6b8a', fontWeight: 400 }}>({wt.branch})</span>
+          <span className="text-text-faint font-normal">({wt.branch})</span>
         ) : (
           <span>{wt.branch}</span>
         )}
       </div>
-      <div style={{ fontSize: 11, color: '#9a9ab0', marginTop: 2 }}>
+      <div className="text-[11px] text-text-muted mt-[2px]">
         {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
-        <span style={{ color: '#4ec94e' }}>+{totalAdded}</span>{' '}
-        <span style={{ color: '#e05c5c' }}>-{totalRemoved}</span>
+        <span className="text-status-added">+{totalAdded}</span>{' '}
+        <span className="text-status-deleted">-{totalRemoved}</span>
       </div>
       {wt.process && (
-        <div
-          style={{
-            marginTop: 4,
-            fontSize: 10,
-            color: '#4ec9b0',
-            background: '#0d2d26',
-            borderRadius: 3,
-            padding: '1px 5px',
-            display: 'inline-block',
-          }}
-        >
+        <div className="mt-1 text-[10px] text-teal bg-process-badge rounded-[3px] px-[5px] py-[1px] inline-block">
           :{wt.process.port}
         </div>
       )}
@@ -488,17 +432,9 @@ function worktreeLabelJsx(wt: WorktreeState): React.ReactNode {
 
 function folderLabelJsx(displayName: string): React.ReactNode {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, textAlign: 'left' }}>
-      <span style={{ fontSize: 13, flexShrink: 0 }}>📁</span>
-      <span
-        style={{
-          fontSize: 11,
-          color: '#8a8ab0',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
+    <div className="flex items-center gap-[5px] text-left">
+      <span className="text-[13px] shrink-0">📁</span>
+      <span className="text-[11px] text-text-dim overflow-hidden text-ellipsis whitespace-nowrap">
         {displayName}
       </span>
     </div>
@@ -511,46 +447,26 @@ function fileLabelJsx(
   worktreeId?: string
 ): React.ReactNode {
   const fileName = file.path.split('/').pop() ?? file.path;
-  const statusColors = { added: '#4ec94e', modified: '#e0c44e', deleted: '#e05c5c' };
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
 
   return (
     <div
-      style={{
-        cursor: onFileClick ? 'pointer' : 'default',
-        textAlign: 'left',
-        background: isPulsing ? 'rgba(78, 201, 78, 0.06)' : 'transparent',
-        transition: 'background 0.3s ease',
-      }}
+      className={clsx(
+        'text-left transition-[background] duration-300',
+        onFileClick ? 'cursor-pointer' : 'cursor-default',
+        isPulsing ? 'bg-[rgba(78,201,78,0.06)]' : 'bg-transparent'
+      )}
       onClick={() => onFileClick?.(worktreeId ?? '', file.path)}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-        <span
-          style={{
-            width: 7,
-            height: 7,
-            borderRadius: '50%',
-            background: statusColors[file.status],
-            display: 'inline-block',
-            flexShrink: 0,
-          }}
-        />
-        <span
-          style={{
-            fontSize: 11,
-            color: '#c0c0e0',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            maxWidth: 120,
-          }}
-        >
+      <div className="flex items-center gap-[5px]">
+        <span className={clsx('w-[7px] h-[7px] rounded-full inline-block shrink-0', STATUS_CLASSES[file.status])} />
+        <span className="text-[11px] text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap max-w-[120px]">
           {fileName}
         </span>
       </div>
-      <div style={{ fontSize: 10, color: '#6b6b8a', marginTop: 1 }}>
-        <span style={{ color: '#4ec94e' }}>+{file.linesAdded}</span>{' '}
-        <span style={{ color: '#e05c5c' }}>-{file.linesRemoved}</span>
+      <div className="text-[10px] text-text-faint mt-[1px]">
+        <span className="text-status-added">+{file.linesAdded}</span>{' '}
+        <span className="text-status-deleted">-{file.linesRemoved}</span>
       </div>
     </div>
   );
@@ -561,9 +477,9 @@ function fileLabelJsx(
 function computeFullLayout(
   wtArray: WorktreeState[],
   onFileClick?: (worktreeId: string, filePath: string) => void
-): { nodes: Node[]; edges: Edge[] } {
-  const allNodes: Node[] = [];
-  const allEdges: Edge[] = [];
+): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
+  const allNodes: LayoutNode[] = [];
+  const allEdges: LayoutEdge[] = [];
 
   // Compute each worktree's internal layout
   const wtLayouts = wtArray.map((wt) => {
@@ -593,16 +509,13 @@ function computeFullLayout(
       id: wtNodeId,
       type: 'worktreeNode',
       position: { x: cursorX, y: 0 },
+      width: containerW,
+      height: containerH,
       data: { label: worktreeLabelJsx(wt) },
       style: {
-        background: 'rgba(26, 26, 46, 0.5)',
-        border: '2px dashed #2a2a4a',
-        borderRadius: 16,
-        color: '#e0e0ff',
-        width: containerW,
-        height: containerH,
         padding: `${CONTAINER_PAD_TOP}px ${CONTAINER_PAD_X}px`,
       },
+      className: 'border-2 border-dashed border-border-dashed rounded-2xl bg-cluster-alpha text-text-primary',
     });
 
     // Center tree contents within container
@@ -636,8 +549,8 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onFileClick,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [nodes, setNodes] = useState<LayoutNode[]>([]);
+  const [edges, setEdges] = useState<LayoutEdge[]>([]);
 
   useEffect(() => {
     setWorktrees(initialWorktrees);
@@ -663,25 +576,11 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   useEffect(() => {
     setNodes(layout.nodes);
     setEdges(layout.edges);
-  }, [layout, setNodes, setEdges]);
+  }, [layout]);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#0d0d1a' }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        fitView
-        colorMode="dark"
-        nodeTypes={NODE_TYPES}
-        defaultEdgeOptions={{ type: 'smoothstep' }}
-      >
-        <Background color="#2a2a3a" gap={24} />
-        <Controls />
-      </ReactFlow>
+    <div className="w-full h-full bg-canvas">
+      <TreeCanvas nodes={nodes} edges={edges} nodeTypes={NODE_TYPES} />
     </div>
   );
 };

@@ -14,37 +14,20 @@ export const WorktreeCluster = React.memo(({ worktree, onClick }: Props) => {
   return (
     <div
       onClick={onClick}
-      style={{
-        border: '1px solid #3a3a4a',
-        borderRadius: 12,
-        padding: '12px 16px',
-        background: '#1a1a2e',
-        cursor: onClick ? 'pointer' : 'default',
-        minWidth: 180,
-      }}
+      className={`border border-border-default rounded-xl px-4 py-3 bg-cluster min-w-[180px]${onClick ? ' cursor-pointer' : ' cursor-default'}`}
     >
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0ff', marginBottom: 4 }}>
+      <div className="text-[13px] font-semibold text-text-primary mb-1">
         {worktree.branch}
       </div>
-      <div style={{ fontSize: 11, color: '#6b6b8a', marginBottom: 8 }}>{worktree.path}</div>
-      <div style={{ fontSize: 11, color: '#9a9ab0' }}>
+      <div className="text-[11px] text-text-faint mb-2">{worktree.path}</div>
+      <div className="text-[11px] text-text-muted">
         {totalFiles} file{totalFiles !== 1 ? 's' : ''} changed
         {' · '}
-        <span style={{ color: '#4ec94e' }}>+{totalAdded}</span>{' '}
-        <span style={{ color: '#e05c5c' }}>-{totalRemoved}</span>
+        <span className="text-status-added">+{totalAdded}</span>{' '}
+        <span className="text-status-deleted">-{totalRemoved}</span>
       </div>
       {worktree.process && (
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 11,
-            color: '#4ec9b0',
-            background: '#0d2d26',
-            borderRadius: 4,
-            padding: '2px 6px',
-            display: 'inline-block',
-          }}
-        >
+        <div className="mt-2 text-[11px] text-teal bg-process-badge rounded px-[6px] py-[2px] inline-block">
           :{worktree.process.port}
         </div>
       )}
