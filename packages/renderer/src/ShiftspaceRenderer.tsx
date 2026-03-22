@@ -1,5 +1,13 @@
 import React, { useEffect } from 'react';
-import { ReactFlow, Background, Controls, useNodesState, useEdgesState } from '@xyflow/react';
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  useNodesState,
+  useEdgesState,
+  type Node,
+  type Edge,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { WorktreeState, ShiftspaceEvent } from './types';
 import { useShiftspaceStore } from './store';
@@ -17,8 +25,8 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onFileClick,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, , onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, , onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     setWorktrees(initialWorktrees);
