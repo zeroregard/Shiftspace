@@ -21,11 +21,14 @@ Shift+Space toggles the full-screen Shiftspace view. Hit it again to return to y
 
 ### 2. Spatial Node Graph
 
-- Each git worktree is a distinct column on the canvas, laid out horizontally side by side.
-- The worktree node sits at the top of its column; folders and files flow downward beneath it.
+- Each git worktree is rendered as a **dashed, rounded container** on the canvas. Containers are laid out horizontally, side by side, **top-aligned**.
+- The worktree label (branch name, file count, line stats) sits at the top of its container.
+- Inside each container, the file hierarchy is rendered as a **classic CS tree** (top-down dendrogram): the worktree root is at the top, children (folders and files) spread horizontally below their parent. Siblings sit side by side; the tree grows downward and outward.
 - Files are grouped by their deepest containing directory (folder nodes). Intermediate directories that only contain subdirectories (not direct file changes) are collapsed into a single folder node with an abbreviated path (e.g. `src/components/ui` or `src/…/ui`).
-- Root-level files (no directory) attach directly under the worktree node without a folder.
-- Edges connect worktree → folder → file to show the hierarchy clearly.
+- Root-level files (no directory) appear as direct children of the worktree root, without a folder node.
+- Edges connect worktree → folder → file using smoothstep/elbow connectors to show the hierarchy clearly.
+- Container width and height grow to fit the tree contents — wider for bushy trees, taller for deep ones.
+- Layout uses a **custom tidy-tree algorithm**: each leaf gets a fixed-width slot, parent nodes center above their children, subtree widths accumulate bottom-up to prevent sibling overlap.
 - Node sizing/weight reflects amount of change (lines added + removed + modified).
 - Each node shows at a glance:
   - Filename (truncated smartly)
@@ -97,7 +100,7 @@ shiftspace/
 │   └── renderer/          # The core React graph renderer (shared)
 │       ├── components/    # React Flow nodes, clusters, overlays
 │       ├── engine/        # Data model: worktrees, files, change events
-│       ├── layout/        # Column-based layout logic
+│       ├── layout/        # Tidy-tree layout logic (custom, no external library)
 │       ├── store/         # Zustand store (worktree state, zoom/LOD state)
 │       └── index.ts       # Public API: <ShiftspaceRenderer data={...} />
 ├── apps/
@@ -175,8 +178,8 @@ A control panel overlay (visible on the preview app, not part of the renderer) w
 
 The key to handling large repos without performance issues. The graph never renders hundreds of nodes at once — detail increases as you zoom in:
 
-- **Zoomed out (overview):** Only worktree column headers visible as labeled nodes. See all worktrees, branch names, aggregate change counts. Max ~5-10 nodes on screen.
-- **Mid zoom (directory level):** Zooming into a worktree column expands it to show folder nodes. Each folder node groups changed files by their deepest directory.
+- **Zoomed out (overview):** Only worktree container headers visible as labeled nodes. See all worktrees, branch names, aggregate change counts. Max ~5-10 nodes on screen.
+- **Mid zoom (directory level):** Zooming into a worktree container expands it to show folder nodes. Each folder node groups changed files by their deepest directory.
 - **Zoomed in (file level):** Zooming into a folder expands it to show individual file nodes with per-file change stats, staged/unstaged indicators, and pulse animations.
 
 React Flow's built-in virtualization handles off-screen culling; the LOD system handles on-screen density. Visible DOM node count should stay well under 100 at all times.
@@ -187,7 +190,7 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 - Use Zustand selectors to avoid re-rendering nodes that didn't change.
 - Debounce filesystem watcher events (batch changes within a ~500ms window before re-querying git).
 - LOD transitions should animate smoothly (expand/collapse with React Flow's built-in transitions).
-- Column layout is computed with a custom function (no external layout library). Each worktree is a vertical column; folders and files are placed with fixed heights and gaps to guarantee zero overlaps.
+- Tree layout is computed with a custom tidy-tree function (no external layout library). Each worktree is a container; folders and files are positioned as a proper CS tree within it. Leaf nodes get fixed-width slots, subtree widths accumulate bottom-up, and parent nodes center above their children to guarantee zero overlaps.
 
 ---
 
@@ -198,7 +201,7 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 | Extension host      | VSCode Extension API (TypeScript)                                     |
 | Webview rendering   | React (bundled into webview)                                          |
 | Graph rendering     | React Flow (`@xyflow/react`)                                          |
-| Graph layout        | Custom column layout (worktree columns with folder/file tree hierarchy)|
+| Graph layout        | Custom tidy-tree layout (tree-in-container per worktree, no ext. lib) |
 | State management    | Zustand                                                               |
 | Git interaction     | Shell commands (`git worktree list`, `git status`, `git diff --stat`) |
 | Filesystem watching | VSCode FileSystemWatcher API                                          |
@@ -214,7 +217,7 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 
 - Set up monorepo with `packages/renderer` and `apps/preview`
 - Implement mock worktree engine with agent simulation
-- Build the renderer: React Flow graph with worktree columns, folder nodes, file nodes, LOD zoom
+- Build the renderer: React Flow graph with worktree containers, tree layout, folder nodes, file nodes, LOD zoom
 - Deploy to Vercel — iterate on design from phone/laptop
 - Goal: the preview looks and feels like the real thing
 
@@ -229,7 +232,7 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 
 ## Open Questions
 
-1. **~~ELK vs dagre:~~** Resolved — using custom column-based layout with tree hierarchy. No external layout library needed for current requirements.
+1. **~~ELK vs dagre:~~** Resolved — using custom tidy-tree layout within dashed worktree containers. No external layout library needed for current requirements.
 2. **LOD zoom thresholds:** What zoom levels trigger transitions between worktree → directory → file views? Needs prototyping.
 3. **Filesystem watcher debounce tuning:** 500ms is a starting point. Too short = thrashing git commands. Too long = feels laggy.
 4. **Windows support:** Port/process detection differs on Windows. Defer to v0.2.
