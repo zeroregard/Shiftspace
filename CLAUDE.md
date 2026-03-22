@@ -124,7 +124,7 @@ The renderer is built and tested outside of VSCode first, as a standalone web ap
 shiftspace/
 ├── packages/
 │   └── renderer/          # The core React graph renderer (shared)
-│       ├── components/    # React Flow nodes, clusters, overlays
+│       ├── components/    # Tree nodes, clusters, overlays
 │       ├── engine/        # Data model: worktrees, files, change events
 │       ├── layout/        # Tidy-tree layout logic (custom, no external library)
 │       ├── store/         # Zustand store (worktree state, zoom/LOD state)
@@ -208,15 +208,16 @@ The key to handling large repos without performance issues. The graph never rend
 - **Mid zoom (directory level):** Zooming into a worktree container expands it to show folder nodes. Each folder node groups changed files by their deepest directory.
 - **Zoomed in (file level):** Zooming into a folder expands it to show individual file nodes with per-file change stats, staged/unstaged indicators, and pulse animations.
 
-React Flow's built-in virtualization handles off-screen culling; the LOD system handles on-screen density. Visible DOM node count should stay well under 100 at all times.
+The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen density. Visible DOM node count should stay well under 100 at all times.
 
 ### Performance guidelines:
 
 - All custom node components must be wrapped in `React.memo`.
 - Use Zustand selectors to avoid re-rendering nodes that didn't change.
 - Debounce filesystem watcher events (batch changes within a ~500ms window before re-querying git).
-- LOD transitions should animate smoothly (expand/collapse with React Flow's built-in transitions).
+- LOD transitions should animate smoothly with CSS transitions.
 - Tree layout is computed with a custom tidy-tree function (no external layout library). Each worktree is a container; folders and files are positioned as a proper CS tree within it. Leaf nodes get fixed-width slots, subtree widths accumulate bottom-up, and parent nodes center above their children to guarantee zero overlaps.
+- Per-worktree layout is cached by `WorktreeState` reference in `ShiftspaceRenderer` — a file change in one worktree skips layout recomputation for all others.
 
 ---
 
@@ -226,7 +227,7 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 | ------------------- | --------------------------------------------------------------------- |
 | Extension host      | VSCode Extension API (TypeScript)                                     |
 | Webview rendering   | React (bundled into webview)                                          |
-| Graph rendering     | React Flow (`@xyflow/react`)                                          |
+| Graph rendering     | Custom `TreeCanvas` (pan/zoom, SVG edges, ~250 lines, no ext. lib)    |
 | Graph layout        | Custom tidy-tree layout (tree-in-container per worktree, no ext. lib) |
 | State management    | Zustand                                                               |
 | Git interaction     | Shell commands (`git worktree list`, `git status`, `git diff --stat`) |
@@ -243,7 +244,7 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 
 - Set up monorepo with `packages/renderer` and `apps/preview`
 - Implement mock worktree engine with agent simulation
-- Build the renderer: React Flow graph with worktree containers, tree layout, folder nodes, file nodes, LOD zoom
+- Build the renderer: custom `TreeCanvas` with worktree containers, tree layout, folder nodes, file nodes, LOD zoom
 - Deploy to Vercel — iterate on design from phone/laptop
 - Goal: the preview looks and feels like the real thing
 

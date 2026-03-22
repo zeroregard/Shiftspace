@@ -1,20 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
+import * as HoverCard from '@radix-ui/react-hover-card';
 import type { FileChange, DiffHunk as DiffHunkType, DiffLine as DiffLineType } from '../types';
-
-export const OVERLAY_W = 360;
-export const OVERLAY_MAX_H = 300;
-
-export function getOverlayPosition(
-  x: number,
-  y: number,
-  viewportW = window.innerWidth,
-  viewportH = window.innerHeight
-): { left: number; top: number } {
-  const left = x + 20 + OVERLAY_W > viewportW ? x - 20 - OVERLAY_W : x + 20;
-  const top = Math.min(Math.max(y - 20, 8), viewportH - OVERLAY_MAX_H - 8);
-  return { left, top };
-}
 
 function DiffHunkHeader({ header }: { header: string }) {
   return (
@@ -68,25 +55,30 @@ function EmptyDiff() {
   );
 }
 
-interface Props {
-  file: FileChange;
-  x: number;
-  y: number;
-}
+const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => (
+  <>
+    <DiffHeader file={file} />
+    {file.diff?.length
+      ? file.diff.map((hunk, i) => <DiffHunkView key={i} hunk={hunk} />)
+      : <EmptyDiff />}
+  </>
+));
+DiffOverlayContent.displayName = 'DiffOverlayContent';
 
-export const DiffOverlay = React.memo(({ file, x, y }: Props) => {
-  const { left, top } = getOverlayPosition(x, y);
-  return (
-    <div
-      className="fixed z-50 pointer-events-none overflow-y-auto bg-canvas border border-border-default rounded-md animate-fade-in"
-      style={{ left, top, width: OVERLAY_W, maxHeight: OVERLAY_MAX_H }}
-    >
-      <DiffHeader file={file} />
-      {file.diff?.length
-        ? file.diff.map((hunk, i) => <DiffHunkView key={i} hunk={hunk} />)
-        : <EmptyDiff />}
-    </div>
-  );
-});
-
-DiffOverlay.displayName = 'DiffOverlay';
+export const DiffHoverCard = React.memo(({ file, children }: { file: FileChange; children: React.ReactNode }) => (
+  <HoverCard.Root openDelay={300} closeDelay={150}>
+    <HoverCard.Trigger asChild>{children}</HoverCard.Trigger>
+    <HoverCard.Portal>
+      <HoverCard.Content
+        side="right"
+        sideOffset={8}
+        align="start"
+        className="z-50 overflow-y-auto bg-canvas border border-border-default rounded-md animate-hover-card-open"
+        style={{ width: 360, maxHeight: 300 }}
+      >
+        <DiffOverlayContent file={file} />
+      </HoverCard.Content>
+    </HoverCard.Portal>
+  </HoverCard.Root>
+));
+DiffHoverCard.displayName = 'DiffHoverCard';
