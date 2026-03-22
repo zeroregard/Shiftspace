@@ -19,40 +19,77 @@ interface Props {
   onTerminalOpen?: (worktreeId: string) => void;
 }
 
-// ---- Radial layout helpers ----
+// ---- Layout constants ----
 
-/** Compute the angle for each worktree, evenly distributed around 360° */
-function computeWorktreeAngles(count: number): number[] {
-  if (count === 0) return [];
-  if (count === 1) return [-Math.PI / 2]; // straight up
-  // Start from top (-PI/2) and distribute evenly
-  return Array.from({ length: count }, (_, i) => -Math.PI / 2 + (2 * Math.PI * i) / count);
-}
+const COLUMN_WIDTH = 240;
+const COLUMN_GAP = 80;
+const WT_NODE_WIDTH = 200;
+const FOLDER_NODE_WIDTH = 180;
+const FILE_NODE_WIDTH = 170;
+const WT_NODE_HEIGHT = 70;
+const FOLDER_NODE_HEIGHT = 36;
+const FILE_NODE_HEIGHT = 46;
+const VERTICAL_GAP = 16;
+const FOLDER_INDENT = 20;
+const FILE_INDENT = 40;
 
-/** Distance from center for worktree cluster nodes */
-const WT_RADIUS = 350;
+// ---- Helpers ----
 
-/** Distance from worktree center for file nodes */
-const FILE_INNER_RADIUS = 120;
-const FILE_RADIAL_SPACING = 80;
-const FILE_ARC_SPACING = 55;
-
-/** Determine if this worktree is the "main" (repo root) worktree */
 function isMainWorktree(wt: WorktreeState): boolean {
-  // Heuristic: main worktree has the shortest path or is the repo root
-  // In our mock data, the first worktree is typically 'main'
-  // We check if the path doesn't contain a linked worktree indicator
-  // or if the branch is main/master
   return wt.branch === 'main' || wt.branch === 'master';
 }
 
-/** Build the label for a worktree node */
+/** Group files by their deepest directory containing changed files.
+ *  Collapses intermediate-only directories into a single path. */
+function groupFilesByFolder(files: FileChange[]): {
+  rootFiles: FileChange[];
+  folders: { path: string; displayName: string; files: FileChange[] }[];
+} {
+  const rootFiles: FileChange[] = [];
+  const dirMap = new Map<string, FileChange[]>();
+
+  for (const file of files) {
+    const lastSlash = file.path.lastIndexOf('/');
+    if (lastSlash === -1) {
+      rootFiles.push(file);
+    } else {
+      const dir = file.path.substring(0, lastSlash);
+      const existing = dirMap.get(dir);
+      if (existing) {
+        existing.push(file);
+      } else {
+        dirMap.set(dir, [file]);
+      }
+    }
+  }
+
+  // Collapse directories that share a common prefix into their deepest shared form
+  // e.g., if we have src/components/ui/Button.tsx and src/components/ui/Modal.tsx,
+  // the folder is "src/components/ui" displayed as "src/components/ui"
+  // But keep it short: if the path is long, abbreviate middle segments
+  const folders = Array.from(dirMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dirPath, dirFiles]) => {
+      const parts = dirPath.split('/');
+      let displayName: string;
+      if (parts.length <= 3) {
+        displayName = dirPath;
+      } else {
+        // Abbreviate: first/…/last
+        displayName = `${parts[0]}/\u2026/${parts[parts.length - 1]}`;
+      }
+      return { path: dirPath, displayName, files: dirFiles };
+    });
+
+  return { rootFiles, folders };
+}
+
+// ---- Label builders ----
+
 function worktreeLabel(wt: WorktreeState): React.ReactNode {
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
   const isMain = isMainWorktree(wt);
-
-  // For main worktree, just show branch name. For linked worktrees, show path (branch)
   const pathPart = isMain ? null : wt.id;
 
   return (
@@ -89,7 +126,25 @@ function worktreeLabel(wt: WorktreeState): React.ReactNode {
   );
 }
 
-/** Build the label for a file node */
+function folderLabel(displayName: string): React.ReactNode {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, textAlign: 'left' }}>
+      <span style={{ fontSize: 13, flexShrink: 0 }}>📁</span>
+      <span
+        style={{
+          fontSize: 11,
+          color: '#8a8ab0',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {displayName}
+      </span>
+    </div>
+  );
+}
+
 function fileLabel(
   file: FileChange,
   onFileClick?: (worktreeId: string, filePath: string) => void,
@@ -141,71 +196,112 @@ function fileLabel(
   );
 }
 
-/** Compute radial positions for all nodes */
-function computeRadialLayout(
+// ---- Column layout ----
+
+function computeColumnLayout(
   wtArray: WorktreeState[],
   onFileClick?: (worktreeId: string, filePath: string) => void
 ): { nodes: Node[]; edges: Edge[] } {
-  const angles = computeWorktreeAngles(wtArray.length);
   const allNodes: Node[] = [];
   const allEdges: Edge[] = [];
 
+  // Total width of all columns (used to center them)
+  const totalWidth = wtArray.length * COLUMN_WIDTH + (wtArray.length - 1) * COLUMN_GAP;
+  const startX = -totalWidth / 2;
+
   wtArray.forEach((wt, wtIdx) => {
-    const angle = angles[wtIdx];
-    const wtX = Math.cos(angle) * WT_RADIUS;
-    const wtY = Math.sin(angle) * WT_RADIUS;
+    const colX = startX + wtIdx * (COLUMN_WIDTH + COLUMN_GAP);
+    let cursorY = 0;
 
     const wtNodeId = `wt-${wt.id}`;
 
-    // Worktree cluster node
+    // --- Worktree node (top of column) ---
     allNodes.push({
       id: wtNodeId,
       type: 'default',
-      position: { x: wtX - 90, y: wtY - 30 },
+      position: { x: colX, y: cursorY },
       data: { label: worktreeLabel(wt) },
       style: {
         background: '#1a1a2e',
         border: '1px solid #3a3a4a',
         borderRadius: 12,
         color: '#e0e0ff',
-        width: 180,
+        width: WT_NODE_WIDTH,
       },
     });
 
-    // File nodes: fan out from worktree in the same angular direction
-    const fileCount = wt.files.length;
-    if (fileCount === 0) return;
+    cursorY += WT_NODE_HEIGHT + VERTICAL_GAP;
 
-    // Compute positions in a fan pattern radiating outward from worktree node
-    // Group files into "rows" of increasing radius
-    const filesPerRow = Math.max(3, Math.ceil(Math.sqrt(fileCount)));
+    const { rootFiles, folders } = groupFilesByFolder(wt.files);
 
-    wt.files.forEach((file, fileIdx) => {
-      const row = Math.floor(fileIdx / filesPerRow);
-      const col = fileIdx % filesPerRow;
-      const rowFileCount = Math.min(filesPerRow, fileCount - row * filesPerRow);
+    // --- Folder groups ---
+    for (const folder of folders) {
+      const folderNodeId = `folder-${wt.id}-${folder.path}`;
 
-      // Radial distance from worktree center
-      const fileRadius = FILE_INNER_RADIUS + row * FILE_RADIAL_SPACING;
+      allNodes.push({
+        id: folderNodeId,
+        type: 'default',
+        position: { x: colX + FOLDER_INDENT, y: cursorY },
+        data: { label: folderLabel(folder.displayName) },
+        style: {
+          background: '#151522',
+          border: '1px dashed #2a2a4a',
+          borderRadius: 6,
+          color: '#8a8ab0',
+          width: FOLDER_NODE_WIDTH,
+          opacity: 0.85,
+        },
+      });
 
-      // Angular spread: files fan out perpendicular to the worktree angle
-      const arcSpan = (rowFileCount - 1) * FILE_ARC_SPACING;
-      const perpAngle = angle + Math.PI / 2; // perpendicular
-      const startOffset = -arcSpan / 2;
-      const colOffset = startOffset + col * FILE_ARC_SPACING;
+      allEdges.push({
+        id: `edge-wt-folder-${wt.id}-${folder.path}`,
+        source: wtNodeId,
+        target: folderNodeId,
+        type: 'smoothstep',
+        style: { stroke: '#2a2a4a', strokeWidth: 1 },
+      });
 
-      // Position: go outward along the worktree angle, then offset perpendicular
-      const fileX =
-        wtX + Math.cos(angle) * fileRadius + Math.cos(perpAngle) * colOffset - 70;
-      const fileY =
-        wtY + Math.sin(angle) * fileRadius + Math.sin(perpAngle) * colOffset - 20;
+      cursorY += FOLDER_NODE_HEIGHT + VERTICAL_GAP;
 
+      // Files within this folder
+      for (const file of folder.files) {
+        const fileNodeId = `file-${wt.id}-${file.path}`;
+
+        allNodes.push({
+          id: fileNodeId,
+          type: 'default',
+          position: { x: colX + FILE_INDENT, y: cursorY },
+          data: { label: fileLabel(file, onFileClick, wt.id) },
+          style: {
+            background: '#141428',
+            border: `1px solid ${file.staged ? '#4a6baa' : '#3a3a4a'}`,
+            borderRadius: 6,
+            color: '#c0c0e0',
+            opacity: file.staged ? 1 : 0.75,
+            width: FILE_NODE_WIDTH,
+          },
+        });
+
+        allEdges.push({
+          id: `edge-folder-file-${wt.id}-${file.path}`,
+          source: folderNodeId,
+          target: fileNodeId,
+          type: 'smoothstep',
+          style: { stroke: '#2a2a4a', strokeWidth: 1 },
+        });
+
+        cursorY += FILE_NODE_HEIGHT + VERTICAL_GAP;
+      }
+    }
+
+    // --- Root-level files (no folder) ---
+    for (const file of rootFiles) {
       const fileNodeId = `file-${wt.id}-${file.path}`;
 
       allNodes.push({
         id: fileNodeId,
         type: 'default',
-        position: { x: fileX, y: fileY },
+        position: { x: colX + FOLDER_INDENT, y: cursorY },
         data: { label: fileLabel(file, onFileClick, wt.id) },
         style: {
           background: '#141428',
@@ -213,24 +309,26 @@ function computeRadialLayout(
           borderRadius: 6,
           color: '#c0c0e0',
           opacity: file.staged ? 1 : 0.75,
-          width: 150,
+          width: FILE_NODE_WIDTH,
         },
       });
 
-      // Edge from worktree to file (subtle connector)
       allEdges.push({
-        id: `edge-${wt.id}-${file.path}`,
+        id: `edge-wt-file-${wt.id}-${file.path}`,
         source: wtNodeId,
         target: fileNodeId,
         type: 'smoothstep',
         style: { stroke: '#2a2a4a', strokeWidth: 1 },
-        animated: false,
       });
-    });
+
+      cursorY += FILE_NODE_HEIGHT + VERTICAL_GAP;
+    }
   });
 
   return { nodes: allNodes, edges: allEdges };
 }
+
+// ---- Main component ----
 
 export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
@@ -250,7 +348,6 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     return onEvent(applyEvent);
   }, [onEvent, applyEvent]);
 
-  // Memoize the onFileClick ref to avoid unnecessary layout recomputation
   const fileClickRef = React.useRef(onFileClick);
   fileClickRef.current = onFileClick;
   const stableFileClick = useCallback(
@@ -258,10 +355,9 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     []
   );
 
-  // Derive React Flow nodes from worktree state using radial layout
   const layout = useMemo(() => {
     const wtArray = Array.from(worktrees.values());
-    return computeRadialLayout(wtArray, stableFileClick);
+    return computeColumnLayout(wtArray, stableFileClick);
   }, [worktrees, stableFileClick]);
 
   useEffect(() => {
