@@ -1,7 +1,13 @@
 import React from 'react';
 import clsx from 'clsx';
 import * as HoverCard from '@radix-ui/react-hover-card';
+import { create } from 'zustand';
 import type { FileChange, DiffHunk as DiffHunkType, DiffLine as DiffLineType } from '../types';
+
+const useHoverCardStore = create<{ openId: string | null; setOpen: (id: string | null) => void }>((set) => ({
+  openId: null,
+  setOpen: (id) => set({ openId: id }),
+}));
 
 function DiffHunkHeader({ header }: { header: string }) {
   return (
@@ -65,20 +71,32 @@ const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => (
 ));
 DiffOverlayContent.displayName = 'DiffOverlayContent';
 
-export const DiffHoverCard = React.memo(({ file, children }: { file: FileChange; children: React.ReactNode }) => (
-  <HoverCard.Root openDelay={300} closeDelay={150}>
-    <HoverCard.Trigger asChild>{children}</HoverCard.Trigger>
-    <HoverCard.Portal>
-      <HoverCard.Content
-        side="right"
-        sideOffset={8}
-        align="start"
-        className="z-50 overflow-y-auto bg-canvas border border-border-default rounded-md animate-hover-card-open"
-        style={{ width: 360, maxHeight: 300 }}
-      >
-        <DiffOverlayContent file={file} />
-      </HoverCard.Content>
-    </HoverCard.Portal>
-  </HoverCard.Root>
-));
+export const DiffHoverCard = React.memo(({ file, children }: { file: FileChange; children: React.ReactNode }) => {
+  const id = React.useId();
+  const { openId, setOpen } = useHoverCardStore();
+  return (
+    <HoverCard.Root
+      openDelay={300}
+      closeDelay={150}
+      open={openId === id}
+      onOpenChange={(open) => {
+        if (open) setOpen(id);
+        else if (openId === id) setOpen(null);
+      }}
+    >
+      <HoverCard.Trigger asChild>{children}</HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="right"
+          sideOffset={8}
+          align="start"
+          className="z-50 overflow-y-auto bg-canvas border border-border-default rounded-md animate-hover-card-open"
+          style={{ width: 360, maxHeight: 300 }}
+        >
+          <DiffOverlayContent file={file} />
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
+  );
+});
 DiffHoverCard.displayName = 'DiffHoverCard';
