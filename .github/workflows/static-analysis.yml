@@ -1,0 +1,67 @@
+name: Static Analysis
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: static-analysis-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  static-analysis:
+    name: 🔍 Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Restore typecheck cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/*/tsconfig.tsbuildinfo
+            apps/*/tsconfig.tsbuildinfo
+          key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('**/tsconfig.json', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            tsbuildinfo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm fmt:check
+
+      - name: Lint
+        run: pnpm lint:check
+
+      - name: Typecheck
+        run: pnpm typecheck
