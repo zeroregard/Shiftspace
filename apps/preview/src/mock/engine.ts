@@ -61,7 +61,7 @@ export class MockEngine {
     return Array.from(this.worktrees.values());
   }
 
-  addWorktree(id: string, branch: string, path: string, template: TemplateKey) {
+  addWorktree(id: string, branch: string, path: string, _template: TemplateKey) {
     const wt: WorktreeState = { id, path, branch, files: [] };
     this.worktrees.set(id, wt);
     this.emit({ type: 'worktree-added', worktree: wt });
