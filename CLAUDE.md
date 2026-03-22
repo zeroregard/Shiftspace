@@ -37,6 +37,32 @@ Shift+Space toggles the full-screen Shiftspace view. Hit it again to return to y
 - Click a node → opens the file diff in the editor.
 - Smooth animations: nodes appear, update, and disappear with transitions (not jarring pops).
 
+#### Connector handle rules
+
+| Node type | Top handle | Bottom handle |
+|---|---|---|
+| Worktree base node | No | No |
+| Root folder (direct child of worktree) | No | Yes (connects down to its children) |
+| Root file (direct child of worktree) | No | No |
+| Nested folder | Yes (connects to parent) | Yes (connects to children) |
+| Leaf file inside a folder | Yes (connects to parent folder) | No |
+
+Being inside the dashed worktree container already implies membership — root-level items don't need an edge up to the worktree header.
+
+#### Folder hierarchy rules
+
+- Folder nodes are built from a **trie** of file paths — shared parent directories always appear when they branch.
+- If two changed-file paths share a common folder prefix (e.g. `src/app/*` and `src/hooks/*`), the shared `src` folder MUST appear as its own node.
+- Only collapse intermediate folders when they form a **single chain** with no branching (e.g. `lib/utils/helpers/format.ts` with no other files in that subtree → one folder node `lib/utils/helpers`).
+- Root-level files (`package.json`, `tsconfig.json`) appear directly in the container with no folder parent.
+
+#### Layout model: folders fan out, files stack down
+
+- **Folder siblings** at the same level spread **horizontally** (classic tree fan-out).
+- **File nodes** within a folder stack **vertically** in a column beneath their parent folder node.
+- Width is driven by folder count (typically 3-8), height is driven by the deepest file list.
+- This naturally encourages good folder organization — a folder with many files produces a long column, visually signaling density.
+
 ### 3. Real-Time Filesystem Watching
 
 - Filesystem watcher on all detected worktrees.

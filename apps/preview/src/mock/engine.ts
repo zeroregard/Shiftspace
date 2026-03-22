@@ -61,9 +61,12 @@ export class MockEngine {
     return Array.from(this.worktrees.values());
   }
 
-  addWorktree(id: string, branch: string, path: string, _template: TemplateKey) {
+  private templateMap = new Map<string, TemplateKey>();
+
+  addWorktree(id: string, branch: string, path: string, template: TemplateKey) {
     const wt: WorktreeState = { id, path, branch, files: [] };
     this.worktrees.set(id, wt);
+    this.templateMap.set(id, template);
     this.emit({ type: 'worktree-added', worktree: wt });
   }
 
@@ -87,7 +90,8 @@ export class MockEngine {
     const wt = this.worktrees.get(worktreeId);
     if (!wt) return;
 
-    const template = FILE_TREE_TEMPLATES.nextjs;
+    const templateKey = this.templateMap.get(worktreeId) ?? 'nextjs';
+    const template = FILE_TREE_TEMPLATES[templateKey];
     const agentConfig: AgentConfig & { timer?: ReturnType<typeof setTimeout> } = {
       id: agentId,
       persona,
