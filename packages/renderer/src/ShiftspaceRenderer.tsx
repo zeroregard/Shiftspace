@@ -685,6 +685,8 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        nodesDraggable={false}
+        nodesConnectable={false}
         fitView
         colorMode="dark"
         nodeTypes={NODE_TYPES}
