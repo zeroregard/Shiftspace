@@ -26,14 +26,11 @@ export const WorktreeCluster = React.memo(({ worktree, onClick }: Props) => {
       <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0ff', marginBottom: 4 }}>
         {worktree.branch}
       </div>
-      <div style={{ fontSize: 11, color: '#6b6b8a', marginBottom: 8 }}>
-        {worktree.path}
-      </div>
+      <div style={{ fontSize: 11, color: '#6b6b8a', marginBottom: 8 }}>{worktree.path}</div>
       <div style={{ fontSize: 11, color: '#9a9ab0' }}>
         {totalFiles} file{totalFiles !== 1 ? 's' : ''} changed
         {' · '}
-        <span style={{ color: '#4ec94e' }}>+{totalAdded}</span>
-        {' '}
+        <span style={{ color: '#4ec94e' }}>+{totalAdded}</span>{' '}
         <span style={{ color: '#e05c5c' }}>-{totalRemoved}</span>
       </div>
       {worktree.process && (

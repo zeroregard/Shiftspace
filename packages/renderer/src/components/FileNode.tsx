@@ -54,8 +54,7 @@ export const FileNode = React.memo(({ file, onClick }: Props) => {
         </span>
       </div>
       <div style={{ fontSize: 10, color: '#6b6b8a', marginTop: 3 }}>
-        <span style={{ color: '#4ec94e' }}>+{file.linesAdded}</span>
-        {' '}
+        <span style={{ color: '#4ec94e' }}>+{file.linesAdded}</span>{' '}
         <span style={{ color: '#e05c5c' }}>-{file.linesRemoved}</span>
       </div>
     </div>

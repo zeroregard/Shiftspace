@@ -13,12 +13,14 @@ Shift+Space toggles the full-screen Shiftspace view. Hit it again to return to y
 ## v0.1 — MVP Scope
 
 ### 1. Toggle & Layout
+
 - Shift+Space keybinding: toggles full-screen Shiftspace view on/off, restoring the previous editor layout on dismiss.
 - Also openable as a regular editor tab (command palette: `Shiftspace: Open as Tab`).
 - Webview panel with full rendering control (React).
 - Dark-theme-first. Respects VSCode theme colors where practical.
 
 ### 2. Spatial Node Graph
+
 - Each git worktree is a distinct visual cluster/group on the canvas.
 - Each changed file is a node within its worktree cluster.
 - Nodes are grouped by directory within each cluster.
@@ -31,22 +33,26 @@ Shift+Space toggles the full-screen Shiftspace view. Hit it again to return to y
 - Smooth animations: nodes appear, update, and disappear with transitions (not jarring pops).
 
 ### 3. Real-Time Filesystem Watching
+
 - Filesystem watcher on all detected worktrees.
 - Graph updates live as files are saved/changed by agents, editors, or anything else.
 - "Pulse" animation on a node when a file just changed (brief glow/ripple so you can see activity).
 - Data source: `git status` / `git diff --stat` per worktree, triggered by filesystem events.
 
 ### 4. Multi-Worktree Awareness
+
 - Auto-detects all worktrees for the current repository.
 - Each worktree displayed as a labeled cluster (showing branch name and worktree path).
 - Works with zero configuration — if worktrees exist, they show up.
 
 ### 5. Integrated Terminal Launcher
+
 - Each worktree cluster has a "terminal" action (icon/button).
 - One click → opens a VSCode integrated terminal cd'd into that worktree's root.
 - Enables quick actions like starting/stopping dev servers per worktree.
 
 ### 6. Port / Process Awareness
+
 - Detect running processes (dev servers) per worktree and display which port they're on.
 - Visual indicator on the worktree cluster: e.g. a small badge showing `:3000` or `:8080`.
 - Enables you to see at a glance: "worktree feature/auth has a dev server on :3001."
@@ -118,12 +124,12 @@ interface WorktreeState {
 }
 
 interface FileChange {
-  path: string;           // relative to worktree root
+  path: string; // relative to worktree root
   status: 'added' | 'modified' | 'deleted';
   staged: boolean;
   linesAdded: number;
   linesRemoved: number;
-  lastChangedAt: number;  // timestamp, used for pulse animation
+  lastChangedAt: number; // timestamp, used for pulse animation
 }
 
 type ShiftspaceEvent =
@@ -174,6 +180,7 @@ The key to handling large repos without performance issues. The graph never rend
 React Flow's built-in virtualization handles off-screen culling; the LOD system handles on-screen density. Visible DOM node count should stay well under 100 at all times.
 
 ### Performance guidelines:
+
 - All custom node components must be wrapped in `React.memo`.
 - Use Zustand selectors to avoid re-rendering nodes that didn't change.
 - Debounce filesystem watcher events (batch changes within a ~500ms window before re-querying git).
@@ -183,24 +190,25 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 
 ## Tech Stack
 
-| Layer | Choice |
-|-------|--------|
-| Extension host | VSCode Extension API (TypeScript) |
-| Webview rendering | React (bundled into webview) |
-| Graph rendering | React Flow (`@xyflow/react`) |
-| Graph layout | ELK (`elkjs`), fallback to `dagre` |
-| State management | Zustand |
-| Git interaction | Shell commands (`git worktree list`, `git status`, `git diff --stat`) |
-| Filesystem watching | VSCode FileSystemWatcher API |
-| Port detection | `lsof` / `netstat` (macOS/Linux first) |
-| Build tooling | Turborepo + pnpm workspaces |
-| Preview hosting | Vite + Vercel |
+| Layer               | Choice                                                                |
+| ------------------- | --------------------------------------------------------------------- |
+| Extension host      | VSCode Extension API (TypeScript)                                     |
+| Webview rendering   | React (bundled into webview)                                          |
+| Graph rendering     | React Flow (`@xyflow/react`)                                          |
+| Graph layout        | ELK (`elkjs`), fallback to `dagre`                                    |
+| State management    | Zustand                                                               |
+| Git interaction     | Shell commands (`git worktree list`, `git status`, `git diff --stat`) |
+| Filesystem watching | VSCode FileSystemWatcher API                                          |
+| Port detection      | `lsof` / `netstat` (macOS/Linux first)                                |
+| Build tooling       | Turborepo + pnpm workspaces                                           |
+| Preview hosting     | Vite + Vercel                                                         |
 
 ---
 
 ## Development Phases
 
 ### Phase 1: Preview app + mock engine (build first)
+
 - Set up monorepo with `packages/renderer` and `apps/preview`
 - Implement mock worktree engine with agent simulation
 - Build the renderer: React Flow graph with worktree clusters, file nodes, LOD zoom
@@ -208,6 +216,7 @@ React Flow's built-in virtualization handles off-screen culling; the LOD system 
 - Goal: the preview looks and feels like the real thing
 
 ### Phase 2: VSCode extension (build second)
+
 - Create `apps/vscode-ext` that wraps `packages/renderer` in a webview
 - Replace mock data source with real git commands + filesystem watcher
 - Implement Shift+Space keybinding, terminal launcher, port detection

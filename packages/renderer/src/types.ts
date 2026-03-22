@@ -7,7 +7,7 @@ export interface WorktreeState {
 }
 
 export interface FileChange {
-  path: string;          // relative to worktree root
+  path: string; // relative to worktree root
   status: 'added' | 'modified' | 'deleted';
   staged: boolean;
   linesAdded: number;

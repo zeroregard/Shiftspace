@@ -119,18 +119,12 @@ export const ControlPanel: React.FC<Props> = ({
                 <button
                   key={persona}
                   onClick={() => toggleAgent(id, persona)}
-                  style={btnStyle(
-                    agentStates[id] === persona ? '#4a3a8a' : '#2a2a4a',
-                    10
-                  )}
+                  style={btnStyle(agentStates[id] === persona ? '#4a3a8a' : '#2a2a4a', 10)}
                 >
                   {PERSONA_LABELS[persona]}
                 </button>
               ))}
-              <button
-                onClick={() => onRemoveWorktree(id)}
-                style={btnStyle('#3a1a1a', 10)}
-              >
+              <button onClick={() => onRemoveWorktree(id)} style={btnStyle('#3a1a1a', 10)}>
                 ✕
               </button>
             </div>

@@ -12,11 +12,7 @@ function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function makeFile(
-  path: string,
-  persona: AgentPersona,
-  staged = false
-): FileChange {
+function makeFile(path: string, persona: AgentPersona, staged = false): FileChange {
   const linesAdded =
     persona === 'refactor' ? rand(1, 20) : persona === 'feature' ? rand(10, 80) : rand(5, 50);
   const linesRemoved =
@@ -25,8 +21,8 @@ function makeFile(
     persona === 'feature'
       ? ['added', 'modified', 'modified']
       : persona === 'refactor'
-      ? ['modified', 'modified', 'deleted']
-      : ['modified', 'modified'];
+        ? ['modified', 'modified', 'deleted']
+        : ['modified', 'modified'];
 
   return {
     path,
@@ -111,9 +107,12 @@ export class MockEngine {
 
       // Occasionally stage a file
       if (Math.random() < 0.3) {
-        setTimeout(() => {
-          this.emit({ type: 'file-staged', worktreeId, filePath });
-        }, rand(200, 800));
+        setTimeout(
+          () => {
+            this.emit({ type: 'file-staged', worktreeId, filePath });
+          },
+          rand(200, 800)
+        );
       }
 
       // Occasionally simulate a dev server

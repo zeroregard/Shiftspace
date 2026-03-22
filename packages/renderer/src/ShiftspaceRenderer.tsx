@@ -43,8 +43,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 600, color: '#e0e0ff' }}>{wt.branch}</div>
               <div style={{ fontSize: 11, color: '#6b6b8a' }}>
-                {wt.files.length} files · +
-                {wt.files.reduce((s, f) => s + f.linesAdded, 0)} -
+                {wt.files.length} files · +{wt.files.reduce((s, f) => s + f.linesAdded, 0)} -
                 {wt.files.reduce((s, f) => s + f.linesRemoved, 0)}
               </div>
               {wt.process && (

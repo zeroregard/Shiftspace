@@ -5,11 +5,5 @@
     "no-console": "off",
     "eqeqeq": "error"
   },
-  "ignorePatterns": [
-    "dist/",
-    "node_modules/",
-    ".turbo/",
-    "*.config.ts",
-    "*.config.js"
-  ]
+  "ignorePatterns": ["dist/", "node_modules/", ".turbo/", "*.config.ts", "*.config.js"]
 }
