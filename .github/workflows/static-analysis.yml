@@ -11,7 +11,6 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
-  PNPM_VERSION: '9'
 
 jobs:
   static-analysis:
@@ -22,10 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Version read from packageManager field in package.json
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
