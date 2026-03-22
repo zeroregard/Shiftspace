@@ -252,20 +252,17 @@ function layoutFolder(node: TreeNode, startY: number): LayoutRect {
   const childBlockStart = (subtreeW - allChildrenW) / 2;
   let cx = childBlockStart;
 
-  // Place folder children first
-  for (const cl of childFolderLayouts) {
-    cl.x = cx + (cl.subtreeW - cl.w) / 2; // center this folder node in its subtree
-    // But we also need to offset all children within the subtree
-    shiftSubtreeX(cl, cx);
-    cx += cl.subtreeW + NODE_H_GAP;
+  // Place file column first (left side), then folder children (right side)
+  if (hasFiles) {
+    for (const fl of childFileLayouts) {
+      fl.x = cx;
+    }
+    cx += fileColumnW + NODE_H_GAP;
   }
 
-  // Place file column after folders
-  if (hasFiles) {
-    const fileX = cx + (fileColumnW - FILE_NODE_W) / 2;
-    for (const fl of childFileLayouts) {
-      fl.x = fileX;
-    }
+  for (const cl of childFolderLayouts) {
+    shiftSubtreeX(cl, cx);
+    cx += cl.subtreeW + NODE_H_GAP;
   }
 
   // Compute max subtree height
@@ -288,21 +285,11 @@ function layoutFolder(node: TreeNode, startY: number): LayoutRect {
   };
 }
 
-/** Shift all x positions in a subtree by a base offset.
- *  (Because layoutFolder computes x relative to the subtree's own 0,
- *   we need to shift when placing subtrees side by side.) */
-function shiftSubtreeX(rect: LayoutRect, baseX: number) {
-  const dx = baseX + (rect.subtreeW - rect.w) / 2 - rect.x;
+/** Shift all x positions in a subtree by dx (recursive). */
+function shiftSubtreeX(rect: LayoutRect, dx: number) {
   rect.x += dx;
   for (const child of rect.children) {
-    shiftChildrenX(child, dx);
-  }
-}
-
-function shiftChildrenX(rect: LayoutRect, dx: number) {
-  rect.x += dx;
-  for (const child of rect.children) {
-    shiftChildrenX(child, dx);
+    shiftSubtreeX(child, dx);
   }
 }
 
@@ -349,7 +336,7 @@ function layoutWorktreeContents(
     (hasFolders && hasRootFiles ? NODE_H_GAP : 0) +
     (hasRootFiles ? rootFileColumnW : 0);
 
-  // Position everything
+  // Position everything: folders first, then root file column
   let cx = 0;
   for (const fl of folderLayouts) {
     shiftSubtreeX(fl, cx);
