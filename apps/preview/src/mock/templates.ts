@@ -43,6 +43,18 @@ export const FILE_TREE_TEMPLATES = {
     'turbo.json',
     'package.json',
   ],
+  // Template that exercises deep single-chain collapsing + shared parents
+  deep: [
+    'src/app/page.tsx',
+    'src/app/layout.tsx',
+    'src/hooks/useAuth.ts',
+    'src/hooks/useData.ts',
+    'lib/utils/helpers/format.ts',
+    'config/env/production.ts',
+    'package.json',
+    'tsconfig.json',
+    'README.md',
+  ],
 } as const;
 
 export type TemplateKey = keyof typeof FILE_TREE_TEMPLATES;
@@ -54,6 +66,6 @@ export const WORKTREE_PRESETS: Array<{
 }> = [
   { branch: 'main', path: '/projects/myapp', template: 'nextjs' },
   { branch: 'feature/auth', path: '/projects/myapp-auth', template: 'api' },
-  { branch: 'refactor/components', path: '/projects/myapp-refactor', template: 'nextjs' },
+  { branch: 'refactor/components', path: '/projects/myapp-refactor', template: 'deep' },
   { branch: 'fix/perf-issues', path: '/projects/myapp-perf', template: 'monorepo' },
 ];

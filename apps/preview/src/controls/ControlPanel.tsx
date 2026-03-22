@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import clsx from 'clsx';
 import type { MockEngine } from '../mock/engine';
 import type { AgentPersona } from '../mock/types';
 import { WORKTREE_PRESETS } from '../mock/templates';
@@ -13,10 +14,20 @@ interface Props {
 
 const PERSONAS: AgentPersona[] = ['refactor', 'feature', 'bugfix'];
 const PERSONA_LABELS: Record<AgentPersona, string> = {
-  refactor: 'Refactor',
-  feature: 'Feature',
-  bugfix: 'Bugfix',
+  refactor: 'refactor',
+  feature: 'feature',
+  bugfix: 'bugfix',
 };
+
+function dbgBtn(active: boolean, small = false): string {
+  return clsx(
+    'flex-1 rounded-[2px] px-1.5 py-0.5 cursor-pointer font-mono border',
+    small ? 'text-[9px]' : 'text-10',
+    active
+      ? 'bg-[rgba(0,255,0,0.15)] border-[rgba(0,255,0,0.4)] text-debug-green'
+      : 'bg-[rgba(0,255,0,0.05)] border-[rgba(0,255,0,0.15)] text-[rgba(0,255,0,0.6)]'
+  );
+}
 
 export const ControlPanel: React.FC<Props> = ({
   engine,
@@ -28,6 +39,15 @@ export const ControlPanel: React.FC<Props> = ({
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [agentStates, setAgentStates] = useState<Record<string, AgentPersona | null>>({});
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
+
+  // Auto-collapse on mobile
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setCollapsed(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const handleSpeedChange = (val: number) => {
     setSpeed(val);
@@ -51,33 +71,38 @@ export const ControlPanel: React.FC<Props> = ({
     }
   };
 
+  if (collapsed) {
+    return (
+      <button
+        onClick={() => setCollapsed(false)}
+        className="fixed bottom-3 right-3 bg-[rgba(0,0,0,0.7)] border border-[rgba(0,255,0,0.3)] rounded px-2 py-1 text-debug-green font-mono text-10 font-bold cursor-pointer z-1000 tracking-widest"
+      >
+        DEBUG
+      </button>
+    );
+  }
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 20,
-        right: 20,
-        background: '#16162a',
-        border: '1px solid #3a3a5a',
-        borderRadius: 12,
-        padding: 16,
-        width: 280,
-        color: '#c0c0e0',
-        fontFamily: 'monospace',
-        fontSize: 12,
-        zIndex: 1000,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-      }}
-    >
-      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, color: '#e0e0ff' }}>
-        Shiftspace Controls
+    <div className="fixed bottom-3 right-3 bg-debug-bg border border-[rgba(0,255,0,0.25)] rounded-xs px-2.5 py-2 w-65 text-[rgba(0,255,0,0.8)] font-mono text-11 z-1000 backdrop-blur [WebkitBackdropFilter:blur(8px)]">
+      {/* Header with DEBUG badge and collapse button */}
+      <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-[rgba(0,255,0,0.15)]">
+        <div className="flex items-center gap-1.5">
+          <span className="bg-[rgba(0,255,0,0.15)] border border-[rgba(0,255,0,0.4)] rounded-xs px-1.25 py-px text-[9px] font-bold tracking-widest text-debug-green">
+            DEBUG
+          </span>
+          <span className="text-10 text-[rgba(0,255,0,0.5)]">simulation</span>
+        </div>
+        <button
+          onClick={() => setCollapsed(true)}
+          className="bg-transparent border-none text-[rgba(0,255,0,0.5)] cursor-pointer text-[14px] px-0.5 leading-none"
+        >
+          ×
+        </button>
       </div>
 
       {/* Speed */}
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: 'block', marginBottom: 4, color: '#8a8ab0' }}>
-          Speed: {speed.toFixed(1)}x
-        </label>
+      <div className="mb-2">
+        <div className="text-[9px] text-[rgba(0,255,0,0.4)] mb-0.5">speed: {speed.toFixed(1)}x</div>
         <input
           type="range"
           min={0.1}
@@ -85,46 +110,40 @@ export const ControlPanel: React.FC<Props> = ({
           step={0.1}
           value={speed}
           onChange={(e) => handleSpeedChange(Number(e.target.value))}
-          style={{ width: '100%' }}
+          style={{ accentColor: '#00ff00' }}
+          className="w-full h-0.5"
         />
       </div>
 
-      {/* Pause / Reset */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={handlePause} style={btnStyle(paused ? '#4a6baa' : '#2a2a4a')}>
-          {paused ? 'Resume' : 'Pause'}
+      {/* Pause / Reset / Add */}
+      <div className="flex gap-1 mb-2">
+        <button onClick={handlePause} className={dbgBtn(paused)}>
+          {paused ? '▶ resume' : '⏸ pause'}
         </button>
-        <button onClick={onReset} style={btnStyle('#3a1a1a')}>
-          Reset
+        <button onClick={onReset} className={dbgBtn(false)}>
+          ↻ reset
         </button>
-        <button onClick={onAddWorktree} style={btnStyle('#1a3a1a')}>
-          + Worktree
+        <button onClick={onAddWorktree} className={dbgBtn(false)}>
+          + wt
         </button>
       </div>
 
       {/* Worktree agent controls */}
       <div>
         {worktreeIds.map((id) => (
-          <div
-            key={id}
-            style={{
-              marginBottom: 8,
-              paddingBottom: 8,
-              borderBottom: '1px solid #2a2a3a',
-            }}
-          >
-            <div style={{ color: '#8a8ab0', marginBottom: 4, fontSize: 10 }}>{id}</div>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          <div key={id} className="mb-1 pb-1 border-b border-[rgba(0,255,0,0.08)]">
+            <div className="text-[9px] text-[rgba(0,255,0,0.4)] mb-0.5">{id}</div>
+            <div className="flex gap-0.75 items-center">
               {PERSONAS.map((persona) => (
                 <button
                   key={persona}
                   onClick={() => toggleAgent(id, persona)}
-                  style={btnStyle(agentStates[id] === persona ? '#4a3a8a' : '#2a2a4a', 10)}
+                  className={dbgBtn(agentStates[id] === persona, true)}
                 >
                   {PERSONA_LABELS[persona]}
                 </button>
               ))}
-              <button onClick={() => onRemoveWorktree(id)} style={btnStyle('#3a1a1a', 10)}>
+              <button onClick={() => onRemoveWorktree(id)} className={dbgBtn(false, true)}>
                 ✕
               </button>
             </div>
@@ -132,22 +151,9 @@ export const ControlPanel: React.FC<Props> = ({
         ))}
       </div>
 
-      <div style={{ marginTop: 8, fontSize: 10, color: '#4a4a6a' }}>
+      <div className="mt-1 text-[9px] text-[rgba(0,255,0,0.25)]">
         {WORKTREE_PRESETS.length} presets available
       </div>
     </div>
   );
 };
-
-function btnStyle(bg: string, fontSize = 11): React.CSSProperties {
-  return {
-    background: bg,
-    border: '1px solid #4a4a6a',
-    borderRadius: 6,
-    color: '#c0c0e0',
-    cursor: 'pointer',
-    fontSize,
-    padding: '4px 8px',
-    flex: 1,
-  };
-}

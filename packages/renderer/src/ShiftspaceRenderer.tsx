@@ -1,16 +1,10 @@
-import React, { useEffect } from 'react';
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  useNodesState,
-  useEdgesState,
-  type Node,
-  type Edge,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import type { WorktreeState, ShiftspaceEvent } from './types';
 import { useShiftspaceStore } from './store';
+import { TreeCanvas } from './TreeCanvas';
+import { NODE_TYPES } from './components';
+import { computeSingleWorktreeLayout, type SingleWorktreeLayout } from './layout';
+import { CONTAINER_GAP } from './layout/constants';
 
 interface Props {
   initialWorktrees?: WorktreeState[];
@@ -25,8 +19,6 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onFileClick,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, , onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     setWorktrees(initialWorktrees);
@@ -37,102 +29,56 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     return onEvent(applyEvent);
   }, [onEvent, applyEvent]);
 
-  // Derive React Flow nodes from worktree state
-  useEffect(() => {
+  const fileClickRef = useRef(onFileClick);
+  fileClickRef.current = onFileClick;
+  const stableFileClick = useCallback(
+    (wtId: string, filePath: string) => fileClickRef.current?.(wtId, filePath),
+    []
+  );
+
+  // Per-worktree layout cache: reuse layout when WorktreeState reference is unchanged.
+  type CacheEntry = { wtRef: WorktreeState; layout: SingleWorktreeLayout };
+  const perLayoutCacheRef = useRef<Map<string, CacheEntry>>(new Map());
+
+  const { nodes, edges } = useMemo(() => {
+    const newCache = new Map<string, CacheEntry>();
     const wtArray = Array.from(worktrees.values());
-    const newNodes = wtArray.flatMap((wt, wtIdx) => {
-      const clusterX = wtIdx * 320;
-      const clusterNode = {
-        id: `wt-${wt.id}`,
-        type: 'default',
-        position: { x: clusterX, y: 0 },
-        data: {
-          label: (
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 600, color: '#e0e0ff' }}>{wt.branch}</div>
-              <div style={{ fontSize: 11, color: '#6b6b8a' }}>
-                {wt.files.length} files · +{wt.files.reduce((s, f) => s + f.linesAdded, 0)} -
-                {wt.files.reduce((s, f) => s + f.linesRemoved, 0)}
-              </div>
-              {wt.process && (
-                <div style={{ fontSize: 10, color: '#4ec9b0', marginTop: 4 }}>
-                  :{wt.process.port}
-                </div>
-              )}
-            </div>
-          ),
-        },
-        style: {
-          background: '#1a1a2e',
-          border: '1px solid #3a3a4a',
-          borderRadius: 12,
-          color: '#e0e0ff',
-          width: 180,
-        },
-      };
 
-      const fileNodes = wt.files.map((file, fileIdx) => {
-        const fileName = file.path.split('/').pop() ?? file.path;
-        const statusColors = { added: '#4ec94e', modified: '#e0c44e', deleted: '#e05c5c' };
-        return {
-          id: `file-${wt.id}-${file.path}`,
-          type: 'default',
-          position: { x: clusterX + (fileIdx % 2) * 200, y: 120 + Math.floor(fileIdx / 2) * 90 },
-          data: {
-            label: (
-              <div
-                style={{ cursor: 'pointer', textAlign: 'left' }}
-                onClick={() => onFileClick?.(wt.id, file.path)}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: '50%',
-                      background: statusColors[file.status],
-                      display: 'inline-block',
-                    }}
-                  />
-                  <span style={{ fontSize: 12, color: '#c0c0e0' }}>{fileName}</span>
-                </div>
-                <div style={{ fontSize: 10, color: '#6b6b8a', marginTop: 2 }}>
-                  <span style={{ color: '#4ec94e' }}>+{file.linesAdded}</span>{' '}
-                  <span style={{ color: '#e05c5c' }}>-{file.linesRemoved}</span>
-                </div>
-              </div>
-            ),
-          },
-          style: {
-            background: '#141428',
-            border: `1px solid ${file.staged ? '#4a6baa' : '#3a3a4a'}`,
-            borderRadius: 6,
-            color: '#c0c0e0',
-            opacity: file.staged ? 1 : 0.75,
-            width: 160,
-          },
-        };
-      });
-
-      return [clusterNode, ...fileNodes];
+    const perLayouts = wtArray.map((wt) => {
+      const cached = perLayoutCacheRef.current.get(wt.id);
+      const layout =
+        cached && cached.wtRef === wt
+          ? cached.layout
+          : computeSingleWorktreeLayout(wt, stableFileClick);
+      newCache.set(wt.id, { wtRef: wt, layout });
+      return layout;
     });
 
-    setNodes(newNodes);
-  }, [worktrees, onFileClick, setNodes]);
+    perLayoutCacheRef.current = newCache;
+
+    const totalWidth = perLayouts.reduce(
+      (sum, l, i) => sum + l.containerW + (i > 0 ? CONTAINER_GAP : 0),
+      0
+    );
+    let cursorX = -totalWidth / 2;
+
+    const allNodes = [];
+    const allEdges = [];
+
+    for (const layout of perLayouts) {
+      for (const n of layout.nodes) {
+        allNodes.push({ ...n, position: { x: n.position.x + cursorX, y: n.position.y } });
+      }
+      for (const e of layout.edges) allEdges.push(e);
+      cursorX += layout.containerW + CONTAINER_GAP;
+    }
+
+    return { nodes: allNodes, edges: allEdges };
+  }, [worktrees, stableFileClick]);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#0d0d1a' }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        fitView
-        colorMode="dark"
-      >
-        <Background color="#2a2a3a" gap={24} />
-        <Controls />
-      </ReactFlow>
+    <div className="w-full h-full bg-canvas">
+      <TreeCanvas nodes={nodes} edges={edges} nodeTypes={NODE_TYPES} />
     </div>
   );
 };
