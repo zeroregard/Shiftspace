@@ -1,0 +1,13 @@
+export const NODE_H_GAP = 30;
+export const FOLDER_V_GAP = 50;
+export const FILE_V_GAP = 8;
+export const FILE_NODE_W = 150;
+export const FILE_NODE_H = 44;
+export const FOLDER_NODE_W = 140;
+export const FOLDER_NODE_H = 32;
+export const WT_HEADER_H = 68;
+export const CONTAINER_PAD_X = 30;
+export const CONTAINER_PAD_TOP = 20;
+export const CONTAINER_PAD_BOTTOM = 20;
+export const CONTAINER_GAP = 60;
+export const FILES_TOP_GAP = 40;

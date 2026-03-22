@@ -6,6 +6,16 @@ export interface WorktreeState {
   process?: { port: number; command: string };
 }
 
+export interface DiffLine {
+  type: 'added' | 'removed' | 'context';
+  content: string;
+}
+
+export interface DiffHunk {
+  header: string; // e.g. "@@ -12,4 +12,7 @@"
+  lines: DiffLine[];
+}
+
 export interface FileChange {
   path: string; // relative to worktree root
   status: 'added' | 'modified' | 'deleted';
@@ -13,6 +23,7 @@ export interface FileChange {
   linesAdded: number;
   linesRemoved: number;
   lastChangedAt: number; // timestamp, used for pulse animation
+  diff?: DiffHunk[];
 }
 
 export type ShiftspaceEvent =

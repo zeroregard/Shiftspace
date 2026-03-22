@@ -8,7 +8,6 @@ export interface LayoutNode {
   height: number;
   data: Record<string, unknown>;
   style?: React.CSSProperties;
-  className?: string;
 }
 
 export interface LayoutEdge {
@@ -94,7 +93,6 @@ const NodeWrapper = React.memo(({ node, nodeTypes }: NodeWrapperProps) => {
   if (!Component) return null;
   return (
     <div
-      className={node.className}
       style={{
         position: 'absolute',
         left: node.position.x,
@@ -249,6 +247,11 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
           position: 'absolute',
         }}
       >
+        {/* Worktree containers render first (bottom layer) */}
+        {nodes.filter(n => n.type === 'worktreeNode').map(node => (
+          <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
+        ))}
+        {/* SVG edges render above containers but below folder/file nodes */}
         <svg
           style={{
             position: 'absolute',
@@ -262,7 +265,8 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
             <EdgePath key={edge.id} edge={edge} nodeMap={nodeMap} />
           ))}
         </svg>
-        {nodes.map(node => (
+        {/* Folder and file nodes render on top */}
+        {nodes.filter(n => n.type !== 'worktreeNode').map(node => (
           <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
         ))}
       </div>

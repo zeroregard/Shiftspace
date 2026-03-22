@@ -1,6 +1,117 @@
-import type { WorktreeState, FileChange, ShiftspaceEvent } from '@shiftspace/renderer';
+import type { WorktreeState, FileChange, ShiftspaceEvent, DiffHunk, DiffLine } from '@shiftspace/renderer';
 import type { AgentConfig, AgentPersona } from './types';
 import { FILE_TREE_TEMPLATES, WORKTREE_PRESETS, type TemplateKey } from './templates';
+
+const SAMPLE_LINES: Record<string, string[]> = {
+  ts: [
+    "import { useEffect, useState } from 'react';",
+    'export function useData(id: string) {',
+    '  const [data, setData] = useState(null);',
+    '  useEffect(() => { fetchData(id).then(setData); }, [id]);',
+    '  return data;',
+    '}',
+    'async function fetchData(id: string) {',
+    "  return fetch(`/api/data/${id}`).then(r => r.json());",
+  ],
+  tsx: [
+    "import React from 'react';",
+    'export const Card = ({ title, children }: Props) => (',
+    '  <div className="card">',
+    '    <h2>{title}</h2>',
+    '    <div className="content">{children}</div>',
+    '  </div>',
+    ');',
+    'Card.displayName = "Card";',
+  ],
+  css: [
+    '.container { display: flex; flex-direction: column; }',
+    '.header { font-size: 1.25rem; font-weight: 600; }',
+    '.body { padding: 1rem; }',
+    '@media (max-width: 768px) { .container { flex-direction: row; } }',
+    '.footer { border-top: 1px solid var(--border); }',
+    '.button { cursor: pointer; border-radius: 0.25rem; }',
+    '.button:hover { opacity: 0.8; }',
+    '.icon { width: 1rem; height: 1rem; }',
+  ],
+  json: [
+    '{',
+    '  "name": "shiftspace",',
+    '  "version": "0.1.0",',
+    '  "type": "module",',
+    '  "scripts": {',
+    '    "dev": "vite",',
+    '    "build": "tsc && vite build"',
+    '  }',
+  ],
+};
+
+const FALLBACK_LINES = [
+  'function init() {',
+  '  const config = loadConfig();',
+  '  setup(config);',
+  '  return run();',
+  '}',
+  'module.exports = { init };',
+  '// end of file',
+  'const VERSION = "0.1.0";',
+];
+
+function getSampleLines(path: string): string[] {
+  const ext = path.split('.').pop() ?? '';
+  return SAMPLE_LINES[ext] ?? FALLBACK_LINES;
+}
+
+function makeDiff(
+  path: string,
+  linesAdded: number,
+  linesRemoved: number,
+  status: FileChange['status']
+): DiffHunk[] {
+  const lines = getSampleLines(path);
+  const cap = (n: number) => Math.min(n, 8);
+
+  if (status === 'added') {
+    const count = cap(linesAdded);
+    const diffLines: DiffLine[] = lines.slice(0, count).map((content) => ({ type: 'added', content }));
+    return [{ header: `@@ -0,0 +1,${count} @@`, lines: diffLines }];
+  }
+
+  if (status === 'deleted') {
+    const count = cap(linesRemoved);
+    const diffLines: DiffLine[] = lines.slice(0, count).map((content) => ({ type: 'removed', content }));
+    return [{ header: `@@ -1,${count} +0,0 @@`, lines: diffLines }];
+  }
+
+  // modified: 1–2 hunks
+  const total = linesAdded + linesRemoved;
+  const addCount = cap(linesAdded);
+  const removeCount = cap(linesRemoved);
+
+  const hunk1Lines: DiffLine[] = [
+    { type: 'context', content: lines[0] ?? '' },
+    { type: 'context', content: lines[1] ?? '' },
+    ...lines.slice(2, 2 + removeCount).map<DiffLine>((content) => ({ type: 'removed', content })),
+    ...lines.slice(2, 2 + addCount).map<DiffLine>((content) => ({ type: 'added', content })),
+    { type: 'context', content: lines[lines.length - 1] ?? '' },
+  ];
+
+  if (total <= 10) {
+    return [{ header: `@@ -1,${2 + removeCount + 1} +1,${2 + addCount + 1} @@`, lines: hunk1Lines }];
+  }
+
+  const hunk2Lines: DiffLine[] = [
+    { type: 'context', content: lines[3] ?? '' },
+    { type: 'context', content: lines[4] ?? '' },
+    { type: 'removed', content: lines[5] ?? '' },
+    { type: 'added', content: lines[6] ?? '' },
+    { type: 'context', content: lines[7] ?? '' },
+  ];
+
+  return [
+    { header: `@@ -1,${2 + removeCount + 1} +1,${2 + addCount + 1} @@`, lines: hunk1Lines },
+    { header: '@@ -20,5 +20,5 @@', lines: hunk2Lines },
+  ];
+}
 
 type EventHandler = (event: ShiftspaceEvent) => void;
 
@@ -24,13 +135,15 @@ function makeFile(path: string, persona: AgentPersona, staged = false): FileChan
         ? ['modified', 'modified', 'deleted']
         : ['modified', 'modified'];
 
+  const status = pick(statuses);
   return {
     path,
-    status: pick(statuses),
+    status,
     staged,
     linesAdded,
     linesRemoved,
     lastChangedAt: Date.now(),
+    diff: makeDiff(path, linesAdded, linesRemoved, status),
   };
 }
 
