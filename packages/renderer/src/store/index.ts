@@ -41,6 +41,14 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
           }
           break;
         }
+        case 'file-removed': {
+          const wt = worktrees.get(event.worktreeId);
+          if (wt) {
+            const files = wt.files.filter((f) => f.path !== event.filePath);
+            worktrees.set(event.worktreeId, { ...wt, files });
+          }
+          break;
+        }
         case 'file-staged': {
           const wt = worktrees.get(event.worktreeId);
           if (wt) {

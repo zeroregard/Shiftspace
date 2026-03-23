@@ -10,6 +10,8 @@
     "lint:check": "oxlint --deny-warnings .",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt:write": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
     "preview": "pnpm --filter @shiftspace/preview dev",
     "prepare": "simple-git-hooks"
   },

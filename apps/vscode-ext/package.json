@@ -63,7 +63,10 @@
     "watch:webview": "vite build --watch",
     "watch": "pnpm build:webview && pnpm watch:ext",
     "package": "vsce package --no-dependencies",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.webview.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.webview.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@shiftspace/renderer": "workspace:*",
@@ -73,12 +76,14 @@
     "@types/react-dom": "^18.3.5",
     "@types/vscode": "^1.85.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^3.0.0",
     "@vscode/vsce": "^3.3.2",
     "esbuild": "^0.25.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.7.2",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^3.0.0"
   }
 }

@@ -1,0 +1,10 @@
+ M src/app/page.tsx
+M  src/app/layout.tsx
+MM src/components/Button.tsx
+A  src/components/Card.tsx
+ D src/hooks/useAuth.ts
+D  src/hooks/useOld.ts
+?? src/newfile.ts
+?? "src/file with spaces.ts"
+R  src/old-name.ts -> src/new-name.ts
+!! node_modules/some-package/index.js

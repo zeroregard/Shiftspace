@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
 import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
@@ -20,10 +20,12 @@ const vscode = (function () {
 
 type HostMessage =
   | { type: 'init'; worktrees: WorktreeState[] }
-  | { type: 'event'; event: ShiftspaceEvent };
+  | { type: 'event'; event: ShiftspaceEvent }
+  | { type: 'error'; message: string };
 
 const App: React.FC = () => {
   const { applyEvent, setWorktrees } = useShiftspaceStore();
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   useEffect(() => {
     // Signal to the extension host that the webview is ready to receive data
@@ -34,9 +36,12 @@ const App: React.FC = () => {
     const handler = (e: MessageEvent<HostMessage>) => {
       const msg = e.data;
       if (msg.type === 'init') {
+        setErrorMessage(undefined);
         setWorktrees(msg.worktrees);
       } else if (msg.type === 'event') {
         applyEvent(msg.event);
+      } else if (msg.type === 'error') {
+        setErrorMessage(msg.message);
       }
     };
     window.addEventListener('message', handler);
@@ -46,6 +51,24 @@ const App: React.FC = () => {
   const handleFileClick = (worktreeId: string, filePath: string) => {
     vscode?.postMessage({ type: 'file-click', worktreeId, filePath });
   };
+
+  if (errorMessage) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--vscode-descriptionForeground, #888)',
+          fontSize: '14px',
+        }}
+      >
+        {errorMessage}
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: '100%', height: '100vh' }}>

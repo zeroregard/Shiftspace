@@ -1,0 +1,8 @@
+worktree /home/user/project
+HEAD abc1234def5678901234567890abcdef01234567
+branch refs/heads/main
+
+worktree /home/user/project-detached
+HEAD deadbeef12345678deadbeef12345678deadbeef
+detached
+

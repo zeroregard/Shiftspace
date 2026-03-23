@@ -1,0 +1,6 @@
+12	4	src/app/page.tsx
+3	1	src/app/layout.tsx
+45	0	src/components/Button.tsx
+8	3	src/components/Card.tsx
+-	-	assets/logo.png
+2	1	"src/file with spaces.ts"
