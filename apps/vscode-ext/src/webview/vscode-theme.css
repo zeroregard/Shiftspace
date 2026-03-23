@@ -1,0 +1,46 @@
+/*
+ * VSCode theme integration for the Shiftspace webview.
+ *
+ * This file is loaded AFTER the main bundle CSS (styles.css / index.css) so
+ * that these declarations take precedence and map every design token to the
+ * active VSCode theme's CSS variables.
+ *
+ * Loaded only inside the VSCode webview — never in the Vercel preview app.
+ * Switching themes in VSCode automatically re-injects these variables, so the
+ * renderer updates in real-time without a reload.
+ */
+
+:root {
+  --color-canvas:          var(--vscode-editor-background);
+  --color-text-primary:    var(--vscode-editor-foreground);
+  --color-text-secondary:  var(--vscode-descriptionForeground);
+  --color-text-muted:      var(--vscode-disabledForeground);
+  --color-text-dim:        var(--vscode-disabledForeground);
+  --color-text-faint:      var(--vscode-textBlockQuote-border);
+  --color-border-default:  var(--vscode-panel-border);
+  --color-border-dashed:   var(--vscode-panel-border);
+  --color-border-staged:   var(--vscode-gitDecoration-stageModifiedResourceForeground);
+  --color-node-file:       var(--vscode-editorWidget-background);
+  --color-node-file-pulse: var(--vscode-editorWidget-background);
+  --color-node-folder:     var(--vscode-sideBar-background);
+  --color-cluster:         var(--vscode-editorGroupHeader-tabsBackground);
+  --color-cluster-alpha:   var(--vscode-editorGroupHeader-tabsBackground);
+  --color-process-badge:   var(--vscode-statusBar-background);
+  --color-handle:          var(--vscode-panel-border);
+  --color-status-added:    var(--vscode-gitDecoration-addedResourceForeground);
+  --color-status-modified: var(--vscode-gitDecoration-modifiedResourceForeground);
+  --color-status-deleted:  var(--vscode-gitDecoration-deletedResourceForeground);
+  --color-teal:            var(--vscode-terminal-ansiCyan);
+  --color-grid-dot:        var(--vscode-editorIndentGuide-background);
+  --color-diff-added-bg:   var(--vscode-diffEditor-insertedLineBackground);
+  --color-diff-removed-bg: var(--vscode-diffEditor-removedLineBackground);
+  --color-diff-hunk-bg:    var(--vscode-diffEditor-diagonalFill);
+
+  /* pulse overlay has no direct VSCode equivalent — keep the green glow */
+  --color-pulse-overlay: rgba(78, 201, 78, 0.06);
+}
+
+/* Ensure the body background follows the canvas token */
+html, body, #root {
+  background: var(--vscode-editor-background);
+}

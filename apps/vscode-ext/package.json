@@ -1,17 +1,79 @@
 {
-  "name": "@shiftspace/vscode-ext",
+  "name": "shiftspace",
+  "displayName": "Shiftspace",
+  "description": "Visual workspace command center — spatial node graph of your git changes across worktrees",
   "version": "0.1.0",
+  "publisher": "shiftspace",
   "private": true,
-  "description": "Shiftspace VSCode extension — Phase 2",
   "engines": {
     "vscode": "^1.85.0"
   },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "icon": "media/icon.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "shiftspace.toggle",
+        "title": "Toggle",
+        "category": "Shiftspace"
+      },
+      {
+        "command": "shiftspace.openTab",
+        "title": "Open as Tab",
+        "category": "Shiftspace"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "shiftspace.toggle",
+        "key": "shift+space",
+        "when": "!inputFocus"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "shiftspace",
+          "title": "Shiftspace",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "shiftspace": [
+        {
+          "type": "webview",
+          "id": "shiftspace.sidebar",
+          "name": "Shiftspace"
+        }
+      ]
+    }
+  },
   "scripts": {
-    "build": "echo 'VSCode extension build — Phase 2'",
-    "typecheck": "echo 'VSCode extension typecheck — Phase 2'"
+    "build:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js",
+    "build:webview": "vite build && cp src/webview/vscode-theme.css dist/webview/vscode-theme.css",
+    "build": "pnpm build:webview && pnpm build:ext",
+    "watch:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js --watch",
+    "watch:webview": "vite build --watch",
+    "watch": "pnpm build:webview && pnpm watch:ext",
+    "package": "vsce package --no-dependencies",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.webview.json --noEmit"
   },
   "devDependencies": {
+    "@shiftspace/renderer": "workspace:*",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.7.2"
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vscode/vsce": "^3.3.2",
+    "esbuild": "^0.24.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
   }
 }

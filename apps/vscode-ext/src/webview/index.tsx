@@ -1,0 +1,61 @@
+import React, { useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
+import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
+import './styles.css';
+
+declare function acquireVsCodeApi(): {
+  postMessage: (msg: unknown) => void;
+  getState: () => unknown;
+  setState: (state: unknown) => void;
+};
+
+const vscode = (function () {
+  try {
+    return acquireVsCodeApi();
+  } catch {
+    return undefined;
+  }
+})();
+
+type HostMessage =
+  | { type: 'init'; worktrees: WorktreeState[] }
+  | { type: 'event'; event: ShiftspaceEvent };
+
+const App: React.FC = () => {
+  const { applyEvent, setWorktrees } = useShiftspaceStore();
+
+  useEffect(() => {
+    // Signal to the extension host that the webview is ready to receive data
+    vscode?.postMessage({ type: 'ready' });
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MessageEvent<HostMessage>) => {
+      const msg = e.data;
+      if (msg.type === 'init') {
+        setWorktrees(msg.worktrees);
+      } else if (msg.type === 'event') {
+        applyEvent(msg.event);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [applyEvent, setWorktrees]);
+
+  const handleFileClick = (worktreeId: string, filePath: string) => {
+    vscode?.postMessage({ type: 'file-click', worktreeId, filePath });
+  };
+
+  return (
+    <div style={{ width: '100%', height: '100vh' }}>
+      <ShiftspaceRenderer onFileClick={handleFileClick} />
+    </div>
+  );
+};
+
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
