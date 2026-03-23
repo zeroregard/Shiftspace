@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useHoverCardStore } from './components/DiffOverlay';
 
 export interface LayoutNode {
   id: string;
@@ -114,6 +115,13 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
   const hasFitRef = useRef(false);
   const transformRef = useRef(transform);
   transformRef.current = transform;
+  // Track active pointers to prevent panning during pinch
+  const activePointersRef = useRef<Set<number>>(new Set());
+  // Keep nodes accessible in event handlers without stale closures
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+
+  const { setOpen: closePopover } = useHoverCardStore();
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
@@ -160,6 +168,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
       if (e.touches.length === 2) {
         e.preventDefault();
         lastTouchDistRef.current = getTouchDist(e);
+        // Cancel any ongoing pan so pinch doesn't also drag
         isPanningRef.current = false;
       }
     }
@@ -168,19 +177,20 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
       if (e.touches.length === 2 && lastTouchDistRef.current !== null) {
         e.preventDefault();
         const newDist = getTouchDist(e);
+        // Capture prevDist as a local variable and update the ref immediately.
+        // The setTransform updater runs asynchronously (React 18 batching), so reading
+        // lastTouchDistRef.current inside the updater would yield newDist/newDist = 1.
+        const prevDist = lastTouchDistRef.current;
+        lastTouchDistRef.current = newDist;
         const rect = el.getBoundingClientRect();
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         setTransform((prev) => {
-          const newZoom = Math.min(
-            Math.max(prev.zoom * (newDist / lastTouchDistRef.current!), 0.1),
-            3
-          );
+          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), 3);
           const canvasX = (midX - prev.x) / prev.zoom;
           const canvasY = (midY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: midX - canvasX * newZoom, y: midY - canvasY * newZoom };
         });
-        lastTouchDistRef.current = newDist;
       }
     }
 
@@ -200,6 +210,12 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
 
   function handlePointerDown(e: React.PointerEvent) {
     if (e.button !== 0) return;
+    activePointersRef.current.add(e.pointerId);
+    // Don't start panning when multiple pointers are active (pinch gesture)
+    if (activePointersRef.current.size > 1) {
+      isPanningRef.current = false;
+      return;
+    }
     isPanningRef.current = true;
     panStartRef.current = {
       x: e.clientX,
@@ -211,7 +227,8 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
   }
 
   function handlePointerMove(e: React.PointerEvent) {
-    if (!isPanningRef.current) return;
+    // Skip panning when multiple pointers are active (pinch in progress)
+    if (!isPanningRef.current || activePointersRef.current.size > 1) return;
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
     setTransform((prev) => ({
@@ -221,8 +238,26 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
     }));
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(e: React.PointerEvent) {
+    activePointersRef.current.delete(e.pointerId);
     isPanningRef.current = false;
+  }
+
+  function handlePointerCancel(e: React.PointerEvent) {
+    activePointersRef.current.delete(e.pointerId);
+    isPanningRef.current = false;
+  }
+
+  function handleCanvasClick() {
+    closePopover(null);
+  }
+
+  function handleFitView(e: React.MouseEvent) {
+    e.stopPropagation();
+    const el = containerRef.current;
+    if (!el) return;
+    const { offsetWidth: w, offsetHeight: h } = el;
+    setTransform(fitViewToNodes(nodesRef.current, w, h));
   }
 
   const { x, y, zoom } = transform;
@@ -231,17 +266,21 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
     <div
       ref={containerRef}
       style={{
+        position: 'relative',
         overflow: 'hidden',
         width: '100%',
         height: '100%',
         cursor: 'grab',
+        touchAction: 'none',
         backgroundImage: 'radial-gradient(circle, var(--color-grid-dot) 1px, transparent 1px)',
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundPosition: `${x}px ${y}px`,
       }}
+      onClick={handleCanvasClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
     >
       <div
         style={{
@@ -277,6 +316,29 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
             <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
           ))}
       </div>
+      {/* Fit-view reset button — outside the transform so it stays fixed in corner */}
+      <button
+        style={{
+          position: 'absolute',
+          bottom: 16,
+          right: 16,
+          zIndex: 10,
+          background: 'var(--color-node-file)',
+          border: '1px solid var(--color-border-default)',
+          borderRadius: 6,
+          padding: '5px 10px',
+          cursor: 'pointer',
+          color: 'var(--color-text-secondary)',
+          fontSize: 11,
+          lineHeight: 1,
+          userSelect: 'none',
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={handleFitView}
+        title="Reset view"
+      >
+        Fit
+      </button>
     </div>
   );
 };
