@@ -4,12 +4,13 @@ import * as HoverCard from '@radix-ui/react-hover-card';
 import { create } from 'zustand';
 import type { FileChange, DiffHunk as DiffHunkType, DiffLine as DiffLineType } from '../types';
 
-const useHoverCardStore = create<{ openId: string | null; setOpen: (id: string | null) => void }>(
-  (set) => ({
-    openId: null,
-    setOpen: (id) => set({ openId: id }),
-  })
-);
+export const useHoverCardStore = create<{
+  openId: string | null;
+  setOpen: (id: string | null) => void;
+}>((set) => ({
+  openId: null,
+  setOpen: (id) => set({ openId: id }),
+}));
 
 function DiffHunkHeader({ header }: { header: string }) {
   return (
@@ -79,6 +80,17 @@ export const DiffHoverCard = React.memo(
   ({ file, children }: { file: FileChange; children: React.ReactNode }) => {
     const id = React.useId();
     const { openId, setOpen } = useHoverCardStore();
+    // Use a ref so the click handler stays stable (doesn't re-create on openId changes)
+    const openIdRef = React.useRef(openId);
+    openIdRef.current = openId;
+    const handleClick = React.useCallback(
+      (e: React.MouseEvent) => {
+        // Stop propagation so the canvas click-to-close handler doesn't fire
+        e.stopPropagation();
+        setOpen(openIdRef.current === id ? null : id);
+      },
+      [id, setOpen]
+    );
     return (
       <HoverCard.Root
         openDelay={300}
@@ -89,7 +101,9 @@ export const DiffHoverCard = React.memo(
           else if (openId === id) setOpen(null);
         }}
       >
-        <HoverCard.Trigger asChild>{children}</HoverCard.Trigger>
+        <HoverCard.Trigger asChild onClick={handleClick}>
+          {children}
+        </HoverCard.Trigger>
         <HoverCard.Portal>
           <HoverCard.Content
             side="right"
