@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Extension Development Host",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/vscode-ext"],
+      "outFiles": ["${workspaceFolder}/apps/vscode-ext/dist/**/*.js"],
+      "preLaunchTask": "build-vscode-ext",
+      "sourceMaps": true
+    }
+  ]
+}
