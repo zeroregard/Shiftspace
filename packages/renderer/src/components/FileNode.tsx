@@ -4,6 +4,7 @@ import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffHoverCard } from './DiffOverlay';
+import { FileIcon } from '../icons';
 
 export interface FileNodeData {
   file: FileChange;
@@ -41,7 +42,10 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
                 STATUS_CLASSES[file.status]
               )}
             />
-            <span className="text-11 text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap max-w-30">
+            <span className="shrink-0 flex items-center">
+              <FileIcon filename={fileName} size={12} />
+            </span>
+            <span className="text-11 text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap max-w-[88px]">
               {fileName}
             </span>
           </div>
