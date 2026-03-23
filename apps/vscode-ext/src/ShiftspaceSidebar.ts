@@ -12,15 +12,10 @@ export class ShiftspaceSidebar implements vscode.WebviewViewProvider {
   ) {
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [
-        vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
-      ],
+      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview')],
     };
 
-    webviewView.webview.html = getWebviewHtml(
-      webviewView.webview,
-      this.context.extensionUri
-    );
+    webviewView.webview.html = getWebviewHtml(webviewView.webview, this.context.extensionUri);
 
     const stopMock = startMockUpdates((event) => {
       void webviewView.webview.postMessage({ type: 'event', event });

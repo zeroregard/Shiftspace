@@ -159,5 +159,7 @@ export function startMockUpdates(onEvent: EventCallback): () => void {
   }
 
   scheduleNext();
-  return () => { stopped = true; };
+  return () => {
+    stopped = true;
+  };
 }

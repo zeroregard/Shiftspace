@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 
-export function getWebviewHtml(
-  webview: vscode.Webview,
-  extensionUri: vscode.Uri
-): string {
+export function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
   const nonce = crypto.randomBytes(16).toString('hex');
 
   const jsUri = webview.asWebviewUri(
