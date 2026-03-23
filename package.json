@@ -10,11 +10,20 @@
     "lint:check": "oxlint --deny-warnings .",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt:write": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
-    "preview": "pnpm --filter @shiftspace/preview dev"
+    "preview": "pnpm --filter @shiftspace/preview dev",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,json,md}": "prettier --write"
   },
   "devDependencies": {
+    "lint-staged": "^16.4.0",
     "oxlint": "^0.16.6",
     "prettier": "^3.4.2",
+    "simple-git-hooks": "^2.13.1",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   }

@@ -13,25 +13,32 @@ When you have completed a task:
 4. **CI Check Loop:** `gh` is not available in this environment. Instead:
 
    **Run checks locally first** — this is the fastest feedback loop:
+
    ```bash
    pnpm install --frozen-lockfile
    pnpm fmt:check
    pnpm lint:check
    pnpm typecheck
    ```
+
    Fix any failures before pushing.
 
    **Then verify CI passed on GitHub** using WebFetch:
+
    ```
    https://github.com/zeroregard/Shiftspace/actions?query=branch%3A<branch-name>
    ```
+
    If a run failed, fetch the specific job URL from the PR page:
+
    ```
    https://github.com/zeroregard/Shiftspace/pull/<pr-number>/checks
    ```
+
    Then fetch the failed job link directly to read the error output.
 
    Fix the issue, push, and repeat until all checks pass.
+
 5. **Do NOT merge.** Leave the PR open for human review.
 6. **Do NOT skip failing checks.** If you can't fix a failure after 3 attempts, stop and explain the issue in a PR comment.
 
