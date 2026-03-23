@@ -177,19 +177,20 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
       if (e.touches.length === 2 && lastTouchDistRef.current !== null) {
         e.preventDefault();
         const newDist = getTouchDist(e);
+        // Capture prevDist as a local variable and update the ref immediately.
+        // The setTransform updater runs asynchronously (React 18 batching), so reading
+        // lastTouchDistRef.current inside the updater would yield newDist/newDist = 1.
+        const prevDist = lastTouchDistRef.current;
+        lastTouchDistRef.current = newDist;
         const rect = el.getBoundingClientRect();
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         setTransform((prev) => {
-          const newZoom = Math.min(
-            Math.max(prev.zoom * (newDist / lastTouchDistRef.current!), 0.1),
-            3
-          );
+          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), 3);
           const canvasX = (midX - prev.x) / prev.zoom;
           const canvasY = (midY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: midX - canvasX * newZoom, y: midY - canvasY * newZoom };
         });
-        lastTouchDistRef.current = newDist;
       }
     }
 
