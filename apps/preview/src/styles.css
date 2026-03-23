@@ -1,6 +1,43 @@
 @import "tailwindcss";
 @source "../../../packages/renderer/src/**/*.tsx";
 
+/*
+ * Theme tokens — Preview app defaults (dark palette)
+ *
+ * When running inside the VSCode extension (Phase 2), create a vscode-theme.css
+ * that overrides each token with the corresponding --vscode-* CSS variable:
+ *
+ *   --color-canvas          → var(--vscode-editor-background)
+ *   --color-text-primary    → var(--vscode-editor-foreground)
+ *   --color-text-secondary  → var(--vscode-descriptionForeground)
+ *   --color-text-muted      → var(--vscode-disabledForeground)
+ *   --color-text-dim        → var(--vscode-disabledForeground)
+ *   --color-text-faint      → var(--vscode-disabledForeground)
+ *   --color-border-default  → var(--vscode-panel-border)
+ *   --color-border-dashed   → var(--vscode-panel-border)
+ *   --color-border-staged   → var(--vscode-gitDecoration-stageModifiedResourceForeground)
+ *   --color-node-file       → var(--vscode-editorWidget-background)
+ *   --color-node-file-pulse → var(--vscode-editorWidget-background)   (+ pulse animation)
+ *   --color-node-folder     → var(--vscode-sideBar-background)
+ *   --color-cluster         → var(--vscode-editorGroupHeader-tabsBackground)
+ *   --color-cluster-alpha   → var(--vscode-editorGroupHeader-tabsBackground) at 50% opacity
+ *   --color-process-badge   → var(--vscode-statusBar-background)
+ *   --color-handle          → var(--vscode-panel-border)
+ *   --color-status-added    → var(--vscode-gitDecoration-addedResourceForeground)
+ *   --color-status-modified → var(--vscode-gitDecoration-modifiedResourceForeground)
+ *   --color-status-deleted  → var(--vscode-gitDecoration-deletedResourceForeground)
+ *   --color-teal            → var(--vscode-terminal-ansiCyan)
+ *   --color-grid-dot        → var(--vscode-editorIndentGuide-background)
+ *   --color-pulse-overlay   → (keep as green glow; no direct VSCode equivalent)
+ *   --color-diff-added-bg   → var(--vscode-diffEditor-insertedLineBackground)
+ *   --color-diff-removed-bg → var(--vscode-diffEditor-removedLineBackground)
+ *   --color-diff-hunk-bg    → var(--vscode-diffEditor-diagonalFill)
+ *   --color-debug-green     → (dev-only; omit or keep as-is in extension)
+ *   --color-debug-bg        → (dev-only; omit or keep as-is in extension)
+ *
+ * To swap: create apps/vscode-ext/src/vscode-theme.css and declare the overrides
+ * inside a :root block injected into the webview. No component code changes needed.
+ */
 @theme {
   --color-canvas:          #0d0d1a;
   --color-node-file:       #141428;
@@ -22,6 +59,7 @@
   --color-status-modified: #e0c44e;
   --color-status-deleted:  #e05c5c;
   --color-teal:            #4ec9b0;
+  --color-grid-dot:        #2a2a3a;
   --color-debug-green:     #00ff00;
   --color-debug-bg:        rgba(0, 0, 0, 0.75);
   --font-mono: "Courier New", Courier, monospace;

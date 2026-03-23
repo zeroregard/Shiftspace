@@ -235,7 +235,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
         width: '100%',
         height: '100%',
         cursor: 'grab',
-        backgroundImage: 'radial-gradient(circle, #2a2a3a 1px, transparent 1px)',
+        backgroundImage: 'radial-gradient(circle, var(--color-grid-dot) 1px, transparent 1px)',
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundPosition: `${x}px ${y}px`,
       }}
