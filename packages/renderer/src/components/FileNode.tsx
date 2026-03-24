@@ -23,7 +23,6 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
       <div
         className={clsx(
           'w-full h-full border rounded-md text-text-secondary transition-[background,opacity] duration-300',
-          file.staged ? 'border-border-staged opacity-100' : 'border-border-default opacity-75',
           isPulsing ? 'bg-node-file-pulse' : 'bg-node-file'
         )}
       >
@@ -39,7 +38,7 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
             <span className="shrink-0 flex items-center">
               <FileIcon filename={fileName} size={12} />
             </span>
-            <span className="text-11 text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap max-w-[88px]">
+            <span className="text-11 text-text-primary overflow-hidden text-ellipsis whitespace-nowrap max-w-[88px]">
               {fileName}
             </span>
             <span

@@ -72,7 +72,7 @@ const App: React.FC = () => {
 
   return (
     <div style={{ width: '100%', height: '100vh' }}>
-      <ShiftspaceRenderer onFileClick={handleFileClick} />
+      <ShiftspaceRenderer onFileClick={handleFileClick} zoomSensitivity={0.03} />
     </div>
   );
 };

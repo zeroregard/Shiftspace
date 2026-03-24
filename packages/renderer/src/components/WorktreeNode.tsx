@@ -18,18 +18,16 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
 
   return (
     <div className="w-full h-full border-2 border-dashed border-border-dashed rounded-2xl bg-cluster-alpha text-text-primary px-7.5 py-5 text-left">
-      {!isSingle && (
-        <div className="font-semibold text-text-primary text-13">
-          {pathPart && <span>{pathPart} </span>}
-          {pathPart ? (
-            <>
-              (<span className="text-text-faint font-normal">{wt.branch}</span>)
-            </>
-          ) : (
-            <span>{wt.branch}</span>
-          )}
-        </div>
-      )}
+      <div className="font-semibold text-text-primary text-13">
+        {!isSingle && pathPart && <span>{pathPart} </span>}
+        {!isSingle && pathPart ? (
+          <>
+            (<span className="text-text-faint font-normal">{wt.branch}</span>)
+          </>
+        ) : (
+          <span>{wt.branch}</span>
+        )}
+      </div>
       <div className="text-11 text-text-muted mt-0.5">
         {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
         <span className="text-status-added">+{totalAdded}</span>{' '}

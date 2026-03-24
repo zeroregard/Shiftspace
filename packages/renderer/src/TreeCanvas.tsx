@@ -33,6 +33,7 @@ interface TreeCanvasProps {
   edges: LayoutEdge[];
   nodeTypes: Record<string, React.ComponentType<NodeComponentProps<any>>>;
   zoomSensitivity?: number;
+  maxZoom?: number;
 }
 
 function smoothstepPath(x1: number, y1: number, x2: number, y2: number): string {
@@ -112,6 +113,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   edges,
   nodeTypes,
   zoomSensitivity = 0.01,
+  maxZoom = 3,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
@@ -152,7 +154,10 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
         const cursorX = e.clientX - rect.left;
         const cursorY = e.clientY - rect.top;
         setTransform((prev) => {
-          const newZoom = Math.min(Math.max(prev.zoom * (1 - e.deltaY * zoomSensitivity), 0.1), 1);
+          const newZoom = Math.min(
+            Math.max(prev.zoom * (1 - e.deltaY * zoomSensitivity), 0.1),
+            maxZoom
+          );
           const canvasX = (cursorX - prev.x) / prev.zoom;
           const canvasY = (cursorY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: cursorX - canvasX * newZoom, y: cursorY - canvasY * newZoom };
@@ -164,7 +169,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
     }
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
-  }, [zoomSensitivity]);
+  }, [zoomSensitivity, maxZoom]);
 
   // Touch events — non-passive to allow preventDefault during pinch
   useEffect(() => {
@@ -198,7 +203,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         setTransform((prev) => {
-          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), 1);
+          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), maxZoom);
           const canvasX = (midX - prev.x) / prev.zoom;
           const canvasY = (midY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: midX - canvasX * newZoom, y: midY - canvasY * newZoom };
@@ -218,7 +223,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [maxZoom]);
 
   function handlePointerDown(e: React.PointerEvent) {
     if (e.button !== 0) return;
