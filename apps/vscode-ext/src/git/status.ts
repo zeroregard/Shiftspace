@@ -1,5 +1,7 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { FileChange } from '@shiftspace/renderer';
 
 const execFileAsync = promisify(execFile);
@@ -123,6 +125,22 @@ export function buildFileChanges(
   return result;
 }
 
+/**
+ * Count the lines in a file the same way git does: number of newline-terminated
+ * lines, plus one extra if the file is non-empty and has no trailing newline.
+ * Returns 0 for empty or unreadable files (e.g. binary).
+ */
+async function countFileLines(absolutePath: string): Promise<number> {
+  try {
+    const content = await fs.promises.readFile(absolutePath, 'utf8');
+    if (content.length === 0) return 0;
+    const newlines = (content.match(/\n/g) ?? []).length;
+    return content.endsWith('\n') ? newlines : newlines + 1;
+  } catch {
+    return 0; // binary or unreadable
+  }
+}
+
 /** Run git status + diff queries against a worktree directory and return FileChange[]. */
 export async function getFileChanges(worktreePath: string): Promise<FileChange[]> {
   const opts = { cwd: worktreePath, timeout: 5000 };
@@ -137,5 +155,17 @@ export async function getFileChanges(worktreePath: string): Promise<FileChange[]
   const diffOutput = diffResult.status === 'fulfilled' ? diffResult.value.stdout : '';
   const cachedOutput = cachedResult.status === 'fulfilled' ? cachedResult.value.stdout : '';
 
-  return buildFileChanges(statusOutput, diffOutput, cachedOutput);
+  const changes = buildFileChanges(statusOutput, diffOutput, cachedOutput);
+
+  // git diff --numstat only covers tracked files. Untracked new files (status=added,
+  // staged=false) won't have line counts — read them directly to fill in linesAdded.
+  await Promise.all(
+    changes
+      .filter((fc) => fc.status === 'added' && !fc.staged && fc.linesAdded === 0)
+      .map(async (fc) => {
+        fc.linesAdded = await countFileLines(path.join(worktreePath, fc.path));
+      })
+  );
+
+  return changes;
 }
