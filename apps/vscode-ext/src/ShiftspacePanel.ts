@@ -83,19 +83,28 @@ export class ShiftspacePanel {
       this.onActiveEditorChange(editor);
     });
 
-    // Determine initial repo: active file first, then first workspace folder
+    // Determine initial repo: active file first, then first workspace folder.
+    // resolveGitRoot() expects a file path and uses path.dirname internally.
+    // For workspace folders (already directories) we call getGitRoot() directly.
     const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
-    const fallbackRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    const initialPath = activeFile ?? fallbackRoot;
+    const fallbackFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
-    if (!initialPath) {
-      postMessage({ type: 'error', message: 'Open a file to get started' });
-      return;
+    let gitRoot: string | null = null;
+    if (activeFile) {
+      gitRoot = await this.resolveGitRoot(activeFile);
+    }
+    if (!gitRoot && fallbackFolder) {
+      const cached = this._gitRootCache.get(fallbackFolder);
+      gitRoot = cached !== undefined ? cached : await getGitRoot(fallbackFolder);
+      if (gitRoot) this._gitRootCache.set(fallbackFolder, gitRoot);
     }
 
-    const gitRoot = await this.resolveGitRoot(initialPath);
     if (!gitRoot) {
-      postMessage({ type: 'error', message: 'No git repository found' });
+      postMessage({
+        type: 'error',
+        message:
+          activeFile || fallbackFolder ? 'No git repository found' : 'Open a file to get started',
+      });
       return;
     }
 
@@ -124,12 +133,12 @@ export class ShiftspacePanel {
     await this._gitProvider?.switchRepo(gitRoot);
   }
 
-  /** Resolve git root for a file path, using a per-directory cache. */
+  /** Resolve git root for a file path (not a directory), using a per-directory cache. */
   private async resolveGitRoot(filePath: string): Promise<string | null> {
     const dir = path.dirname(filePath);
     const cached = this._gitRootCache.get(dir);
     if (cached !== undefined) return cached;
-    const root = await getGitRoot(filePath);
+    const root = await getGitRoot(dir); // getGitRoot expects a directory
     if (root) this._gitRootCache.set(dir, root);
     return root;
   }

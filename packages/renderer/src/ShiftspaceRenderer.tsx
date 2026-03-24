@@ -21,7 +21,10 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
 
   useEffect(() => {
-    setWorktrees(initialWorktrees);
+    // Only seed the store when initialWorktrees was explicitly provided (preview app).
+    // In the VSCode webview, the store is managed via message events — skipping this
+    // prevents a remount (e.g. after an error→init sequence) from wiping fresh data.
+    if (initialWorktrees.length > 0) setWorktrees(initialWorktrees);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

@@ -60,18 +60,10 @@ function DiffHeader({ file }: { file: FileChange }) {
   );
 }
 
-function EmptyDiff() {
-  return <div className="px-3 py-2 text-text-faint text-11 italic">no diff available</div>;
-}
-
 const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => (
   <>
     <DiffHeader file={file} />
-    {file.diff?.length ? (
-      file.diff.map((hunk, i) => <DiffHunkView key={i} hunk={hunk} />)
-    ) : (
-      <EmptyDiff />
-    )}
+    {file.diff?.length ? file.diff.map((hunk, i) => <DiffHunkView key={i} hunk={hunk} />) : null}
   </>
 ));
 DiffOverlayContent.displayName = 'DiffOverlayContent';

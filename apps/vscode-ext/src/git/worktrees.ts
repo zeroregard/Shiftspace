@@ -1,6 +1,5 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
 
 const execFileAsync = promisify(execFile);
@@ -71,10 +70,14 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
  * Resolve the git repo root for a given file path.
  * Returns null if the path is not inside a git repository.
  */
-export async function getGitRoot(filePath: string): Promise<string | null> {
+/**
+ * Resolve the git repo root starting from `dirPath` (must be a directory).
+ * Returns null if not inside a git repository.
+ */
+export async function getGitRoot(dirPath: string): Promise<string | null> {
   try {
     const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], {
-      cwd: path.dirname(filePath),
+      cwd: dirPath,
       timeout: 5000,
     });
     return stdout.trim();
