@@ -83,33 +83,80 @@ export class ShiftspacePanel {
       this.onActiveEditorChange(editor);
     });
 
-    // Determine initial repo: active file first, then first workspace folder.
-    // resolveGitRoot() expects a file path and uses path.dirname internally.
-    // For workspace folders (already directories) we call getGitRoot() directly.
-    const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
-    const fallbackFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-
-    let gitRoot: string | null = null;
-    if (activeFile) {
-      gitRoot = await this.resolveGitRoot(activeFile);
-    }
-    if (!gitRoot && fallbackFolder) {
-      const cached = this._gitRootCache.get(fallbackFolder);
-      gitRoot = cached !== undefined ? cached : await getGitRoot(fallbackFolder);
-      if (gitRoot) this._gitRootCache.set(fallbackFolder, gitRoot);
-    }
+    const gitRoot = await this.detectInitialGitRoot();
 
     if (!gitRoot) {
+      const hasSomething =
+        vscode.window.activeTextEditor || (vscode.workspace.workspaceFolders?.length ?? 0) > 0;
       postMessage({
         type: 'error',
-        message:
-          activeFile || fallbackFolder ? 'No git repository found' : 'Open a file to get started',
+        message: hasSomething ? 'No git repository found' : 'Open a file to get started',
       });
       return;
     }
 
     this._currentGitRoot = gitRoot;
     await this._gitProvider.switchRepo(gitRoot);
+  }
+
+  /**
+   * Determine the initial git root to show.
+   *
+   * Priority:
+   *  1. VSCode's built-in git extension — already has repos discovered, no subprocess needed.
+   *     Prefers the repo containing the active file; falls back to the first discovered repo.
+   *  2. Active text editor file path (runs git rev-parse ourselves).
+   *  3. Each workspace folder in order (runs git rev-parse ourselves).
+   */
+  private async detectInitialGitRoot(): Promise<string | null> {
+    const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
+
+    // Tier 1: ask VS Code's built-in git extension — fastest and most reliable
+    const fromExtension = this.getGitRootFromVscodeExtension(activeFile);
+    if (fromExtension) return fromExtension;
+
+    // Tier 2: run git ourselves against the active file's directory
+    if (activeFile) {
+      const root = await this.resolveGitRoot(activeFile);
+      if (root) return root;
+    }
+
+    // Tier 3: run git ourselves against each workspace folder
+    for (const folder of vscode.workspace.workspaceFolders ?? []) {
+      const folderPath = folder.uri.fsPath;
+      const cached = this._gitRootCache.get(folderPath);
+      const root = cached !== undefined ? cached : await getGitRoot(folderPath);
+      if (root) {
+        this._gitRootCache.set(folderPath, root);
+        return root;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Ask VS Code's built-in git extension for already-discovered repositories.
+   * Returns the root of the repo containing `activeFilePath` if provided,
+   * otherwise the first discovered repo root. Returns undefined if the
+   * extension is unavailable or has no repos yet.
+   */
+  private getGitRootFromVscodeExtension(activeFilePath?: string): string | undefined {
+    const gitExt = vscode.extensions.getExtension<{
+      getAPI(version: 1): { repositories: Array<{ rootUri: vscode.Uri }> };
+    }>('vscode.git');
+
+    if (!gitExt?.isActive) return undefined;
+
+    const repos = gitExt.exports.getAPI(1).repositories;
+    if (repos.length === 0) return undefined;
+
+    if (activeFilePath) {
+      const match = repos.find((r) => activeFilePath.startsWith(r.rootUri.fsPath));
+      if (match) return match.rootUri.fsPath;
+    }
+
+    return repos[0]!.rootUri.fsPath;
   }
 
   private onActiveEditorChange(editor: vscode.TextEditor | undefined): void {

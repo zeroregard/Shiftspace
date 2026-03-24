@@ -67,10 +67,6 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
 }
 
 /**
- * Resolve the git repo root for a given file path.
- * Returns null if the path is not inside a git repository.
- */
-/**
  * Resolve the git repo root starting from `dirPath` (must be a directory).
  * Returns null if not inside a git repository.
  */
