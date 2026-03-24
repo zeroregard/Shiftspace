@@ -174,7 +174,16 @@ export class GitDataProvider implements vscode.Disposable {
     const absolutePath = path.join(wt.path, filePath);
     const fileUri = vscode.Uri.file(absolutePath);
     try {
-      await vscode.commands.executeCommand('vscode.open', fileUri);
+      await vscode.workspace.fs.stat(fileUri);
+    } catch {
+      void vscode.window.showInformationMessage(`File not found: ${filePath}`);
+      return;
+    }
+    try {
+      await vscode.commands.executeCommand('vscode.open', fileUri, {
+        preview: true,
+        viewColumn: vscode.ViewColumn.Active,
+      });
     } catch (err) {
       console.error('[Shiftspace] handleFileClick error:', err);
     }

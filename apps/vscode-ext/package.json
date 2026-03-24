@@ -13,7 +13,6 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onView:shiftspace.sidebar",
     "onCommand:shiftspace.toggle",
     "onCommand:shiftspace.openTab"
   ],
@@ -56,7 +55,13 @@
           "name": "Shiftspace"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "shiftspace.sidebar",
+        "contents": "Shiftspace opens as an editor tab for the best experience.\n[Open Shiftspace](command:shiftspace.openTab)"
+      }
+    ]
   },
   "scripts": {
     "build:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js",
@@ -66,6 +71,7 @@
     "watch:webview": "vite build --watch",
     "watch": "pnpm build:webview && pnpm watch:ext",
     "package": "vsce package --no-dependencies",
+    "local-install": "vsce package --no-dependencies && code --install-extension shiftspace-*.vsix",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
