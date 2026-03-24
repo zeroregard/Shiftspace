@@ -27,7 +27,7 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
           isPulsing ? 'bg-node-file-pulse' : 'bg-node-file'
         )}
       >
-        <div
+        <button
           className={clsx(
             'w-full h-full px-2 py-1.5 text-left transition-[background] duration-300',
             onFileClick ? 'cursor-pointer' : 'cursor-default',
@@ -36,24 +36,24 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
           onClick={() => onFileClick?.(worktreeId, file.path)}
         >
           <div className="flex items-center gap-1">
-            <span
-              className={clsx(
-                'size-2 rounded-full inline-block shrink-0',
-                STATUS_CLASSES[file.status]
-              )}
-            />
             <span className="shrink-0 flex items-center">
               <FileIcon filename={fileName} size={12} />
             </span>
             <span className="text-11 text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap max-w-[88px]">
               {fileName}
             </span>
+            <span
+              className={clsx(
+                'size-2 rounded-full inline-block shrink-0',
+                STATUS_CLASSES[file.status]
+              )}
+            />
           </div>
           <div className="text-10 text-text-faint mt-px">
             <span className="text-status-added">+{file.linesAdded}</span>{' '}
             <span className="text-status-deleted">-{file.linesRemoved}</span>
           </div>
-        </div>
+        </button>
       </div>
     </DiffHoverCard>
   );
