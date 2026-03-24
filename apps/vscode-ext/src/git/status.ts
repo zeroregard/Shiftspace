@@ -2,7 +2,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { FileChange } from '@shiftspace/renderer';
+import type { FileChange, DiffHunk, DiffLine } from '@shiftspace/renderer';
 
 const execFileAsync = promisify(execFile);
 
@@ -94,6 +94,68 @@ export function parseNumstatOutput(
 }
 
 /**
+ * Parse unified `git diff` output into a map of file path → DiffHunk[].
+ *
+ * Handles standard changes and staged new files. Binary files and pure
+ * deletions produce no entry (nothing useful to display).
+ */
+export function parseDiffOutput(output: string): Map<string, DiffHunk[]> {
+  const result = new Map<string, DiffHunk[]>();
+  if (!output.trim()) return result;
+
+  // Each file section starts with "diff --git "; slice(1) drops the empty prefix.
+  const sections = output.split(/^diff --git /m).slice(1);
+
+  for (const section of sections) {
+    // Resolve the target path from the "+++ " line:
+    //   "+++ b/<path>"  → modified/added file
+    //   "+++ /dev/null" → deleted file (skip — nothing to render)
+    const plusMatch = section.match(/^\+\+\+ (.+)$/m);
+    if (!plusMatch) continue; // binary file
+
+    let rawPath = plusMatch[1]!.trim();
+    if (rawPath === '/dev/null') continue; // pure deletion
+
+    // Strip the "b/" prefix git adds in unified diffs
+    if (rawPath.startsWith('b/')) rawPath = rawPath.slice(2);
+
+    // Unquote git-quoted paths
+    if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
+      rawPath = JSON.parse(rawPath) as string;
+    }
+
+    const hunks: DiffHunk[] = [];
+
+    // Each hunk starts with "@@"; split there and skip preamble
+    for (const part of section.split(/^(?=@@)/m)) {
+      if (!part.startsWith('@@')) continue;
+
+      const hhMatch = part.match(/^(@@[^@]*@@[^\n]*)/);
+      if (!hhMatch) continue;
+      const header = hhMatch[1]!;
+
+      const lines: DiffLine[] = [];
+      for (const line of part.split('\n').slice(1)) {
+        if (line.startsWith('+')) {
+          lines.push({ type: 'added', content: line.slice(1) });
+        } else if (line.startsWith('-')) {
+          lines.push({ type: 'removed', content: line.slice(1) });
+        } else if (line.startsWith(' ')) {
+          lines.push({ type: 'context', content: line.slice(1) });
+        }
+        // skip "\ No newline at end of file" etc.
+      }
+
+      if (lines.length > 0) hunks.push({ header, lines });
+    }
+
+    if (hunks.length > 0) result.set(rawPath, hunks);
+  }
+
+  return result;
+}
+
+/**
  * Combine status + unstaged diff + staged diff into a FileChange[].
  * linesAdded/linesRemoved is the sum of staged and unstaged counts.
  */
@@ -125,46 +187,62 @@ export function buildFileChanges(
   return result;
 }
 
-/**
- * Count the lines in a file the same way git does: number of newline-terminated
- * lines, plus one extra if the file is non-empty and has no trailing newline.
- * Returns 0 for empty or unreadable files (e.g. binary).
- */
-async function countFileLines(absolutePath: string): Promise<number> {
-  try {
-    const content = await fs.promises.readFile(absolutePath, 'utf8');
-    if (content.length === 0) return 0;
-    const newlines = (content.match(/\n/g) ?? []).length;
-    return content.endsWith('\n') ? newlines : newlines + 1;
-  } catch {
-    return 0; // binary or unreadable
-  }
-}
-
 /** Run git status + diff queries against a worktree directory and return FileChange[]. */
 export async function getFileChanges(worktreePath: string): Promise<FileChange[]> {
-  const opts = { cwd: worktreePath, timeout: 5000 };
+  const opts = { cwd: worktreePath, timeout: 10_000 };
 
-  const [statusResult, diffResult, cachedResult] = await Promise.allSettled([
-    execFileAsync('git', ['status', '--porcelain', '-uall'], opts),
-    execFileAsync('git', ['diff', '--numstat'], opts),
-    execFileAsync('git', ['diff', '--cached', '--numstat'], opts),
-  ]);
+  const [statusResult, numstatResult, cachedNumstatResult, diffResult, cachedDiffResult] =
+    await Promise.allSettled([
+      execFileAsync('git', ['status', '--porcelain', '-uall'], opts),
+      execFileAsync('git', ['diff', '--numstat'], opts),
+      execFileAsync('git', ['diff', '--cached', '--numstat'], opts),
+      execFileAsync('git', ['diff'], opts),
+      execFileAsync('git', ['diff', '--cached'], opts),
+    ]);
 
   const statusOutput = statusResult.status === 'fulfilled' ? statusResult.value.stdout : '';
+  const numstatOutput = numstatResult.status === 'fulfilled' ? numstatResult.value.stdout : '';
+  const cachedNumstatOutput =
+    cachedNumstatResult.status === 'fulfilled' ? cachedNumstatResult.value.stdout : '';
   const diffOutput = diffResult.status === 'fulfilled' ? diffResult.value.stdout : '';
-  const cachedOutput = cachedResult.status === 'fulfilled' ? cachedResult.value.stdout : '';
+  const cachedDiffOutput =
+    cachedDiffResult.status === 'fulfilled' ? cachedDiffResult.value.stdout : '';
 
-  const changes = buildFileChanges(statusOutput, diffOutput, cachedOutput);
+  const changes = buildFileChanges(statusOutput, numstatOutput, cachedNumstatOutput);
 
-  // git diff --numstat only covers tracked files. Untracked new files (status=added,
-  // staged=false) won't have line counts — read them directly to fill in linesAdded.
+  const unstagedDiffs = parseDiffOutput(diffOutput);
+  const stagedDiffs = parseDiffOutput(cachedDiffOutput);
+
+  // Populate diff hunks and fix line counts for untracked files
   await Promise.all(
-    changes
-      .filter((fc) => fc.status === 'added' && !fc.staged && fc.linesAdded === 0)
-      .map(async (fc) => {
-        fc.linesAdded = await countFileLines(path.join(worktreePath, fc.path));
-      })
+    changes.map(async (fc) => {
+      if (fc.status === 'added' && !fc.staged) {
+        // Untracked file: git diff has no output for it.
+        // Read the file to get content, line count, and synthetic diff.
+        try {
+          const content = await fs.promises.readFile(path.join(worktreePath, fc.path), 'utf8');
+          if (content.length > 0) {
+            const rawLines = content.split('\n');
+            // Don't count a trailing empty string from a final newline
+            const lines = content.endsWith('\n') ? rawLines.slice(0, -1) : rawLines;
+            fc.linesAdded = lines.length;
+            fc.diff = [
+              {
+                header: `@@ -0,0 +1,${lines.length} @@`,
+                lines: lines.map((l) => ({ type: 'added' as const, content: l })),
+              },
+            ];
+          }
+        } catch {
+          // binary or unreadable — leave linesAdded = 0, diff = undefined
+        }
+      } else {
+        // Tracked file: combine unstaged and staged hunks
+        const unstaged = unstagedDiffs.get(fc.path) ?? [];
+        const staged = stagedDiffs.get(fc.path) ?? [];
+        fc.diff = [...unstaged, ...staged];
+      }
+    })
   );
 
   return changes;
