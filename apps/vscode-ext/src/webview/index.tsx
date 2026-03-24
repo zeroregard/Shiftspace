@@ -28,11 +28,8 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   useEffect(() => {
-    // Signal to the extension host that the webview is ready to receive data
-    vscode?.postMessage({ type: 'ready' });
-  }, []);
-
-  useEffect(() => {
+    // Register the message listener first, then send 'ready' so we cannot
+    // miss a fast synchronous reply from the extension host.
     const handler = (e: MessageEvent<HostMessage>) => {
       const msg = e.data;
       if (msg.type === 'init') {
@@ -44,7 +41,10 @@ const App: React.FC = () => {
         setErrorMessage(msg.message);
       }
     };
+
     window.addEventListener('message', handler);
+    vscode?.postMessage({ type: 'ready' });
+
     return () => window.removeEventListener('message', handler);
   }, [applyEvent, setWorktrees]);
 

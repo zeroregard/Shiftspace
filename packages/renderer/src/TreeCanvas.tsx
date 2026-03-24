@@ -295,14 +295,16 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
           .map((node) => (
             <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
           ))}
-        {/* SVG edges render above containers but below folder/file nodes */}
+        {/* SVG edges render above containers but below folder/file nodes.
+            Must have real dimensions — Chromium clips overflow:visible SVGs
+            to a 0×0 viewport (unlike Safari which renders them anyway). */}
         <svg
           style={{
             position: 'absolute',
             overflow: 'visible',
             pointerEvents: 'none',
-            width: 0,
-            height: 0,
+            width: Math.max(...nodes.map((n) => n.position.x + n.width), 0),
+            height: Math.max(...nodes.map((n) => n.position.y + n.height), 0),
           }}
         >
           {edges.map((edge) => (

@@ -5,6 +5,12 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [tailwindcss(), react()],
+  // Webview runs in a sandboxed browser iframe — no Node globals.
+  // Replace process.env.NODE_ENV at bundle time so React and other
+  // libraries that guard on it don't crash with "process is not defined".
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
   build: {
     outDir: 'dist/webview',
     emptyOutDir: true,
@@ -12,7 +18,7 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/webview/index.tsx'),
       formats: ['iife'],
       name: 'Shiftspace',
-      fileName: () => 'index',
+      fileName: () => 'index.iife.js',
     },
     rollupOptions: {
       output: {
