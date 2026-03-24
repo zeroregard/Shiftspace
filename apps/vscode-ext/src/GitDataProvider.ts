@@ -45,10 +45,7 @@ export class GitDataProvider implements vscode.Disposable {
 
   /** Detect workspace, load git data, set up watcher, send init message. */
   async initialize(): Promise<void> {
-    console.log('[Shiftspace] GitDataProvider.initialize() repoRoot:', this.repoRoot);
-
     const gitStatus = await checkGitAvailability(this.repoRoot);
-    console.log('[Shiftspace] git availability:', gitStatus);
 
     if (gitStatus === 'no-git') {
       this.postMessage({ type: 'error', message: 'Git is not available' });
@@ -63,18 +60,8 @@ export class GitDataProvider implements vscode.Disposable {
     }
 
     this.worktrees = await detectWorktrees(this.repoRoot);
-    console.log(
-      '[Shiftspace] worktrees detected:',
-      this.worktrees.map((wt) => `${wt.branch} @ ${wt.path}`)
-    );
-
     await this.loadAllFileChanges();
-    console.log(
-      '[Shiftspace] file changes loaded:',
-      this.worktrees.map((wt) => `${wt.id}: ${wt.files.length} file(s)`)
-    );
 
-    console.log('[Shiftspace] sending init message');
     this.postMessage({ type: 'init', worktrees: this.worktrees });
     this.setupFileWatcher();
     this.startWorktreePolling();
@@ -103,7 +90,6 @@ export class GitDataProvider implements vscode.Disposable {
       watcher.onDidCreate(onChange),
       watcher.onDidDelete(onChange)
     );
-    console.log('[Shiftspace] filesystem watcher started');
   }
 
   private onFileSystemChange(uri: vscode.Uri): void {
@@ -195,7 +181,6 @@ export class GitDataProvider implements vscode.Disposable {
   }
 
   dispose(): void {
-    console.log('[Shiftspace] GitDataProvider.dispose()');
     if (this.worktreePollingTimer !== undefined) {
       clearInterval(this.worktreePollingTimer);
     }
@@ -211,10 +196,6 @@ export async function createGitDataProvider(
   postMessage: PostMessage
 ): Promise<GitDataProvider | undefined> {
   const folders = vscode.workspace.workspaceFolders;
-  console.log(
-    '[Shiftspace] createGitDataProvider workspace folders:',
-    folders?.map((f) => f.uri.fsPath) ?? 'none'
-  );
 
   if (!folders || folders.length === 0) {
     postMessage({ type: 'error', message: 'Open a folder to get started' });
