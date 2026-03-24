@@ -32,6 +32,7 @@ interface TreeCanvasProps {
   nodes: LayoutNode[];
   edges: LayoutEdge[];
   nodeTypes: Record<string, React.ComponentType<NodeComponentProps<any>>>;
+  zoomSensitivity?: number;
 }
 
 function smoothstepPath(x1: number, y1: number, x2: number, y2: number): string {
@@ -106,7 +107,12 @@ const NodeWrapper = React.memo(({ node, nodeTypes }: NodeWrapperProps) => {
 });
 NodeWrapper.displayName = 'NodeWrapper';
 
-export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes }) => {
+export const TreeCanvas: React.FC<TreeCanvasProps> = ({
+  nodes,
+  edges,
+  nodeTypes,
+  zoomSensitivity = 0.01,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
   const isPanningRef = useRef(false);
@@ -140,19 +146,25 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
     const el = containerRef.current!;
     function handleWheel(e: WheelEvent) {
       e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const cursorX = e.clientX - rect.left;
-      const cursorY = e.clientY - rect.top;
-      setTransform((prev) => {
-        const newZoom = Math.min(Math.max(prev.zoom * (1 - e.deltaY * 0.001), 0.1), 3);
-        const canvasX = (cursorX - prev.x) / prev.zoom;
-        const canvasY = (cursorY - prev.y) / prev.zoom;
-        return { zoom: newZoom, x: cursorX - canvasX * newZoom, y: cursorY - canvasY * newZoom };
-      });
+      if (e.ctrlKey) {
+        // Pinch-to-zoom (macOS trackpad pinch or Ctrl+scroll)
+        const rect = el.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        setTransform((prev) => {
+          const newZoom = Math.min(Math.max(prev.zoom * (1 - e.deltaY * zoomSensitivity), 0.1), 1);
+          const canvasX = (cursorX - prev.x) / prev.zoom;
+          const canvasY = (cursorY - prev.y) / prev.zoom;
+          return { zoom: newZoom, x: cursorX - canvasX * newZoom, y: cursorY - canvasY * newZoom };
+        });
+      } else {
+        // 2-finger swipe pan (macOS trackpad scroll)
+        setTransform((prev) => ({ ...prev, x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
+      }
     }
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
-  }, []);
+  }, [zoomSensitivity]);
 
   // Touch events — non-passive to allow preventDefault during pinch
   useEffect(() => {
@@ -186,7 +198,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         setTransform((prev) => {
-          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), 3);
+          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), 1);
           const canvasX = (midX - prev.x) / prev.zoom;
           const canvasY = (midY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: midX - canvasX * newZoom, y: midY - canvasY * newZoom };

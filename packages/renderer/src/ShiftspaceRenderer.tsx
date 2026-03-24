@@ -11,12 +11,14 @@ interface Props {
   onEvent?: (handler: (event: ShiftspaceEvent) => void) => () => void;
   onFileClick?: (worktreeId: string, filePath: string) => void;
   onTerminalOpen?: (worktreeId: string) => void;
+  zoomSensitivity?: number;
 }
 
 export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
   onEvent,
   onFileClick,
+  zoomSensitivity,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
 
@@ -81,7 +83,12 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   return (
     <div className="w-full h-full bg-canvas">
-      <TreeCanvas nodes={nodes} edges={edges} nodeTypes={NODE_TYPES} />
+      <TreeCanvas
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={NODE_TYPES}
+        zoomSensitivity={zoomSensitivity}
+      />
     </div>
   );
 };
