@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getWebviewHtml } from './webview/html';
-import { INITIAL_WORKTREES, startMockUpdates } from './mockData';
+import { GitDataProvider, createGitDataProvider } from './GitDataProvider';
 
 export class ShiftspaceSidebar implements vscode.WebviewViewProvider {
   constructor(private readonly context: vscode.ExtensionContext) {}
@@ -17,23 +17,28 @@ export class ShiftspaceSidebar implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = getWebviewHtml(webviewView.webview, this.context.extensionUri);
 
-    const stopMock = startMockUpdates((event) => {
-      void webviewView.webview.postMessage({ type: 'event', event });
-    });
+    let gitProvider: GitDataProvider | undefined;
 
     webviewView.webview.onDidReceiveMessage(
       (message: { type: string; worktreeId?: string; filePath?: string }) => {
         if (message.type === 'ready') {
-          void webviewView.webview.postMessage({
-            type: 'init',
-            worktrees: INITIAL_WORKTREES,
+          const postMessage = (msg: object) => {
+            void webviewView.webview.postMessage(msg);
+          };
+          gitProvider?.dispose();
+          gitProvider = undefined;
+          void createGitDataProvider(postMessage).then((p) => {
+            gitProvider = p ?? undefined;
           });
         } else if (message.type === 'file-click') {
-          console.log('[Shiftspace] File clicked:', message.worktreeId, message.filePath);
+          void gitProvider?.handleFileClick(message.worktreeId ?? '', message.filePath ?? '');
         }
       }
     );
 
-    webviewView.onDidDispose(() => stopMock());
+    webviewView.onDidDispose(() => {
+      gitProvider?.dispose();
+      gitProvider = undefined;
+    });
   }
 }

@@ -28,6 +28,7 @@ export interface FileChange {
 
 export type ShiftspaceEvent =
   | { type: 'file-changed'; worktreeId: string; file: FileChange }
+  | { type: 'file-removed'; worktreeId: string; filePath: string }
   | { type: 'file-staged'; worktreeId: string; filePath: string }
   | { type: 'worktree-added'; worktree: WorktreeState }
   | { type: 'worktree-removed'; worktreeId: string }

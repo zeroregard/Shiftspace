@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { getWebviewHtml } from './webview/html';
-import { INITIAL_WORKTREES, startMockUpdates } from './mockData';
+import { GitDataProvider, createGitDataProvider } from './GitDataProvider';
 
 export class ShiftspacePanel {
   private static currentPanel: ShiftspacePanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
+  private _gitProvider: GitDataProvider | undefined;
 
   static toggle(context: vscode.ExtensionContext) {
     if (ShiftspacePanel.currentPanel) {
@@ -43,19 +44,12 @@ export class ShiftspacePanel {
     this._panel = panel;
     this._panel.webview.html = getWebviewHtml(this._panel.webview, context.extensionUri);
 
-    const stopMock = startMockUpdates((event) => {
-      void this._panel.webview.postMessage({ type: 'event', event });
-    });
-
     this._panel.webview.onDidReceiveMessage(
       (message: { type: string; worktreeId?: string; filePath?: string }) => {
         if (message.type === 'ready') {
-          void this._panel.webview.postMessage({
-            type: 'init',
-            worktrees: INITIAL_WORKTREES,
-          });
+          void this.onReady();
         } else if (message.type === 'file-click') {
-          console.log('[Shiftspace] File clicked:', message.worktreeId, message.filePath);
+          void this._gitProvider?.handleFileClick(message.worktreeId ?? '', message.filePath ?? '');
         }
       },
       null,
@@ -63,11 +57,21 @@ export class ShiftspacePanel {
     );
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-    this._disposables.push({ dispose: stopMock });
+  }
+
+  private async onReady(): Promise<void> {
+    const postMessage = (msg: object) => {
+      void this._panel.webview.postMessage(msg);
+    };
+    this._gitProvider?.dispose();
+    this._gitProvider = undefined;
+    this._gitProvider = (await createGitDataProvider(postMessage)) ?? undefined;
   }
 
   private dispose() {
     ShiftspacePanel.currentPanel = undefined;
+    this._gitProvider?.dispose();
+    this._gitProvider = undefined;
     this._panel.dispose();
     for (const d of this._disposables) d.dispose();
     this._disposables = [];

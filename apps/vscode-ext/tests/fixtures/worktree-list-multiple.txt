@@ -1,0 +1,12 @@
+worktree /home/user/project
+HEAD abc1234def5678901234567890abcdef01234567
+branch refs/heads/main
+
+worktree /home/user/project-feature-auth
+HEAD deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+branch refs/heads/feature/auth
+
+worktree /home/user/project-fix-login
+HEAD cafebabecafebabecafebabecafebabecafebabe
+branch refs/heads/fix/login-redirect
+
