@@ -12,7 +12,10 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:shiftspace.sidebar",
+    "onCommand:shiftspace.toggle",
+    "onCommand:shiftspace.openTab"
   ],
   "main": "./dist/extension.js",
   "icon": "media/icon.png",

@@ -26,6 +26,7 @@ export class ShiftspacePanel {
       return;
     }
 
+    console.log('[Shiftspace] creating webview panel');
     const panel = vscode.window.createWebviewPanel(
       'shiftspace',
       'Shiftspace',
@@ -43,9 +44,11 @@ export class ShiftspacePanel {
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
     this._panel = panel;
     this._panel.webview.html = getWebviewHtml(this._panel.webview, context.extensionUri);
+    console.log('[Shiftspace] panel HTML set');
 
     this._panel.webview.onDidReceiveMessage(
       (message: { type: string; worktreeId?: string; filePath?: string }) => {
+        console.log('[Shiftspace] panel ← webview message:', message.type);
         if (message.type === 'ready') {
           void this.onReady();
         } else if (message.type === 'file-click') {
@@ -61,14 +64,20 @@ export class ShiftspacePanel {
 
   private async onReady(): Promise<void> {
     const postMessage = (msg: object) => {
+      console.log('[Shiftspace] panel → webview message:', (msg as { type: string }).type);
       void this._panel.webview.postMessage(msg);
     };
     this._gitProvider?.dispose();
     this._gitProvider = undefined;
     this._gitProvider = (await createGitDataProvider(postMessage)) ?? undefined;
+    console.log(
+      '[Shiftspace] panel gitProvider initialised, provider present:',
+      !!this._gitProvider
+    );
   }
 
   private dispose() {
+    console.log('[Shiftspace] panel disposed');
     ShiftspacePanel.currentPanel = undefined;
     this._gitProvider?.dispose();
     this._gitProvider = undefined;

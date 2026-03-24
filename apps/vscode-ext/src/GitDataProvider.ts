@@ -45,7 +45,11 @@ export class GitDataProvider implements vscode.Disposable {
 
   /** Detect workspace, load git data, set up watcher, send init message. */
   async initialize(): Promise<void> {
+    console.log('[Shiftspace] GitDataProvider.initialize() repoRoot:', this.repoRoot);
+
     const gitStatus = await checkGitAvailability(this.repoRoot);
+    console.log('[Shiftspace] git availability:', gitStatus);
+
     if (gitStatus === 'no-git') {
       this.postMessage({ type: 'error', message: 'Git is not available' });
       return;
@@ -59,8 +63,18 @@ export class GitDataProvider implements vscode.Disposable {
     }
 
     this.worktrees = await detectWorktrees(this.repoRoot);
-    await this.loadAllFileChanges();
+    console.log(
+      '[Shiftspace] worktrees detected:',
+      this.worktrees.map((wt) => `${wt.branch} @ ${wt.path}`)
+    );
 
+    await this.loadAllFileChanges();
+    console.log(
+      '[Shiftspace] file changes loaded:',
+      this.worktrees.map((wt) => `${wt.id}: ${wt.files.length} file(s)`)
+    );
+
+    console.log('[Shiftspace] sending init message');
     this.postMessage({ type: 'init', worktrees: this.worktrees });
     this.setupFileWatcher();
     this.startWorktreePolling();
@@ -73,8 +87,8 @@ export class GitDataProvider implements vscode.Disposable {
           const files = await getFileChanges(wt.path);
           wt.files = files;
           this.fileStates.set(wt.id, files);
-        } catch {
-          // leave files as []
+        } catch (err) {
+          console.error('[Shiftspace] loadAllFileChanges error for', wt.path, err);
         }
       })
     );
@@ -89,6 +103,7 @@ export class GitDataProvider implements vscode.Disposable {
       watcher.onDidCreate(onChange),
       watcher.onDidDelete(onChange)
     );
+    console.log('[Shiftspace] filesystem watcher started');
   }
 
   private onFileSystemChange(uri: vscode.Uri): void {
@@ -122,8 +137,8 @@ export class GitDataProvider implements vscode.Disposable {
       for (const event of events) {
         this.postMessage({ type: 'event', event });
       }
-    } catch {
-      // silently ignore per-worktree errors
+    } catch (err) {
+      console.error('[Shiftspace] refreshWorktree error for', wt.path, err);
     }
   }
 
@@ -152,8 +167,8 @@ export class GitDataProvider implements vscode.Disposable {
         if (!prevIds.has(wt.id)) {
           try {
             wt.files = await getFileChanges(wt.path);
-          } catch {
-            // leave empty
+          } catch (err) {
+            console.error('[Shiftspace] getFileChanges error for new worktree', wt.path, err);
           }
           const event: ShiftspaceEvent = { type: 'worktree-added', worktree: wt };
           this.postMessage({ type: 'event', event });
@@ -161,8 +176,8 @@ export class GitDataProvider implements vscode.Disposable {
       }
 
       this.worktrees = fresh;
-    } catch {
-      // ignore polling errors
+    } catch (err) {
+      console.error('[Shiftspace] checkForWorktreeChanges error:', err);
     }
   }
 
@@ -174,12 +189,13 @@ export class GitDataProvider implements vscode.Disposable {
     const fileUri = vscode.Uri.file(absolutePath);
     try {
       await vscode.commands.executeCommand('vscode.open', fileUri);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('[Shiftspace] handleFileClick error:', err);
     }
   }
 
   dispose(): void {
+    console.log('[Shiftspace] GitDataProvider.dispose()');
     if (this.worktreePollingTimer !== undefined) {
       clearInterval(this.worktreePollingTimer);
     }
@@ -195,6 +211,11 @@ export async function createGitDataProvider(
   postMessage: PostMessage
 ): Promise<GitDataProvider | undefined> {
   const folders = vscode.workspace.workspaceFolders;
+  console.log(
+    '[Shiftspace] createGitDataProvider workspace folders:',
+    folders?.map((f) => f.uri.fsPath) ?? 'none'
+  );
+
   if (!folders || folders.length === 0) {
     postMessage({ type: 'error', message: 'Open a folder to get started' });
     return undefined;
