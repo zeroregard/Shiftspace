@@ -12,7 +12,7 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/webview/index.tsx'),
       formats: ['iife'],
       name: 'Shiftspace',
-      fileName: () => 'index',
+      fileName: () => 'index.iife.js',
     },
     rollupOptions: {
       output: {
