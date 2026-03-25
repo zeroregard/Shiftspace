@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
-import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
+import type { WorktreeState, ShiftspaceEvent, PanZoomConfig } from '@shiftspace/renderer';
 import './styles.css';
 
 declare function acquireVsCodeApi(): {
@@ -70,9 +70,14 @@ const App: React.FC = () => {
     );
   }
 
+  const panZoomConfig: PanZoomConfig = {
+    pinchSensitivity: 0.03, // Electron delivers smaller pinch deltaY than Chrome
+    maxZoom: 1,
+  };
+
   return (
     <div style={{ width: '100%', height: '100vh' }}>
-      <ShiftspaceRenderer onFileClick={handleFileClick} />
+      <ShiftspaceRenderer onFileClick={handleFileClick} panZoomConfig={panZoomConfig} />
     </div>
   );
 };

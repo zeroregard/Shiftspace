@@ -1,4 +1,4 @@
-export { ShiftspaceRenderer } from './ShiftspaceRenderer';
+export { ShiftspaceRenderer, type PanZoomConfig } from './ShiftspaceRenderer';
 export { useShiftspaceStore } from './store';
 export type {
   WorktreeState,

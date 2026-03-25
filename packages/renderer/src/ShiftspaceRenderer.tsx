@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import type { WorktreeState, ShiftspaceEvent } from './types';
 import { useShiftspaceStore } from './store';
-import { TreeCanvas } from './TreeCanvas';
+import { TreeCanvas, type PanZoomConfig } from './TreeCanvas';
 import { NODE_TYPES } from './components';
 import { computeSingleWorktreeLayout, type SingleWorktreeLayout } from './layout';
 import { CONTAINER_GAP } from './layout/constants';
@@ -11,17 +11,24 @@ interface Props {
   onEvent?: (handler: (event: ShiftspaceEvent) => void) => () => void;
   onFileClick?: (worktreeId: string, filePath: string) => void;
   onTerminalOpen?: (worktreeId: string) => void;
+  panZoomConfig?: PanZoomConfig;
 }
+
+export { type PanZoomConfig };
 
 export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
   onEvent,
   onFileClick,
+  panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
 
   useEffect(() => {
-    setWorktrees(initialWorktrees);
+    // Only seed the store when initialWorktrees was explicitly provided (preview app).
+    // In the VSCode webview, the store is managed via message events — skipping this
+    // prevents a remount (e.g. after an error→init sequence) from wiping fresh data.
+    if (initialWorktrees.length > 0) setWorktrees(initialWorktrees);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -78,7 +85,12 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   return (
     <div className="w-full h-full bg-canvas">
-      <TreeCanvas nodes={nodes} edges={edges} nodeTypes={NODE_TYPES} />
+      <TreeCanvas
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={NODE_TYPES}
+        panZoomConfig={panZoomConfig}
+      />
     </div>
   );
 };

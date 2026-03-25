@@ -27,7 +27,14 @@ export function computeSingleWorktreeLayout(
   const treeChildren = buildTree(wt.id, wt.files);
   const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
   const { layouts, totalW, totalH } = layoutWorktreeContents(treeChildren, contentsStartY);
-  const containerW = totalW + CONTAINER_PAD_X * 2;
+
+  // Ensure the container is wide enough to fit the header label on one line.
+  // Estimate: ~8px per character at text-13 semibold + padding.
+  const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
+  const isMain = wt.branch === 'main' || wt.branch === 'master';
+  const headerText = isMain ? wt.branch : `${folderName} (${wt.branch})`;
+  const headerMinW = headerText.length * 8 + CONTAINER_PAD_X * 2;
+  const containerW = Math.max(totalW + CONTAINER_PAD_X * 2, headerMinW);
   const containerH = contentsStartY + totalH + CONTAINER_PAD_BOTTOM;
   const wtNodeId = `wt-${wt.id}`;
 

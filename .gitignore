@@ -5,3 +5,6 @@ dist/
 *.tsbuildinfo
 .DS_Store
 coverage/
+
+# build
+*.vsix

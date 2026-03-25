@@ -12,7 +12,11 @@ export function hunksToUnified(
   const oldPath = status === 'added' ? '/dev/null' : `a/${filePath}`;
   const newPath = status === 'deleted' ? '/dev/null' : `b/${filePath}`;
 
-  const lines: string[] = [`--- ${oldPath}`, `+++ ${newPath}`];
+  const lines: string[] = [
+    `diff --git a/${filePath} b/${filePath}`,
+    `--- ${oldPath}`,
+    `+++ ${newPath}`,
+  ];
 
   for (const hunk of hunks) {
     lines.push(hunk.header);

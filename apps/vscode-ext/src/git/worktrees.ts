@@ -67,6 +67,22 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
 }
 
 /**
+ * Resolve the git repo root starting from `dirPath` (must be a directory).
+ * Returns null if not inside a git repository.
+ */
+export async function getGitRoot(dirPath: string): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], {
+      cwd: dirPath,
+      timeout: 5000,
+    });
+    return stdout.trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Check whether the directory is a git repository.
  * Returns 'ok', 'not-repo', or 'no-git' (git binary missing).
  */
