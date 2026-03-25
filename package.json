@@ -2,31 +2,30 @@
   "name": "shiftspace",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter @shiftspace/renderer build && bun run --filter '*' build",
+    "typecheck": "bun run --filter '*' typecheck",
     "lint:check": "oxlint --deny-warnings .",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt:write": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
-    "test": "turbo run test",
-    "test:coverage": "turbo run test:coverage",
-    "preview": "pnpm --filter @shiftspace/preview dev",
-    "prepare": "simple-git-hooks"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged"
+    "test": "bun run --filter '*' test",
+    "test:coverage": "bun run --filter '*' test:coverage",
+    "preview": "bun run --filter @shiftspace/preview dev",
+    "prepare": "husky"
   },
   "lint-staged": {
     "*.{ts,tsx,json,md}": "prettier --write"
   },
   "devDependencies": {
+    "husky": "^9.0.0",
     "lint-staged": "^16.4.0",
     "oxlint": "^0.16.6",
     "prettier": "^3.4.2",
-    "simple-git-hooks": "^2.13.1",
-    "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   }
 }

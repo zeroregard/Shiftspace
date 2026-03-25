@@ -1,6 +1,5 @@
 node_modules/
 dist/
-.turbo/
 .vercel/
 *.tsbuildinfo
 .DS_Store

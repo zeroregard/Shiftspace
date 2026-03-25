@@ -61,10 +61,10 @@
   "scripts": {
     "build:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js",
     "build:webview": "vite build && cp src/webview/vscode-theme.css dist/webview/vscode-theme.css",
-    "build": "pnpm build:webview && pnpm build:ext",
+    "build": "bun run build:webview && bun run build:ext",
     "watch:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js --watch",
     "watch:webview": "vite build --watch",
-    "watch": "pnpm build:webview && pnpm watch:ext",
+    "watch": "bun run build:webview && bun run watch:ext",
     "package": "vsce package --no-dependencies",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "test": "vitest run",

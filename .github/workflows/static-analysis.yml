@@ -9,9 +9,6 @@ concurrency:
   group: static-analysis-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NODE_VERSION: '20'
-
 jobs:
   static-analysis:
     name: 🔍 Static Analysis
@@ -21,15 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Version read from packageManager field in package.json
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          node-version: '20'
 
       - name: Restore node_modules cache
         uses: actions/cache@v4
@@ -38,7 +35,7 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: |
             node-modules-${{ runner.os }}-
 
@@ -48,21 +45,21 @@ jobs:
           path: |
             packages/*/tsconfig.tsbuildinfo
             apps/*/tsconfig.tsbuildinfo
-          key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('**/tsconfig.json', 'pnpm-lock.yaml') }}
+          key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('**/tsconfig.json', 'bun.lock') }}
           restore-keys: |
             tsbuildinfo-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Format check
-        run: pnpm fmt:check
+        run: bun fmt:check
 
       - name: Lint
-        run: pnpm lint:check
+        run: bun lint:check
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: bun typecheck
 
       - name: Test with coverage
-        run: pnpm test:coverage
+        run: bun test:coverage
