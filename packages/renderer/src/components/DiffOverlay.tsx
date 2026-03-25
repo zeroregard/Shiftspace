@@ -85,7 +85,7 @@ export const DiffHoverCard = React.memo(
     );
     return (
       <HoverCard.Root
-        openDelay={300}
+        openDelay={100}
         closeDelay={150}
         open={openId === id}
         onOpenChange={(open) => {

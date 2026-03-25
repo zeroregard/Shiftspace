@@ -4,7 +4,8 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "pnpm build",
+      "command": "pnpm --filter @shiftspace/renderer build && pnpm --filter shiftspace build",
+      "options": { "cwd": "${workspaceFolder}/../.." },
       "group": "build",
       "presentation": { "reveal": "silent" },
       "problemMatcher": "$tsc"

@@ -28,12 +28,30 @@ interface Transform {
   zoom: number;
 }
 
+export interface PanZoomConfig {
+  /** Modifier keys that trigger zoom on scroll. Default: ['ctrl', 'meta'] (Figma-style). */
+  zoomModifiers?: Array<'ctrl' | 'meta' | 'alt'>;
+  /** Sensitivity for trackpad pinch (ctrlKey, small deltaY values). Default: 0.01. */
+  pinchSensitivity?: number;
+  /** Sensitivity for modifier+scroll wheel (large deltaY values). Default: 0.001. */
+  wheelSensitivity?: number;
+  maxZoom?: number;
+  minZoom?: number;
+}
+
+const DEFAULT_PAN_ZOOM_CONFIG: Required<PanZoomConfig> = {
+  zoomModifiers: ['ctrl', 'meta'],
+  pinchSensitivity: 0.01,
+  wheelSensitivity: 0.001,
+  maxZoom: 3,
+  minZoom: 0.1,
+};
+
 interface TreeCanvasProps {
   nodes: LayoutNode[];
   edges: LayoutEdge[];
   nodeTypes: Record<string, React.ComponentType<NodeComponentProps<any>>>;
-  zoomSensitivity?: number;
-  maxZoom?: number;
+  panZoomConfig?: PanZoomConfig;
 }
 
 function smoothstepPath(x1: number, y1: number, x2: number, y2: number): string {
@@ -112,8 +130,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   nodes,
   edges,
   nodeTypes,
-  zoomSensitivity = 0.01,
-  maxZoom = 3,
+  panZoomConfig,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
@@ -129,6 +146,10 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
 
+  // Merge config with defaults via ref so handlers never need re-registration
+  const panZoomConfigRef = useRef<Required<PanZoomConfig>>(DEFAULT_PAN_ZOOM_CONFIG);
+  panZoomConfigRef.current = { ...DEFAULT_PAN_ZOOM_CONFIG, ...panZoomConfig };
+
   const { setOpen: closePopover } = useHoverCardStore();
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
@@ -143,33 +164,47 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
     hasFitRef.current = true;
   }, [nodes]);
 
-  // Wheel zoom — non-passive so we can preventDefault
+  // Wheel handler — non-passive so we can preventDefault
+  // Figma-style: scroll=pan, shift+scroll=horizontal pan, cmd/ctrl+scroll=zoom, pinch=zoom
   useEffect(() => {
     const el = containerRef.current!;
     function handleWheel(e: WheelEvent) {
       e.preventDefault();
-      if (e.ctrlKey) {
-        // Pinch-to-zoom (macOS trackpad pinch or Ctrl+scroll)
+      const cfg = panZoomConfigRef.current;
+      const isZoom = cfg.zoomModifiers.some(
+        (mod) =>
+          (mod === 'ctrl' && e.ctrlKey) ||
+          (mod === 'meta' && e.metaKey) ||
+          (mod === 'alt' && e.altKey)
+      );
+      if (isZoom) {
+        const sensitivity = e.ctrlKey ? cfg.pinchSensitivity : cfg.wheelSensitivity;
         const rect = el.getBoundingClientRect();
         const cursorX = e.clientX - rect.left;
         const cursorY = e.clientY - rect.top;
         setTransform((prev) => {
           const newZoom = Math.min(
-            Math.max(prev.zoom * (1 - e.deltaY * zoomSensitivity), 0.1),
-            maxZoom
+            Math.max(prev.zoom * (1 - e.deltaY * sensitivity), cfg.minZoom),
+            cfg.maxZoom
           );
           const canvasX = (cursorX - prev.x) / prev.zoom;
           const canvasY = (cursorY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: cursorX - canvasX * newZoom, y: cursorY - canvasY * newZoom };
         });
+      } else if (e.shiftKey) {
+        // Shift+scroll → horizontal pan
+        // On macOS the OS converts Shift+scroll to deltaX before the event arrives,
+        // so fall back to deltaY only when deltaX is absent (other platforms).
+        const dx = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+        setTransform((prev) => ({ ...prev, x: prev.x - dx }));
       } else {
-        // 2-finger swipe pan (macOS trackpad scroll)
+        // Plain scroll/swipe → pan
         setTransform((prev) => ({ ...prev, x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
       }
     }
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
-  }, [zoomSensitivity, maxZoom]);
+  }, []);
 
   // Touch events — non-passive to allow preventDefault during pinch
   useEffect(() => {
@@ -203,7 +238,8 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         setTransform((prev) => {
-          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), maxZoom);
+          const { minZoom, maxZoom } = panZoomConfigRef.current;
+          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), minZoom), maxZoom);
           const canvasX = (midX - prev.x) / prev.zoom;
           const canvasY = (midY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: midX - canvasX * newZoom, y: midY - canvasY * newZoom };
@@ -223,7 +259,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [maxZoom]);
+  }, []);
 
   function handlePointerDown(e: React.PointerEvent) {
     if (e.button !== 0) return;

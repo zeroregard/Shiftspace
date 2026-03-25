@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import type { WorktreeState, ShiftspaceEvent } from './types';
 import { useShiftspaceStore } from './store';
-import { TreeCanvas } from './TreeCanvas';
+import { TreeCanvas, type PanZoomConfig } from './TreeCanvas';
 import { NODE_TYPES } from './components';
 import { computeSingleWorktreeLayout, type SingleWorktreeLayout } from './layout';
 import { CONTAINER_GAP } from './layout/constants';
@@ -11,14 +11,16 @@ interface Props {
   onEvent?: (handler: (event: ShiftspaceEvent) => void) => () => void;
   onFileClick?: (worktreeId: string, filePath: string) => void;
   onTerminalOpen?: (worktreeId: string) => void;
-  zoomSensitivity?: number;
+  panZoomConfig?: PanZoomConfig;
 }
+
+export { type PanZoomConfig };
 
 export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
   onEvent,
   onFileClick,
-  zoomSensitivity,
+  panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
 
@@ -87,7 +89,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={NODE_TYPES}
-        zoomSensitivity={zoomSensitivity}
+        panZoomConfig={panZoomConfig}
       />
     </div>
   );

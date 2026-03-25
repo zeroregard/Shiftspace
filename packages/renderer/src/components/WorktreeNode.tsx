@@ -13,8 +13,9 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
   const isSingle = useShiftspaceStore((s) => s.worktrees.size <= 1);
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
+  const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
   const isMain = wt.branch === 'main' || wt.branch === 'master';
-  const pathPart = isMain ? null : wt.id;
+  const pathPart = isMain ? null : folderName;
 
   return (
     <div className="w-full h-full border-2 border-dashed border-border-dashed rounded-2xl bg-cluster-alpha text-text-primary px-7.5 py-5 text-left">
@@ -25,7 +26,7 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
             (<span className="text-text-faint font-normal">{wt.branch}</span>)
           </>
         ) : (
-          <span>{wt.branch}</span>
+          <span className="text-text-muted font-normal">{wt.branch}</span>
         )}
       </div>
       <div className="text-11 text-text-muted mt-0.5">
