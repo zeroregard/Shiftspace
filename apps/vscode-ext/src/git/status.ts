@@ -230,6 +230,87 @@ export function buildFileChanges(
   return result;
 }
 
+/**
+ * Parse `git diff --name-status` output (used for branch diffs).
+ *
+ * Each line is: <status-code>\t<path>
+ * Status codes: A = added, M = modified, D = deleted, R### = rename, etc.
+ */
+export function parseBranchNameStatus(output: string): Map<string, FileChange['status']> {
+  const result = new Map<string, FileChange['status']>();
+
+  for (const line of output.split('\n')) {
+    if (!line.trim()) continue;
+
+    const parts = line.split('\t');
+    if (parts.length < 2) continue;
+
+    const code = parts[0]!;
+    // Renames have format: R100\told-path\tnew-path — use the new path
+    let filePath = parts.length > 2 ? parts[2]! : parts[1]!;
+
+    if (filePath.startsWith('"') && filePath.endsWith('"')) {
+      filePath = JSON.parse(filePath) as string;
+    }
+
+    let status: FileChange['status'] = 'modified';
+    if (code.startsWith('A')) status = 'added';
+    else if (code.startsWith('D')) status = 'deleted';
+
+    result.set(filePath, status);
+  }
+
+  return result;
+}
+
+/**
+ * Get file changes comparing the current worktree HEAD against another branch.
+ * Uses three-dot diff (branch...HEAD) to show what the current branch changed
+ * since it diverged from the base branch.
+ */
+export async function getBranchDiffFileChanges(
+  worktreePath: string,
+  baseBranch: string
+): Promise<FileChange[]> {
+  const ref = `${baseBranch}...HEAD`;
+  const opts = { cwd: worktreePath, timeout: 10_000 };
+
+  const [nameStatusResult, numstatResult, diffResult] = await Promise.allSettled([
+    execFileAsync('git', ['diff', '--name-status', ref], opts),
+    execFileAsync('git', ['diff', '--numstat', ref], opts),
+    execFileAsync('git', ['diff', ref], opts),
+  ]);
+
+  const nameStatusOutput =
+    nameStatusResult.status === 'fulfilled' ? nameStatusResult.value.stdout : '';
+  const numstatOutput = numstatResult.status === 'fulfilled' ? numstatResult.value.stdout : '';
+  const diffOutput = diffResult.status === 'fulfilled' ? diffResult.value.stdout : '';
+
+  const statusMap = parseBranchNameStatus(nameStatusOutput);
+  const numstatMap = parseNumstatOutput(numstatOutput);
+  const hunksMap = parseDiffOutput(diffOutput);
+  const rawDiffMap = parseRawDiffSections(diffOutput);
+
+  const now = Date.now();
+  const result: FileChange[] = [];
+
+  for (const [filePath, status] of statusMap) {
+    const nums = numstatMap.get(filePath) ?? { added: 0, removed: 0 };
+    result.push({
+      path: filePath,
+      status,
+      staged: false, // Not meaningful for branch diffs
+      linesAdded: nums.added,
+      linesRemoved: nums.removed,
+      lastChangedAt: now,
+      diff: hunksMap.get(filePath),
+      rawDiff: rawDiffMap.get(filePath),
+    });
+  }
+
+  return result;
+}
+
 /** Run git status + diff queries against a worktree directory and return FileChange[]. */
 export async function getFileChanges(worktreePath: string): Promise<FileChange[]> {
   const opts = { cwd: worktreePath, timeout: 10_000 };

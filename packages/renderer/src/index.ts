@@ -7,5 +7,6 @@ export type {
   LODLevel,
   DiffLine,
   DiffHunk,
+  DiffMode,
 } from './types';
 export { DiffPopover, DiffHoverCard } from './components/DiffOverlay';

@@ -7,10 +7,22 @@ vi.mock('child_process', () => ({
   execFile: vi.fn(),
 }));
 
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>();
+  return {
+    ...actual,
+    promises: {
+      ...actual.promises,
+      readFile: vi.fn(),
+    },
+  };
+});
+
 // After mocking, import the modules under test
 import { detectWorktrees, checkGitAvailability } from '../../src/git/worktrees';
-import { getFileChanges } from '../../src/git/status';
+import { getFileChanges, getBranchDiffFileChanges } from '../../src/git/status';
 import { execFile } from 'child_process';
+import * as fs from 'fs';
 
 const fixture = (name: string) => readFileSync(join(__dirname, '../fixtures', name), 'utf8');
 
@@ -203,5 +215,152 @@ describe('getFileChanges (integration)', () => {
     expect(files).toHaveLength(1);
     expect(files[0]!.linesAdded).toBe(0);
     expect(files[0]!.linesRemoved).toBe(0);
+  });
+
+  it('reads untracked file content to get line count and synthetic diff', async () => {
+    // Untracked (added + not staged): status = '?? path', all diff commands return empty
+    vi.mocked(execFile).mockImplementation(mockExecFile('?? src/new.ts\n') as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValue('line1\nline2\nline3\n' as any);
+
+    const files = await getFileChanges('/some/worktree');
+    expect(files).toHaveLength(1);
+    const f = files[0]!;
+    expect(f.path).toBe('src/new.ts');
+    expect(f.linesAdded).toBe(3);
+    expect(f.diff).toBeDefined();
+    expect(f.diff![0]!.lines).toHaveLength(3);
+    expect(f.diff![0]!.lines.every((l) => l.type === 'added')).toBe(true);
+    expect(f.rawDiff).toContain('--- /dev/null');
+    expect(f.rawDiff).toContain('+++ b/src/new.ts');
+  });
+
+  it('leaves untracked file with linesAdded=0 when readFile fails', async () => {
+    vi.mocked(execFile).mockImplementation(mockExecFile('?? src/binary.bin\n') as any);
+    vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('EACCES'));
+
+    const files = await getFileChanges('/some/worktree');
+    expect(files).toHaveLength(1);
+    expect(files[0]!.linesAdded).toBe(0);
+    expect(files[0]!.diff).toBeUndefined();
+  });
+
+  it('combines unstaged and staged raw diff for tracked files', async () => {
+    const statusOutput = 'MM src/app/layout.tsx\n';
+    const numstat = '3\t1\tsrc/app/layout.tsx\n';
+    const cachedNumstat = '5\t2\tsrc/app/layout.tsx\n';
+    const unstagedDiff = `diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index abc..def 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -1,2 +1,2 @@
+ const a = 1;
+-const b = 2;
++const b = 3;
+`;
+    const stagedDiff = `diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index def..ghi 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -3,2 +3,3 @@
+ const c = 3;
++const d = 4;
+`;
+
+    const outputs = [statusOutput, numstat, cachedNumstat, unstagedDiff, stagedDiff];
+    let callCount = 0;
+    vi.mocked(execFile).mockImplementation(((
+      _cmd: unknown,
+      _args: unknown,
+      _opts: unknown,
+      cb: Function
+    ) => {
+      cb(null, { stdout: outputs[callCount++] ?? '', stderr: '' });
+    }) as any);
+
+    const files = await getFileChanges('/some/worktree');
+    const f = files.find((x) => x.path === 'src/app/layout.tsx')!;
+    expect(f).toBeDefined();
+    expect(f.rawDiff).toBeDefined();
+    expect(f.rawDiff).toContain('--- a/src/app/layout.tsx');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getBranchDiffFileChanges (integration)
+// ---------------------------------------------------------------------------
+describe('getBranchDiffFileChanges (integration)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns FileChange[] from name-status + numstat + diff output', async () => {
+    const nameStatus = 'A\tsrc/new-feature.ts\nM\tsrc/existing.ts\nD\tsrc/old.ts\n';
+    const numstat = '50\t0\tsrc/new-feature.ts\n10\t5\tsrc/existing.ts\n0\t20\tsrc/old.ts\n';
+    const diffOutput = '';
+
+    const outputs = [nameStatus, numstat, diffOutput];
+    let callCount = 0;
+    vi.mocked(execFile).mockImplementation(((
+      _cmd: unknown,
+      _args: unknown,
+      _opts: unknown,
+      cb: Function
+    ) => {
+      cb(null, { stdout: outputs[callCount++] ?? '', stderr: '' });
+    }) as any);
+
+    const files = await getBranchDiffFileChanges('/some/worktree', 'main');
+    expect(files).toHaveLength(3);
+
+    const newFile = files.find((f) => f.path === 'src/new-feature.ts')!;
+    expect(newFile.status).toBe('added');
+    expect(newFile.linesAdded).toBe(50);
+    expect(newFile.staged).toBe(false);
+
+    const modified = files.find((f) => f.path === 'src/existing.ts')!;
+    expect(modified.status).toBe('modified');
+    expect(modified.linesAdded).toBe(10);
+    expect(modified.linesRemoved).toBe(5);
+
+    const deleted = files.find((f) => f.path === 'src/old.ts')!;
+    expect(deleted.status).toBe('deleted');
+    expect(deleted.linesRemoved).toBe(20);
+  });
+
+  it('returns empty array when no files changed vs branch', async () => {
+    vi.mocked(execFile).mockImplementation(mockExecFile('') as any);
+
+    const files = await getBranchDiffFileChanges('/some/worktree', 'main');
+    expect(files).toEqual([]);
+  });
+
+  it('returns empty array when git command fails', async () => {
+    vi.mocked(execFile).mockImplementation(
+      mockExecFileError(new Error('fatal: unknown revision')) as any
+    );
+
+    const files = await getBranchDiffFileChanges('/some/worktree', 'nonexistent-branch');
+    expect(files).toEqual([]);
+  });
+
+  it('handles renames in name-status output', async () => {
+    const nameStatus = 'R100\tsrc/old-name.ts\tsrc/new-name.ts\n';
+    const numstat = '0\t0\tsrc/new-name.ts\n';
+
+    const outputs = [nameStatus, numstat, ''];
+    let callCount = 0;
+    vi.mocked(execFile).mockImplementation(((
+      _cmd: unknown,
+      _args: unknown,
+      _opts: unknown,
+      cb: Function
+    ) => {
+      cb(null, { stdout: outputs[callCount++] ?? '', stderr: '' });
+    }) as any);
+
+    const files = await getBranchDiffFileChanges('/some/worktree', 'main');
+    expect(files).toHaveLength(1);
+    expect(files[0]!.path).toBe('src/new-name.ts');
+    expect(files[0]!.status).toBe('modified');
   });
 });

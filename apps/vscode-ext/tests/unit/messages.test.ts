@@ -25,6 +25,8 @@ const sampleWorktree: WorktreeState = {
   path: '/home/user/project',
   branch: 'main',
   files: [sampleFile],
+  diffMode: { type: 'working' },
+  defaultBranch: 'main',
 };
 
 describe('init message serialization', () => {

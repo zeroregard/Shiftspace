@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useCallback, useRef } from 'react';
-import type { WorktreeState, ShiftspaceEvent } from './types';
+import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
 import { useShiftspaceStore } from './store';
 import { TreeCanvas, type PanZoomConfig } from './TreeCanvas';
 import { NODE_TYPES } from './components';
@@ -11,6 +11,8 @@ interface Props {
   onEvent?: (handler: (event: ShiftspaceEvent) => void) => () => void;
   onFileClick?: (worktreeId: string, filePath: string) => void;
   onTerminalOpen?: (worktreeId: string) => void;
+  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
+  onRequestBranchList?: (worktreeId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -20,6 +22,8 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
   onEvent,
   onFileClick,
+  onDiffModeChange,
+  onRequestBranchList,
   panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
@@ -43,6 +47,20 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     []
   );
 
+  const diffModeChangeRef = useRef(onDiffModeChange);
+  diffModeChangeRef.current = onDiffModeChange;
+  const stableDiffModeChange = useCallback(
+    (wtId: string, diffMode: DiffMode) => diffModeChangeRef.current?.(wtId, diffMode),
+    []
+  );
+
+  const requestBranchListRef = useRef(onRequestBranchList);
+  requestBranchListRef.current = onRequestBranchList;
+  const stableRequestBranchList = useCallback(
+    (wtId: string) => requestBranchListRef.current?.(wtId),
+    []
+  );
+
   // Per-worktree layout cache: reuse layout when WorktreeState reference is unchanged.
   type CacheEntry = { wtRef: WorktreeState; layout: SingleWorktreeLayout };
   const perLayoutCacheRef = useRef<Map<string, CacheEntry>>(new Map());
@@ -56,7 +74,12 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       const layout =
         cached && cached.wtRef === wt
           ? cached.layout
-          : computeSingleWorktreeLayout(wt, stableFileClick);
+          : computeSingleWorktreeLayout(
+              wt,
+              stableFileClick,
+              stableDiffModeChange,
+              stableRequestBranchList
+            );
       newCache.set(wt.id, { wtRef: wt, layout });
       return layout;
     });
@@ -81,7 +104,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     }
 
     return { nodes: allNodes, edges: allEdges };
-  }, [worktrees, stableFileClick]);
+  }, [worktrees, stableFileClick, stableDiffModeChange, stableRequestBranchList]);
 
   return (
     <div className="w-full h-full bg-canvas">
