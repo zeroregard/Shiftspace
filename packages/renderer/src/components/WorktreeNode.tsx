@@ -4,6 +4,10 @@ import type { NodeComponentProps } from '../TreeCanvas';
 import type { WorktreeState, DiffMode } from '../types';
 import { useShiftspaceStore } from '../store';
 
+// Stable reference — avoids returning a new [] each render, which would cause
+// useSyncExternalStore (Zustand) to see a changed snapshot every render → #185.
+const EMPTY_BRANCHES: string[] = [];
+
 export interface WorktreeNodeData {
   worktree: WorktreeState;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
@@ -58,7 +62,7 @@ function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
 export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNodeData>) => {
   const wt = data.worktree;
   const isSingle = useShiftspaceStore((s) => s.worktrees.size <= 1);
-  const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? []);
+  const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
   const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(wt.id));
 
   const [searchQuery, setSearchQuery] = useState('');
