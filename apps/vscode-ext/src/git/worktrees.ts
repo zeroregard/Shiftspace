@@ -47,6 +47,8 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
       path,
       branch: branchName,
       files: [],
+      diffMode: { type: 'working' },
+      defaultBranch: 'main',
     });
   }
 
@@ -79,6 +81,59 @@ export async function getGitRoot(dirPath: string): Promise<string | null> {
     return stdout.trim();
   } catch {
     return null;
+  }
+}
+
+/**
+ * Detect the repo's default/main branch name.
+ *
+ * Strategy:
+ *  1. Try `git symbolic-ref refs/remotes/origin/HEAD` (set by `git clone`).
+ *  2. Check common branch names (main, master, develop).
+ *  3. Fall back to 'main'.
+ */
+export async function getDefaultBranch(gitRoot: string): Promise<string> {
+  // Try 1: git symbolic-ref
+  try {
+    const { stdout } = await execFileAsync('git', ['symbolic-ref', 'refs/remotes/origin/HEAD'], {
+      cwd: gitRoot,
+      timeout: 5000,
+    });
+    return stdout.trim().replace('refs/remotes/origin/', '');
+  } catch {
+    // Not set — fall through
+  }
+
+  // Try 2: check common names
+  for (const candidate of ['main', 'master', 'develop']) {
+    try {
+      await execFileAsync('git', ['rev-parse', '--verify', candidate], {
+        cwd: gitRoot,
+        timeout: 5000,
+      });
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+
+  // Fallback
+  return 'main';
+}
+
+/**
+ * List branches sorted by most recent commit.
+ */
+export async function listBranches(repoRoot: string): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      ['branch', '--format=%(refname:short)', '--sort=-committerdate'],
+      { cwd: repoRoot, timeout: 5000 }
+    );
+    return stdout.trim().split('\n').filter(Boolean);
+  } catch {
+    return [];
   }
 }
 

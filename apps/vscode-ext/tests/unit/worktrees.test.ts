@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseWorktreeOutput } from '../../src/git/worktrees';
+import { parseWorktreeOutput, getDefaultBranch } from '../../src/git/worktrees';
 
 const fixture = (name: string) => readFileSync(join(__dirname, '../fixtures', name), 'utf8');
 
@@ -77,5 +77,29 @@ describe('parseWorktreeOutput', () => {
     const output = fixture('worktree-list-single.txt');
     const [wt] = parseWorktreeOutput(output);
     expect(wt!.files).toEqual([]);
+  });
+
+  it('initialises diffMode and defaultBranch with defaults', () => {
+    const output = fixture('worktree-list-single.txt');
+    const [wt] = parseWorktreeOutput(output);
+    expect(wt!.diffMode).toEqual({ type: 'working' });
+    expect(wt!.defaultBranch).toBe('main');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getDefaultBranch
+// ---------------------------------------------------------------------------
+describe('getDefaultBranch', () => {
+  it('returns a string (integration — requires git)', async () => {
+    // This test runs against the actual repo. It should return a valid branch name.
+    const branch = await getDefaultBranch(process.cwd());
+    expect(typeof branch).toBe('string');
+    expect(branch.length).toBeGreaterThan(0);
+  });
+
+  it('returns "main" as fallback for non-existent directory', async () => {
+    const branch = await getDefaultBranch('/tmp/nonexistent-repo-' + Date.now());
+    expect(branch).toBe('main');
   });
 });

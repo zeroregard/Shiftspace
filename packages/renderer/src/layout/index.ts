@@ -1,4 +1,4 @@
-import type { WorktreeState } from '../types';
+import type { WorktreeState, DiffMode } from '../types';
 import type { LayoutNode, LayoutEdge } from '../TreeCanvas';
 import { buildTree } from './tree';
 import { layoutWorktreeContents } from './algorithm';
@@ -22,18 +22,21 @@ export interface SingleWorktreeLayout {
 /** Compute layout for a single worktree, with all nodes positioned from x=0. */
 export function computeSingleWorktreeLayout(
   wt: WorktreeState,
-  onFileClick?: (worktreeId: string, filePath: string) => void
+  onFileClick?: (worktreeId: string, filePath: string) => void,
+  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void,
+  onRequestBranchList?: (worktreeId: string) => void
 ): SingleWorktreeLayout {
   const treeChildren = buildTree(wt.id, wt.files);
   const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
   const { layouts, totalW, totalH } = layoutWorktreeContents(treeChildren, contentsStartY);
 
-  // Ensure the container is wide enough to fit the header label on one line.
-  // Estimate: ~8px per character at text-13 semibold + padding.
+  // Ensure the container is wide enough to fit the header label + diff mode button.
+  // Estimate: ~8px per character at text-13 semibold + padding + ~120px for the diff mode button.
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
   const isMain = wt.branch === 'main' || wt.branch === 'master';
   const headerText = isMain ? wt.branch : `${folderName} (${wt.branch})`;
-  const headerMinW = headerText.length * 8 + CONTAINER_PAD_X * 2;
+  const DIFF_MODE_BUTTON_W = 120;
+  const headerMinW = headerText.length * 8 + CONTAINER_PAD_X * 2 + DIFF_MODE_BUTTON_W;
   const containerW = Math.max(totalW + CONTAINER_PAD_X * 2, headerMinW);
   const containerH = contentsStartY + totalH + CONTAINER_PAD_BOTTOM;
   const wtNodeId = `wt-${wt.id}`;
@@ -41,7 +44,7 @@ export function computeSingleWorktreeLayout(
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
 
-  const data: WorktreeNodeData = { worktree: wt };
+  const data: WorktreeNodeData = { worktree: wt, onDiffModeChange, onRequestBranchList };
   nodes.push({
     id: wtNodeId,
     type: 'worktreeNode',
@@ -61,11 +64,13 @@ export function computeSingleWorktreeLayout(
 
 export function computeFullLayout(
   wtArray: WorktreeState[],
-  onFileClick?: (worktreeId: string, filePath: string) => void
+  onFileClick?: (worktreeId: string, filePath: string) => void,
+  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void,
+  onRequestBranchList?: (worktreeId: string) => void
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const perLayouts = wtArray.map((wt) => ({
     wt,
-    layout: computeSingleWorktreeLayout(wt, onFileClick),
+    layout: computeSingleWorktreeLayout(wt, onFileClick, onDiffModeChange, onRequestBranchList),
   }));
 
   const totalWidth = perLayouts.reduce(

@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ShiftspaceRenderer } from '@shiftspace/renderer';
-import type { ShiftspaceEvent } from '@shiftspace/renderer';
-import { MockEngine } from './mock/engine';
+import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
+import type { ShiftspaceEvent, DiffMode } from '@shiftspace/renderer';
+import { MockEngine, MOCK_BRANCHES } from './mock/engine';
 import { ControlPanel } from './controls/ControlPanel';
 
 export const App: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState(0);
+
+  const { updateWorktreeFiles, setDiffModeLoading, setBranchList, setDiffMode } =
+    useShiftspaceStore();
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -44,6 +47,35 @@ export const App: React.FC = () => {
     [resetKey]
   );
 
+  const handleDiffModeChange = useCallback(
+    (worktreeId: string, diffMode: DiffMode) => {
+      // Optimistically update the diff mode
+      setDiffMode(worktreeId, diffMode);
+      setDiffModeLoading(worktreeId, true);
+
+      // Simulate async fetch
+      setTimeout(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+
+        const files =
+          diffMode.type === 'working'
+            ? [] // For working mode, return empty (agents will populate via events)
+            : engine.getMockBranchFiles(worktreeId); // Branch mode: mock files
+
+        updateWorktreeFiles(worktreeId, files, diffMode);
+      }, 200);
+    },
+    [setDiffMode, setDiffModeLoading, updateWorktreeFiles]
+  );
+
+  const handleRequestBranchList = useCallback(
+    (worktreeId: string) => {
+      setBranchList(worktreeId, MOCK_BRANCHES);
+    },
+    [setBranchList]
+  );
+
   const handleReset = () => {
     engineRef.current?.reset();
     setResetKey((k) => k + 1);
@@ -64,6 +96,8 @@ export const App: React.FC = () => {
         key={resetKey}
         initialWorktrees={engineRef.current.getWorktrees()}
         onEvent={onEvent}
+        onDiffModeChange={handleDiffModeChange}
+        onRequestBranchList={handleRequestBranchList}
       />
       <ControlPanel
         engine={engineRef.current}

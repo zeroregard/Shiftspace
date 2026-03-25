@@ -4,6 +4,7 @@ import type {
   ShiftspaceEvent,
   DiffHunk,
   DiffLine,
+  DiffMode,
 } from '@shiftspace/renderer';
 import type { AgentConfig, AgentPersona } from './types';
 import { FILE_TREE_TEMPLATES, WORKTREE_PRESETS, type TemplateKey } from './templates';
@@ -175,6 +176,20 @@ function makeFile(path: string, persona: AgentPersona, staged = false): FileChan
   };
 }
 
+/** Mock branches for the diff mode selector. */
+export const MOCK_BRANCHES = [
+  'main',
+  'feature/auth',
+  'refactor/components',
+  'fix/perf-issues',
+  'develop',
+  'feature/dashboard',
+  'feature/settings',
+  'hotfix/login',
+];
+
+const DEFAULT_BRANCH = 'main';
+
 export class MockEngine {
   private worktrees = new Map<string, WorktreeState>();
   private agents = new Map<string, AgentConfig & { timer?: ReturnType<typeof setTimeout> }>();
@@ -205,7 +220,18 @@ export class MockEngine {
   private templateMap = new Map<string, TemplateKey>();
 
   addWorktree(id: string, branch: string, path: string, template: TemplateKey) {
-    const wt: WorktreeState = { id, path, branch, files: [] };
+    const isDefault = branch === DEFAULT_BRANCH;
+    const diffMode: DiffMode = isDefault
+      ? { type: 'working' }
+      : { type: 'branch', branch: DEFAULT_BRANCH };
+    const wt: WorktreeState = {
+      id,
+      path,
+      branch,
+      files: [],
+      diffMode,
+      defaultBranch: DEFAULT_BRANCH,
+    };
     this.worktrees.set(id, wt);
     this.templateMap.set(id, template);
     this.emit({ type: 'worktree-added', worktree: wt });
@@ -222,6 +248,35 @@ export class MockEngine {
     this.stopAgent(id);
     this.worktrees.delete(id);
     this.emit({ type: 'worktree-removed', worktreeId: id });
+  }
+
+  /** Generate mock files for a branch diff (different subset from working diff). */
+  getMockBranchFiles(worktreeId: string): FileChange[] {
+    const templateKey = this.templateMap.get(worktreeId) ?? 'nextjs';
+    const template = FILE_TREE_TEMPLATES[templateKey];
+    // Pick a random subset of ~40-60% of files to simulate branch diff
+    const count = Math.max(2, Math.floor(template.length * (0.4 + Math.random() * 0.2)));
+    const shuffled = [...template].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, count);
+    const now = Date.now();
+
+    return selected.map((filePath) => {
+      const linesAdded = rand(5, 60);
+      const linesRemoved = rand(0, 30);
+      const statuses: FileChange['status'][] = ['added', 'modified', 'modified', 'modified'];
+      const status = pick(statuses);
+      const diff = makeDiff(filePath, linesAdded, linesRemoved, status);
+      return {
+        path: filePath,
+        status,
+        staged: false,
+        linesAdded,
+        linesRemoved,
+        lastChangedAt: now,
+        diff,
+        rawDiff: hunksToRawDiff(filePath, diff, status),
+      };
+    });
   }
 
   startAgent(worktreeId: string, persona: AgentPersona) {

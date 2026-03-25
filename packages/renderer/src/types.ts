@@ -1,9 +1,15 @@
+export type DiffMode =
+  | { type: 'working' } // current behavior: unstaged + staged changes
+  | { type: 'branch'; branch: string }; // diff HEAD against another branch
+
 export interface WorktreeState {
   id: string;
   path: string;
   branch: string;
   files: FileChange[];
   process?: { port: number; command: string };
+  diffMode: DiffMode;
+  defaultBranch: string;
 }
 
 export interface DiffLine {

@@ -35,7 +35,14 @@ function f(path: string, overrides: Partial<FileChange> = {}): FileChange {
 }
 
 function wt(id: string, files: FileChange[]): WorktreeState {
-  return { id, path: `/repo/${id}`, branch: id, files };
+  return {
+    id,
+    path: `/repo/${id}`,
+    branch: id,
+    files,
+    diffMode: { type: 'working' },
+    defaultBranch: 'main',
+  };
 }
 
 /** Run computeFullLayout against a single worktree and return {nodes, edges}. */
