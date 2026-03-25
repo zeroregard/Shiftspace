@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
-import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
+import type {
+  WorktreeState,
+  ShiftspaceEvent,
+  PanZoomConfig,
+  DiffMode,
+  FileChange,
+} from '@shiftspace/renderer';
 import './styles.css';
 
 declare function acquireVsCodeApi(): {
@@ -21,10 +27,13 @@ const vscode = (function () {
 type HostMessage =
   | { type: 'init'; worktrees: WorktreeState[] }
   | { type: 'event'; event: ShiftspaceEvent }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'worktree-files-updated'; worktreeId: string; files: FileChange[]; diffMode: DiffMode }
+  | { type: 'branch-list'; worktreeId: string; branches: string[] };
 
 const App: React.FC = () => {
-  const { applyEvent, setWorktrees } = useShiftspaceStore();
+  const { applyEvent, setWorktrees, updateWorktreeFiles, setBranchList, setDiffModeLoading } =
+    useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   useEffect(() => {
@@ -39,6 +48,10 @@ const App: React.FC = () => {
         applyEvent(msg.event);
       } else if (msg.type === 'error') {
         setErrorMessage(msg.message);
+      } else if (msg.type === 'worktree-files-updated') {
+        updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode);
+      } else if (msg.type === 'branch-list') {
+        setBranchList(msg.worktreeId, msg.branches);
       }
     };
 
@@ -46,11 +59,23 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'ready' });
 
     return () => window.removeEventListener('message', handler);
-  }, [applyEvent, setWorktrees]);
+  }, [applyEvent, setWorktrees, updateWorktreeFiles, setBranchList, setDiffModeLoading]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
     vscode?.postMessage({ type: 'file-click', worktreeId, filePath });
   };
+
+  const handleDiffModeChange = useCallback(
+    (worktreeId: string, diffMode: DiffMode) => {
+      setDiffModeLoading(worktreeId, true);
+      vscode?.postMessage({ type: 'set-diff-mode', worktreeId, diffMode });
+    },
+    [setDiffModeLoading]
+  );
+
+  const handleRequestBranchList = useCallback((worktreeId: string) => {
+    vscode?.postMessage({ type: 'get-branch-list', worktreeId });
+  }, []);
 
   if (errorMessage) {
     return (
@@ -70,9 +95,19 @@ const App: React.FC = () => {
     );
   }
 
+  const panZoomConfig: PanZoomConfig = {
+    pinchSensitivity: 0.03, // Electron delivers smaller pinch deltaY than Chrome
+    maxZoom: 1,
+  };
+
   return (
     <div style={{ width: '100%', height: '100vh' }}>
-      <ShiftspaceRenderer onFileClick={handleFileClick} />
+      <ShiftspaceRenderer
+        onFileClick={handleFileClick}
+        onDiffModeChange={handleDiffModeChange}
+        onRequestBranchList={handleRequestBranchList}
+        panZoomConfig={panZoomConfig}
+      />
     </div>
   );
 };

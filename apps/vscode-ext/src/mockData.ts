@@ -5,6 +5,8 @@ export const INITIAL_WORKTREES: WorktreeState[] = [
     id: 'wt-main',
     path: '/home/user/project',
     branch: 'main',
+    diffMode: { type: 'working' },
+    defaultBranch: 'main',
     files: [
       {
         path: 'src/app/page.tsx',
@@ -60,6 +62,8 @@ export const INITIAL_WORKTREES: WorktreeState[] = [
     id: 'wt-feature',
     path: '/home/user/project-feature-auth',
     branch: 'feature/auth',
+    diffMode: { type: 'branch', branch: 'main' },
+    defaultBranch: 'main',
     files: [
       {
         path: 'src/app/auth/login/page.tsx',

@@ -1,8 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
-import { detectWorktrees, checkGitAvailability } from './git/worktrees';
-import { getFileChanges } from './git/status';
+import type { WorktreeState, ShiftspaceEvent, DiffMode, FileChange } from '@shiftspace/renderer';
+import {
+  detectWorktrees,
+  checkGitAvailability,
+  getDefaultBranch,
+  listBranches,
+} from './git/worktrees';
+import { getFileChanges, getBranchDiffFileChanges } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
 
 type PostMessage = (msg: object) => void;
@@ -27,7 +32,7 @@ function findWorktreeForPath(
  * Orchestrates real-git-data gathering for the Shiftspace webview.
  *
  * Lifecycle:
- *  1. Call `initialize()` once — detects workspace, queries git, sends `init`.
+ *  1. Call `switchRepo(gitRoot)` to start tracking a repo (or switch to another).
  *  2. Filesystem watcher emits surgical `event` messages as files change.
  *  3. Call `dispose()` when the view is closed.
  */
@@ -37,15 +42,26 @@ export class GitDataProvider implements vscode.Disposable {
   private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private worktreePollingTimer: ReturnType<typeof setInterval> | undefined;
   private disposables: vscode.Disposable[] = [];
+  private currentRoot: string | undefined;
+  private defaultBranch = 'main';
 
-  constructor(
-    private readonly repoRoot: string,
-    private readonly postMessage: PostMessage
-  ) {}
+  constructor(private readonly postMessage: PostMessage) {}
 
-  /** Detect workspace, load git data, set up watcher, send init message. */
-  async initialize(): Promise<void> {
-    const gitStatus = await checkGitAvailability(this.repoRoot);
+  /**
+   * Switch to tracking a different git repo root.
+   * No-ops if the root hasn't changed. Tears down existing watchers first.
+   */
+  async switchRepo(gitRoot: string): Promise<void> {
+    if (gitRoot === this.currentRoot) return;
+    this.tearDownWatchers();
+    this.currentRoot = gitRoot;
+    await this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
+    if (!this.currentRoot) return;
+
+    const gitStatus = await checkGitAvailability(this.currentRoot);
 
     if (gitStatus === 'no-git') {
       this.postMessage({ type: 'error', message: 'Git is not available' });
@@ -59,7 +75,20 @@ export class GitDataProvider implements vscode.Disposable {
       return;
     }
 
-    this.worktrees = await detectWorktrees(this.repoRoot);
+    this.defaultBranch = await getDefaultBranch(this.currentRoot);
+    this.worktrees = await detectWorktrees(this.currentRoot);
+
+    // Set initial diff modes: feature branches diff against default branch,
+    // worktrees on the default branch show working changes.
+    for (const wt of this.worktrees) {
+      wt.defaultBranch = this.defaultBranch;
+      if (wt.branch === this.defaultBranch) {
+        wt.diffMode = { type: 'working' };
+      } else {
+        wt.diffMode = { type: 'branch', branch: this.defaultBranch };
+      }
+    }
+
     await this.loadAllFileChanges();
 
     this.postMessage({ type: 'init', worktrees: this.worktrees });
@@ -71,7 +100,7 @@ export class GitDataProvider implements vscode.Disposable {
     await Promise.allSettled(
       this.worktrees.map(async (wt) => {
         try {
-          const files = await getFileChanges(wt.path);
+          const files = await this.getFilesForMode(wt);
           wt.files = files;
           this.fileStates.set(wt.id, files);
         } catch (err) {
@@ -79,6 +108,20 @@ export class GitDataProvider implements vscode.Disposable {
         }
       })
     );
+  }
+
+  /** Get files using the appropriate diff strategy for the worktree's current mode. */
+  private async getFilesForMode(wt: WorktreeState): Promise<FileChange[]> {
+    const mode = wt.diffMode;
+    if (mode.type === 'branch') {
+      return getBranchDiffFileChanges(wt.path, mode.branch);
+    }
+    return getFileChanges(wt.path);
+  }
+
+  /** Returns debounce duration based on the worktree's diff mode. */
+  private getDebounceMs(wt: WorktreeState): number {
+    return wt.diffMode.type === 'working' ? 500 : 2500;
   }
 
   private setupFileWatcher(): void {
@@ -107,13 +150,13 @@ export class GitDataProvider implements vscode.Disposable {
       setTimeout(() => {
         this.debounceTimers.delete(wt.id);
         void this.refreshWorktree(wt);
-      }, 500)
+      }, this.getDebounceMs(wt))
     );
   }
 
   private async refreshWorktree(wt: WorktreeState): Promise<void> {
     try {
-      const newFiles = await getFileChanges(wt.path);
+      const newFiles = await this.getFilesForMode(wt);
       const prevFiles = this.fileStates.get(wt.id) ?? [];
       const events = diffFileChanges(wt.id, prevFiles, newFiles);
 
@@ -135,8 +178,9 @@ export class GitDataProvider implements vscode.Disposable {
   }
 
   private async checkForWorktreeChanges(): Promise<void> {
+    if (!this.currentRoot) return;
     try {
-      const fresh = await detectWorktrees(this.repoRoot);
+      const fresh = await detectWorktrees(this.currentRoot);
       const prevIds = new Set(this.worktrees.map((wt) => wt.id));
       const freshIds = new Set(fresh.map((wt) => wt.id));
 
@@ -151,8 +195,14 @@ export class GitDataProvider implements vscode.Disposable {
       // Added worktrees
       for (const wt of fresh) {
         if (!prevIds.has(wt.id)) {
+          wt.defaultBranch = this.defaultBranch;
+          if (wt.branch === this.defaultBranch) {
+            wt.diffMode = { type: 'working' };
+          } else {
+            wt.diffMode = { type: 'branch', branch: this.defaultBranch };
+          }
           try {
-            wt.files = await getFileChanges(wt.path);
+            wt.files = await this.getFilesForMode(wt);
           } catch (err) {
             console.error('[Shiftspace] getFileChanges error for new worktree', wt.path, err);
           }
@@ -167,6 +217,36 @@ export class GitDataProvider implements vscode.Disposable {
     }
   }
 
+  /** Handle a diff mode change from the webview. */
+  async handleSetDiffMode(worktreeId: string, diffMode: DiffMode): Promise<void> {
+    const wt = this.worktrees.find((w) => w.id === worktreeId);
+    if (!wt) return;
+
+    wt.diffMode = diffMode;
+
+    try {
+      const files = await this.getFilesForMode(wt);
+      wt.files = files;
+      this.fileStates.set(worktreeId, files);
+      this.postMessage({ type: 'worktree-files-updated', worktreeId, files, diffMode });
+    } catch (err) {
+      console.error('[Shiftspace] handleSetDiffMode error:', err);
+      // Send back empty to clear loading state
+      this.postMessage({ type: 'worktree-files-updated', worktreeId, files: [], diffMode });
+    }
+  }
+
+  /** Handle a branch list request from the webview. */
+  async handleGetBranchList(worktreeId: string): Promise<void> {
+    if (!this.currentRoot) return;
+    try {
+      const branches = await listBranches(this.currentRoot);
+      this.postMessage({ type: 'branch-list', worktreeId, branches });
+    } catch (err) {
+      console.error('[Shiftspace] handleGetBranchList error:', err);
+    }
+  }
+
   /** Open the clicked file in the editor. */
   async handleFileClick(worktreeId: string, filePath: string): Promise<void> {
     const wt = this.worktrees.find((w) => w.id === worktreeId);
@@ -174,36 +254,53 @@ export class GitDataProvider implements vscode.Disposable {
     const absolutePath = path.join(wt.path, filePath);
     const fileUri = vscode.Uri.file(absolutePath);
     try {
-      await vscode.commands.executeCommand('vscode.open', fileUri);
+      await vscode.workspace.fs.stat(fileUri);
+    } catch {
+      void vscode.window.showInformationMessage(`File not found: ${filePath}`);
+      return;
+    }
+    try {
+      // Prefer a view column that doesn't contain the Shiftspace webview.
+      // Walk tab groups to find a group with at least one non-Shiftspace tab.
+      const targetColumn = this.findNonShiftspaceColumn() ?? vscode.ViewColumn.Active;
+      await vscode.commands.executeCommand('vscode.open', fileUri, {
+        preview: true,
+        viewColumn: targetColumn,
+      });
     } catch (err) {
       console.error('[Shiftspace] handleFileClick error:', err);
     }
   }
 
-  dispose(): void {
+  /** Returns the view column of a tab group that has no Shiftspace webview tab, or undefined. */
+  private findNonShiftspaceColumn(): vscode.ViewColumn | undefined {
+    for (const group of vscode.window.tabGroups.all) {
+      const hasShiftspace = group.tabs.some(
+        (tab) =>
+          tab.input instanceof vscode.TabInputWebview && tab.input.viewType.includes('shiftspace')
+      );
+      if (!hasShiftspace) {
+        return group.viewColumn;
+      }
+    }
+    return undefined;
+  }
+
+  /** Tear down watchers and polling without destroying the instance. */
+  private tearDownWatchers(): void {
     if (this.worktreePollingTimer !== undefined) {
       clearInterval(this.worktreePollingTimer);
+      this.worktreePollingTimer = undefined;
     }
     for (const t of this.debounceTimers.values()) clearTimeout(t);
     this.debounceTimers.clear();
     for (const d of this.disposables) d.dispose();
     this.disposables = [];
-  }
-}
-
-/** Factory: create a GitDataProvider when a workspace is open, otherwise send error. */
-export async function createGitDataProvider(
-  postMessage: PostMessage
-): Promise<GitDataProvider | undefined> {
-  const folders = vscode.workspace.workspaceFolders;
-
-  if (!folders || folders.length === 0) {
-    postMessage({ type: 'error', message: 'Open a folder to get started' });
-    return undefined;
+    this.worktrees = [];
+    this.fileStates.clear();
   }
 
-  const repoRoot = folders[0]!.uri.fsPath;
-  const provider = new GitDataProvider(repoRoot, postMessage);
-  await provider.initialize();
-  return provider;
+  dispose(): void {
+    this.tearDownWatchers();
+  }
 }

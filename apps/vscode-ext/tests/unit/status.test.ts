@@ -7,6 +7,7 @@ import {
   buildFileChanges,
   parseDiffOutput,
   parseRawDiffSections,
+  parseBranchNameStatus,
 } from '../../src/git/status';
 
 const fixture = (name: string) => readFileSync(join(__dirname, '../fixtures', name), 'utf8');
@@ -310,5 +311,56 @@ Binary files a/assets/logo.png and b/assets/logo.png differ
 `;
     const map = parseRawDiffSections(diff);
     expect(map.size).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseBranchNameStatus
+// ---------------------------------------------------------------------------
+describe('parseBranchNameStatus', () => {
+  it('parses added files', () => {
+    const map = parseBranchNameStatus('A\tsrc/new-feature.ts\n');
+    expect(map.get('src/new-feature.ts')).toBe('added');
+  });
+
+  it('parses modified files', () => {
+    const map = parseBranchNameStatus('M\tsrc/existing.ts\n');
+    expect(map.get('src/existing.ts')).toBe('modified');
+  });
+
+  it('parses deleted files', () => {
+    const map = parseBranchNameStatus('D\tsrc/old.ts\n');
+    expect(map.get('src/old.ts')).toBe('deleted');
+  });
+
+  it('parses renames — uses the new path', () => {
+    const map = parseBranchNameStatus('R100\tsrc/old-name.ts\tsrc/new-name.ts\n');
+    expect(map.has('src/new-name.ts')).toBe(true);
+    expect(map.get('src/new-name.ts')).toBe('modified');
+  });
+
+  it('handles quoted paths', () => {
+    const map = parseBranchNameStatus('M\t"src/file with spaces.ts"\n');
+    expect(map.has('src/file with spaces.ts')).toBe(true);
+  });
+
+  it('handles multiple files', () => {
+    const output = 'A\tsrc/new.ts\nM\tsrc/mod.ts\nD\tsrc/del.ts\n';
+    const map = parseBranchNameStatus(output);
+    expect(map.size).toBe(3);
+    expect(map.get('src/new.ts')).toBe('added');
+    expect(map.get('src/mod.ts')).toBe('modified');
+    expect(map.get('src/del.ts')).toBe('deleted');
+  });
+
+  it('returns empty map for empty output', () => {
+    expect(parseBranchNameStatus('').size).toBe(0);
+    expect(parseBranchNameStatus('\n\n').size).toBe(0);
+  });
+
+  it('skips malformed lines', () => {
+    const map = parseBranchNameStatus('not-valid\nM\tsrc/ok.ts\n');
+    expect(map.size).toBe(1);
+    expect(map.has('src/ok.ts')).toBe(true);
   });
 });

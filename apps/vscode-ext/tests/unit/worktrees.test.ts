@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseWorktreeOutput } from '../../src/git/worktrees';
+import {
+  parseWorktreeOutput,
+  getDefaultBranch,
+  getGitRoot,
+  listBranches,
+} from '../../src/git/worktrees';
 
 const fixture = (name: string) => readFileSync(join(__dirname, '../fixtures', name), 'utf8');
 
@@ -77,5 +82,64 @@ describe('parseWorktreeOutput', () => {
     const output = fixture('worktree-list-single.txt');
     const [wt] = parseWorktreeOutput(output);
     expect(wt!.files).toEqual([]);
+  });
+
+  it('initialises diffMode and defaultBranch with defaults', () => {
+    const output = fixture('worktree-list-single.txt');
+    const [wt] = parseWorktreeOutput(output);
+    expect(wt!.diffMode).toEqual({ type: 'working' });
+    expect(wt!.defaultBranch).toBe('main');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getDefaultBranch
+// ---------------------------------------------------------------------------
+describe('getDefaultBranch', () => {
+  it('returns a string (integration — requires git)', async () => {
+    // This test runs against the actual repo. It should return a valid branch name.
+    const branch = await getDefaultBranch(process.cwd());
+    expect(typeof branch).toBe('string');
+    expect(branch.length).toBeGreaterThan(0);
+  });
+
+  it('returns "main" as fallback for non-existent directory', async () => {
+    const branch = await getDefaultBranch('/tmp/nonexistent-repo-' + Date.now());
+    expect(branch).toBe('main');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getGitRoot
+// ---------------------------------------------------------------------------
+describe('getGitRoot', () => {
+  it('returns the repo root from a directory inside a git repo', async () => {
+    const root = await getGitRoot(process.cwd());
+    expect(typeof root).toBe('string');
+    expect(root!.length).toBeGreaterThan(0);
+  });
+
+  it('returns null for a directory outside any git repo', async () => {
+    const root = await getGitRoot('/tmp/nonexistent-dir-' + Date.now());
+    expect(root).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// listBranches
+// ---------------------------------------------------------------------------
+describe('listBranches', () => {
+  it('returns an array of branch name strings', async () => {
+    const branches = await listBranches(process.cwd());
+    expect(Array.isArray(branches)).toBe(true);
+    for (const b of branches) {
+      expect(typeof b).toBe('string');
+      expect(b.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('returns empty array for a non-existent repo', async () => {
+    const branches = await listBranches('/tmp/nonexistent-repo-' + Date.now());
+    expect(branches).toEqual([]);
   });
 });

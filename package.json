@@ -12,6 +12,7 @@
     "typecheck": "bun run --filter '*' typecheck",
     "lint:check": "oxlint --deny-warnings .",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
+    "fmt": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt:write": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "test": "bun run --filter '*' test",
     "test:coverage": "bun run --filter '*' test:coverage",

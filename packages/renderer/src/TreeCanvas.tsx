@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { usePopoverStore } from './components/DiffOverlay';
 
 export interface LayoutNode {
   id: string;
@@ -28,10 +27,30 @@ interface Transform {
   zoom: number;
 }
 
+export interface PanZoomConfig {
+  /** Modifier keys that trigger zoom on scroll. Default: ['ctrl', 'meta'] (Figma-style). */
+  zoomModifiers?: Array<'ctrl' | 'meta' | 'alt'>;
+  /** Sensitivity for trackpad pinch (ctrlKey, small deltaY values). Default: 0.01. */
+  pinchSensitivity?: number;
+  /** Sensitivity for modifier+scroll wheel (large deltaY values). Default: 0.001. */
+  wheelSensitivity?: number;
+  maxZoom?: number;
+  minZoom?: number;
+}
+
+const DEFAULT_PAN_ZOOM_CONFIG: Required<PanZoomConfig> = {
+  zoomModifiers: ['ctrl', 'meta'],
+  pinchSensitivity: 0.01,
+  wheelSensitivity: 0.001,
+  maxZoom: 3,
+  minZoom: 0.1,
+};
+
 interface TreeCanvasProps {
   nodes: LayoutNode[];
   edges: LayoutEdge[];
   nodeTypes: Record<string, React.ComponentType<NodeComponentProps<any>>>;
+  panZoomConfig?: PanZoomConfig;
 }
 
 function smoothstepPath(x1: number, y1: number, x2: number, y2: number): string {
@@ -106,7 +125,12 @@ const NodeWrapper = React.memo(({ node, nodeTypes }: NodeWrapperProps) => {
 });
 NodeWrapper.displayName = 'NodeWrapper';
 
-export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes }) => {
+export const TreeCanvas: React.FC<TreeCanvasProps> = ({
+  nodes,
+  edges,
+  nodeTypes,
+  panZoomConfig,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
   const isPanningRef = useRef(false);
@@ -121,7 +145,9 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
 
-  const { setOpen: closePopover } = usePopoverStore();
+  // Merge config with defaults via ref so handlers never need re-registration
+  const panZoomConfigRef = useRef<Required<PanZoomConfig>>(DEFAULT_PAN_ZOOM_CONFIG);
+  panZoomConfigRef.current = { ...DEFAULT_PAN_ZOOM_CONFIG, ...panZoomConfig };
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
@@ -135,20 +161,43 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
     hasFitRef.current = true;
   }, [nodes]);
 
-  // Wheel zoom — non-passive so we can preventDefault
+  // Wheel handler — non-passive so we can preventDefault
+  // Figma-style: scroll=pan, shift+scroll=horizontal pan, cmd/ctrl+scroll=zoom, pinch=zoom
   useEffect(() => {
     const el = containerRef.current!;
     function handleWheel(e: WheelEvent) {
       e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const cursorX = e.clientX - rect.left;
-      const cursorY = e.clientY - rect.top;
-      setTransform((prev) => {
-        const newZoom = Math.min(Math.max(prev.zoom * (1 - e.deltaY * 0.001), 0.1), 3);
-        const canvasX = (cursorX - prev.x) / prev.zoom;
-        const canvasY = (cursorY - prev.y) / prev.zoom;
-        return { zoom: newZoom, x: cursorX - canvasX * newZoom, y: cursorY - canvasY * newZoom };
-      });
+      const cfg = panZoomConfigRef.current;
+      const isZoom = cfg.zoomModifiers.some(
+        (mod) =>
+          (mod === 'ctrl' && e.ctrlKey) ||
+          (mod === 'meta' && e.metaKey) ||
+          (mod === 'alt' && e.altKey)
+      );
+      if (isZoom) {
+        const sensitivity = e.ctrlKey ? cfg.pinchSensitivity : cfg.wheelSensitivity;
+        const rect = el.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        setTransform((prev) => {
+          const newZoom = Math.min(
+            Math.max(prev.zoom * (1 - e.deltaY * sensitivity), cfg.minZoom),
+            cfg.maxZoom
+          );
+          const canvasX = (cursorX - prev.x) / prev.zoom;
+          const canvasY = (cursorY - prev.y) / prev.zoom;
+          return { zoom: newZoom, x: cursorX - canvasX * newZoom, y: cursorY - canvasY * newZoom };
+        });
+      } else if (e.shiftKey) {
+        // Shift+scroll → horizontal pan
+        // On macOS the OS converts Shift+scroll to deltaX before the event arrives,
+        // so fall back to deltaY only when deltaX is absent (other platforms).
+        const dx = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+        setTransform((prev) => ({ ...prev, x: prev.x - dx }));
+      } else {
+        // Plain scroll/swipe → pan
+        setTransform((prev) => ({ ...prev, x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
+      }
     }
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
@@ -186,7 +235,8 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         setTransform((prev) => {
-          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), 0.1), 3);
+          const { minZoom, maxZoom } = panZoomConfigRef.current;
+          const newZoom = Math.min(Math.max(prev.zoom * (newDist / prevDist), minZoom), maxZoom);
           const canvasX = (midX - prev.x) / prev.zoom;
           const canvasY = (midY - prev.y) / prev.zoom;
           return { zoom: newZoom, x: midX - canvasX * newZoom, y: midY - canvasY * newZoom };
@@ -248,10 +298,6 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
     isPanningRef.current = false;
   }
 
-  function handleCanvasClick() {
-    closePopover(null);
-  }
-
   function handleFitView(e: React.MouseEvent) {
     e.stopPropagation();
     const el = containerRef.current;
@@ -276,7 +322,6 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundPosition: `${x}px ${y}px`,
       }}
-      onClick={handleCanvasClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

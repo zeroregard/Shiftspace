@@ -1,4 +1,4 @@
-export { ShiftspaceRenderer } from './ShiftspaceRenderer';
+export { ShiftspaceRenderer, type PanZoomConfig } from './ShiftspaceRenderer';
 export { useShiftspaceStore } from './store';
 export type {
   WorktreeState,
@@ -7,5 +7,6 @@ export type {
   LODLevel,
   DiffLine,
   DiffHunk,
+  DiffMode,
 } from './types';
 export { DiffPopover, DiffHoverCard } from './components/DiffOverlay';
