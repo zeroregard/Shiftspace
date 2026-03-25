@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseStatusOutput, parseNumstatOutput, buildFileChanges } from '../../src/git/status';
+import {
+  parseStatusOutput,
+  parseNumstatOutput,
+  buildFileChanges,
+  parseDiffOutput,
+  parseRawDiffSections,
+} from '../../src/git/status';
 
 const fixture = (name: string) => readFileSync(join(__dirname, '../fixtures', name), 'utf8');
 
@@ -171,5 +177,138 @@ describe('buildFileChanges', () => {
     const after = Date.now();
     expect(f!.lastChangedAt).toBeGreaterThanOrEqual(before);
     expect(f!.lastChangedAt).toBeLessThanOrEqual(after);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseDiffOutput
+// ---------------------------------------------------------------------------
+describe('parseDiffOutput', () => {
+  it('returns empty map for empty output', () => {
+    expect(parseDiffOutput('').size).toBe(0);
+    expect(parseDiffOutput('  \n').size).toBe(0);
+  });
+
+  it('parses a modified file with one hunk', () => {
+    const diff = fixture('diff-unified.txt');
+    const map = parseDiffOutput(diff);
+    expect(map.has('src/app/page.tsx')).toBe(true);
+
+    const hunks = map.get('src/app/page.tsx')!;
+    expect(hunks.length).toBe(1);
+    expect(hunks[0]!.header).toContain('@@');
+
+    const added = hunks[0]!.lines.filter((l) => l.type === 'added');
+    const removed = hunks[0]!.lines.filter((l) => l.type === 'removed');
+    const context = hunks[0]!.lines.filter((l) => l.type === 'context');
+    expect(added.length).toBeGreaterThan(0);
+    expect(removed.length).toBeGreaterThan(0);
+    expect(context.length).toBeGreaterThan(0);
+  });
+
+  it('parses a new file (--- /dev/null → +++ b/path)', () => {
+    const diff = fixture('diff-unified.txt');
+    const map = parseDiffOutput(diff);
+    expect(map.has('src/newfile.ts')).toBe(true);
+
+    const hunks = map.get('src/newfile.ts')!;
+    expect(hunks.length).toBe(1);
+    // All lines should be additions
+    expect(hunks[0]!.lines.every((l) => l.type === 'added')).toBe(true);
+    expect(hunks[0]!.lines.length).toBe(3);
+  });
+
+  it('skips deleted files (+++ /dev/null)', () => {
+    const diff = fixture('diff-unified.txt');
+    const map = parseDiffOutput(diff);
+    // deleted.ts has +++ /dev/null — should be skipped
+    expect(map.has('src/deleted.ts')).toBe(false);
+  });
+
+  it('handles quoted paths in diff output', () => {
+    const diff = `diff --git "a/src/file with spaces.ts" "b/src/file with spaces.ts"
+index abc..def 100644
+--- "a/src/file with spaces.ts"
++++ "b/src/file with spaces.ts"
+@@ -1,2 +1,2 @@
+ const a = 1;
+-const b = 2;
++const b = 3;
+`;
+    const map = parseDiffOutput(diff);
+    expect(map.has('src/file with spaces.ts')).toBe(true);
+  });
+
+  it('skips binary files with no +++ line', () => {
+    const diff = `diff --git a/assets/logo.png b/assets/logo.png
+Binary files a/assets/logo.png and b/assets/logo.png differ
+`;
+    const map = parseDiffOutput(diff);
+    expect(map.size).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseRawDiffSections
+// ---------------------------------------------------------------------------
+describe('parseRawDiffSections', () => {
+  it('returns empty map for empty output', () => {
+    expect(parseRawDiffSections('').size).toBe(0);
+    expect(parseRawDiffSections('  \n').size).toBe(0);
+  });
+
+  it('extracts per-file raw diff sections for modified files', () => {
+    const diff = fixture('diff-unified.txt');
+    const map = parseRawDiffSections(diff);
+    expect(map.has('src/app/page.tsx')).toBe(true);
+
+    const raw = map.get('src/app/page.tsx')!;
+    expect(raw).toContain('--- a/src/app/page.tsx');
+    expect(raw).toContain('+++ b/src/app/page.tsx');
+    expect(raw).toContain('@@');
+    expect(raw).toContain('+import { NewComponent }');
+    expect(raw).toContain('-import { OldComponent }');
+  });
+
+  it('extracts new file sections', () => {
+    const diff = fixture('diff-unified.txt');
+    const map = parseRawDiffSections(diff);
+    expect(map.has('src/newfile.ts')).toBe(true);
+
+    const raw = map.get('src/newfile.ts')!;
+    expect(raw).toContain('--- /dev/null');
+    expect(raw).toContain('+++ b/src/newfile.ts');
+  });
+
+  it('extracts deleted file sections using the --- path', () => {
+    const diff = fixture('diff-unified.txt');
+    const map = parseRawDiffSections(diff);
+    expect(map.has('src/deleted.ts')).toBe(true);
+
+    const raw = map.get('src/deleted.ts')!;
+    expect(raw).toContain('--- a/src/deleted.ts');
+    expect(raw).toContain('+++ /dev/null');
+  });
+
+  it('handles quoted paths', () => {
+    const diff = `diff --git "a/src/file with spaces.ts" "b/src/file with spaces.ts"
+index abc..def 100644
+--- "a/src/file with spaces.ts"
++++ "b/src/file with spaces.ts"
+@@ -1,2 +1,2 @@
+ const a = 1;
+-const b = 2;
++const b = 3;
+`;
+    const map = parseRawDiffSections(diff);
+    expect(map.has('src/file with spaces.ts')).toBe(true);
+  });
+
+  it('skips binary files with no +++ line', () => {
+    const diff = `diff --git a/assets/logo.png b/assets/logo.png
+Binary files a/assets/logo.png and b/assets/logo.png differ
+`;
+    const map = parseRawDiffSections(diff);
+    expect(map.size).toBe(0);
   });
 });

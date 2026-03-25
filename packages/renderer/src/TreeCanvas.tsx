@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useHoverCardStore } from './components/DiffOverlay';
+import { usePopoverStore } from './components/DiffOverlay';
 
 export interface LayoutNode {
   id: string;
@@ -121,7 +121,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({ nodes, edges, nodeTypes 
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
 
-  const { setOpen: closePopover } = useHoverCardStore();
+  const { setOpen: closePopover } = usePopoverStore();
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 

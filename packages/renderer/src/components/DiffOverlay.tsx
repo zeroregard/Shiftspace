@@ -1,10 +1,14 @@
 import React from 'react';
-import clsx from 'clsx';
-import * as HoverCard from '@radix-ui/react-hover-card';
+import * as Popover from '@radix-ui/react-popover';
 import { create } from 'zustand';
-import type { FileChange, DiffHunk as DiffHunkType, DiffLine as DiffLineType } from '../types';
+import type { FileChange } from '../types';
+import { hunksToUnified } from '../utils/hunksToUnified';
 
-export const useHoverCardStore = create<{
+const LazyPatchDiff = React.lazy(() =>
+  import('@pierre/diffs/react').then((m) => ({ default: m.PatchDiff }))
+);
+
+export const usePopoverStore = create<{
   openId: string | null;
   setOpen: (id: string | null) => void;
 }>((set) => ({
@@ -12,39 +16,37 @@ export const useHoverCardStore = create<{
   setOpen: (id) => set({ openId: id }),
 }));
 
-function DiffHunkHeader({ header }: { header: string }) {
-  return (
-    <div className="bg-diff-hunk-bg text-text-faint text-11 font-mono px-3 py-0.5 select-none">
-      {header}
-    </div>
-  );
-}
+/** @deprecated Use usePopoverStore instead */
+export const useHoverCardStore = usePopoverStore;
 
-function DiffLineRow({ type, content }: DiffLineType) {
-  return (
-    <div
-      className={clsx(
-        'font-mono text-11 px-3 py-px whitespace-pre overflow-hidden',
-        type === 'added' && 'text-status-added bg-diff-added-bg',
-        type === 'removed' && 'text-status-deleted bg-diff-removed-bg',
-        type === 'context' && 'text-text-dim'
-      )}
-    >
-      {type === 'added' ? '+' : type === 'removed' ? '-' : ' '}
-      {content}
-    </div>
-  );
-}
-
-function DiffHunkView({ hunk }: { hunk: DiffHunkType }) {
-  return (
-    <div>
-      <DiffHunkHeader header={hunk.header} />
-      {hunk.lines.map((line, i) => (
-        <DiffLineRow key={i} {...line} />
-      ))}
-    </div>
-  );
+function langFromPath(filePath: string): string {
+  const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+  const map: Record<string, string> = {
+    ts: 'typescript',
+    tsx: 'tsx',
+    js: 'javascript',
+    jsx: 'jsx',
+    css: 'css',
+    json: 'json',
+    md: 'markdown',
+    html: 'html',
+    py: 'python',
+    rs: 'rust',
+    go: 'go',
+    yaml: 'yaml',
+    yml: 'yaml',
+    sh: 'bash',
+    bash: 'bash',
+    sql: 'sql',
+    graphql: 'graphql',
+    vue: 'vue',
+    svelte: 'svelte',
+    toml: 'toml',
+    xml: 'xml',
+    scss: 'scss',
+    less: 'less',
+  };
+  return map[ext] ?? 'text';
 }
 
 function DiffHeader({ file }: { file: FileChange }) {
@@ -64,59 +66,89 @@ function EmptyDiff() {
   return <div className="px-3 py-2 text-text-faint text-11 italic">no diff available</div>;
 }
 
-const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => (
-  <>
-    <DiffHeader file={file} />
-    {file.diff?.length ? (
-      file.diff.map((hunk, i) => <DiffHunkView key={i} hunk={hunk} />)
-    ) : (
-      <EmptyDiff />
-    )}
-  </>
-));
+function DiffLoading() {
+  return <div className="px-3 py-4 text-text-faint text-11 italic text-center">loading diff…</div>;
+}
+
+const PATCH_DIFF_OPTIONS = {
+  diffStyle: 'unified' as const,
+  diffIndicators: 'classic' as const,
+  disableFileHeader: true,
+  disableLineNumbers: false,
+  overflow: 'scroll' as const,
+  themeType: 'dark' as const,
+};
+
+const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => {
+  const patch = React.useMemo(() => {
+    if (file.rawDiff) return file.rawDiff;
+    if (file.diff?.length) return hunksToUnified(file.path, file.diff, file.status);
+    return null;
+  }, [file.rawDiff, file.diff, file.path, file.status]);
+
+  const options = React.useMemo(
+    () => ({
+      ...PATCH_DIFF_OPTIONS,
+      language: langFromPath(file.path),
+    }),
+    [file.path]
+  );
+
+  return (
+    <>
+      <DiffHeader file={file} />
+      {patch ? (
+        <React.Suspense fallback={<DiffLoading />}>
+          <LazyPatchDiff patch={patch} options={options} />
+        </React.Suspense>
+      ) : (
+        <EmptyDiff />
+      )}
+    </>
+  );
+});
 DiffOverlayContent.displayName = 'DiffOverlayContent';
 
-export const DiffHoverCard = React.memo(
+export const DiffPopover = React.memo(
   ({ file, children }: { file: FileChange; children: React.ReactNode }) => {
     const id = React.useId();
-    const { openId, setOpen } = useHoverCardStore();
-    // Use a ref so the click handler stays stable (doesn't re-create on openId changes)
+    const { openId, setOpen } = usePopoverStore();
     const openIdRef = React.useRef(openId);
     openIdRef.current = openId;
     const handleClick = React.useCallback(
       (e: React.MouseEvent) => {
-        // Stop propagation so the canvas click-to-close handler doesn't fire
         e.stopPropagation();
         setOpen(openIdRef.current === id ? null : id);
       },
       [id, setOpen]
     );
     return (
-      <HoverCard.Root
-        openDelay={300}
-        closeDelay={150}
+      <Popover.Root
         open={openId === id}
         onOpenChange={(open) => {
           if (open) setOpen(id);
           else if (openId === id) setOpen(null);
         }}
       >
-        <HoverCard.Trigger asChild onClick={handleClick}>
+        <Popover.Trigger asChild onClick={handleClick}>
           {children}
-        </HoverCard.Trigger>
-        <HoverCard.Portal>
-          <HoverCard.Content
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
             side="right"
             sideOffset={8}
             align="start"
-            className="z-50 overflow-y-auto bg-canvas border border-border-default rounded-md animate-hover-card-open"
-            style={{ width: 360, maxHeight: 300 }}
+            className="z-50 overflow-y-auto bg-canvas border border-border-default rounded-md animate-popover-open"
+            style={{ width: 520, maxHeight: 420 }}
           >
             <DiffOverlayContent file={file} />
-          </HoverCard.Content>
-        </HoverCard.Portal>
-      </HoverCard.Root>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
     );
   }
 );
-DiffHoverCard.displayName = 'DiffHoverCard';
+DiffPopover.displayName = 'DiffPopover';
+
+/** @deprecated Use DiffPopover instead */
+export const DiffHoverCard = DiffPopover;
