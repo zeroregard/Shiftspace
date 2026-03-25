@@ -19,7 +19,7 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
 
   return (
     <div className="w-full h-full border-2 border-dashed border-border-dashed rounded-2xl bg-cluster-alpha text-text-primary px-7.5 py-5 text-left">
-      <div className="font-semibold text-text-primary text-13">
+      <div className="font-semibold text-text-primary text-13 whitespace-nowrap">
         {!isSingle && pathPart && <span>{pathPart} </span>}
         {!isSingle && pathPart ? (
           <>

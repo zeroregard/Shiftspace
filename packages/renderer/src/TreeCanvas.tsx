@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { usePopoverStore } from './components/DiffOverlay';
 
 export interface LayoutNode {
   id: string;
@@ -150,8 +149,6 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   const panZoomConfigRef = useRef<Required<PanZoomConfig>>(DEFAULT_PAN_ZOOM_CONFIG);
   panZoomConfigRef.current = { ...DEFAULT_PAN_ZOOM_CONFIG, ...panZoomConfig };
 
-  const { setOpen: closePopover } = usePopoverStore();
-
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
   // fitView on first data load
@@ -301,10 +298,6 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
     isPanningRef.current = false;
   }
 
-  function handleCanvasClick() {
-    closePopover(null);
-  }
-
   function handleFitView(e: React.MouseEvent) {
     e.stopPropagation();
     const el = containerRef.current;
@@ -329,7 +322,6 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundPosition: `${x}px ${y}px`,
       }}
-      onClick={handleCanvasClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

@@ -1,23 +1,11 @@
 import React from 'react';
-import * as Popover from '@radix-ui/react-popover';
-import { create } from 'zustand';
+import * as HoverCard from '@radix-ui/react-hover-card';
 import type { FileChange } from '../types';
 import { hunksToUnified } from '../utils/hunksToUnified';
 
 const LazyPatchDiff = React.lazy(() =>
   import('@pierre/diffs/react').then((m) => ({ default: m.PatchDiff }))
 );
-
-export const usePopoverStore = create<{
-  openId: string | null;
-  setOpen: (id: string | null) => void;
-}>((set) => ({
-  openId: null,
-  setOpen: (id) => set({ openId: id }),
-}));
-
-/** @deprecated Use usePopoverStore instead */
-export const useHoverCardStore = usePopoverStore;
 
 function langFromPath(filePath: string): string {
   const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
@@ -52,7 +40,7 @@ function langFromPath(filePath: string): string {
 function DiffHeader({ file }: { file: FileChange }) {
   const fileName = file.path.split('/').pop() ?? file.path;
   return (
-    <div className="flex items-center justify-between px-3 py-2 border-b border-border-default">
+    <div className="sticky top-0 z-10 flex items-center justify-between px-3 py-2 border-b border-border-default bg-canvas shrink-0">
       <span className="text-text-secondary text-11 font-medium truncate">{fileName}</span>
       <span className="text-text-faint text-10 shrink-0 ml-2">
         <span className="text-status-added">+{file.linesAdded}</span>{' '}
@@ -95,58 +83,39 @@ const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => {
   );
 
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0">
       <DiffHeader file={file} />
-      {patch ? (
-        <React.Suspense fallback={<DiffLoading />}>
-          <LazyPatchDiff patch={patch} options={options} />
-        </React.Suspense>
-      ) : (
-        <EmptyDiff />
-      )}
-    </>
+      <div className="flex-1 min-h-0 overflow-auto">
+        {patch ? (
+          <React.Suspense fallback={<DiffLoading />}>
+            <LazyPatchDiff patch={patch} options={options} />
+          </React.Suspense>
+        ) : (
+          <EmptyDiff />
+        )}
+      </div>
+    </div>
   );
 });
 DiffOverlayContent.displayName = 'DiffOverlayContent';
 
 export const DiffPopover = React.memo(
-  ({ file, children }: { file: FileChange; children: React.ReactNode }) => {
-    const id = React.useId();
-    const { openId, setOpen } = usePopoverStore();
-    const openIdRef = React.useRef(openId);
-    openIdRef.current = openId;
-    const handleClick = React.useCallback(
-      (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setOpen(openIdRef.current === id ? null : id);
-      },
-      [id, setOpen]
-    );
-    return (
-      <Popover.Root
-        open={openId === id}
-        onOpenChange={(open) => {
-          if (open) setOpen(id);
-          else if (openId === id) setOpen(null);
-        }}
-      >
-        <Popover.Trigger asChild onClick={handleClick}>
-          {children}
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            side="right"
-            sideOffset={8}
-            align="start"
-            className="z-50 overflow-y-auto bg-canvas border border-border-default rounded-md animate-popover-open"
-            style={{ width: 520, maxHeight: 420 }}
-          >
-            <DiffOverlayContent file={file} />
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-    );
-  }
+  ({ file, children }: { file: FileChange; children: React.ReactNode }) => (
+    <HoverCard.Root openDelay={300} closeDelay={200}>
+      <HoverCard.Trigger asChild>{children}</HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="right"
+          sideOffset={8}
+          align="start"
+          className="z-50 flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md animate-popover-open"
+          style={{ width: 720, maxHeight: 420 }}
+        >
+          <DiffOverlayContent file={file} />
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
+  )
 );
 DiffPopover.displayName = 'DiffPopover';
 

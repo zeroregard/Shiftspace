@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
-import { DiffPopover, usePopoverStore } from './DiffOverlay';
+import { DiffPopover } from './DiffOverlay';
 import { FileIcon } from '../icons';
 
 export interface FileNodeData {
@@ -15,7 +15,6 @@ export interface FileNodeData {
 
 export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) => {
   const { file, onFileClick, worktreeId } = data;
-  const setOpen = usePopoverStore((s) => s.setOpen);
   const fileName = file.path.split('/').pop() ?? file.path;
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
 
@@ -33,10 +32,7 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
             onFileClick ? 'cursor-pointer' : 'cursor-default',
             isPulsing ? 'bg-pulse-overlay' : 'bg-transparent'
           )}
-          onClick={() => {
-            setOpen(null);
-            onFileClick?.(worktreeId, file.path);
-          }}
+          onClick={() => onFileClick?.(worktreeId, file.path)}
         >
           <div className="flex items-center gap-1">
             <span className="shrink-0 flex items-center">
