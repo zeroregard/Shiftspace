@@ -114,13 +114,15 @@ export function parseRawDiffSections(output: string): Map<string, string> {
       const minusMatch = section.match(/^--- (.+)$/m);
       if (!minusMatch) continue;
       rawPath = minusMatch[1]!.trim();
+      if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
+        rawPath = JSON.parse(rawPath) as string;
+      }
       if (rawPath.startsWith('a/')) rawPath = rawPath.slice(2);
     } else {
+      if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
+        rawPath = JSON.parse(rawPath) as string;
+      }
       if (rawPath.startsWith('b/')) rawPath = rawPath.slice(2);
-    }
-
-    if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
-      rawPath = JSON.parse(rawPath) as string;
     }
 
     // Extract from --- line onward (the unified diff portion)
@@ -157,13 +159,13 @@ export function parseDiffOutput(output: string): Map<string, DiffHunk[]> {
     let rawPath = plusMatch[1]!.trim();
     if (rawPath === '/dev/null') continue; // pure deletion
 
-    // Strip the "b/" prefix git adds in unified diffs
-    if (rawPath.startsWith('b/')) rawPath = rawPath.slice(2);
-
-    // Unquote git-quoted paths
+    // Unquote git-quoted paths (must happen before b/ prefix stripping)
     if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
       rawPath = JSON.parse(rawPath) as string;
     }
+
+    // Strip the "b/" prefix git adds in unified diffs
+    if (rawPath.startsWith('b/')) rawPath = rawPath.slice(2);
 
     const hunks: DiffHunk[] = [];
 
