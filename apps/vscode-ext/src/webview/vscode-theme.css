@@ -38,6 +38,18 @@
 
   /* pulse overlay has no direct VSCode equivalent — keep the green glow */
   --color-pulse-overlay: rgba(78, 201, 78, 0.06);
+
+  /* @pierre/diffs theme integration */
+  --diffs-bg: var(--vscode-editor-background);
+  --diffs-fg: var(--vscode-editor-foreground);
+  --diffs-addition-base: var(--vscode-gitDecoration-addedResourceForeground);
+  --diffs-deletion-base: var(--vscode-gitDecoration-deletedResourceForeground);
+  --diffs-bg-context: transparent;
+  --diffs-bg-separator: var(--vscode-diffEditor-diagonalFill);
+  --diffs-bg-addition: var(--vscode-diffEditor-insertedLineBackground);
+  --diffs-bg-deletion: var(--vscode-diffEditor-removedLineBackground);
+  --diffs-border: var(--vscode-panel-border);
+  --diffs-line-number: var(--vscode-editorLineNumber-foreground);
 }
 
 /* Ensure the body background follows the canvas token */

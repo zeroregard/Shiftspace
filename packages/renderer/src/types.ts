@@ -24,6 +24,7 @@ export interface FileChange {
   linesRemoved: number;
   lastChangedAt: number; // timestamp, used for pulse animation
   diff?: DiffHunk[];
+  rawDiff?: string; // unified diff string for @pierre/diffs PatchDiff
 }
 
 export type ShiftspaceEvent =

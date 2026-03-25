@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
-import { DiffHoverCard, useHoverCardStore } from './DiffOverlay';
+import { DiffPopover, usePopoverStore } from './DiffOverlay';
 import { FileIcon } from '../icons';
 
 export interface FileNodeData {
@@ -15,12 +15,12 @@ export interface FileNodeData {
 
 export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) => {
   const { file, onFileClick, worktreeId } = data;
-  const setOpen = useHoverCardStore((s) => s.setOpen);
+  const setOpen = usePopoverStore((s) => s.setOpen);
   const fileName = file.path.split('/').pop() ?? file.path;
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
 
   return (
-    <DiffHoverCard file={file}>
+    <DiffPopover file={file}>
       <div
         className={clsx(
           'w-full h-full border rounded-md text-text-secondary transition-[background,opacity] duration-300',
@@ -58,7 +58,7 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
           </div>
         </button>
       </div>
-    </DiffHoverCard>
+    </DiffPopover>
   );
 });
 

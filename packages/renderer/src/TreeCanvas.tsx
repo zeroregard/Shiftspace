@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useHoverCardStore } from './components/DiffOverlay';
+import { usePopoverStore } from './components/DiffOverlay';
 
 export interface LayoutNode {
   id: string;
@@ -150,7 +150,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   const panZoomConfigRef = useRef<Required<PanZoomConfig>>(DEFAULT_PAN_ZOOM_CONFIG);
   panZoomConfigRef.current = { ...DEFAULT_PAN_ZOOM_CONFIG, ...panZoomConfig };
 
-  const { setOpen: closePopover } = useHoverCardStore();
+  const { setOpen: closePopover } = usePopoverStore();
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 

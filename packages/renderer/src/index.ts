@@ -8,4 +8,4 @@ export type {
   DiffLine,
   DiffHunk,
 } from './types';
-export { DiffHoverCard } from './components/DiffOverlay';
+export { DiffPopover, DiffHoverCard } from './components/DiffOverlay';

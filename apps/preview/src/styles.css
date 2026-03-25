@@ -77,6 +77,20 @@
   --color-diff-hunk-bg:    rgba(255, 255, 255, 0.03);
 }
 
+/* @pierre/diffs theme integration */
+:root {
+  --diffs-bg: var(--color-canvas);
+  --diffs-fg: var(--color-text-primary);
+  --diffs-addition-base: var(--color-status-added);
+  --diffs-deletion-base: var(--color-status-deleted);
+  --diffs-bg-context: transparent;
+  --diffs-bg-separator: var(--color-diff-hunk-bg);
+  --diffs-bg-addition: var(--color-diff-added-bg);
+  --diffs-bg-deletion: var(--color-diff-removed-bg);
+  --diffs-border: var(--color-border-default);
+  --diffs-line-number: var(--color-text-faint);
+}
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .animate-fade-in { animation: fadeIn 0.1s ease; }
 
@@ -90,5 +104,7 @@
 }
 .animate-hover-card-open  { animation: slideDownAndFade 0.15s ease; }
 .animate-hover-card-close { animation: slideUpAndFade  0.1s  ease; }
+.animate-popover-open     { animation: slideDownAndFade 0.15s ease; }
+.animate-popover-close    { animation: slideUpAndFade  0.1s  ease; }
 
 html, body, #root { width: 100%; height: 100%; background: var(--color-canvas); }
