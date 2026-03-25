@@ -94,6 +94,47 @@ export function parseNumstatOutput(
 }
 
 /**
+ * Split raw `git diff` output into per-file unified diff sections.
+ * Returns a map of file path → raw unified diff string (everything from
+ * the "--- " line through the end of the last hunk for that file).
+ */
+export function parseRawDiffSections(output: string): Map<string, string> {
+  const result = new Map<string, string>();
+  if (!output.trim()) return result;
+
+  const sections = output.split(/^diff --git /m).slice(1);
+
+  for (const section of sections) {
+    const plusMatch = section.match(/^\+\+\+ (.+)$/m);
+    if (!plusMatch) continue;
+
+    let rawPath = plusMatch[1]!.trim();
+    if (rawPath === '/dev/null') {
+      // For deletions, use the --- path
+      const minusMatch = section.match(/^--- (.+)$/m);
+      if (!minusMatch) continue;
+      rawPath = minusMatch[1]!.trim();
+      if (rawPath.startsWith('a/')) rawPath = rawPath.slice(2);
+    } else {
+      if (rawPath.startsWith('b/')) rawPath = rawPath.slice(2);
+    }
+
+    if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
+      rawPath = JSON.parse(rawPath) as string;
+    }
+
+    // Extract from --- line onward (the unified diff portion)
+    const minusLineIdx = section.indexOf('--- ');
+    if (minusLineIdx === -1) continue;
+    const rawDiff = section.slice(minusLineIdx).trimEnd();
+
+    result.set(rawPath, rawDiff);
+  }
+
+  return result;
+}
+
+/**
  * Parse unified `git diff` output into a map of file path → DiffHunk[].
  *
  * Handles standard changes and staged new files. Binary files and pure
@@ -212,8 +253,10 @@ export async function getFileChanges(worktreePath: string): Promise<FileChange[]
 
   const unstagedDiffs = parseDiffOutput(diffOutput);
   const stagedDiffs = parseDiffOutput(cachedDiffOutput);
+  const unstagedRaw = parseRawDiffSections(diffOutput);
+  const stagedRaw = parseRawDiffSections(cachedDiffOutput);
 
-  // Populate diff hunks and fix line counts for untracked files
+  // Populate diff hunks, rawDiff, and fix line counts for untracked files
   await Promise.all(
     changes.map(async (fc) => {
       if (fc.status === 'added' && !fc.staged) {
@@ -232,6 +275,13 @@ export async function getFileChanges(worktreePath: string): Promise<FileChange[]
                 lines: lines.map((l) => ({ type: 'added' as const, content: l })),
               },
             ];
+            // Build raw unified diff for untracked files
+            fc.rawDiff = [
+              `--- /dev/null`,
+              `+++ b/${fc.path}`,
+              `@@ -0,0 +1,${lines.length} @@`,
+              ...lines.map((l) => `+${l}`),
+            ].join('\n');
           }
         } catch {
           // binary or unreadable — leave linesAdded = 0, diff = undefined
@@ -241,6 +291,12 @@ export async function getFileChanges(worktreePath: string): Promise<FileChange[]
         const unstaged = unstagedDiffs.get(fc.path) ?? [];
         const staged = stagedDiffs.get(fc.path) ?? [];
         fc.diff = [...unstaged, ...staged];
+
+        // Combine raw diff sections
+        const rawParts = [unstagedRaw.get(fc.path), stagedRaw.get(fc.path)].filter(Boolean);
+        if (rawParts.length > 0) {
+          fc.rawDiff = rawParts.join('\n');
+        }
       }
     })
   );

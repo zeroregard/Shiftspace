@@ -67,6 +67,20 @@ function getSampleLines(path: string): string[] {
   return SAMPLE_LINES[ext] ?? FALLBACK_LINES;
 }
 
+function hunksToRawDiff(filePath: string, hunks: DiffHunk[], status: FileChange['status']): string {
+  const oldPath = status === 'added' ? '/dev/null' : `a/${filePath}`;
+  const newPath = status === 'deleted' ? '/dev/null' : `b/${filePath}`;
+  const lines: string[] = [`--- ${oldPath}`, `+++ ${newPath}`];
+  for (const hunk of hunks) {
+    lines.push(hunk.header);
+    for (const line of hunk.lines) {
+      const prefix = line.type === 'added' ? '+' : line.type === 'removed' ? '-' : ' ';
+      lines.push(`${prefix}${line.content}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 function makeDiff(
   path: string,
   linesAdded: number,
@@ -148,6 +162,7 @@ function makeFile(path: string, persona: AgentPersona, staged = false): FileChan
         : ['modified', 'modified'];
 
   const status = pick(statuses);
+  const diff = makeDiff(path, linesAdded, linesRemoved, status);
   return {
     path,
     status,
@@ -155,7 +170,8 @@ function makeFile(path: string, persona: AgentPersona, staged = false): FileChan
     linesAdded,
     linesRemoved,
     lastChangedAt: Date.now(),
-    diff: makeDiff(path, linesAdded, linesRemoved, status),
+    diff,
+    rawDiff: hunksToRawDiff(path, diff, status),
   };
 }
 
