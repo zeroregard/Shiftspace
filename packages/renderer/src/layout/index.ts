@@ -24,7 +24,10 @@ export function computeSingleWorktreeLayout(
   wt: WorktreeState,
   onFileClick?: (worktreeId: string, filePath: string) => void,
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void,
-  onRequestBranchList?: (worktreeId: string) => void
+  onRequestBranchList?: (worktreeId: string) => void,
+  onCheckoutBranch?: (worktreeId: string, branch: string) => void,
+  onFolderClick?: (worktreeId: string, folderPath: string) => void,
+  onFetchBranches?: (worktreeId: string) => void
 ): SingleWorktreeLayout {
   const treeChildren = buildTree(wt.id, wt.files);
   const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
@@ -44,19 +47,38 @@ export function computeSingleWorktreeLayout(
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
 
-  const data: WorktreeNodeData = { worktree: wt, onDiffModeChange, onRequestBranchList };
+  const data: WorktreeNodeData = {
+    worktree: wt,
+    onDiffModeChange,
+    onRequestBranchList,
+    onCheckoutBranch,
+    onFetchBranches,
+  };
   nodes.push({
     id: wtNodeId,
     type: 'worktreeNode',
     position: { x: 0, y: 0 },
     width: containerW,
     height: containerH,
+    label: headerText,
     data,
   });
 
   const contentsOffsetX = (containerW - totalW) / 2;
   for (const layout of layouts) {
-    flattenRect(layout, wtNodeId, true, contentsOffsetX, 0, wt.id, onFileClick, nodes, edges);
+    flattenRect(
+      layout,
+      wtNodeId,
+      true,
+      contentsOffsetX,
+      0,
+      wt.id,
+      onFileClick,
+      nodes,
+      edges,
+      false,
+      onFolderClick
+    );
   }
 
   return { nodes, edges, containerW, containerH };
@@ -66,29 +88,37 @@ export function computeFullLayout(
   wtArray: WorktreeState[],
   onFileClick?: (worktreeId: string, filePath: string) => void,
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void,
-  onRequestBranchList?: (worktreeId: string) => void
+  onRequestBranchList?: (worktreeId: string) => void,
+  onCheckoutBranch?: (worktreeId: string, branch: string) => void,
+  onFolderClick?: (worktreeId: string, folderPath: string) => void,
+  onFetchBranches?: (worktreeId: string) => void
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const perLayouts = wtArray.map((wt) => ({
     wt,
-    layout: computeSingleWorktreeLayout(wt, onFileClick, onDiffModeChange, onRequestBranchList),
+    layout: computeSingleWorktreeLayout(
+      wt,
+      onFileClick,
+      onDiffModeChange,
+      onRequestBranchList,
+      onCheckoutBranch,
+      onFolderClick,
+      onFetchBranches
+    ),
   }));
 
-  const totalWidth = perLayouts.reduce(
-    (sum, wl, i) => sum + wl.layout.containerW + (i > 0 ? CONTAINER_GAP : 0),
-    0
-  );
-  const startX = -totalWidth / 2;
+  const maxW = Math.max(...perLayouts.map((wl) => wl.layout.containerW), 0);
+  let cursorY = 0;
 
-  let cursorX = startX;
   const allNodes: LayoutNode[] = [];
   const allEdges: LayoutEdge[] = [];
 
   for (const { layout } of perLayouts) {
+    const offsetX = (maxW - layout.containerW) / 2;
     for (const n of layout.nodes) {
-      allNodes.push({ ...n, position: { x: n.position.x + cursorX, y: n.position.y } });
+      allNodes.push({ ...n, position: { x: n.position.x + offsetX, y: n.position.y + cursorY } });
     }
     for (const e of layout.edges) allEdges.push(e);
-    cursorX += layout.containerW + CONTAINER_GAP;
+    cursorY += layout.containerH + CONTAINER_GAP;
   }
 
   return { nodes: allNodes, edges: allEdges };

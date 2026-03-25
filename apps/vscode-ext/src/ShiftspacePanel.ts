@@ -53,7 +53,14 @@ export class ShiftspacePanel {
     this._panel.webview.html = getWebviewHtml(this._panel.webview, context.extensionUri);
 
     this._panel.webview.onDidReceiveMessage(
-      (message: { type: string; worktreeId?: string; filePath?: string; diffMode?: unknown }) => {
+      (message: {
+        type: string;
+        worktreeId?: string;
+        filePath?: string;
+        diffMode?: unknown;
+        branch?: string;
+        folderPath?: string;
+      }) => {
         if (message.type === 'ready') {
           void this.onReady();
         } else if (message.type === 'file-click') {
@@ -65,6 +72,12 @@ export class ShiftspacePanel {
           );
         } else if (message.type === 'get-branch-list' && message.worktreeId) {
           void this._gitProvider?.handleGetBranchList(message.worktreeId);
+        } else if (message.type === 'checkout-branch' && message.worktreeId && message.branch) {
+          void this._gitProvider?.handleCheckoutBranch(message.worktreeId, message.branch);
+        } else if (message.type === 'folder-click' && message.worktreeId && message.folderPath) {
+          void this._gitProvider?.handleFolderClick(message.worktreeId, message.folderPath);
+        } else if (message.type === 'fetch-branches' && message.worktreeId) {
+          void this._gitProvider?.handleFetchBranches(message.worktreeId);
         }
       },
       null,

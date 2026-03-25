@@ -4,6 +4,8 @@ export interface TreeNode {
   id: string;
   kind: 'folder' | 'file';
   name: string;
+  /** Relative path from worktree root — set for folder nodes. */
+  path?: string;
   file?: FileChange;
   children: TreeNode[];
 }
@@ -57,6 +59,7 @@ export function buildTree(wtId: string, files: FileChange[]): TreeNode[] {
         id: `folder-${wtId}-${collapsedPath}`,
         kind: 'folder',
         name: collapsedName,
+        path: collapsedPath,
         children: [],
       };
 

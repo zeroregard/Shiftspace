@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
-import * as Popover from '@radix-ui/react-popover';
+import React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { NodeComponentProps } from '../TreeCanvas';
 import type { WorktreeState, DiffMode } from '../types';
 import { useShiftspaceStore } from '../store';
+import { BranchPickerPopover } from './BranchPickerPopover';
+import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 
 // Stable reference — avoids returning a new [] each render, which would cause
 // useSyncExternalStore (Zustand) to see a changed snapshot every render → #185.
@@ -12,6 +14,8 @@ export interface WorktreeNodeData {
   worktree: WorktreeState;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
+  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
+  onFetchBranches?: (worktreeId: string) => void;
   [key: string]: unknown;
 }
 
@@ -64,10 +68,12 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
   const isSingle = useShiftspaceStore((s) => s.worktrees.size <= 1);
   const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
   const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(wt.id));
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [open, setOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const isFetchingBranches = useShiftspaceStore((s) => s.fetchLoading.has(wt.id));
+  const lastFetchAt = useShiftspaceStore((s) => s.lastFetchAt.get(wt.id));
+  // All branches currently checked out across every worktree — stable via useShallow.
+  const occupiedBranches = useShiftspaceStore(
+    useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
+  );
 
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
@@ -80,41 +86,60 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
 
   const modeLabel = diffMode.type === 'working' ? 'Working changes' : `vs ${diffMode.branch}`;
 
-  const filteredBranches = branchList
-    .filter((b) => !searchQuery || b.toLowerCase().includes(searchQuery.toLowerCase()))
-    .slice(0, 10);
+  // Branches for the checkout picker — exclude any branch already checked out
+  // in ANY worktree (git rejects switching to an occupied branch).
+  const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
-    if (nextOpen) {
-      data.onRequestBranchList?.(wt.id);
-      setTimeout(() => searchInputRef.current?.focus(), 50);
-    } else {
-      setSearchQuery('');
-    }
-  };
+  // Static options for the diff mode picker
+  const diffModeStaticOptions = [
+    {
+      key: 'working',
+      label: 'Working changes',
+      selected: diffMode.type === 'working',
+      onSelect: () => data.onDiffModeChange?.(wt.id, { type: 'working' }),
+    },
+    ...(branchList.includes(defaultBranch) || !defaultBranch
+      ? []
+      : [
+          {
+            key: `default-${defaultBranch}`,
+            label: `vs ${defaultBranch}`,
+            selected: isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch }),
+            onSelect: () =>
+              data.onDiffModeChange?.(wt.id, { type: 'branch', branch: defaultBranch }),
+          },
+        ]),
+  ];
 
-  const selectMode = (newMode: DiffMode) => {
-    if (!isDiffModeEqual(newMode, diffMode)) {
-      data.onDiffModeChange?.(wt.id, newMode);
-    }
-    setOpen(false);
-    setSearchQuery('');
-  };
+  // Branches for diff mode: exclude current branch, show all others
+  const diffModeBranches = branchList.filter((b) => b !== wt.branch);
 
   return (
     <div className="w-full h-full border-2 border-dashed border-border-dashed rounded-2xl bg-cluster-alpha text-text-primary px-7.5 py-5 text-left">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="font-semibold text-text-primary text-13 whitespace-nowrap">
+          <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
             {!isSingle && pathPart && <span>{pathPart} </span>}
-            {!isSingle && pathPart ? (
-              <>
-                (<span className="text-text-faint font-normal">{wt.branch}</span>)
-              </>
-            ) : (
-              <span className="text-text-muted font-normal">{wt.branch}</span>
-            )}
+            {/* Branch name — click to switch branches */}
+            <BranchPickerPopover
+              trigger={
+                <button
+                  className="text-text-faint font-normal hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  title="Switch branch"
+                >
+                  {!isSingle && pathPart ? `(${wt.branch})` : wt.branch}
+                </button>
+              }
+              branches={checkoutBranches}
+              selectedBranch={wt.branch}
+              onSelectBranch={(branch) => data.onCheckoutBranch?.(wt.id, branch)}
+              onOpen={() => data.onRequestBranchList?.(wt.id)}
+              onFetch={data.onFetchBranches ? () => data.onFetchBranches!(wt.id) : undefined}
+              isFetching={isFetchingBranches}
+              lastFetchAt={lastFetchAt}
+            />
           </div>
           <div className="text-11 text-text-muted mt-0.5">
             {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
@@ -129,8 +154,8 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
         </div>
 
         {/* Diff mode selector */}
-        <Popover.Root open={open} onOpenChange={handleOpenChange}>
-          <Popover.Trigger asChild>
+        <BranchPickerPopover
+          trigger={
             <button
               className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-10 whitespace-nowrap cursor-pointer bg-transparent shrink-0"
               onPointerDown={(e) => e.stopPropagation()}
@@ -139,89 +164,14 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
               <GitCompareIcon />
               <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
             </button>
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              className="z-50 w-52 rounded-lg border border-border-dashed bg-[#161b22] p-1 shadow-lg"
-              align="end"
-              sideOffset={4}
-              onOpenAutoFocus={(e) => e.preventDefault()}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              {/* Search input */}
-              <div className="px-1.5 py-1 mb-1">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Search branches…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border border-border-dashed rounded px-2 py-1 text-11 text-text-primary outline-none placeholder:text-text-muted"
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setOpen(false);
-                    e.stopPropagation();
-                  }}
-                />
-              </div>
-
-              {/* Working changes option */}
-              {(!searchQuery || 'working changes'.includes(searchQuery.toLowerCase())) && (
-                <button
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-11 text-left cursor-pointer border-none bg-transparent hover:bg-[rgba(255,255,255,0.06)] ${diffMode.type === 'working' ? 'text-text-primary' : 'text-text-muted'}`}
-                  onClick={() => selectMode({ type: 'working' })}
-                >
-                  <span className="w-3 text-center text-10">
-                    {diffMode.type === 'working' ? '✓' : ''}
-                  </span>
-                  Working changes
-                </button>
-              )}
-
-              {/* Default branch option (always visible when not searching) */}
-              {!searchQuery && (
-                <button
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-11 text-left cursor-pointer border-none bg-transparent hover:bg-[rgba(255,255,255,0.06)] ${isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch }) ? 'text-text-primary' : 'text-text-muted'}`}
-                  onClick={() => selectMode({ type: 'branch', branch: defaultBranch })}
-                >
-                  <span className="w-3 text-center text-10">
-                    {isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch })
-                      ? '✓'
-                      : ''}
-                  </span>
-                  vs {defaultBranch}
-                </button>
-              )}
-
-              {/* Separator */}
-              {filteredBranches.length > 0 && (
-                <div className="my-1 border-t border-[rgba(255,255,255,0.06)]" />
-              )}
-
-              {/* Filtered branch list */}
-              {filteredBranches
-                .filter((b) => searchQuery || b !== defaultBranch) // Don't duplicate default when not searching
-                .map((b) => (
-                  <button
-                    key={b}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-11 text-left cursor-pointer border-none bg-transparent hover:bg-[rgba(255,255,255,0.06)] ${isDiffModeEqual(diffMode, { type: 'branch', branch: b }) ? 'text-text-primary' : 'text-text-muted'}`}
-                    onClick={() => selectMode({ type: 'branch', branch: b })}
-                  >
-                    <span className="w-3 text-center text-10">
-                      {isDiffModeEqual(diffMode, { type: 'branch', branch: b }) ? '✓' : ''}
-                    </span>
-                    vs {b}
-                  </button>
-                ))}
-
-              {/* Note */}
-              <div className="mt-1 px-2 py-1 text-[10px] text-text-faint border-t border-[rgba(255,255,255,0.06)]">
-                Tags and commit hashes not yet supported
-              </div>
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
+          }
+          branches={diffModeBranches}
+          selectedBranch={diffMode.type === 'branch' ? diffMode.branch : null}
+          staticOptions={diffModeStaticOptions}
+          branchLabel={(b) => `vs ${b}`}
+          onSelectBranch={(branch) => data.onDiffModeChange?.(wt.id, { type: 'branch', branch })}
+          onOpen={() => data.onRequestBranchList?.(wt.id)}
+        />
       </div>
     </div>
   );

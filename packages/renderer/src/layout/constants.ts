@@ -1,7 +1,7 @@
 export const NODE_H_GAP = 30;
 export const FOLDER_V_GAP = 50;
 export const FILE_V_GAP = 8;
-export const FILE_NODE_W = 150;
+export const FILE_NODE_W = 200;
 export const FILE_NODE_H = 44;
 export const FOLDER_NODE_W = 140;
 export const FOLDER_NODE_H = 32;

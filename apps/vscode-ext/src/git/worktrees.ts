@@ -138,6 +138,19 @@ export async function listBranches(repoRoot: string): Promise<string[]> {
 }
 
 /**
+ * Checkout a branch in the given worktree directory.
+ * Throws if the checkout fails (e.g. uncommitted changes, branch doesn't exist).
+ */
+export async function checkoutBranch(worktreePath: string, branch: string): Promise<void> {
+  await execFileAsync('git', ['checkout', branch], { cwd: worktreePath, timeout: 10_000 });
+}
+
+/** Fetch all remotes and prune stale tracking branches. */
+export async function fetchRemote(repoRoot: string): Promise<void> {
+  await execFileAsync('git', ['fetch', '--all', '--prune'], { cwd: repoRoot, timeout: 60_000 });
+}
+
+/**
  * Check whether the directory is a git repository.
  * Returns 'ok', 'not-repo', or 'no-git' (git binary missing).
  */
