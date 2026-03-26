@@ -135,8 +135,7 @@ shiftspace/
 │   │   └── controls/      # UI to configure simulation
 │   └── vscode-ext/        # VSCode extension (Phase 2)
 │       └── ...            # Extension host that feeds real git data to renderer
-├── package.json           # Workspace root (pnpm workspaces)
-└── turbo.json             # Turborepo config
+└── package.json           # Workspace root (bun workspaces)
 ```
 
 **Key architectural boundary:** `packages/renderer` accepts a data interface (worktrees, files, change events) and renders them. It has zero knowledge of where the data comes from — mock engine or real git.
@@ -233,7 +232,7 @@ The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen densi
 | Git interaction     | Shell commands (`git worktree list`, `git status`, `git diff --stat`) |
 | Filesystem watching | VSCode FileSystemWatcher API                                          |
 | Port detection      | `lsof` / `netstat` (macOS/Linux first)                                |
-| Build tooling       | Turborepo + pnpm workspaces                                           |
+| Build tooling       | Bun workspaces                                                        |
 | Preview hosting     | Vite + Vercel                                                         |
 
 ---

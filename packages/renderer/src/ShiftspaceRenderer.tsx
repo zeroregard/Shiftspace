@@ -13,6 +13,9 @@ interface Props {
   onTerminalOpen?: (worktreeId: string) => void;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
+  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
+  onFolderClick?: (worktreeId: string, folderPath: string) => void;
+  onFetchBranches?: (worktreeId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -24,6 +27,9 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onFileClick,
   onDiffModeChange,
   onRequestBranchList,
+  onCheckoutBranch,
+  onFolderClick,
+  onFetchBranches,
   panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
@@ -61,13 +67,37 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     []
   );
 
+  const checkoutBranchRef = useRef(onCheckoutBranch);
+  checkoutBranchRef.current = onCheckoutBranch;
+  const stableCheckoutBranch = useCallback(
+    (wtId: string, branch: string) => checkoutBranchRef.current?.(wtId, branch),
+    []
+  );
+
+  const folderClickRef = useRef(onFolderClick);
+  folderClickRef.current = onFolderClick;
+  const stableFolderClick = useCallback(
+    (wtId: string, folderPath: string) => folderClickRef.current?.(wtId, folderPath),
+    []
+  );
+
+  const fetchBranchesRef = useRef(onFetchBranches);
+  fetchBranchesRef.current = onFetchBranches;
+  const stableFetchBranches = useCallback((wtId: string) => fetchBranchesRef.current?.(wtId), []);
+
   // Per-worktree layout cache: reuse layout when WorktreeState reference is unchanged.
   type CacheEntry = { wtRef: WorktreeState; layout: SingleWorktreeLayout };
   const perLayoutCacheRef = useRef<Map<string, CacheEntry>>(new Map());
 
   const { nodes, edges } = useMemo(() => {
     const newCache = new Map<string, CacheEntry>();
-    const wtArray = Array.from(worktrees.values());
+    const wtArray = Array.from(worktrees.values()).sort((a, b) => {
+      const aIsMain = a.branch === 'main' || a.branch === 'master';
+      const bIsMain = b.branch === 'main' || b.branch === 'master';
+      if (aIsMain && !bIsMain) return -1;
+      if (!aIsMain && bIsMain) return 1;
+      return 0;
+    });
 
     const perLayouts = wtArray.map((wt) => {
       const cached = perLayoutCacheRef.current.get(wt.id);
@@ -78,7 +108,10 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
               wt,
               stableFileClick,
               stableDiffModeChange,
-              stableRequestBranchList
+              stableRequestBranchList,
+              stableCheckoutBranch,
+              stableFolderClick,
+              stableFetchBranches
             );
       newCache.set(wt.id, { wtRef: wt, layout });
       return layout;
@@ -86,25 +119,31 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
     perLayoutCacheRef.current = newCache;
 
-    const totalWidth = perLayouts.reduce(
-      (sum, l, i) => sum + l.containerW + (i > 0 ? CONTAINER_GAP : 0),
-      0
-    );
-    let cursorX = -totalWidth / 2;
+    const maxW = Math.max(...perLayouts.map((l) => l.containerW), 0);
+    let cursorY = 0;
 
     const allNodes = [];
     const allEdges = [];
 
     for (const layout of perLayouts) {
+      const offsetX = (maxW - layout.containerW) / 2;
       for (const n of layout.nodes) {
-        allNodes.push({ ...n, position: { x: n.position.x + cursorX, y: n.position.y } });
+        allNodes.push({ ...n, position: { x: n.position.x + offsetX, y: n.position.y + cursorY } });
       }
       for (const e of layout.edges) allEdges.push(e);
-      cursorX += layout.containerW + CONTAINER_GAP;
+      cursorY += layout.containerH + CONTAINER_GAP;
     }
 
     return { nodes: allNodes, edges: allEdges };
-  }, [worktrees, stableFileClick, stableDiffModeChange, stableRequestBranchList]);
+  }, [
+    worktrees,
+    stableFileClick,
+    stableDiffModeChange,
+    stableRequestBranchList,
+    stableCheckoutBranch,
+    stableFolderClick,
+    stableFetchBranches,
+  ]);
 
   return (
     <div className="w-full h-full bg-canvas">

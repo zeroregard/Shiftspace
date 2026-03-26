@@ -33,11 +33,15 @@
   /* Subtle pulse overlay color */
   --color-pulse-overlay: rgba(78, 201, 78, 0.06);
 
+  /* Hover background for list/menu items */
+  --color-item-hover: var(--color-node-file-pulse);
+
   --color-diff-added-bg:   rgba(78, 201, 78, 0.08);
   --color-diff-removed-bg: rgba(224, 92, 92, 0.08);
   --color-diff-hunk-bg:    rgba(255, 255, 255, 0.03);
 }
 
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .animate-fade-in { animation: fadeIn 0.1s ease; }
 

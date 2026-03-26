@@ -1,14 +1,10 @@
-name: Update Screenshots
+name: E2E Tests - Update snapshots
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to update screenshots on'
-        required: true
 
-env:
-  NODE_VERSION: '20'
+permissions:
+  contents: write
 
 jobs:
   update:
@@ -19,17 +15,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          bun-version: latest
 
       - name: Restore node_modules cache
         uses: actions/cache@v4
@@ -38,18 +29,29 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: |
             node-modules-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
+
+      - name: Restore Playwright browsers cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/preview/package.json') }}
+
+      - name: Install Playwright system deps
+        run: bun run --filter @shiftspace/preview playwright:install-deps
 
       - name: Install Playwright browsers
-        run: pnpm --filter @shiftspace/preview exec playwright install chromium --with-deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bun run --filter @shiftspace/preview playwright:install
 
       - name: Update snapshots
-        run: pnpm --filter @shiftspace/preview test:e2e:update
+        run: bun run --filter @shiftspace/preview test:e2e:update
 
       - name: Commit updated screenshots
         run: |

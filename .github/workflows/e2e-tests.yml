@@ -9,9 +9,6 @@ concurrency:
   group: e2e-tests-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NODE_VERSION: '20'
-
 jobs:
   e2e:
     name: 🎭 E2E Tests
@@ -21,14 +18,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          bun-version: latest
 
       - name: Restore node_modules cache
         uses: actions/cache@v4
@@ -37,15 +30,26 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: |
             node-modules-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
+
+      - name: Restore Playwright browsers cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/preview/package.json') }}
+
+      - name: Install Playwright system deps
+        run: bun run --filter @shiftspace/preview playwright:install-deps
 
       - name: Install Playwright browsers
-        run: pnpm --filter @shiftspace/preview exec playwright install chromium --with-deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bun run --filter @shiftspace/preview playwright:install
 
       - name: Check for existing screenshot baselines
         id: baselines
@@ -58,14 +62,14 @@ jobs:
 
       - name: Run E2E tests
         if: steps.baselines.outputs.exist == 'true'
-        run: pnpm --filter @shiftspace/preview test:e2e
+        run: bun run --filter @shiftspace/preview test:e2e
 
       - name: Generate initial screenshot baselines
         if: steps.baselines.outputs.exist == 'false'
         run: |
           echo "No screenshot baselines found — generating initial baselines."
           echo "Run the 'Update Screenshots' workflow to commit them, then re-run this check."
-          pnpm --filter @shiftspace/preview test:e2e:update
+          bun run --filter @shiftspace/preview test:e2e:update
 
       - name: Upload test report
         if: failure()

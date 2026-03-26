@@ -29,11 +29,20 @@ type HostMessage =
   | { type: 'event'; event: ShiftspaceEvent }
   | { type: 'error'; message: string }
   | { type: 'worktree-files-updated'; worktreeId: string; files: FileChange[]; diffMode: DiffMode }
-  | { type: 'branch-list'; worktreeId: string; branches: string[] };
+  | { type: 'branch-list'; worktreeId: string; branches: string[] }
+  | { type: 'fetch-loading'; worktreeId: string; loading: boolean }
+  | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] };
 
 const App: React.FC = () => {
-  const { applyEvent, setWorktrees, updateWorktreeFiles, setBranchList, setDiffModeLoading } =
-    useShiftspaceStore();
+  const {
+    applyEvent,
+    setWorktrees,
+    updateWorktreeFiles,
+    setBranchList,
+    setDiffModeLoading,
+    setFetchLoading,
+    setLastFetchAt,
+  } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   useEffect(() => {
@@ -52,6 +61,12 @@ const App: React.FC = () => {
         updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode);
       } else if (msg.type === 'branch-list') {
         setBranchList(msg.worktreeId, msg.branches);
+      } else if (msg.type === 'fetch-loading') {
+        setFetchLoading(msg.worktreeId, msg.loading);
+      } else if (msg.type === 'fetch-done') {
+        setFetchLoading(msg.worktreeId, false);
+        setLastFetchAt(msg.worktreeId, msg.timestamp);
+        setBranchList(msg.worktreeId, msg.branches);
       }
     };
 
@@ -59,7 +74,15 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'ready' });
 
     return () => window.removeEventListener('message', handler);
-  }, [applyEvent, setWorktrees, updateWorktreeFiles, setBranchList, setDiffModeLoading]);
+  }, [
+    applyEvent,
+    setWorktrees,
+    updateWorktreeFiles,
+    setBranchList,
+    setDiffModeLoading,
+    setFetchLoading,
+    setLastFetchAt,
+  ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
     vscode?.postMessage({ type: 'file-click', worktreeId, filePath });
@@ -75,6 +98,18 @@ const App: React.FC = () => {
 
   const handleRequestBranchList = useCallback((worktreeId: string) => {
     vscode?.postMessage({ type: 'get-branch-list', worktreeId });
+  }, []);
+
+  const handleCheckoutBranch = useCallback((worktreeId: string, branch: string) => {
+    vscode?.postMessage({ type: 'checkout-branch', worktreeId, branch });
+  }, []);
+
+  const handleFolderClick = useCallback((worktreeId: string, folderPath: string) => {
+    vscode?.postMessage({ type: 'folder-click', worktreeId, folderPath });
+  }, []);
+
+  const handleFetchBranches = useCallback((worktreeId: string) => {
+    vscode?.postMessage({ type: 'fetch-branches', worktreeId });
   }, []);
 
   if (errorMessage) {
@@ -97,7 +132,7 @@ const App: React.FC = () => {
 
   const panZoomConfig: PanZoomConfig = {
     pinchSensitivity: 0.03, // Electron delivers smaller pinch deltaY than Chrome
-    maxZoom: 1,
+    maxZoom: 1.5,
   };
 
   return (
@@ -106,6 +141,9 @@ const App: React.FC = () => {
         onFileClick={handleFileClick}
         onDiffModeChange={handleDiffModeChange}
         onRequestBranchList={handleRequestBranchList}
+        onCheckoutBranch={handleCheckoutBranch}
+        onFolderClick={handleFolderClick}
+        onFetchBranches={handleFetchBranches}
         panZoomConfig={panZoomConfig}
       />
     </div>

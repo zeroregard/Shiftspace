@@ -7,11 +7,16 @@ export interface WorktreeNodeData {
   worktree: import('../types').WorktreeState;
   onDiffModeChange?: (worktreeId: string, diffMode: import('../types').DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
+  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
+  onFetchBranches?: (worktreeId: string) => void;
   [key: string]: unknown;
 }
 
 export interface FolderNodeData {
   name: string;
+  folderPath: string;
+  worktreeId: string;
+  onFolderClick?: (worktreeId: string, folderPath: string) => void;
   [key: string]: unknown;
 }
 
@@ -32,7 +37,8 @@ export function flattenRect(
   onFileClick: ((wtId: string, filePath: string) => void) | undefined,
   nodes: LayoutNode[],
   edges: LayoutEdge[],
-  suppressEdge = false
+  suppressEdge = false,
+  onFolderClick?: (wtId: string, folderPath: string) => void
 ) {
   const absX = offsetX + rect.x;
   const absY = offsetY + rect.y;
@@ -50,7 +56,12 @@ export function flattenRect(
       data,
     });
   } else {
-    const data: FolderNodeData = { name: rect.node.name };
+    const data: FolderNodeData = {
+      name: rect.node.name,
+      folderPath: rect.node.path ?? rect.node.name,
+      worktreeId: wtId,
+      onFolderClick,
+    };
     nodes.push({
       id: rect.node.id,
       type: 'folderNode',
@@ -84,7 +95,8 @@ export function flattenRect(
       onFileClick,
       nodes,
       edges,
-      suppress
+      suppress,
+      onFolderClick
     );
     if (isFileChild) firstFileEdgeEmitted = true;
   }

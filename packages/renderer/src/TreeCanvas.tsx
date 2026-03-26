@@ -8,6 +8,8 @@ export interface LayoutNode {
   height: number;
   data: Record<string, unknown>;
   style?: React.CSSProperties;
+  /** Short label shown as a floating badge when the node header scrolls out of view. */
+  label?: string;
 }
 
 export interface LayoutEdge {
@@ -133,6 +135,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, tx: 0, ty: 0 });
   const lastTouchDistRef = useRef<number | null>(null);
@@ -150,6 +153,17 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   panZoomConfigRef.current = { ...DEFAULT_PAN_ZOOM_CONFIG, ...panZoomConfig };
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+
+  // Track container size for overlay positioning
+  useEffect(() => {
+    const el = containerRef.current!;
+    setContainerSize({ w: el.offsetWidth, h: el.offsetHeight });
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerSize({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // fitView on first data load
   useEffect(() => {
@@ -363,6 +377,46 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
             <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
           ))}
       </div>
+      {/* Worktree header overlays — appear at canvas top when the node header scrolls out of view */}
+      {nodes
+        .filter((n) => n.type === 'worktreeNode' && n.label)
+        .map((node) => {
+          const screenLeft = node.position.x * zoom + x;
+          const screenRight = screenLeft + node.width * zoom;
+          const screenTop = node.position.y * zoom + y;
+          // Only show when the top edge is above the canvas viewport
+          if (screenTop >= 0) return null;
+          // Only show when the node is horizontally within the canvas
+          if (screenRight <= 0 || screenLeft >= containerSize.w) return null;
+          const rightOffset = containerSize.w - Math.min(screenRight, containerSize.w);
+          return (
+            <div
+              key={`overlay-${node.id}`}
+              style={{
+                position: 'absolute',
+                top: 6,
+                right: rightOffset + 8,
+                zIndex: 20,
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--color-cluster)',
+                  border: '1px solid var(--color-border-dashed)',
+                  borderRadius: 6,
+                  padding: '2px 8px',
+                  fontSize: 10,
+                  color: 'var(--color-text-secondary)',
+                  whiteSpace: 'nowrap',
+                  opacity: 0.9,
+                }}
+              >
+                {node.label}
+              </div>
+            </div>
+          );
+        })}
       {/* Fit-view reset button — outside the transform so it stays fixed in corner */}
       <button
         style={{

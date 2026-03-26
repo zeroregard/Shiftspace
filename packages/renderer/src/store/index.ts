@@ -6,6 +6,8 @@ interface ShiftspaceStore {
   lodLevel: LODLevel;
   branchLists: Map<string, string[]>;
   diffModeLoading: Set<string>;
+  fetchLoading: Set<string>;
+  lastFetchAt: Map<string, number>;
   setLODLevel: (level: LODLevel) => void;
   applyEvent: (event: ShiftspaceEvent) => void;
   setWorktrees: (worktrees: WorktreeState[]) => void;
@@ -13,6 +15,8 @@ interface ShiftspaceStore {
   setDiffModeLoading: (worktreeId: string, loading: boolean) => void;
   setBranchList: (worktreeId: string, branches: string[]) => void;
   updateWorktreeFiles: (worktreeId: string, files: FileChange[], diffMode: DiffMode) => void;
+  setFetchLoading: (worktreeId: string, loading: boolean) => void;
+  setLastFetchAt: (worktreeId: string, timestamp: number) => void;
 }
 
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
@@ -20,6 +24,8 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   lodLevel: 'worktree',
   branchLists: new Map(),
   diffModeLoading: new Set(),
+  fetchLoading: new Set(),
+  lastFetchAt: new Map(),
 
   setLODLevel: (level) => set({ lodLevel: level }),
 
@@ -66,6 +72,21 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
       const diffModeLoading = new Set(state.diffModeLoading);
       diffModeLoading.delete(worktreeId);
       return { worktrees, diffModeLoading };
+    }),
+
+  setFetchLoading: (worktreeId, loading) =>
+    set((state) => {
+      const fetchLoading = new Set(state.fetchLoading);
+      if (loading) fetchLoading.add(worktreeId);
+      else fetchLoading.delete(worktreeId);
+      return { fetchLoading };
+    }),
+
+  setLastFetchAt: (worktreeId, timestamp) =>
+    set((state) => {
+      const lastFetchAt = new Map(state.lastFetchAt);
+      lastFetchAt.set(worktreeId, timestamp);
+      return { lastFetchAt };
     }),
 
   applyEvent: (event) =>

@@ -6,6 +6,8 @@ import {
   checkGitAvailability,
   getDefaultBranch,
   listBranches,
+  checkoutBranch,
+  fetchRemote,
 } from './git/worktrees';
 import { getFileChanges, getBranchDiffFileChanges } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
@@ -328,6 +330,20 @@ export class GitDataProvider implements vscode.Disposable {
     }
   }
 
+  /** Run git fetch --all --prune and refresh the branch list. */
+  async handleFetchBranches(worktreeId: string): Promise<void> {
+    if (!this.currentRoot) return;
+    this.postMessage({ type: 'fetch-loading', worktreeId, loading: true });
+    try {
+      await fetchRemote(this.currentRoot);
+      const branches = await listBranches(this.currentRoot);
+      this.postMessage({ type: 'fetch-done', worktreeId, timestamp: Date.now(), branches });
+    } catch (err) {
+      console.error('[Shiftspace] handleFetchBranches error:', err);
+      this.postMessage({ type: 'fetch-loading', worktreeId, loading: false });
+    }
+  }
+
   /** Handle a branch list request from the webview. */
   async handleGetBranchList(worktreeId: string): Promise<void> {
     if (!this.currentRoot) return;
@@ -337,6 +353,31 @@ export class GitDataProvider implements vscode.Disposable {
     } catch (err) {
       console.error('[Shiftspace] handleGetBranchList error:', err);
     }
+  }
+
+  /** Checkout a different branch in the given worktree, then re-initialise. */
+  async handleCheckoutBranch(worktreeId: string, branch: string): Promise<void> {
+    const wt = this.worktrees.find((w) => w.id === worktreeId);
+    if (!wt) return;
+    try {
+      await checkoutBranch(wt.path, branch);
+      // Re-detect so the branch name and files reflect the new HEAD.
+      await this.initialize();
+    } catch (err) {
+      console.error('[Shiftspace] handleCheckoutBranch error:', err);
+      this.postMessage({
+        type: 'error',
+        message: `Failed to checkout "${branch}": ${(err as Error).message}`,
+      });
+    }
+  }
+
+  /** Reveal a folder in the VS Code Explorer. */
+  async handleFolderClick(worktreeId: string, folderPath: string): Promise<void> {
+    const wt = this.worktrees.find((w) => w.id === worktreeId);
+    if (!wt) return;
+    const absolutePath = path.join(wt.path, folderPath);
+    await vscode.commands.executeCommand('revealInExplorer', vscode.Uri.file(absolutePath));
   }
 
   /** Open the clicked file in the editor. */

@@ -39,6 +39,9 @@
   /* pulse overlay has no direct VSCode equivalent — keep the green glow */
   --color-pulse-overlay: rgba(78, 201, 78, 0.06);
 
+  /* Hover background for list/menu items */
+  --color-item-hover:    var(--vscode-list-hoverBackground);
+
   /* @pierre/diffs theme integration */
   --diffs-bg: var(--vscode-editor-background);
   --diffs-fg: var(--vscode-editor-foreground);

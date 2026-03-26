@@ -1,6 +1,94 @@
 import React from 'react';
 
 // ---------------------------------------------------------------------------
+// UI icons
+// ---------------------------------------------------------------------------
+
+export function GitBranchIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="4" cy="3" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="3" r="1.5" fill="currentColor" />
+      <circle cx="4" cy="13" r="1.5" fill="currentColor" />
+      <line
+        x1="4"
+        y1="4.5"
+        x2="4"
+        y2="11.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4 7.5 C4 4 8 3 12 3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function GitCompareIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        d="M5 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM4 5a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM11 9a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-1 2a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"
+      />
+      <path
+        d="M5 7v1.5a2.5 2.5 0 0 0 2.5 2.5H9m2-4V5.5A2.5 2.5 0 0 0 8.5 3H7"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+      />
+      <path
+        d="M7 1.5 5.5 3 7 4.5"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 11.5l1.5 1.5L9 14.5"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function RefreshIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1.5 4.5A6.5 6.5 0 0 1 14 8" />
+      <path d="M14.5 11.5A6.5 6.5 0 0 1 2 8" />
+      <path d="M1.5 1.5v3h3" />
+      <path d="M14.5 14.5v-3h-3" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SVG base shapes
 // ---------------------------------------------------------------------------
 
