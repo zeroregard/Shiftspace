@@ -2,10 +2,6 @@ name: Update Screenshots
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to update screenshots on'
-        required: true
 
 jobs:
   update:
@@ -16,7 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Bun
