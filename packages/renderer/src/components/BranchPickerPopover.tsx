@@ -131,8 +131,6 @@ export const BranchPickerPopover = React.memo(
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent border border-border-dashed rounded px-2 py-1 text-11 text-text-primary outline-none placeholder:text-text-muted"
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') close();
                   e.stopPropagation();

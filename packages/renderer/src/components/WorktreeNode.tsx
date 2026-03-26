@@ -19,6 +19,28 @@ export interface WorktreeNodeData {
   [key: string]: unknown;
 }
 
+const GitBranchIcon = React.memo(() => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* Commit circles */}
+    <circle cx="4" cy="3" r="1.5" fill="currentColor" />
+    <circle cx="12" cy="3" r="1.5" fill="currentColor" />
+    <circle cx="4" cy="13" r="1.5" fill="currentColor" />
+    {/* Main trunk */}
+    <line
+      x1="4"
+      y1="4.5"
+      x2="4"
+      y2="11.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    {/* Branch curve from trunk up to branch tip */}
+    <path d="M4 7.5 C4 4 8 3 12 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+));
+GitBranchIcon.displayName = 'GitBranchIcon';
+
 const GitCompareIcon = React.memo(() => (
   <svg
     width="12"
@@ -124,11 +146,12 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
             <BranchPickerPopover
               trigger={
                 <button
-                  className="text-text-faint font-normal hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
+                  className="flex items-center gap-1 text-text-faint font-normal hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   title="Switch branch"
                 >
+                  <GitBranchIcon />
                   {!isSingle && pathPart ? `(${wt.branch})` : wt.branch}
                 </button>
               }
