@@ -39,7 +39,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: bun run --filter @shiftspace/preview exec playwright install chromium --with-deps
+        run: bun run --filter @shiftspace/preview playwright:install
 
       - name: Update snapshots
         run: bun run --filter @shiftspace/preview test:e2e:update
