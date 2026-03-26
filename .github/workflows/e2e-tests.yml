@@ -44,6 +44,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('apps/preview/package.json') }}
 
+      - name: Install Playwright system deps
+        run: bun run --filter @shiftspace/preview playwright:install-deps
+
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bun run --filter @shiftspace/preview playwright:install
