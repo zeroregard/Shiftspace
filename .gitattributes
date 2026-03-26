@@ -1,2 +1,2 @@
 # Mark screenshot baselines as binary for cleaner diffs
-apps/preview/e2e/__screenshots__/**/*.png binary
+apps/preview/e2e/__screenshots__/**/*.webp binary

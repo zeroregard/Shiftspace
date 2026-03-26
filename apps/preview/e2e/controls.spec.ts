@@ -38,6 +38,6 @@ test.describe('Control panel', () => {
     await page.getByText('✕').last().click();
     await page.waitForTimeout(500);
 
-    await expect(page).toHaveScreenshot('worktree-removed.png');
+    await expect(page).toHaveScreenshot('worktree-removed.webp');
   });
 });

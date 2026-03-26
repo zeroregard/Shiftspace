@@ -250,7 +250,7 @@ The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen densi
   - Interactive UI mode: `pnpm --filter @shiftspace/preview test:e2e:ui`
 - **Updating snapshots:** `pnpm --filter @shiftspace/preview test:e2e:update` locally, or trigger the "Update Screenshots" workflow in GitHub Actions for CI-consistent baselines
 - **CI:** `e2e-tests.yml` runs on every PR and push to main; `update-screenshots.yml` is manually triggered via `workflow_dispatch` to regenerate baselines on a specified branch
-- **Adding new tests:** Put `.spec.ts` files in `apps/preview/e2e/`. Use `toHaveScreenshot('descriptive-name.png')` for visual regression. Screenshots generated on first run become the baseline.
+- **Adding new tests:** Put `.spec.ts` files in `apps/preview/e2e/`. Use `toHaveScreenshot('descriptive-name.webp')` for visual regression — WebP keeps baselines ~50% smaller than PNG. Screenshots generated on first run become the baseline.
 
 ---
 
