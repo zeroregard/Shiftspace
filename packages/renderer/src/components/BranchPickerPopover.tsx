@@ -53,6 +53,7 @@ export const BranchPickerPopover = React.memo(
     const [query, setQuery] = useState('');
     const [fetchDone, setFetchDone] = useState(false);
     const fetchDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     // When isFetching transitions false→true→false, briefly show checkmark
     const prevFetchingRef = useRef(isFetching);
