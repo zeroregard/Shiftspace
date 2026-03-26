@@ -47,8 +47,25 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @shiftspace/preview exec playwright install chromium --with-deps
 
+      - name: Check for existing screenshot baselines
+        id: baselines
+        run: |
+          if find apps/preview/e2e/__screenshots__ -name '*.webp' 2>/dev/null | grep -q .; then
+            echo "exist=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exist=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run E2E tests
+        if: steps.baselines.outputs.exist == 'true'
         run: pnpm --filter @shiftspace/preview test:e2e
+
+      - name: Generate initial screenshot baselines
+        if: steps.baselines.outputs.exist == 'false'
+        run: |
+          echo "No screenshot baselines found — generating initial baselines."
+          echo "Run the 'Update Screenshots' workflow to commit them, then re-run this check."
+          pnpm --filter @shiftspace/preview test:e2e:update
 
       - name: Upload test report
         if: failure()
