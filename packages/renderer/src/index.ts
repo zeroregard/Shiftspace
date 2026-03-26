@@ -8,5 +8,8 @@ export type {
   DiffLine,
   DiffHunk,
   DiffMode,
+  ActionConfig,
+  ActionState,
+  ActionStatus,
 } from './types';
 export { DiffPopover, DiffHoverCard } from './components/DiffOverlay';

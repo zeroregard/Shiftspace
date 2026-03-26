@@ -11,3 +11,5 @@ export const CONTAINER_PAD_TOP = 20;
 export const CONTAINER_PAD_BOTTOM = 20;
 export const CONTAINER_GAP = 60;
 export const FILES_TOP_GAP = 40;
+/** Height of the action bar row rendered above the worktree header. */
+export const ACTION_BAR_H = 36;

@@ -43,3 +43,23 @@ export type ShiftspaceEvent =
   | { type: 'process-stopped'; worktreeId: string };
 
 export type LODLevel = 'worktree' | 'directory' | 'file';
+
+// ---------------------------------------------------------------------------
+// Action buttons
+// ---------------------------------------------------------------------------
+
+export interface ActionConfig {
+  id: string;
+  label: string;
+  /** Codicon name, e.g. 'play', 'package', 'tools' */
+  icon: string;
+  /** True for long-running processes (dev server), false for one-shot (build/test) */
+  persistent: boolean;
+}
+
+export type ActionStatus = 'idle' | 'running' | 'failed';
+
+export interface ActionState {
+  status: ActionStatus;
+  port?: number;
+}

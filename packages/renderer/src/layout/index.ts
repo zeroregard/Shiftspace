@@ -6,6 +6,7 @@ import { flattenRect } from './flatten';
 import type { WorktreeNodeData } from './flatten';
 import {
   WT_HEADER_H,
+  ACTION_BAR_H,
   CONTAINER_PAD_X,
   CONTAINER_PAD_TOP,
   CONTAINER_PAD_BOTTOM,
@@ -27,10 +28,14 @@ export function computeSingleWorktreeLayout(
   onRequestBranchList?: (worktreeId: string) => void,
   onCheckoutBranch?: (worktreeId: string, branch: string) => void,
   onFolderClick?: (worktreeId: string, folderPath: string) => void,
-  onFetchBranches?: (worktreeId: string) => void
+  onFetchBranches?: (worktreeId: string) => void,
+  onRunAction?: (worktreeId: string, actionId: string) => void,
+  onStopAction?: (worktreeId: string, actionId: string) => void,
+  numActions?: number
 ): SingleWorktreeLayout {
   const treeChildren = buildTree(wt.id, wt.files);
-  const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
+  const actionBarH = (numActions ?? 0) > 0 ? ACTION_BAR_H : 0;
+  const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP + actionBarH;
   const { layouts, totalW, totalH } = layoutWorktreeContents(treeChildren, contentsStartY);
 
   // Ensure the container is wide enough to fit the header label + diff mode button.
@@ -53,6 +58,8 @@ export function computeSingleWorktreeLayout(
     onRequestBranchList,
     onCheckoutBranch,
     onFetchBranches,
+    onRunAction,
+    onStopAction,
   };
   nodes.push({
     id: wtNodeId,
@@ -91,7 +98,10 @@ export function computeFullLayout(
   onRequestBranchList?: (worktreeId: string) => void,
   onCheckoutBranch?: (worktreeId: string, branch: string) => void,
   onFolderClick?: (worktreeId: string, folderPath: string) => void,
-  onFetchBranches?: (worktreeId: string) => void
+  onFetchBranches?: (worktreeId: string) => void,
+  onRunAction?: (worktreeId: string, actionId: string) => void,
+  onStopAction?: (worktreeId: string, actionId: string) => void,
+  numActions?: number
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const perLayouts = wtArray.map((wt) => ({
     wt,
@@ -102,7 +112,10 @@ export function computeFullLayout(
       onRequestBranchList,
       onCheckoutBranch,
       onFolderClick,
-      onFetchBranches
+      onFetchBranches,
+      onRunAction,
+      onStopAction,
+      numActions
     ),
   }));
 

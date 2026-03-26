@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import type { WorktreeState, ShiftspaceEvent, LODLevel, DiffMode, FileChange } from '../types';
+import type {
+  WorktreeState,
+  ShiftspaceEvent,
+  LODLevel,
+  DiffMode,
+  FileChange,
+  ActionConfig,
+  ActionState,
+} from '../types';
 
 interface ShiftspaceStore {
   worktrees: Map<string, WorktreeState>;
@@ -8,6 +16,9 @@ interface ShiftspaceStore {
   diffModeLoading: Set<string>;
   fetchLoading: Set<string>;
   lastFetchAt: Map<string, number>;
+  actionConfigs: ActionConfig[];
+  /** Key: `${worktreeId}:${actionId}` */
+  actionStates: Map<string, ActionState>;
   setLODLevel: (level: LODLevel) => void;
   applyEvent: (event: ShiftspaceEvent) => void;
   setWorktrees: (worktrees: WorktreeState[]) => void;
@@ -17,6 +28,8 @@ interface ShiftspaceStore {
   updateWorktreeFiles: (worktreeId: string, files: FileChange[], diffMode: DiffMode) => void;
   setFetchLoading: (worktreeId: string, loading: boolean) => void;
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
+  setActionConfigs: (configs: ActionConfig[]) => void;
+  setActionState: (worktreeId: string, actionId: string, state: ActionState) => void;
 }
 
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
@@ -26,6 +39,8 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   diffModeLoading: new Set(),
   fetchLoading: new Set(),
   lastFetchAt: new Map(),
+  actionConfigs: [],
+  actionStates: new Map(),
 
   setLODLevel: (level) => set({ lodLevel: level }),
 
@@ -87,6 +102,15 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
       const lastFetchAt = new Map(state.lastFetchAt);
       lastFetchAt.set(worktreeId, timestamp);
       return { lastFetchAt };
+    }),
+
+  setActionConfigs: (configs) => set({ actionConfigs: configs }),
+
+  setActionState: (worktreeId, actionId, state) =>
+    set((s) => {
+      const actionStates = new Map(s.actionStates);
+      actionStates.set(`${worktreeId}:${actionId}`, state);
+      return { actionStates };
     }),
 
   applyEvent: (event) =>

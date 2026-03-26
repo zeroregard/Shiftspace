@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { getWebviewHtml } from './webview/html';
 import { GitDataProvider } from './GitDataProvider';
+import { ActionManager } from './ActionManager';
+import type { ExtensionActionConfig } from './ActionManager';
 import { getGitRoot } from './git/worktrees';
 
 export class ShiftspacePanel {
@@ -9,12 +11,14 @@ export class ShiftspacePanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
   private _gitProvider: GitDataProvider | undefined;
+  private _actionManager: ActionManager | undefined;
 
   // Workspace-switching state
   private _gitRootCache = new Map<string, string>(); // dir → gitRoot
   private _currentGitRoot: string | undefined;
   private _repoSwitchTimer: ReturnType<typeof setTimeout> | undefined;
   private _editorChangeDisposable: vscode.Disposable | undefined;
+  private _settingsChangeDisposable: vscode.Disposable | undefined;
 
   static toggle(context: vscode.ExtensionContext) {
     if (ShiftspacePanel.currentPanel) {
@@ -60,6 +64,7 @@ export class ShiftspacePanel {
         diffMode?: unknown;
         branch?: string;
         folderPath?: string;
+        actionId?: string;
       }) => {
         if (message.type === 'ready') {
           void this.onReady();
@@ -78,6 +83,10 @@ export class ShiftspacePanel {
           void this._gitProvider?.handleFolderClick(message.worktreeId, message.folderPath);
         } else if (message.type === 'fetch-branches' && message.worktreeId) {
           void this._gitProvider?.handleFetchBranches(message.worktreeId);
+        } else if (message.type === 'run-action' && message.worktreeId && message.actionId) {
+          void this._actionManager?.runAction(message.worktreeId, message.actionId);
+        } else if (message.type === 'stop-action' && message.worktreeId && message.actionId) {
+          this._actionManager?.stopAction(message.worktreeId, message.actionId);
         }
       },
       null,
@@ -92,10 +101,24 @@ export class ShiftspacePanel {
       void this._panel.webview.postMessage(msg);
     };
 
-    // Reset provider and repo state
+    // Reset providers and state
     this._gitProvider?.dispose();
+    this._actionManager?.dispose();
+    this._settingsChangeDisposable?.dispose();
+
     this._gitProvider = new GitDataProvider(postMessage);
+    this._actionManager = new ActionManager(postMessage);
     this._currentGitRoot = undefined;
+
+    // Load and send initial action configs
+    this.reloadActionConfigs();
+
+    // Watch for settings changes
+    this._settingsChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('shiftspace.actions')) {
+        this.reloadActionConfigs();
+      }
+    });
 
     // Re-register editor change listener (guards against multiple ready events)
     this._editorChangeDisposable?.dispose();
@@ -117,6 +140,24 @@ export class ShiftspacePanel {
 
     this._currentGitRoot = gitRoot;
     await this._gitProvider.switchRepo(gitRoot);
+
+    // Let the ActionManager know about the worktrees (for path/branch lookup)
+    this.syncWorktreesToActionManager();
+  }
+
+  private reloadActionConfigs(): void {
+    const config = vscode.workspace.getConfiguration('shiftspace');
+    const rawActions = config.get<ExtensionActionConfig[]>('actions') ?? [];
+    this._actionManager?.updateConfigs(rawActions);
+    this._actionManager?.sendConfigs();
+  }
+
+  private syncWorktreesToActionManager(): void {
+    if (!this._gitProvider || !this._actionManager) return;
+    const worktrees = this._gitProvider.getWorktrees();
+    this._actionManager.updateWorktrees(
+      worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch }))
+    );
   }
 
   /**
@@ -198,6 +239,7 @@ export class ShiftspacePanel {
     if (gitRoot === this._currentGitRoot) return; // same repo — no-op
     this._currentGitRoot = gitRoot;
     await this._gitProvider?.switchRepo(gitRoot);
+    this.syncWorktreesToActionManager();
   }
 
   /** Resolve git root for a file path (not a directory), using a per-directory cache. */
@@ -219,9 +261,13 @@ export class ShiftspacePanel {
     }
     this._editorChangeDisposable?.dispose();
     this._editorChangeDisposable = undefined;
+    this._settingsChangeDisposable?.dispose();
+    this._settingsChangeDisposable = undefined;
 
     this._gitProvider?.dispose();
     this._gitProvider = undefined;
+    this._actionManager?.dispose();
+    this._actionManager = undefined;
     this._panel.dispose();
     for (const d of this._disposables) d.dispose();
     this._disposables = [];

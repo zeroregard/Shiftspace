@@ -433,6 +433,11 @@ export class GitDataProvider implements vscode.Disposable {
     this.fileStates.clear();
   }
 
+  /** Returns current worktree snapshot (id, path, branch) for ActionManager consumption. */
+  getWorktrees(): Array<{ id: string; path: string; branch: string }> {
+    return this.worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch }));
+  }
+
   dispose(): void {
     this.tearDownWatchers();
   }

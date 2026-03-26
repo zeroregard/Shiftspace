@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@shiftspace/renderer": "workspace:*",
+    "@vscode/codicons": "^0.0.45",
     "clsx": "^2.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

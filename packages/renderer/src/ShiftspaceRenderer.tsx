@@ -16,6 +16,8 @@ interface Props {
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFolderClick?: (worktreeId: string, folderPath: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
+  onRunAction?: (worktreeId: string, actionId: string) => void;
+  onStopAction?: (worktreeId: string, actionId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -30,9 +32,12 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onCheckoutBranch,
   onFolderClick,
   onFetchBranches,
+  onRunAction,
+  onStopAction,
   panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
+  const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
 
   useEffect(() => {
     // Only seed the store when initialWorktrees was explicitly provided (preview app).
@@ -85,9 +90,25 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   fetchBranchesRef.current = onFetchBranches;
   const stableFetchBranches = useCallback((wtId: string) => fetchBranchesRef.current?.(wtId), []);
 
+  const runActionRef = useRef(onRunAction);
+  runActionRef.current = onRunAction;
+  const stableRunAction = useCallback(
+    (wtId: string, actionId: string) => runActionRef.current?.(wtId, actionId),
+    []
+  );
+
+  const stopActionRef = useRef(onStopAction);
+  stopActionRef.current = onStopAction;
+  const stableStopAction = useCallback(
+    (wtId: string, actionId: string) => stopActionRef.current?.(wtId, actionId),
+    []
+  );
+
   // Per-worktree layout cache: reuse layout when WorktreeState reference is unchanged.
-  type CacheEntry = { wtRef: WorktreeState; layout: SingleWorktreeLayout };
+  type CacheEntry = { wtRef: WorktreeState; numActions: number; layout: SingleWorktreeLayout };
   const perLayoutCacheRef = useRef<Map<string, CacheEntry>>(new Map());
+
+  const numActions = actionConfigs.length;
 
   const { nodes, edges } = useMemo(() => {
     const newCache = new Map<string, CacheEntry>();
@@ -102,7 +123,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     const perLayouts = wtArray.map((wt) => {
       const cached = perLayoutCacheRef.current.get(wt.id);
       const layout =
-        cached && cached.wtRef === wt
+        cached && cached.wtRef === wt && cached.numActions === numActions
           ? cached.layout
           : computeSingleWorktreeLayout(
               wt,
@@ -111,9 +132,12 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
               stableRequestBranchList,
               stableCheckoutBranch,
               stableFolderClick,
-              stableFetchBranches
+              stableFetchBranches,
+              stableRunAction,
+              stableStopAction,
+              numActions
             );
-      newCache.set(wt.id, { wtRef: wt, layout });
+      newCache.set(wt.id, { wtRef: wt, numActions, layout });
       return layout;
     });
 
@@ -137,12 +161,15 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     return { nodes: allNodes, edges: allEdges };
   }, [
     worktrees,
+    numActions,
     stableFileClick,
     stableDiffModeChange,
     stableRequestBranchList,
     stableCheckoutBranch,
     stableFolderClick,
     stableFetchBranches,
+    stableRunAction,
+    stableStopAction,
   ]);
 
   return (
