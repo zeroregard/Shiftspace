@@ -1,4 +1,4 @@
-name: Update Screenshots
+name: E2E Tests - Update snapshots
 
 on:
   workflow_dispatch:
