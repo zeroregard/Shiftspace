@@ -9,8 +9,14 @@ import {
 } from './git/worktrees';
 import { getFileChanges, getBranchDiffFileChanges } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
+import { filterIgnoredFiles } from './git/ignoreFilter';
 
 type PostMessage = (msg: object) => void;
+
+function getIgnorePatterns(): string[] {
+  const config = vscode.workspace.getConfiguration('shiftspace');
+  return config.get<string[]>('ignorePatterns', []);
+}
 
 const IGNORED_SEGMENTS = ['.git', 'node_modules'];
 
@@ -94,6 +100,7 @@ export class GitDataProvider implements vscode.Disposable {
     this.postMessage({ type: 'init', worktrees: this.worktrees });
     this.setupFileWatcher();
     this.setupHeadWatcher();
+    this.setupConfigWatcher();
     this.startWorktreePolling();
   }
 
@@ -114,10 +121,11 @@ export class GitDataProvider implements vscode.Disposable {
   /** Get files using the appropriate diff strategy for the worktree's current mode. */
   private async getFilesForMode(wt: WorktreeState): Promise<FileChange[]> {
     const mode = wt.diffMode;
-    if (mode.type === 'branch') {
-      return getBranchDiffFileChanges(wt.path, mode.branch);
-    }
-    return getFileChanges(wt.path);
+    const files =
+      mode.type === 'branch'
+        ? await getBranchDiffFileChanges(wt.path, mode.branch)
+        : await getFileChanges(wt.path);
+    return filterIgnoredFiles(files, getIgnorePatterns());
   }
 
   /** Returns debounce duration based on the worktree's diff mode. */
@@ -158,6 +166,37 @@ export class GitDataProvider implements vscode.Disposable {
       linkedHeads,
       linkedHeads.onDidChange(onHeadChange)
     );
+  }
+
+  private setupConfigWatcher(): void {
+    this.disposables.push(
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration('shiftspace.ignorePatterns')) {
+          void this.reloadAllWithFilter();
+        }
+      })
+    );
+  }
+
+  private async reloadAllWithFilter(): Promise<void> {
+    const patterns = getIgnorePatterns();
+    for (const wt of this.worktrees) {
+      try {
+        const rawFiles = await (wt.diffMode.type === 'branch'
+          ? getBranchDiffFileChanges(wt.path, wt.diffMode.branch)
+          : getFileChanges(wt.path));
+        const newFiles = filterIgnoredFiles(rawFiles, patterns);
+        const prevFiles = this.fileStates.get(wt.id) ?? [];
+        const events = diffFileChanges(wt.id, prevFiles, newFiles);
+        wt.files = newFiles;
+        this.fileStates.set(wt.id, newFiles);
+        for (const event of events) {
+          this.postMessage({ type: 'event', event });
+        }
+      } catch (err) {
+        console.error('[Shiftspace] reloadAllWithFilter error for', wt.path, err);
+      }
+    }
   }
 
   private onFileSystemChange(uri: vscode.Uri): void {
