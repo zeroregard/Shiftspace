@@ -91,7 +91,13 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   const { nodes, edges } = useMemo(() => {
     const newCache = new Map<string, CacheEntry>();
-    const wtArray = Array.from(worktrees.values());
+    const wtArray = Array.from(worktrees.values()).sort((a, b) => {
+      const aIsMain = a.branch === 'main' || a.branch === 'master';
+      const bIsMain = b.branch === 'main' || b.branch === 'master';
+      if (aIsMain && !bIsMain) return -1;
+      if (!aIsMain && bIsMain) return 1;
+      return 0;
+    });
 
     const perLayouts = wtArray.map((wt) => {
       const cached = perLayoutCacheRef.current.get(wt.id);
