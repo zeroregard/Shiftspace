@@ -237,6 +237,22 @@ The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen densi
 
 ---
 
+## Browser Testing (E2E)
+
+- **Framework:** Playwright (`@playwright/test`) in `apps/preview/`
+- **Config:** `apps/preview/playwright.config.ts` — Chromium-only, 1280×720 viewport, animations disabled for stable screenshots
+- **Tests:** `apps/preview/e2e/` — visual regression + interaction tests against the preview app
+- **Screenshots:** Baselines stored in `apps/preview/e2e/__screenshots__/`, committed directly in git (no LFS — total size is small enough)
+- **Running locally:**
+  - Install browsers once: `pnpm --filter @shiftspace/preview exec playwright install chromium`
+  - Run tests: `pnpm --filter @shiftspace/preview test:e2e`
+  - Interactive UI mode: `pnpm --filter @shiftspace/preview test:e2e:ui`
+- **Updating snapshots:** `pnpm --filter @shiftspace/preview test:e2e:update` locally, or trigger the "Update Screenshots" workflow in GitHub Actions for CI-consistent baselines
+- **CI:** `e2e-tests.yml` runs on every PR and push to main; `update-screenshots.yml` is manually triggered via `workflow_dispatch` to regenerate baselines on a specified branch
+- **Adding new tests:** Put `.spec.ts` files in `apps/preview/e2e/`. Use `toHaveScreenshot('descriptive-name.png')` for visual regression. Screenshots generated on first run become the baseline.
+
+---
+
 ## Development Phases
 
 ### Phase 1: Preview app + mock engine (build first)
