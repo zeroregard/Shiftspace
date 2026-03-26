@@ -8,3 +8,7 @@ coverage/
 
 # build
 *.vsix
+
+# playwright
+playwright-report/
+test-results/

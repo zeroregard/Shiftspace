@@ -243,7 +243,10 @@ export class GitDataProvider implements vscode.Disposable {
         if (!prevWt || prevWt.branch === freshWt.branch) continue;
 
         // Emit remove then re-add with updated branch + files so the UI refreshes cleanly
-        this.postMessage({ type: 'event', event: { type: 'worktree-removed', worktreeId: prevWt.id } });
+        this.postMessage({
+          type: 'event',
+          event: { type: 'worktree-removed', worktreeId: prevWt.id },
+        });
 
         freshWt.defaultBranch = this.defaultBranch;
         freshWt.diffMode =
