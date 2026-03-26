@@ -3,6 +3,9 @@ name: E2E Tests - Update snapshots
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update:
     name: 📸 Update Screenshots
