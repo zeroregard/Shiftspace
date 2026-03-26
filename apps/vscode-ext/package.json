@@ -61,7 +61,21 @@
         "view": "shiftspace.sidebar",
         "contents": "Shiftspace opens as an editor tab for the best experience.\n[Open Shiftspace](command:shiftspace.openTab)"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Shiftspace",
+      "properties": {
+        "shiftspace.ignorePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Glob patterns for files to hide from the Shiftspace view. Uses .gitignore-style patterns. Example: [\"*.lock\", \"**/lang/*.json\", \"*.min.js\"]",
+          "scope": "resource"
+        }
+      }
+    }
   },
   "scripts": {
     "build:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js",
@@ -76,6 +90,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "minimatch": "^10.0.1"
   },
   "devDependencies": {
     "@shiftspace/renderer": "workspace:*",
