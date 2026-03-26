@@ -93,6 +93,7 @@ export class GitDataProvider implements vscode.Disposable {
 
     this.postMessage({ type: 'init', worktrees: this.worktrees });
     this.setupFileWatcher();
+    this.setupHeadWatcher();
     this.startWorktreePolling();
   }
 
@@ -132,6 +133,30 @@ export class GitDataProvider implements vscode.Disposable {
       watcher.onDidChange(onChange),
       watcher.onDidCreate(onChange),
       watcher.onDidDelete(onChange)
+    );
+  }
+
+  /**
+   * Watch .git/HEAD and .git/worktrees/*\/HEAD so branch checkouts are
+   * reflected immediately instead of waiting for the 15-second poll.
+   */
+  private setupHeadWatcher(): void {
+    if (!this.currentRoot) return;
+    const gitDir = path.join(this.currentRoot, '.git');
+    const onHeadChange = () => void this.checkForWorktreeChanges();
+
+    const mainHead = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(gitDir, 'HEAD')
+    );
+    const linkedHeads = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(gitDir, 'worktrees/*/HEAD')
+    );
+
+    this.disposables.push(
+      mainHead,
+      mainHead.onDidChange(onHeadChange),
+      linkedHeads,
+      linkedHeads.onDidChange(onHeadChange)
     );
   }
 
@@ -209,6 +234,31 @@ export class GitDataProvider implements vscode.Disposable {
           const event: ShiftspaceEvent = { type: 'worktree-added', worktree: wt };
           this.postMessage({ type: 'event', event });
         }
+      }
+
+      // Branch changed for an existing worktree (e.g. `git checkout <branch>` in terminal)
+      for (const freshWt of fresh) {
+        if (!prevIds.has(freshWt.id)) continue; // already handled as new above
+        const prevWt = this.worktrees.find((wt) => wt.id === freshWt.id);
+        if (!prevWt || prevWt.branch === freshWt.branch) continue;
+
+        // Emit remove then re-add with updated branch + files so the UI refreshes cleanly
+        this.postMessage({ type: 'event', event: { type: 'worktree-removed', worktreeId: prevWt.id } });
+
+        freshWt.defaultBranch = this.defaultBranch;
+        freshWt.diffMode =
+          freshWt.branch === this.defaultBranch
+            ? { type: 'working' }
+            : { type: 'branch', branch: this.defaultBranch };
+        try {
+          freshWt.files = await this.getFilesForMode(freshWt);
+        } catch (err) {
+          console.error('[Shiftspace] getFileChanges error after branch change', freshWt.path, err);
+          freshWt.files = [];
+        }
+        this.fileStates.set(freshWt.id, freshWt.files);
+
+        this.postMessage({ type: 'event', event: { type: 'worktree-added', worktree: freshWt } });
       }
 
       this.worktrees = fresh;
