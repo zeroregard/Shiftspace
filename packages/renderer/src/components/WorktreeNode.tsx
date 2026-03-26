@@ -5,6 +5,7 @@ import type { WorktreeState, DiffMode } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
+import { GitBranchIcon, GitCompareIcon } from '../icons';
 
 // Stable reference — avoids returning a new [] each render, which would cause
 // useSyncExternalStore (Zustand) to see a changed snapshot every render → #185.
@@ -18,66 +19,6 @@ export interface WorktreeNodeData {
   onFetchBranches?: (worktreeId: string) => void;
   [key: string]: unknown;
 }
-
-const GitBranchIcon = React.memo(() => (
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Commit circles */}
-    <circle cx="4" cy="3" r="1.5" fill="currentColor" />
-    <circle cx="12" cy="3" r="1.5" fill="currentColor" />
-    <circle cx="4" cy="13" r="1.5" fill="currentColor" />
-    {/* Main trunk */}
-    <line
-      x1="4"
-      y1="4.5"
-      x2="4"
-      y2="11.5"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    {/* Branch curve from trunk up to branch tip */}
-    <path d="M4 7.5 C4 4 8 3 12 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-));
-GitBranchIcon.displayName = 'GitBranchIcon';
-
-const GitCompareIcon = React.memo(() => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 16 16"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      fillRule="evenodd"
-      d="M5 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM4 5a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM11 9a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-1 2a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"
-    />
-    <path
-      d="M5 7v1.5a2.5 2.5 0 0 0 2.5 2.5H9m2-4V5.5A2.5 2.5 0 0 0 8.5 3H7"
-      stroke="currentColor"
-      strokeWidth="1"
-      fill="none"
-    />
-    <path
-      d="M7 1.5 5.5 3 7 4.5"
-      stroke="currentColor"
-      strokeWidth="1"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M9 11.5l1.5 1.5L9 14.5"
-      stroke="currentColor"
-      strokeWidth="1"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-));
-GitCompareIcon.displayName = 'GitCompareIcon';
 
 function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
   if (a.type !== b.type) return false;

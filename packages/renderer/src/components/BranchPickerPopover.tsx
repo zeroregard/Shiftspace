@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Tooltip } from './Tooltip';
+import { RefreshIcon } from '../icons';
 
 export interface StaticOption {
   key: string;
@@ -35,24 +36,6 @@ interface Props {
   lastFetchAt?: number;
 }
 
-const RefreshIcon = () => (
-  <svg
-    width="11"
-    height="11"
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M1.5 4.5A6.5 6.5 0 0 1 14 8" />
-    <path d="M14.5 11.5A6.5 6.5 0 0 1 2 8" />
-    <path d="M1.5 1.5v3h3" />
-    <path d="M14.5 14.5v-3h-3" />
-  </svg>
-);
-
 export const BranchPickerPopover = React.memo(
   ({
     trigger,
@@ -69,7 +52,6 @@ export const BranchPickerPopover = React.memo(
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [fetchDone, setFetchDone] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
     const fetchDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // When isFetching transitions false→true→false, briefly show checkmark
@@ -89,7 +71,6 @@ export const BranchPickerPopover = React.memo(
       setOpen(next);
       if (next) {
         onOpen?.();
-        setTimeout(() => inputRef.current?.focus(), 50);
       } else {
         setQuery('');
       }
@@ -120,7 +101,6 @@ export const BranchPickerPopover = React.memo(
             className="z-50 w-72 rounded-lg border border-border-default bg-node-file p-1 shadow-lg animate-popover-open"
             align="end"
             sideOffset={4}
-            onOpenAutoFocus={(e) => e.preventDefault()}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="px-1.5 py-1 mb-1 flex items-center gap-1">
