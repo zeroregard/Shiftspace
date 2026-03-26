@@ -8,7 +8,7 @@ test.describe('Graph rendering', () => {
     // Give layout a moment to settle (tidy-tree computation + initial render)
     await page.waitForTimeout(500);
 
-    await expect(page).toHaveScreenshot('initial-state.webp');
+    await expect(page).toHaveScreenshot('initial-state.png');
   });
 
   test('add a worktree', async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe('Graph rendering', () => {
     // Wait for the new worktree container to render and layout to settle
     await page.waitForTimeout(500);
 
-    await expect(page).toHaveScreenshot('added-worktree.webp');
+    await expect(page).toHaveScreenshot('added-worktree.png');
   });
 
   test('agent activity generates file nodes', async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe('Graph rendering', () => {
     await page.getByText('⏸ pause').click();
     await page.waitForTimeout(300);
 
-    await expect(page).toHaveScreenshot('agent-activity.webp');
+    await expect(page).toHaveScreenshot('agent-activity.png');
   });
 
   test('reset clears all state', async ({ page }) => {
@@ -51,6 +51,6 @@ test.describe('Graph rendering', () => {
     await page.getByText('↻ reset').click();
     await page.waitForTimeout(500);
 
-    await expect(page).toHaveScreenshot('after-reset.webp');
+    await expect(page).toHaveScreenshot('after-reset.png');
   });
 });

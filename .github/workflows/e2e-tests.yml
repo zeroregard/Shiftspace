@@ -50,7 +50,7 @@ jobs:
       - name: Check for existing screenshot baselines
         id: baselines
         run: |
-          if find apps/preview/e2e/__screenshots__ -name '*.webp' 2>/dev/null | grep -q .; then
+          if find apps/preview/e2e/__screenshots__ -name '*.png' 2>/dev/null | grep -q .; then
             echo "exist=true" >> "$GITHUB_OUTPUT"
           else
             echo "exist=false" >> "$GITHUB_OUTPUT"
