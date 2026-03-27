@@ -108,6 +108,8 @@ export const DiffPopover = React.memo(
           side="right"
           sideOffset={8}
           align="start"
+          avoidCollisions={true}
+          collisionPadding={8}
           className="z-50 flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md animate-popover-open"
           style={{ width: 720, maxHeight: 420 }}
         >

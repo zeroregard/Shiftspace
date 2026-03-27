@@ -77,7 +77,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Glob patterns for files to hide from the Shiftspace view. Uses .gitignore-style patterns. Example: [\"*.lock\", \"**/lang/*.json\", \"*.min.js\"]",
+          "description": "Glob patterns for files to hide from the Shiftspace view. Examples: *.lock, **/lang/*.json, *.min.js",
           "scope": "resource"
         },
         "shiftspace.actions": {

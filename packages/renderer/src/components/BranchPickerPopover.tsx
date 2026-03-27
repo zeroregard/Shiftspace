@@ -114,6 +114,17 @@ export const BranchPickerPopover = React.memo(
                 className="flex-1 bg-transparent border border-border-dashed rounded px-2 py-1 text-11 text-text-primary outline-none placeholder:text-text-muted"
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') close();
+                  // VSCode webview may intercept Cmd+A before it reaches the input;
+                  // handle it explicitly so select-all always works.
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+                    e.preventDefault();
+                    (e.target as HTMLInputElement).select();
+                  }
+                  e.stopPropagation();
+                }}
+                onPaste={(e) => {
+                  // Allow native paste; stop propagation so the webview host
+                  // doesn't swallow the event before it reaches the input.
                   e.stopPropagation();
                 }}
               />

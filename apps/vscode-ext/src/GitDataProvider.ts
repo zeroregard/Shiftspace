@@ -305,6 +305,17 @@ export class GitDataProvider implements vscode.Disposable {
         this.postMessage({ type: 'event', event: { type: 'worktree-added', worktree: freshWt } });
       }
 
+      // Preserve user-set diffMode for worktrees whose branch hasn't changed.
+      // detectWorktrees() always returns diffMode: { type: 'working' } — without
+      // this, any 15-second poll would silently reset a "vs main" diff mode back
+      // to working changes.
+      for (const freshWt of fresh) {
+        const prevWt = this.worktrees.find((wt) => wt.id === freshWt.id);
+        if (prevWt && prevWt.branch === freshWt.branch) {
+          freshWt.diffMode = prevWt.diffMode;
+        }
+      }
+
       this.worktrees = fresh;
     } catch (err) {
       console.error('[Shiftspace] checkForWorktreeChanges error:', err);

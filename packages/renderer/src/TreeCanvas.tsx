@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface LayoutNode {
   id: string;
@@ -136,6 +136,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  const [isFitting, setIsFitting] = useState(false);
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, tx: 0, ty: 0 });
   const lastTouchDistRef = useRef<number | null>(null);
@@ -317,10 +318,16 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
     const el = containerRef.current;
     if (!el) return;
     const { offsetWidth: w, offsetHeight: h } = el;
+    setIsFitting(true);
     setTransform(fitViewToNodes(nodesRef.current, w, h));
   }
 
+  const handleTransitionEnd = useCallback(() => {
+    setIsFitting(false);
+  }, []);
+
   const { x, y, zoom } = transform;
+  const dotOpacity = Math.min(1, Math.max(0.05, zoom * 0.7));
 
   return (
     <div
@@ -332,7 +339,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
         height: '100%',
         cursor: 'grab',
         touchAction: 'none',
-        backgroundImage: 'radial-gradient(circle, var(--color-grid-dot) 1px, transparent 1px)',
+        backgroundImage: `radial-gradient(circle, rgba(42, 42, 58, ${dotOpacity}) 1px, transparent 1px)`,
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundPosition: `${x}px ${y}px`,
       }}
@@ -346,7 +353,9 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
           transform: `translate(${x}px,${y}px) scale(${zoom})`,
           transformOrigin: '0 0',
           position: 'absolute',
+          transition: isFitting ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
         }}
+        onTransitionEnd={handleTransitionEnd}
       >
         {/* Worktree containers render first (bottom layer) */}
         {nodes
