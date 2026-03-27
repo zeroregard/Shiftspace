@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import '@vscode/codicons/dist/codicon.css';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
 import type { ShiftspaceEvent, DiffMode } from '@shiftspace/renderer';
 import { MockEngine, MOCK_BRANCHES } from './mock/engine';

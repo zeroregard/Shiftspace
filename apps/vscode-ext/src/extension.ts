@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ShiftspacePanel } from './ShiftspacePanel';
+import { runDetectActionsCommand } from './ActionManager';
 
 export function activate(context: vscode.ExtensionContext) {
   // Activity bar icon: clicking it opens Shiftspace as an editor tab
@@ -22,6 +23,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('shiftspace.openTab', () => {
       ShiftspacePanel.createOrShow(context);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('shiftspace.detectActions', () => {
+      void runDetectActionsCommand();
     })
   );
 }

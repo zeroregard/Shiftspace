@@ -6,6 +6,7 @@ import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 import { GitBranchIcon, GitCompareIcon } from '../icons';
+import { ActionBar } from './ActionBar';
 
 // Stable reference — avoids returning a new [] each render, which would cause
 // useSyncExternalStore (Zustand) to see a changed snapshot every render → #185.
@@ -17,6 +18,8 @@ export interface WorktreeNodeData {
   onRequestBranchList?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
+  onRunAction?: (worktreeId: string, actionId: string) => void;
+  onStopAction?: (worktreeId: string, actionId: string) => void;
   [key: string]: unknown;
 }
 
@@ -78,7 +81,12 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
   const diffModeBranches = branchList.filter((b) => b !== wt.branch);
 
   return (
-    <div className="w-full h-full border-2 border-dashed border-border-dashed rounded-2xl bg-cluster-alpha text-text-primary px-7.5 py-5 text-left">
+    <div className="w-full h-full border-2 border-dashed border-border-dashed rounded-2xl bg-cluster-alpha text-text-primary px-7.5 py-5 text-left flex flex-col">
+      <ActionBar
+        worktreeId={wt.id}
+        onRunAction={data.onRunAction}
+        onStopAction={data.onStopAction}
+      />
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">

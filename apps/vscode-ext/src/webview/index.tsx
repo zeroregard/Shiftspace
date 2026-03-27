@@ -7,6 +7,8 @@ import type {
   PanZoomConfig,
   DiffMode,
   FileChange,
+  ActionConfig,
+  ActionStatus,
 } from '@shiftspace/renderer';
 import './styles.css';
 
@@ -31,7 +33,15 @@ type HostMessage =
   | { type: 'worktree-files-updated'; worktreeId: string; files: FileChange[]; diffMode: DiffMode }
   | { type: 'branch-list'; worktreeId: string; branches: string[] }
   | { type: 'fetch-loading'; worktreeId: string; loading: boolean }
-  | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] };
+  | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] }
+  | { type: 'actions-config'; actions: ActionConfig[] }
+  | {
+      type: 'action-status';
+      worktreeId: string;
+      actionId: string;
+      status: ActionStatus;
+      port?: number;
+    };
 
 const App: React.FC = () => {
   const {
@@ -42,6 +52,8 @@ const App: React.FC = () => {
     setDiffModeLoading,
     setFetchLoading,
     setLastFetchAt,
+    setActionConfigs,
+    setActionState,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
@@ -67,6 +79,13 @@ const App: React.FC = () => {
         setFetchLoading(msg.worktreeId, false);
         setLastFetchAt(msg.worktreeId, msg.timestamp);
         setBranchList(msg.worktreeId, msg.branches);
+      } else if (msg.type === 'actions-config') {
+        setActionConfigs(msg.actions);
+      } else if (msg.type === 'action-status') {
+        setActionState(msg.worktreeId, msg.actionId, {
+          status: msg.status,
+          port: msg.port,
+        });
       }
     };
 
@@ -82,6 +101,8 @@ const App: React.FC = () => {
     setDiffModeLoading,
     setFetchLoading,
     setLastFetchAt,
+    setActionConfigs,
+    setActionState,
   ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
@@ -110,6 +131,14 @@ const App: React.FC = () => {
 
   const handleFetchBranches = useCallback((worktreeId: string) => {
     vscode?.postMessage({ type: 'fetch-branches', worktreeId });
+  }, []);
+
+  const handleRunAction = useCallback((worktreeId: string, actionId: string) => {
+    vscode?.postMessage({ type: 'run-action', worktreeId, actionId });
+  }, []);
+
+  const handleStopAction = useCallback((worktreeId: string, actionId: string) => {
+    vscode?.postMessage({ type: 'stop-action', worktreeId, actionId });
   }, []);
 
   if (errorMessage) {
@@ -144,6 +173,8 @@ const App: React.FC = () => {
         onCheckoutBranch={handleCheckoutBranch}
         onFolderClick={handleFolderClick}
         onFetchBranches={handleFetchBranches}
+        onRunAction={handleRunAction}
+        onStopAction={handleStopAction}
         panZoomConfig={panZoomConfig}
       />
     </div>

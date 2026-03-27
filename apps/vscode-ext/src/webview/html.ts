@@ -13,6 +13,9 @@ export function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri
   const themeUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, 'dist', 'webview', 'vscode-theme.css')
   );
+  const codiconsUri = webview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, 'dist', 'webview', 'codicons', 'codicon.css')
+  );
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -23,6 +26,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri
   <title>Shiftspace</title>
   <link href="${cssUri}" rel="stylesheet">
   <link href="${themeUri}" rel="stylesheet">
+  <link href="${codiconsUri}" rel="stylesheet">
 </head>
 <body>
   <div id="root"></div>

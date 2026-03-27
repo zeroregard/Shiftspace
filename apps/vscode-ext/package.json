@@ -14,7 +14,8 @@
   "activationEvents": [
     "onStartupFinished",
     "onCommand:shiftspace.toggle",
-    "onCommand:shiftspace.openTab"
+    "onCommand:shiftspace.openTab",
+    "onCommand:shiftspace.detectActions"
   ],
   "main": "./dist/extension.js",
   "icon": "media/icon.png",
@@ -28,6 +29,11 @@
       {
         "command": "shiftspace.openTab",
         "title": "Open as Tab",
+        "category": "Shiftspace"
+      },
+      {
+        "command": "shiftspace.detectActions",
+        "title": "Detect Actions",
         "category": "Shiftspace"
       }
     ],
@@ -73,13 +79,51 @@
           "default": [],
           "description": "Glob patterns for files to hide from the Shiftspace view. Uses .gitignore-style patterns. Example: [\"*.lock\", \"**/lang/*.json\", \"*.min.js\"]",
           "scope": "resource"
+        },
+        "shiftspace.actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the action"
+              },
+              "label": {
+                "type": "string",
+                "description": "Display name (shown in tooltip)"
+              },
+              "command": {
+                "type": "string",
+                "description": "Shell command to run"
+              },
+              "icon": {
+                "type": "string",
+                "description": "Codicon name (e.g. 'play', 'package', 'tools')"
+              },
+              "persistent": {
+                "type": "boolean",
+                "description": "True for long-running processes (e.g. dev server), false for one-shot (e.g. install)",
+                "default": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "command",
+              "icon"
+            ]
+          },
+          "default": [],
+          "description": "Commands available as action buttons on each worktree. Use 'Shiftspace: Detect Actions' to auto-detect from your project.",
+          "scope": "resource"
         }
       }
     }
   },
   "scripts": {
     "build:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js",
-    "build:webview": "vite build && cp src/webview/vscode-theme.css dist/webview/vscode-theme.css",
+    "build:webview": "vite build && cp src/webview/vscode-theme.css dist/webview/vscode-theme.css && mkdir -p dist/webview/codicons && cp node_modules/@vscode/codicons/dist/codicon.css dist/webview/codicons/ && cp node_modules/@vscode/codicons/dist/codicon.ttf dist/webview/codicons/",
     "build": "bun run build:webview && bun run build:ext",
     "watch:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js --watch",
     "watch:webview": "vite build --watch",
@@ -103,6 +147,7 @@
     "@types/vscode": "^1.85.0",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^3.0.0",
+    "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^3.3.2",
     "esbuild": "^0.25.0",
     "react": "^18.3.1",
