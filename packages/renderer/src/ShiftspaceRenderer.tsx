@@ -207,7 +207,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   return (
     <div className="w-full h-full bg-canvas relative">
       {/* Fixed mode switcher toolbar — top-right, outside canvas */}
-      <div className="absolute top-3 right-3 z-10" style={{ pointerEvents: 'auto' }}>
+      <div className="absolute bottom-3 left-3 z-10" style={{ pointerEvents: 'auto' }}>
         <ViewModeSwitcher onViewModeChange={onViewModeChange} />
       </div>
 
