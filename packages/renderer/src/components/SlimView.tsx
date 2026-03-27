@@ -1,6 +1,6 @@
 import React from 'react';
 import type { WorktreeState, DiffMode } from '../types';
-import { useDragScroll } from '../hooks/useDragScroll';
+import { useDragPan } from '../hooks/useDragPan';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { GitCompareIcon } from '../icons';
@@ -106,28 +106,35 @@ interface SlimViewProps {
 
 export const SlimView = React.memo(
   ({ worktrees, onDiffModeChange, onRequestBranchList }: SlimViewProps) => {
-    const drag = useDragScroll();
+    const pan = useDragPan();
     return (
       <div
-        ref={drag.ref}
-        className="w-full h-full overflow-y-auto p-6 cursor-grab active:cursor-grabbing select-none"
-        onPointerDown={drag.onPointerDown}
-        onPointerMove={drag.onPointerMove}
-        onPointerUp={drag.onPointerUp}
-        onClickCapture={drag.onClickCapture}
+        ref={pan.containerRef}
+        className="w-full h-full overflow-hidden select-none"
+        style={{
+          cursor: 'grab',
+          backgroundImage: 'radial-gradient(circle, var(--color-grid-dot) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
+        onPointerDown={pan.onPointerDown}
+        onPointerMove={pan.onPointerMove}
+        onPointerUp={pan.onPointerUp}
+        onClickCapture={pan.onClickCapture}
       >
-        <div className="flex flex-col gap-2 max-w-3xl mx-auto">
-          {worktrees.map((wt) => (
-            <SlimWorktreeBar
-              key={wt.id}
-              worktree={wt}
-              onDiffModeChange={onDiffModeChange}
-              onRequestBranchList={onRequestBranchList}
-            />
-          ))}
-          {worktrees.length === 0 && (
-            <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
-          )}
+        <div ref={pan.contentRef} className="p-6" style={{ willChange: 'transform' }}>
+          <div className="flex flex-col gap-2 max-w-3xl mx-auto">
+            {worktrees.map((wt) => (
+              <SlimWorktreeBar
+                key={wt.id}
+                worktree={wt}
+                onDiffModeChange={onDiffModeChange}
+                onRequestBranchList={onRequestBranchList}
+              />
+            ))}
+            {worktrees.length === 0 && (
+              <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
+            )}
+          </div>
         </div>
       </div>
     );
