@@ -44,7 +44,7 @@ export type ShiftspaceEvent =
 
 export type LODLevel = 'worktree' | 'directory' | 'file';
 
-export type ViewMode = 'tree' | 'slim' | 'list' | 'heatmap';
+export type ViewMode = 'tree' | 'slim' | 'list';
 
 // ---------------------------------------------------------------------------
 // Action buttons

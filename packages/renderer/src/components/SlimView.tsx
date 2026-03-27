@@ -1,5 +1,6 @@
 import React from 'react';
 import type { WorktreeState, DiffMode } from '../types';
+import { useDragScroll } from '../hooks/useDragScroll';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { GitCompareIcon } from '../icons';
@@ -105,8 +106,16 @@ interface SlimViewProps {
 
 export const SlimView = React.memo(
   ({ worktrees, onDiffModeChange, onRequestBranchList }: SlimViewProps) => {
+    const drag = useDragScroll();
     return (
-      <div className="w-full h-full overflow-y-auto p-6">
+      <div
+        ref={drag.ref}
+        className="w-full h-full overflow-y-auto p-6 cursor-grab active:cursor-grabbing select-none"
+        onPointerDown={drag.onPointerDown}
+        onPointerMove={drag.onPointerMove}
+        onPointerUp={drag.onPointerUp}
+        onClickCapture={drag.onClickCapture}
+      >
         <div className="flex flex-col gap-2 max-w-3xl mx-auto">
           {worktrees.map((wt) => (
             <SlimWorktreeBar

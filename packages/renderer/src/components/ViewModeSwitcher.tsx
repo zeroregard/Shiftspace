@@ -3,16 +3,10 @@ import * as Popover from '@radix-ui/react-popover';
 import type { ViewMode } from '../types';
 import { useShiftspaceStore } from '../store';
 
-const MODES: { id: ViewMode; label: string; icon: string; description: string }[] = [
-  { id: 'tree', label: 'Tree', icon: 'codicon-list-tree', description: 'Full tree visualization' },
-  { id: 'slim', label: 'Slim', icon: 'codicon-pulse', description: 'Headers only' },
-  { id: 'list', label: 'List', icon: 'codicon-list-flat', description: 'Flat file list' },
-  {
-    id: 'heatmap',
-    label: 'Heat',
-    icon: 'codicon-flame',
-    description: 'Folders colored by change intensity',
-  },
+const MODES: { id: ViewMode; label: string; icon: string }[] = [
+  { id: 'tree', label: 'Tree', icon: 'codicon-list-tree' },
+  { id: 'slim', label: 'Slim', icon: 'codicon-pulse' },
+  { id: 'list', label: 'List', icon: 'codicon-list-flat' },
 ];
 
 interface Props {
@@ -67,7 +61,6 @@ export const ViewModeSwitcher = React.memo(({ onViewModeChange }: Props) => {
                   aria-hidden="true"
                 />
                 <span className="text-13">{m.label}</span>
-                <span className="text-10 text-text-faint ml-auto">{m.description}</span>
               </button>
             );
           })}

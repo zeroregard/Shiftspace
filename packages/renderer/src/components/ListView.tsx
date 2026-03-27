@@ -1,5 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
+import { useDragScroll } from '../hooks/useDragScroll';
 import type { WorktreeState, FileChange, DiffMode } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
@@ -181,8 +182,16 @@ interface ListViewProps {
 
 export const ListView = React.memo(
   ({ worktrees, onFileClick, onDiffModeChange, onRequestBranchList }: ListViewProps) => {
+    const drag = useDragScroll();
     return (
-      <div className="w-full h-full overflow-y-auto p-6">
+      <div
+        ref={drag.ref}
+        className="w-full h-full overflow-y-auto p-6 cursor-grab active:cursor-grabbing select-none"
+        onPointerDown={drag.onPointerDown}
+        onPointerMove={drag.onPointerMove}
+        onPointerUp={drag.onPointerUp}
+        onClickCapture={drag.onClickCapture}
+      >
         <div className="flex flex-col gap-4 max-w-3xl mx-auto">
           {worktrees.map((wt) => (
             <ListWorktreeBox

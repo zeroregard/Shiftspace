@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useCallback, useRef } from 'react';
-import type { WorktreeState, ShiftspaceEvent, DiffMode, ViewMode, FileChange } from './types';
+import type { WorktreeState, ShiftspaceEvent, DiffMode, ViewMode } from './types';
 import { useShiftspaceStore } from './store';
 import { TreeCanvas, type PanZoomConfig } from './TreeCanvas';
 import { NODE_TYPES } from './components';
@@ -28,47 +28,6 @@ interface Props {
 }
 
 export { type PanZoomConfig };
-
-// ---------------------------------------------------------------------------
-// Heatmap helpers
-// ---------------------------------------------------------------------------
-
-/** Compute total lines changed (added + removed) for each folder prefix. */
-function computeFolderHeat(files: FileChange[]): Map<string, number> {
-  const heatMap = new Map<string, number>();
-  for (const file of files) {
-    const parts = file.path.split('/');
-    parts.pop(); // remove filename
-    let prefix = '';
-    for (const part of parts) {
-      prefix = prefix ? `${prefix}/${part}` : part;
-      heatMap.set(prefix, (heatMap.get(prefix) ?? 0) + file.linesAdded + file.linesRemoved);
-    }
-  }
-  return heatMap;
-}
-
-function heatColor(linesChanged: number, maxLinesChanged: number): string {
-  if (maxLinesChanged === 0) return 'var(--color-heat-cool)';
-  const ratio = linesChanged / maxLinesChanged;
-  if (ratio < 0.25) return 'var(--color-heat-cool)';
-  if (ratio < 0.5) return 'var(--color-heat-warm)';
-  if (ratio < 0.75) return 'var(--color-heat-hot)';
-  return 'var(--color-heat-max)';
-}
-
-/** Inject heat colors into folder node data in-place for heatmap mode. */
-function applyHeatmap(nodes: LayoutNode[], files: FileChange[]): LayoutNode[] {
-  const folderHeat = computeFolderHeat(files);
-  const maxHeat = Math.max(...Array.from(folderHeat.values()), 0);
-  return nodes.map((node) => {
-    if (node.type !== 'folderNode') return node;
-    const folderPath = node.data.folderPath as string | undefined;
-    if (!folderPath) return node;
-    const heat = folderHeat.get(folderPath) ?? 0;
-    return { ...node, data: { ...node.data, heatColor: heatColor(heat, maxHeat) } };
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Main renderer
@@ -182,7 +141,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   );
 
   const { nodes, edges } = useMemo(() => {
-    // Only compute canvas layout for tree/heatmap modes — slim/list don't need it.
+    // Only compute canvas layout for tree mode — slim/list don't need it.
     if (viewMode === 'slim' || viewMode === 'list') {
       return { nodes: [], edges: [] };
     }
@@ -208,38 +167,29 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
               stableSwapBranches
             );
       newCache.set(wt.id, { wtRef: wt, numActions, layout });
-      return { wt, layout };
+      return layout;
     });
 
     perLayoutCacheRef.current = newCache;
 
-    const maxW = Math.max(...perLayouts.map((l) => l.layout.containerW), 0);
+    const maxW = Math.max(...perLayouts.map((l) => l.containerW), 0);
     let cursorY = 0;
 
     const allNodes: LayoutNode[] = [];
     const allEdges = [];
 
-    for (const { wt, layout } of perLayouts) {
+    for (const layout of perLayouts) {
       const offsetX = (maxW - layout.containerW) / 2;
 
-      let layoutNodes = layout.nodes.map((n) => ({
-        ...n,
-        position: { x: n.position.x + offsetX, y: n.position.y + cursorY },
-      }));
-
-      // For heatmap mode, inject heat colors into folder nodes
-      if (viewMode === 'heatmap') {
-        layoutNodes = applyHeatmap(layoutNodes, wt.files);
+      for (const n of layout.nodes) {
+        allNodes.push({ ...n, position: { x: n.position.x + offsetX, y: n.position.y + cursorY } });
       }
-
-      for (const n of layoutNodes) allNodes.push(n);
       for (const e of layout.edges) allEdges.push(e);
       cursorY += layout.containerH + CONTAINER_GAP;
     }
 
     return { nodes: allNodes, edges: allEdges };
   }, [
-    viewMode,
     wtArray,
     worktrees,
     numActions,
