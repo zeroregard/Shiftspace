@@ -31,7 +31,8 @@ export function computeSingleWorktreeLayout(
   onFetchBranches?: (worktreeId: string) => void,
   onRunAction?: (worktreeId: string, actionId: string) => void,
   onStopAction?: (worktreeId: string, actionId: string) => void,
-  numActions?: number
+  numActions?: number,
+  onSwapBranches?: (worktreeId: string) => void
 ): SingleWorktreeLayout {
   const treeChildren = buildTree(wt.id, wt.files);
   const actionBarH = (numActions ?? 0) > 0 ? ACTION_BAR_H : 0;
@@ -60,6 +61,7 @@ export function computeSingleWorktreeLayout(
     onFetchBranches,
     onRunAction,
     onStopAction,
+    onSwapBranches,
   };
   nodes.push({
     id: wtNodeId,
@@ -101,7 +103,8 @@ export function computeFullLayout(
   onFetchBranches?: (worktreeId: string) => void,
   onRunAction?: (worktreeId: string, actionId: string) => void,
   onStopAction?: (worktreeId: string, actionId: string) => void,
-  numActions?: number
+  numActions?: number,
+  onSwapBranches?: (worktreeId: string) => void
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const perLayouts = wtArray.map((wt) => ({
     wt,
@@ -115,7 +118,8 @@ export function computeFullLayout(
       onFetchBranches,
       onRunAction,
       onStopAction,
-      numActions
+      numActions,
+      onSwapBranches
     ),
   }));
 

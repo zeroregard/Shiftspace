@@ -141,6 +141,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'stop-action', worktreeId, actionId });
   }, []);
 
+  const handleSwapBranches = useCallback((worktreeId: string) => {
+    vscode?.postMessage({ type: 'swap-branches', worktreeId });
+  }, []);
+
   if (errorMessage) {
     return (
       <div
@@ -175,6 +179,7 @@ const App: React.FC = () => {
         onFetchBranches={handleFetchBranches}
         onRunAction={handleRunAction}
         onStopAction={handleStopAction}
+        onSwapBranches={handleSwapBranches}
         panZoomConfig={panZoomConfig}
       />
     </div>

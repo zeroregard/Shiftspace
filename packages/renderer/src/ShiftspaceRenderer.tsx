@@ -18,6 +18,7 @@ interface Props {
   onFetchBranches?: (worktreeId: string) => void;
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
+  onSwapBranches?: (worktreeId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -34,6 +35,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onFetchBranches,
   onRunAction,
   onStopAction,
+  onSwapBranches,
   panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
@@ -104,6 +106,10 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     []
   );
 
+  const swapBranchesRef = useRef(onSwapBranches);
+  swapBranchesRef.current = onSwapBranches;
+  const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
+
   // Per-worktree layout cache: reuse layout when WorktreeState reference is unchanged.
   type CacheEntry = { wtRef: WorktreeState; numActions: number; layout: SingleWorktreeLayout };
   const perLayoutCacheRef = useRef<Map<string, CacheEntry>>(new Map());
@@ -135,7 +141,8 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
               stableFetchBranches,
               stableRunAction,
               stableStopAction,
-              numActions
+              numActions,
+              stableSwapBranches
             );
       newCache.set(wt.id, { wtRef: wt, numActions, layout });
       return layout;
@@ -170,6 +177,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     stableFetchBranches,
     stableRunAction,
     stableStopAction,
+    stableSwapBranches,
   ]);
 
   return (

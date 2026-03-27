@@ -87,6 +87,8 @@ export class ShiftspacePanel {
           void this._actionManager?.runAction(message.worktreeId, message.actionId);
         } else if (message.type === 'stop-action' && message.worktreeId && message.actionId) {
           this._actionManager?.stopAction(message.worktreeId, message.actionId);
+        } else if (message.type === 'swap-branches' && message.worktreeId) {
+          void this._gitProvider?.handleSwapBranches(message.worktreeId);
         }
       },
       null,
