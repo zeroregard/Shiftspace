@@ -42,8 +42,7 @@ export const ViewModeSwitcher = React.memo(({ onViewModeChange }: Props) => {
       <Popover.Portal>
         <Popover.Content
           className="z-50 w-52 rounded-lg border border-border-default bg-node-file p-1 shadow-lg animate-popover-open"
-          side="top"
-          align="start"
+          align="end"
           sideOffset={4}
           onPointerDown={(e) => e.stopPropagation()}
         >
