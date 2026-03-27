@@ -20,6 +20,8 @@ export interface FolderNodeData {
   folderPath: string;
   worktreeId: string;
   onFolderClick?: (worktreeId: string, folderPath: string) => void;
+  /** Optional background color for heatmap mode. */
+  heatColor?: string;
   [key: string]: unknown;
 }
 

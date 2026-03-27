@@ -1,17 +1,36 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import '@vscode/codicons/dist/codicon.css';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
-import type { ShiftspaceEvent, DiffMode } from '@shiftspace/renderer';
+import type { ShiftspaceEvent, DiffMode, ViewMode } from '@shiftspace/renderer';
 import { MockEngine, MOCK_BRANCHES } from './mock/engine';
 import { ControlPanel } from './controls/ControlPanel';
+
+const VIEW_MODE_KEY = 'shiftspace.viewMode';
+
+function loadPersistedViewMode(): ViewMode {
+  try {
+    const stored = localStorage.getItem(VIEW_MODE_KEY);
+    if (stored === 'tree' || stored === 'slim' || stored === 'list' || stored === 'heatmap') {
+      return stored;
+    }
+  } catch {
+    // ignore
+  }
+  return 'tree';
+}
 
 export const App: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState(0);
 
-  const { updateWorktreeFiles, setDiffModeLoading, setBranchList, setDiffMode } =
+  const { updateWorktreeFiles, setDiffModeLoading, setBranchList, setDiffMode, setViewMode } =
     useShiftspaceStore();
+
+  // Initialize persisted view mode on mount
+  useEffect(() => {
+    setViewMode(loadPersistedViewMode());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -77,6 +96,14 @@ export const App: React.FC = () => {
     [setBranchList]
   );
 
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, mode);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const handleReset = () => {
     engineRef.current?.reset();
     setResetKey((k) => k + 1);
@@ -99,6 +126,7 @@ export const App: React.FC = () => {
         onEvent={onEvent}
         onDiffModeChange={handleDiffModeChange}
         onRequestBranchList={handleRequestBranchList}
+        onViewModeChange={handleViewModeChange}
       />
       <ControlPanel
         engine={engineRef.current}

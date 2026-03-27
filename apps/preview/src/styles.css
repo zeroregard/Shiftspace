@@ -75,6 +75,12 @@
   --color-diff-added-bg:   rgba(78, 201, 78, 0.08);
   --color-diff-removed-bg: rgba(224, 92, 92, 0.08);
   --color-diff-hunk-bg:    rgba(255, 255, 255, 0.03);
+
+  /* Heatmap mode colors */
+  --color-heat-cool: #2a5a8a;
+  --color-heat-warm: #8a7a2a;
+  --color-heat-hot:  #8a4a2a;
+  --color-heat-max:  #8a2a2a;
 }
 
 /* @pierre/diffs theme integration */

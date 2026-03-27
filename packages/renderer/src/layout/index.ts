@@ -106,9 +106,8 @@ export function computeFullLayout(
   numActions?: number,
   onSwapBranches?: (worktreeId: string) => void
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
-  const perLayouts = wtArray.map((wt) => ({
-    wt,
-    layout: computeSingleWorktreeLayout(
+  const perLayouts = wtArray.map((wt) =>
+    computeSingleWorktreeLayout(
       wt,
       onFileClick,
       onDiffModeChange,
@@ -120,22 +119,26 @@ export function computeFullLayout(
       onStopAction,
       numActions,
       onSwapBranches
-    ),
-  }));
+    )
+  );
 
-  const maxW = Math.max(...perLayouts.map((wl) => wl.layout.containerW), 0);
-  let cursorY = 0;
+  // Lay worktrees out horizontally, side-by-side, top-aligned.
+  // Center the entire group around x = 0.
+  const totalGroupW =
+    perLayouts.reduce((sum, l) => sum + l.containerW, 0) +
+    Math.max(perLayouts.length - 1, 0) * CONTAINER_GAP;
+
+  let cursorX = -totalGroupW / 2;
 
   const allNodes: LayoutNode[] = [];
   const allEdges: LayoutEdge[] = [];
 
-  for (const { layout } of perLayouts) {
-    const offsetX = (maxW - layout.containerW) / 2;
+  for (const layout of perLayouts) {
     for (const n of layout.nodes) {
-      allNodes.push({ ...n, position: { x: n.position.x + offsetX, y: n.position.y + cursorY } });
+      allNodes.push({ ...n, position: { x: n.position.x + cursorX, y: n.position.y } });
     }
     for (const e of layout.edges) allEdges.push(e);
-    cursorY += layout.containerH + CONTAINER_GAP;
+    cursorX += layout.containerW + CONTAINER_GAP;
   }
 
   return { nodes: allNodes, edges: allEdges };

@@ -11,5 +11,6 @@ export type {
   ActionConfig,
   ActionState,
   ActionStatus,
+  ViewMode,
 } from './types';
 export { DiffPopover, DiffHoverCard } from './components/DiffOverlay';
