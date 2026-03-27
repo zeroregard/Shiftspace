@@ -109,21 +109,6 @@ describe('checkWorktreeSafety', () => {
 describe('swapBranches — happy path', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  /** Capture every git command args array invoked. */
-  function captureCommands(): Array<string[]> {
-    const calls: Array<string[]> = [];
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      args: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      calls.push(args);
-      cb(null, { stdout: '', stderr: '' });
-    }) as any);
-    return calls;
-  }
-
   it('performs the full swap sequence when neither worktree has changes', async () => {
     const calls: Array<string[]> = [];
     vi.mocked(execFile).mockImplementation(((
@@ -259,7 +244,6 @@ describe('swapBranches — happy path', () => {
 
   it('stashes and cross-pops for both when both have changes', async () => {
     const calls: Array<string[]> = [];
-    let statusCallCount = 0;
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
       args: string[],
@@ -268,7 +252,6 @@ describe('swapBranches — happy path', () => {
     ) => {
       calls.push(args);
       if (args[0] === 'status') {
-        statusCallCount++;
         cb(null, { stdout: ' M file.ts\n', stderr: '' });
         return;
       }
@@ -452,8 +435,6 @@ describe('swapBranches — failure and rollback', () => {
         branchB: 'main',
       })
     ).rejects.toThrow('cannot create branch');
-
-    const joined = calls.map((a) => a.join(' '));
 
     // The stash pop (rollback) should have been attempted on the original worktree
     const popAttempt = calls.some((a) => a[0] === 'stash' && a[1] === 'pop');

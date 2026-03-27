@@ -391,7 +391,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
           cwd: worktreeAPath,
           timeout: 10_000,
         });
-      } catch (e) {
+      } catch {
         // Try force-delete
         try {
           await execFileAsync('git', ['branch', '-D', tempBranch], {
