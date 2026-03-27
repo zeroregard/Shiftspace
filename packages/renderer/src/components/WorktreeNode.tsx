@@ -5,7 +5,7 @@ import type { WorktreeState, DiffMode } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
-import { GitBranchIcon, GitCompareIcon } from '../icons';
+import { GitBranchIcon, GitCompareIcon, SwapIcon } from '../icons';
 import { ActionBar } from './ActionBar';
 
 // Stable reference — avoids returning a new [] each render, which would cause
@@ -20,6 +20,7 @@ export interface WorktreeNodeData {
   onFetchBranches?: (worktreeId: string) => void;
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
+  onSwapBranches?: (worktreeId: string) => void;
   [key: string]: unknown;
 }
 
@@ -125,25 +126,42 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
           )}
         </div>
 
-        {/* Diff mode selector */}
-        <BranchPickerPopover
-          trigger={
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Swap button — only for non-main (linked) worktrees */}
+          {!isMain && data.onSwapBranches && (
             <button
-              className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-10 whitespace-nowrap cursor-pointer bg-transparent shrink-0"
+              className="flex items-center justify-center w-6 h-6 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted cursor-pointer bg-transparent"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onSwapBranches!(wt.id);
+              }}
+              title="Swap branch with main worktree"
             >
-              <GitCompareIcon />
-              <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
+              <SwapIcon />
             </button>
-          }
-          branches={diffModeBranches}
-          selectedBranch={diffMode.type === 'branch' ? diffMode.branch : null}
-          staticOptions={diffModeStaticOptions}
-          branchLabel={(b) => `vs ${b}`}
-          onSelectBranch={(branch) => data.onDiffModeChange?.(wt.id, { type: 'branch', branch })}
-          onOpen={() => data.onRequestBranchList?.(wt.id)}
-        />
+          )}
+
+          {/* Diff mode selector */}
+          <BranchPickerPopover
+            trigger={
+              <button
+                className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-10 whitespace-nowrap cursor-pointer bg-transparent"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <GitCompareIcon />
+                <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
+              </button>
+            }
+            branches={diffModeBranches}
+            selectedBranch={diffMode.type === 'branch' ? diffMode.branch : null}
+            staticOptions={diffModeStaticOptions}
+            branchLabel={(b) => `vs ${b}`}
+            onSelectBranch={(branch) => data.onDiffModeChange?.(wt.id, { type: 'branch', branch })}
+            onOpen={() => data.onRequestBranchList?.(wt.id)}
+          />
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import {
   listBranches,
   checkoutBranch,
   fetchRemote,
+  checkWorktreeSafety,
+  swapBranches,
 } from './git/worktrees';
 import { getFileChanges, getBranchDiffFileChanges } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
@@ -381,6 +383,70 @@ export class GitDataProvider implements vscode.Disposable {
         message: `Failed to checkout "${branch}": ${(err as Error).message}`,
       });
     }
+  }
+
+  /** Swap branches between the given linked worktree and the main worktree. */
+  async handleSwapBranches(worktreeId: string): Promise<void> {
+    const linkedWt = this.worktrees.find((w) => w.id === worktreeId);
+    if (!linkedWt) return;
+
+    const mainWt = this.worktrees.find(
+      (w) => w.branch === this.defaultBranch && w.id !== worktreeId
+    );
+    if (!mainWt) {
+      void vscode.window.showErrorMessage(
+        `Cannot swap: no worktree found on branch "${this.defaultBranch}".`
+      );
+      return;
+    }
+
+    // Safety checks
+    const safetyLinked = await checkWorktreeSafety(linkedWt.path);
+    if (safetyLinked) {
+      void vscode.window.showErrorMessage(`Cannot swap: ${safetyLinked}`);
+      return;
+    }
+
+    const safetyMain = await checkWorktreeSafety(mainWt.path);
+    if (safetyMain) {
+      void vscode.window.showErrorMessage(`Cannot swap: main worktree — ${safetyMain}`);
+      return;
+    }
+
+    // Confirmation dialog
+    const answer = await vscode.window.showInformationMessage(
+      `Swap branches? This worktree (${linkedWt.branch}) will get ${mainWt.branch}'s branch, and main worktree will get ${linkedWt.branch}. Uncommitted changes will be stashed and restored.`,
+      { modal: true },
+      'Yes'
+    );
+    if (answer !== 'Yes') return;
+
+    // Execute swap with progress notification
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'Shiftspace: Swapping branches',
+        cancellable: false,
+      },
+      async (progress) => {
+        try {
+          await swapBranches({
+            worktreeAPath: linkedWt.path,
+            branchA: linkedWt.branch,
+            worktreeBPath: mainWt.path,
+            branchB: mainWt.branch,
+            onProgress: (msg) => progress.report({ message: msg }),
+          });
+          progress.report({ message: 'Done! Refreshing...' });
+          await this.initialize();
+        } catch (err) {
+          console.error('[Shiftspace] handleSwapBranches error:', err);
+          void vscode.window.showErrorMessage(
+            `Branch swap failed: ${(err as Error).message}. Check git stash list for any stashed changes.`
+          );
+        }
+      }
+    );
   }
 
   /** Reveal a folder in the VS Code Explorer. */

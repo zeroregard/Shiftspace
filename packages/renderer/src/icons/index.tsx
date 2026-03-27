@@ -16,6 +16,10 @@ export function RefreshIcon() {
   return <i className="codicon codicon-refresh" style={{ fontSize: 11 }} aria-hidden="true" />;
 }
 
+export function SwapIcon() {
+  return <i className="codicon codicon-arrow-swap" style={{ fontSize: 12 }} aria-hidden="true" />;
+}
+
 // ---------------------------------------------------------------------------
 // SVG base shapes
 // ---------------------------------------------------------------------------
