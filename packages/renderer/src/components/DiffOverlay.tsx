@@ -104,10 +104,24 @@ const POPOVER_W = 720;
 const POPOVER_H = 420;
 const OFFSET = 8;
 const COLLISION_PADDING = 8;
+const OPEN_DELAY = 300;
+
+// Module-level tracker so all DiffPopover instances share the same active state.
+// When any popover is open, subsequent ones open with 0 delay for instant switching.
+let _activeDiffKey: string | null = null;
+const _subscribers = new Set<() => void>();
+
+function setActiveDiffKey(key: string | null) {
+  if (_activeDiffKey === key) return;
+  _activeDiffKey = key;
+  _subscribers.forEach((fn) => fn());
+}
 
 export const DiffPopover = React.memo(
   ({ file, children }: { file: FileChange; children: React.ReactNode }) => {
+    const myKey = file.path;
     const [open, setOpen] = React.useState(false);
+    const [openDelay, setOpenDelay] = React.useState(OPEN_DELAY);
     const [side, setSide] = React.useState<'top' | 'right' | 'bottom' | 'left'>('bottom');
     const [width, setWidth] = React.useState(POPOVER_W);
     const triggerEl = React.useRef<Element | null>(null);
@@ -115,19 +129,42 @@ export const DiffPopover = React.memo(
       triggerEl.current = node;
     }, []);
 
-    const handleOpenChange = React.useCallback((nextOpen: boolean) => {
-      if (nextOpen && triggerEl.current) {
-        const rect = triggerEl.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom - OFFSET;
-        const spaceAbove = rect.top - OFFSET;
-        setSide(spaceBelow >= spaceAbove ? 'bottom' : 'top');
-        setWidth(Math.min(POPOVER_W, window.innerWidth - COLLISION_PADDING * 2));
-      }
-      setOpen(nextOpen);
-    }, []);
+    React.useEffect(() => {
+      const update = () => {
+        setOpenDelay(_activeDiffKey !== null && _activeDiffKey !== myKey ? 0 : OPEN_DELAY);
+      };
+      _subscribers.add(update);
+      return () => {
+        _subscribers.delete(update);
+      };
+    }, [myKey]);
+
+    const handleOpenChange = React.useCallback(
+      (nextOpen: boolean) => {
+        if (nextOpen) {
+          setActiveDiffKey(myKey);
+          if (triggerEl.current) {
+            const rect = triggerEl.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom - OFFSET;
+            const spaceAbove = rect.top - OFFSET;
+            setSide(spaceBelow >= spaceAbove ? 'bottom' : 'top');
+            setWidth(Math.min(POPOVER_W, window.innerWidth - COLLISION_PADDING * 2));
+          }
+        } else {
+          if (_activeDiffKey === myKey) setActiveDiffKey(null);
+        }
+        setOpen(nextOpen);
+      },
+      [myKey]
+    );
 
     return (
-      <HoverCard.Root open={open} onOpenChange={handleOpenChange} openDelay={300} closeDelay={50}>
+      <HoverCard.Root
+        open={open}
+        onOpenChange={handleOpenChange}
+        openDelay={openDelay}
+        closeDelay={50}
+      >
         <HoverCard.Trigger asChild ref={triggerRef as React.Ref<HTMLAnchorElement>}>
           {children}
         </HoverCard.Trigger>
