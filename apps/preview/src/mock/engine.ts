@@ -230,17 +230,19 @@ export class MockEngine {
     const diffMode: DiffMode = isDefault
       ? { type: 'working' }
       : { type: 'branch', branch: DEFAULT_BRANCH };
+    // Register template before generating files (getMock* reads it)
+    this.templateMap.set(id, template);
+    const files = isDefault ? this.getMockWorkingFiles(id) : this.getMockBranchFiles(id);
     const wt: WorktreeState = {
       id,
       path,
       branch,
-      files: [],
+      files,
       diffMode,
       defaultBranch: DEFAULT_BRANCH,
       isMainWorktree,
     };
     this.worktrees.set(id, wt);
-    this.templateMap.set(id, template);
     this.emit({ type: 'worktree-added', worktree: wt });
   }
 
@@ -255,6 +257,35 @@ export class MockEngine {
     this.stopAgent(id);
     this.worktrees.delete(id);
     this.emit({ type: 'worktree-removed', worktreeId: id });
+  }
+
+  /** Generate mock files for a working diff (staged + unstaged mix). */
+  getMockWorkingFiles(worktreeId: string): FileChange[] {
+    const templateKey = this.templateMap.get(worktreeId) ?? 'nextjs';
+    const template = FILE_TREE_TEMPLATES[templateKey];
+    const count = Math.max(2, Math.floor(template.length * (0.3 + Math.random() * 0.3)));
+    const shuffled = [...template].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, count);
+    const now = Date.now();
+    return selected.map((filePath, i) => {
+      const linesAdded = rand(1, 40);
+      const linesRemoved = rand(0, 20);
+      const statuses: FileChange['status'][] = ['added', 'modified', 'modified', 'modified'];
+      const status = pick(statuses);
+      const diff = makeDiff(filePath, linesAdded, linesRemoved, status);
+      // Alternate staged/unstaged so both sections are visible
+      const staged = i % 3 !== 0;
+      return {
+        path: filePath,
+        status,
+        staged,
+        linesAdded,
+        linesRemoved,
+        lastChangedAt: now,
+        diff,
+        rawDiff: hunksToRawDiff(filePath, diff, status),
+      };
+    });
   }
 
   /** Generate mock files for a branch diff (different subset from working diff). */

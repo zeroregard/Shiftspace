@@ -75,59 +75,31 @@ export const WorktreeHeader = React.memo(
     const diffModeBranches = branchList.filter((b) => b !== wt.branch);
 
     return (
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
-            {pathPart && <span>{pathPart} </span>}
-            <BranchPickerPopover
-              trigger={
-                <button
-                  className="flex items-center gap-1 text-text-faint font-normal hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                  title="Switch branch"
-                >
-                  <GitBranchIcon />
-                  {pathPart ? `(${wt.branch})` : wt.branch}
-                </button>
-              }
-              branches={checkoutBranches}
-              selectedBranch={wt.branch}
-              onSelectBranch={(branch) => onCheckoutBranch?.(wt.id, branch)}
-              onOpen={() => onRequestBranchList?.(wt.id)}
-              onFetch={onFetchBranches ? () => onFetchBranches!(wt.id) : undefined}
-              isFetching={isFetchingBranches}
-              lastFetchAt={lastFetchAt}
-            />
-          </div>
-          <div className="text-11 text-text-muted mt-0.5">
-            {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
-            <span className="text-status-added">+{totalAdded}</span>{' '}
-            <span className="text-status-deleted">-{totalRemoved}</span>
-          </div>
-          {wt.process && (
-            <div className="mt-1 text-10 text-teal bg-process-badge rounded-sm px-1 py-px inline-block">
-              :{wt.process.port}
-            </div>
-          )}
+      <div className="flex flex-col gap-1">
+        <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
+          {pathPart && <span>{pathPart} </span>}
+          <BranchPickerPopover
+            trigger={
+              <button
+                className="flex items-center gap-1 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                title="Switch branch"
+              >
+                <GitBranchIcon />
+                {pathPart ? `(${wt.branch})` : wt.branch}
+              </button>
+            }
+            branches={checkoutBranches}
+            selectedBranch={wt.branch}
+            onSelectBranch={(branch) => onCheckoutBranch?.(wt.id, branch)}
+            onOpen={() => onRequestBranchList?.(wt.id)}
+            onFetch={onFetchBranches ? () => onFetchBranches!(wt.id) : undefined}
+            isFetching={isFetchingBranches}
+            lastFetchAt={lastFetchAt}
+          />
         </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          {/* Swap button — only for linked (non-main) worktrees */}
-          {!wt.isMainWorktree && onSwapBranches && (
-            <button
-              className="flex items-center justify-center w-6 h-6 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted cursor-pointer bg-transparent"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSwapBranches(wt.id);
-              }}
-              title="Swap branch with main worktree"
-            >
-              <SwapIcon />
-            </button>
-          )}
-
+        <div className="flex gap-1 mt-1">
           {/* Diff mode selector */}
           <BranchPickerPopover
             trigger={
@@ -147,6 +119,29 @@ export const WorktreeHeader = React.memo(
             onSelectBranch={(branch) => onDiffModeChange?.(wt.id, { type: 'branch', branch })}
             onOpen={() => onRequestBranchList?.(wt.id)}
           />
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Swap button — only for linked (non-main) worktrees */}
+              {!wt.isMainWorktree && onSwapBranches && (
+                <button
+                  className="flex items-center justify-center w-6 h-6 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted cursor-pointer bg-transparent"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSwapBranches(wt.id);
+                  }}
+                  title="Swap branch with primary worktree"
+                >
+                  <SwapIcon />
+                </button>
+              )}
+            </div>
+            <div className="ml-2 text-11 text-text-muted">
+              {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
+              <span className="text-status-added">+{totalAdded}</span>{' '}
+              <span className="text-status-deleted">-{totalRemoved}</span>
+            </div>
+          </div>
         </div>
       </div>
     );

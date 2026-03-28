@@ -80,8 +80,8 @@ export const App: React.FC = () => {
 
         const files =
           diffMode.type === 'working'
-            ? [] // For working mode, return empty (agents will populate via events)
-            : engine.getMockBranchFiles(worktreeId); // Branch mode: mock files
+            ? engine.getMockWorkingFiles(worktreeId)
+            : engine.getMockBranchFiles(worktreeId);
 
         updateWorktreeFiles(worktreeId, files, diffMode);
       }, 200);

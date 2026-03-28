@@ -385,7 +385,7 @@ export class GitDataProvider implements vscode.Disposable {
     }
   }
 
-  /** Swap branches between the given linked worktree and the main worktree. */
+  /** Swap branches between the given linked worktree and the primary worktree. */
   async handleSwapBranches(worktreeId: string): Promise<void> {
     const linkedWt = this.worktrees.find((w) => w.id === worktreeId);
     if (!linkedWt) return;
@@ -409,13 +409,13 @@ export class GitDataProvider implements vscode.Disposable {
 
     const safetyMain = await checkWorktreeSafety(mainWt.path);
     if (safetyMain) {
-      void vscode.window.showErrorMessage(`Cannot swap: main worktree — ${safetyMain}`);
+      void vscode.window.showErrorMessage(`Cannot swap: primary worktree — ${safetyMain}`);
       return;
     }
 
     // Confirmation dialog
     const answer = await vscode.window.showInformationMessage(
-      `Swap branches? This worktree (${linkedWt.branch}) will get ${mainWt.branch}'s branch, and main worktree will get ${linkedWt.branch}. Uncommitted changes will be stashed and restored.`,
+      `Swap branches? This worktree (${linkedWt.branch}) will get ${mainWt.branch}'s branch, and primary worktree will get ${linkedWt.branch}. Uncommitted changes will be stashed and restored.`,
       { modal: true },
       'Yes'
     );
