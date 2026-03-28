@@ -5,6 +5,7 @@ import type { WorktreeState, FileChange, DiffMode } from '../types';
 import { FileIcon } from '../icons';
 import { DiffPopover } from './DiffOverlay';
 import { WorktreeHeader } from './WorktreeHeader';
+import { partitionFiles } from '../utils/listSections';
 
 const STATUS_LETTER: Record<FileChange['status'], string> = {
   added: 'A',
@@ -79,13 +80,6 @@ interface ListWorktreeBoxProps {
   onSwapBranches?: (worktreeId: string) => void;
 }
 
-function sortFiles(files: FileChange[]): FileChange[] {
-  return [...files].sort((a, b) => {
-    if (a.status !== b.status) return a.status.localeCompare(b.status);
-    return a.path.localeCompare(b.path);
-  });
-}
-
 function SectionLabel({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 px-3 pt-2 pb-0.5">
@@ -106,10 +100,7 @@ const ListWorktreeBox = React.memo(
     onFetchBranches,
     onSwapBranches,
   }: ListWorktreeBoxProps) => {
-    const committed = sortFiles(wt.files.filter((f) => f.committed));
-    const staged = sortFiles(wt.files.filter((f) => !f.committed && f.staged));
-    const unstaged = sortFiles(wt.files.filter((f) => !f.committed && !f.staged));
-
+    const { committed, staged, unstaged } = partitionFiles(wt);
     const isEmpty = wt.files.length === 0;
 
     return (
