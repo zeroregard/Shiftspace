@@ -9,6 +9,7 @@ import type {
   FileChange,
   ActionConfig,
   ActionStatus,
+  IconMap,
 } from '@shiftspace/renderer';
 import './styles.css';
 
@@ -41,7 +42,8 @@ type HostMessage =
       actionId: string;
       status: ActionStatus;
       port?: number;
-    };
+    }
+  | { type: 'icon-theme'; payload: IconMap };
 
 const App: React.FC = () => {
   const {
@@ -54,6 +56,7 @@ const App: React.FC = () => {
     setLastFetchAt,
     setActionConfigs,
     setActionState,
+    setIconMap,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
@@ -61,6 +64,8 @@ const App: React.FC = () => {
     // Register the message listener first, then send 'ready' so we cannot
     // miss a fast synchronous reply from the extension host.
     const handler = (e: MessageEvent<HostMessage>) => {
+      // Guard against messages from unexpected origins (basic prompt-injection defence)
+      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
       const msg = e.data;
       if (msg.type === 'init') {
         setErrorMessage(undefined);
@@ -86,6 +91,8 @@ const App: React.FC = () => {
           status: msg.status,
           port: msg.port,
         });
+      } else if (msg.type === 'icon-theme') {
+        setIconMap(msg.payload);
       }
     };
 
@@ -103,6 +110,7 @@ const App: React.FC = () => {
     setLastFetchAt,
     setActionConfigs,
     setActionState,
+    setIconMap,
   ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {

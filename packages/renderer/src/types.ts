@@ -63,3 +63,23 @@ export interface ActionState {
   status: ActionStatus;
   port?: number;
 }
+
+// ---------------------------------------------------------------------------
+// File icon theme (populated by the VSCode extension host, not the preview app)
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-file icon entry. `dark` is a base64 SVG data URI for dark themes.
+ * `light` is reserved for future light-theme support.
+ */
+export interface IconEntry {
+  dark?: string;
+  light?: string;
+}
+
+/**
+ * Map from a file's relative path (matching `FileChange.path`) to its
+ * resolved icon. Populated by the extension host and stored in the renderer's
+ * Zustand store. Empty in the preview app — falls back to built-in icons.
+ */
+export type IconMap = Record<string, IconEntry>;
