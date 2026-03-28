@@ -65,6 +65,7 @@ const PATCH_DIFF_OPTIONS = {
   disableLineNumbers: false,
   overflow: 'scroll' as const,
   themeType: 'dark' as const,
+  theme: 'dark-plus',
 };
 
 const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => {
@@ -99,25 +100,53 @@ const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => {
 });
 DiffOverlayContent.displayName = 'DiffOverlayContent';
 
+const POPOVER_W = 720;
+const POPOVER_H = 420;
+const OFFSET = 8;
+const COLLISION_PADDING = 8;
+
 export const DiffPopover = React.memo(
-  ({ file, children }: { file: FileChange; children: React.ReactNode }) => (
-    <HoverCard.Root openDelay={300} closeDelay={50}>
-      <HoverCard.Trigger asChild>{children}</HoverCard.Trigger>
-      <HoverCard.Portal>
-        <HoverCard.Content
-          side="right"
-          sideOffset={8}
-          align="start"
-          avoidCollisions={true}
-          collisionPadding={8}
-          className="z-50 flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md animate-popover-open"
-          style={{ width: 720, maxHeight: 420 }}
-        >
-          <DiffOverlayContent file={file} />
-        </HoverCard.Content>
-      </HoverCard.Portal>
-    </HoverCard.Root>
-  )
+  ({ file, children }: { file: FileChange; children: React.ReactNode }) => {
+    const [open, setOpen] = React.useState(false);
+    const [side, setSide] = React.useState<'top' | 'right' | 'bottom' | 'left'>('bottom');
+    const [width, setWidth] = React.useState(POPOVER_W);
+    const triggerEl = React.useRef<Element | null>(null);
+    const triggerRef = React.useCallback((node: Element | null) => {
+      triggerEl.current = node;
+    }, []);
+
+    const handleOpenChange = React.useCallback((nextOpen: boolean) => {
+      if (nextOpen && triggerEl.current) {
+        const rect = triggerEl.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom - OFFSET;
+        const spaceAbove = rect.top - OFFSET;
+        setSide(spaceBelow >= spaceAbove ? 'bottom' : 'top');
+        setWidth(Math.min(POPOVER_W, window.innerWidth - COLLISION_PADDING * 2));
+      }
+      setOpen(nextOpen);
+    }, []);
+
+    return (
+      <HoverCard.Root open={open} onOpenChange={handleOpenChange} openDelay={300} closeDelay={50}>
+        <HoverCard.Trigger asChild ref={triggerRef as React.Ref<HTMLAnchorElement>}>
+          {children}
+        </HoverCard.Trigger>
+        <HoverCard.Portal>
+          <HoverCard.Content
+            side={side}
+            sideOffset={8}
+            align="start"
+            avoidCollisions={true}
+            collisionPadding={COLLISION_PADDING}
+            className="z-50 flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md animate-popover-open"
+            style={{ width, maxHeight: POPOVER_H }}
+          >
+            <DiffOverlayContent file={file} />
+          </HoverCard.Content>
+        </HoverCard.Portal>
+      </HoverCard.Root>
+    );
+  }
 );
 DiffPopover.displayName = 'DiffPopover';
 
