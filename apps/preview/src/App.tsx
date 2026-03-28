@@ -16,7 +16,7 @@ function loadPersistedViewMode(): ViewMode {
   } catch {
     // ignore
   }
-  return 'tree';
+  return 'list';
 }
 
 export const App: React.FC = () => {

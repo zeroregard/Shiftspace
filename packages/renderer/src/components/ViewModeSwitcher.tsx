@@ -23,9 +23,9 @@ const TreeIcon = ({ size = 12 }: { size?: number }) => (
 );
 
 const MODES: { id: ViewMode; label: string; icon?: string; svgIcon?: React.ReactNode }[] = [
-  { id: 'tree', label: 'Tree', svgIcon: <TreeIcon /> },
-  { id: 'simple', label: 'Simple', icon: 'codicon-remove' },
   { id: 'list', label: 'List', icon: 'codicon-list-flat' },
+  { id: 'simple', label: 'Simple', icon: 'codicon-remove' },
+  { id: 'tree', label: 'Tree', svgIcon: <TreeIcon /> },
 ];
 
 interface Props {
