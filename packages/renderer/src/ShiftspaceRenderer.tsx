@@ -140,7 +140,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   const { nodes, edges } = useMemo(() => {
     // Only compute canvas layout for tree mode — slim/list don't need it.
-    if (viewMode === 'slim' || viewMode === 'list') {
+    if (viewMode === 'simple' || viewMode === 'list') {
       return { nodes: [], edges: [] };
     }
 
@@ -210,7 +210,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       </div>
 
       {/* Content area */}
-      {viewMode === 'slim' ? (
+      {viewMode === 'simple' ? (
         <SlimView
           worktrees={wtArray}
           onDiffModeChange={stableDiffModeChange}

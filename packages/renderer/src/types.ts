@@ -28,6 +28,7 @@ export interface FileChange {
   path: string; // relative to worktree root
   status: 'added' | 'modified' | 'deleted';
   staged: boolean;
+  committed?: boolean; // true for files from a branch diff (already committed)
   linesAdded: number;
   linesRemoved: number;
   lastChangedAt: number; // timestamp, used for pulse animation
@@ -46,7 +47,7 @@ export type ShiftspaceEvent =
 
 export type LODLevel = 'worktree' | 'directory' | 'file';
 
-export type ViewMode = 'tree' | 'slim' | 'list';
+export type ViewMode = 'tree' | 'simple' | 'list';
 
 // ---------------------------------------------------------------------------
 // Action buttons

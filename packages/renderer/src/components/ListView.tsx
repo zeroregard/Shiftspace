@@ -38,16 +38,6 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
         )}
         onClick={() => onFileClick?.(worktreeId, file.path)}
       >
-        {/* Status letter */}
-        <span
-          className={clsx(
-            'text-11 font-mono font-semibold w-3 shrink-0',
-            STATUS_COLOR_CLASS[file.status]
-          )}
-        >
-          {STATUS_LETTER[file.status]}
-        </span>
-
         {/* File icon */}
         <span className="shrink-0 flex items-center">
           <FileIcon filename={fileName} size={12} />
@@ -63,10 +53,14 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
           {file.path}
         </span>
 
-        {/* Line counts */}
-        <span className="text-10 text-text-faint shrink-0 font-mono">
-          <span className="text-status-added">+{file.linesAdded}</span>{' '}
-          <span className="text-status-deleted">-{file.linesRemoved}</span>
+        {/* Status letter */}
+        <span
+          className={clsx(
+            'text-11 font-mono font-semibold w-3 shrink-0',
+            STATUS_COLOR_CLASS[file.status]
+          )}
+        >
+          {STATUS_LETTER[file.status]}
         </span>
       </button>
     </DiffPopover>
@@ -85,6 +79,23 @@ interface ListWorktreeBoxProps {
   onSwapBranches?: (worktreeId: string) => void;
 }
 
+function sortFiles(files: FileChange[]): FileChange[] {
+  return [...files].sort((a, b) => {
+    if (a.status !== b.status) return a.status.localeCompare(b.status);
+    return a.path.localeCompare(b.path);
+  });
+}
+
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 px-3 pt-2 pb-0.5">
+      <span className="text-10 font-semibold uppercase tracking-wider text-text-faint">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 const ListWorktreeBox = React.memo(
   ({
     worktree: wt,
@@ -95,11 +106,11 @@ const ListWorktreeBox = React.memo(
     onFetchBranches,
     onSwapBranches,
   }: ListWorktreeBoxProps) => {
-    // Sort files: by status then path
-    const sortedFiles = [...wt.files].sort((a, b) => {
-      if (a.status !== b.status) return a.status.localeCompare(b.status);
-      return a.path.localeCompare(b.path);
-    });
+    const committed = sortFiles(wt.files.filter((f) => f.committed));
+    const staged = sortFiles(wt.files.filter((f) => !f.committed && f.staged));
+    const unstaged = sortFiles(wt.files.filter((f) => !f.committed && !f.staged));
+
+    const isEmpty = wt.files.length === 0;
 
     return (
       <div className="border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">
@@ -117,17 +128,50 @@ const ListWorktreeBox = React.memo(
 
         {/* File list */}
         <div className="p-2">
-          {sortedFiles.length === 0 ? (
+          {isEmpty ? (
             <div className="text-text-faint text-11 px-3 py-2">No changes</div>
           ) : (
-            sortedFiles.map((file) => (
-              <ListFileRow
-                key={file.path}
-                file={file}
-                worktreeId={wt.id}
-                onFileClick={onFileClick}
-              />
-            ))
+            <>
+              {committed.length > 0 && (
+                <>
+                  <SectionLabel label="Committed" />
+                  {committed.map((file) => (
+                    <ListFileRow
+                      key={file.path}
+                      file={file}
+                      worktreeId={wt.id}
+                      onFileClick={onFileClick}
+                    />
+                  ))}
+                </>
+              )}
+              {staged.length > 0 && (
+                <>
+                  <SectionLabel label="Staged" />
+                  {staged.map((file) => (
+                    <ListFileRow
+                      key={file.path}
+                      file={file}
+                      worktreeId={wt.id}
+                      onFileClick={onFileClick}
+                    />
+                  ))}
+                </>
+              )}
+              {unstaged.length > 0 && (
+                <>
+                  <SectionLabel label="Unstaged" />
+                  {unstaged.map((file) => (
+                    <ListFileRow
+                      key={file.path}
+                      file={file}
+                      worktreeId={wt.id}
+                      onFileClick={onFileClick}
+                    />
+                  ))}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>

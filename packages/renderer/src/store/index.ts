@@ -134,7 +134,8 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
         }
         case 'file-changed': {
           const wt = worktrees.get(event.worktreeId);
-          if (wt) {
+          // In branch diff mode the file list is a static snapshot — ignore live events
+          if (wt && wt.diffMode.type === 'working') {
             const files = wt.files.filter((f) => f.path !== event.file.path);
             worktrees.set(event.worktreeId, { ...wt, files: [...files, event.file] });
           }
@@ -142,7 +143,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
         }
         case 'file-removed': {
           const wt = worktrees.get(event.worktreeId);
-          if (wt) {
+          if (wt && wt.diffMode.type === 'working') {
             const files = wt.files.filter((f) => f.path !== event.filePath);
             worktrees.set(event.worktreeId, { ...wt, files });
           }
@@ -150,7 +151,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
         }
         case 'file-staged': {
           const wt = worktrees.get(event.worktreeId);
-          if (wt) {
+          if (wt && wt.diffMode.type === 'working') {
             const files = wt.files.map((f) =>
               f.path === event.filePath ? { ...f, staged: true } : f
             );

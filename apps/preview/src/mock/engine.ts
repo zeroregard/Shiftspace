@@ -277,6 +277,7 @@ export class MockEngine {
         path: filePath,
         status,
         staged: false,
+        committed: true,
         linesAdded,
         linesRemoved,
         lastChangedAt: now,

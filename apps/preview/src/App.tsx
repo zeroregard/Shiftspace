@@ -10,7 +10,7 @@ const VIEW_MODE_KEY = 'shiftspace.viewMode';
 function loadPersistedViewMode(): ViewMode {
   try {
     const stored = localStorage.getItem(VIEW_MODE_KEY);
-    if (stored === 'tree' || stored === 'slim' || stored === 'list') {
+    if (stored === 'tree' || stored === 'simple' || stored === 'list') {
       return stored;
     }
   } catch {
