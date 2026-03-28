@@ -28,7 +28,12 @@ interface ShiftspaceStore {
   setDiffMode: (worktreeId: string, diffMode: DiffMode) => void;
   setDiffModeLoading: (worktreeId: string, loading: boolean) => void;
   setBranchList: (worktreeId: string, branches: string[]) => void;
-  updateWorktreeFiles: (worktreeId: string, files: FileChange[], diffMode: DiffMode) => void;
+  updateWorktreeFiles: (
+    worktreeId: string,
+    files: FileChange[],
+    diffMode: DiffMode,
+    branchFiles?: FileChange[]
+  ) => void;
   setFetchLoading: (worktreeId: string, loading: boolean) => void;
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
   setActionConfigs: (configs: ActionConfig[]) => void;
@@ -83,12 +88,12 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
       return { branchLists };
     }),
 
-  updateWorktreeFiles: (worktreeId, files, diffMode) =>
+  updateWorktreeFiles: (worktreeId, files, diffMode, branchFiles) =>
     set((state) => {
       const worktrees = new Map(state.worktrees);
       const wt = worktrees.get(worktreeId);
       if (wt) {
-        worktrees.set(worktreeId, { ...wt, files, diffMode });
+        worktrees.set(worktreeId, { ...wt, files, diffMode, branchFiles });
       }
       const diffModeLoading = new Set(state.diffModeLoading);
       diffModeLoading.delete(worktreeId);

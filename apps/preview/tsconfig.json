@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@shiftspace/renderer": ["../../packages/renderer/src/index.ts"]
+    }
   },
   "include": ["src"]
 }

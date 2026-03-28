@@ -6,7 +6,13 @@ export interface WorktreeState {
   id: string;
   path: string;
   branch: string;
+  /** Working-tree files: staged + unstaged. Always used for Staged/Unstaged sections. */
   files: FileChange[];
+  /**
+   * Branch-diff files: changes committed on this branch vs the base branch.
+   * Only populated in branch diff mode. Feeds the "Committed" section.
+   */
+  branchFiles?: FileChange[];
   process?: { port: number; command: string };
   diffMode: DiffMode;
   defaultBranch: string;

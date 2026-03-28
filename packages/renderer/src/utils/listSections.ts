@@ -15,15 +15,12 @@ function sortFiles(files: FileChange[]): FileChange[] {
 
 /**
  * Partitions a worktree's files into Committed / Staged / Unstaged sections.
- * - Branch diff mode  → everything goes into "committed" (static snapshot)
- * - Working mode      → split by file.staged
+ * - Branch diff mode  → branchFiles → Committed; files → Staged/Unstaged
+ * - Working mode      → files → Staged/Unstaged only (no Committed)
  */
 export function partitionFiles(wt: WorktreeState): FileSections {
-  if (wt.diffMode.type === 'branch') {
-    return { committed: sortFiles(wt.files), staged: [], unstaged: [] };
-  }
   return {
-    committed: [],
+    committed: wt.diffMode.type === 'branch' ? sortFiles(wt.branchFiles ?? []) : [],
     staged: sortFiles(wt.files.filter((f) => f.staged)),
     unstaged: sortFiles(wt.files.filter((f) => !f.staged)),
   };

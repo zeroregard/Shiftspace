@@ -24,7 +24,7 @@ export const App: React.FC = () => {
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState(0);
 
-  const { updateWorktreeFiles, setDiffModeLoading, setBranchList, setDiffMode, setViewMode } =
+  const { updateWorktreeFiles, setDiffModeLoading, setBranchList, setViewMode } =
     useShiftspaceStore();
 
   // Initialize persisted view mode on mount
@@ -69,24 +69,29 @@ export const App: React.FC = () => {
 
   const handleDiffModeChange = useCallback(
     (worktreeId: string, diffMode: DiffMode) => {
-      // Optimistically update the diff mode
-      setDiffMode(worktreeId, diffMode);
+      // Show loading indicator while "fetching" — do NOT call setDiffMode first,
+      // because that would leave diffMode.type === 'branch' with branchFiles === undefined,
+      // causing committed files to appear in the "Unstaged" section during the delay.
       setDiffModeLoading(worktreeId, true);
 
-      // Simulate async fetch
+      // Simulate async fetch — updateWorktreeFiles atomically sets files + diffMode + branchFiles
       setTimeout(() => {
         const engine = engineRef.current;
         if (!engine) return;
 
-        const files =
-          diffMode.type === 'working'
-            ? engine.getMockWorkingFiles(worktreeId)
-            : engine.getMockBranchFiles(worktreeId);
-
-        updateWorktreeFiles(worktreeId, files, diffMode);
+        if (diffMode.type === 'working') {
+          updateWorktreeFiles(worktreeId, engine.getMockWorkingFiles(worktreeId), diffMode);
+        } else {
+          updateWorktreeFiles(
+            worktreeId,
+            engine.getMockWorkingFiles(worktreeId),
+            diffMode,
+            engine.getMockBranchFiles(worktreeId)
+          );
+        }
       }, 200);
     },
-    [setDiffMode, setDiffModeLoading, updateWorktreeFiles]
+    [setDiffModeLoading, updateWorktreeFiles]
   );
 
   const handleRequestBranchList = useCallback(

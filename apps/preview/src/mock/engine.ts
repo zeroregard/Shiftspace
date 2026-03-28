@@ -232,12 +232,14 @@ export class MockEngine {
       : { type: 'branch', branch: DEFAULT_BRANCH };
     // Register template before generating files (getMock* reads it)
     this.templateMap.set(id, template);
-    const files = isDefault ? this.getMockWorkingFiles(id) : this.getMockBranchFiles(id);
+    const files = this.getMockWorkingFiles(id);
+    const branchFiles = isDefault ? undefined : this.getMockBranchFiles(id);
     const wt: WorktreeState = {
       id,
       path,
       branch,
       files,
+      branchFiles,
       diffMode,
       defaultBranch: DEFAULT_BRANCH,
       isMainWorktree,
@@ -316,6 +318,61 @@ export class MockEngine {
         rawDiff: hunksToRawDiff(filePath, diff, status),
       };
     });
+  }
+
+  /**
+   * Returns committed (branch diff) + staged/unstaged (working tree) files combined.
+   * Used for branch-mode worktrees so all three list sections are populated.
+   */
+  getMockAllBranchFiles(worktreeId: string): FileChange[] {
+    const templateKey = this.templateMap.get(worktreeId) ?? 'nextjs';
+    const template = FILE_TREE_TEMPLATES[templateKey];
+    const shuffled = [...template].sort(() => Math.random() - 0.5);
+    // First ~40% → committed, next ~25% → staged/unstaged working changes
+    const committedCount = Math.max(2, Math.floor(shuffled.length * 0.4));
+    const workingCount = Math.max(1, Math.floor(shuffled.length * 0.25));
+    const committedPaths = shuffled.slice(0, committedCount);
+    const workingPaths = shuffled.slice(committedCount, committedCount + workingCount);
+    const now = Date.now();
+
+    const committedFiles: FileChange[] = committedPaths.map((filePath) => {
+      const linesAdded = rand(5, 60);
+      const linesRemoved = rand(0, 30);
+      const status = pick<FileChange['status']>(['added', 'modified', 'modified', 'modified']);
+      const diff = makeDiff(filePath, linesAdded, linesRemoved, status);
+      return {
+        path: filePath,
+        status,
+        staged: false,
+        committed: true,
+        linesAdded,
+        linesRemoved,
+        lastChangedAt: now,
+        diff,
+        rawDiff: hunksToRawDiff(filePath, diff, status),
+      };
+    });
+
+    const workingFiles: FileChange[] = workingPaths.map((filePath, i) => {
+      const linesAdded = rand(1, 30);
+      const linesRemoved = rand(0, 15);
+      const status = pick<FileChange['status']>(['modified', 'modified', 'added']);
+      const diff = makeDiff(filePath, linesAdded, linesRemoved, status);
+      const staged = i % 2 === 0;
+      return {
+        path: filePath,
+        status,
+        staged,
+        committed: false,
+        linesAdded,
+        linesRemoved,
+        lastChangedAt: now,
+        diff,
+        rawDiff: hunksToRawDiff(filePath, diff, status),
+      };
+    });
+
+    return [...committedFiles, ...workingFiles];
   }
 
   startAgent(worktreeId: string, persona: AgentPersona) {

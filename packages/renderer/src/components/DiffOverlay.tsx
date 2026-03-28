@@ -102,7 +102,7 @@ DiffOverlayContent.displayName = 'DiffOverlayContent';
 
 const POPOVER_W = 720;
 const POPOVER_H = 420;
-const OFFSET = 8;
+const OFFSET = 12;
 const COLLISION_PADDING = 8;
 const OPEN_DELAY = 300;
 
@@ -171,10 +171,9 @@ export const DiffPopover = React.memo(
         <HoverCard.Portal>
           <HoverCard.Content
             side={side}
-            sideOffset={8}
+            sideOffset={OFFSET}
             align="start"
-            avoidCollisions={true}
-            collisionPadding={COLLISION_PADDING}
+            avoidCollisions={false}
             className="z-50 flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md animate-popover-open"
             style={{ width, maxHeight: POPOVER_H }}
           >

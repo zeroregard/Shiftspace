@@ -26,7 +26,9 @@ interface ListFileRowProps {
 }
 
 const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowProps) => {
-  const fileName = file.path.split('/').pop() ?? file.path;
+  const parts = file.path.split('/');
+  const fileName = parts.pop() ?? file.path;
+  const dirPath = parts.join('/');
   const isDeleted = file.status === 'deleted';
 
   return (
@@ -44,14 +46,21 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
           <FileIcon filename={fileName} size={12} />
         </span>
 
-        {/* File path */}
-        <span
-          className={clsx(
-            'text-11 flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap',
-            isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
+        {/* Filename + directory */}
+        <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
+          <span
+            className={clsx(
+              'shrink-0',
+              isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
+            )}
+          >
+            {fileName}
+          </span>
+          {dirPath && (
+            <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+              {dirPath}
+            </span>
           )}
-        >
-          {file.path}
         </span>
 
         {/* Status letter */}
@@ -101,7 +110,15 @@ const ListWorktreeBox = React.memo(
     onSwapBranches,
   }: ListWorktreeBoxProps) => {
     const { committed, staged, unstaged } = partitionFiles(wt);
-    const isEmpty = wt.files.length === 0;
+    const isEmpty = committed.length === 0 && staged.length === 0 && unstaged.length === 0;
+    console.log('[ListWorktreeBox]', wt.id, {
+      diffMode: wt.diffMode,
+      filesLen: wt.files.length,
+      branchFilesLen: wt.branchFiles?.length ?? 'undefined',
+      committed: committed.length,
+      staged: staged.length,
+      unstaged: unstaged.length,
+    });
 
     return (
       <div className="min-w-80 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">
