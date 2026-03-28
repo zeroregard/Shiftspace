@@ -7,6 +7,7 @@ import type {
   FileChange,
   ActionConfig,
   ActionState,
+  IconMap,
 } from '../types';
 
 interface ShiftspaceStore {
@@ -19,6 +20,11 @@ interface ShiftspaceStore {
   actionConfigs: ActionConfig[];
   /** Key: `${worktreeId}:${actionId}` */
   actionStates: Map<string, ActionState>;
+  /**
+   * File icon map populated by the VSCode extension host.
+   * Empty object in the preview app — FileNode falls back to built-in icons.
+   */
+  iconMap: IconMap;
   setLODLevel: (level: LODLevel) => void;
   applyEvent: (event: ShiftspaceEvent) => void;
   setWorktrees: (worktrees: WorktreeState[]) => void;
@@ -30,6 +36,7 @@ interface ShiftspaceStore {
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
   setActionConfigs: (configs: ActionConfig[]) => void;
   setActionState: (worktreeId: string, actionId: string, state: ActionState) => void;
+  setIconMap: (map: IconMap) => void;
 }
 
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
@@ -41,6 +48,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   lastFetchAt: new Map(),
   actionConfigs: [],
   actionStates: new Map(),
+  iconMap: {},
 
   setLODLevel: (level) => set({ lodLevel: level }),
 
@@ -112,6 +120,8 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
       actionStates.set(`${worktreeId}:${actionId}`, state);
       return { actionStates };
     }),
+
+  setIconMap: (map) => set({ iconMap: map }),
 
   applyEvent: (event) =>
     set((state) => {
