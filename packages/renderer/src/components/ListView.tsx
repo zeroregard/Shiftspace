@@ -104,7 +104,7 @@ const ListWorktreeBox = React.memo(
     const isEmpty = wt.files.length === 0;
 
     return (
-      <div className="border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">
+      <div className="min-w-80 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">
         {/* Header */}
         <div className="px-4 py-2.5 border-b border-border-dashed">
           <WorktreeHeader
@@ -206,23 +206,25 @@ export const ListView = React.memo(
         onPointerUp={pan.onPointerUp}
         onClickCapture={pan.onClickCapture}
       >
-        <div ref={pan.contentRef} className="p-6" style={{ willChange: 'transform' }}>
-          <div className="flex flex-col gap-4 max-w-3xl mx-auto">
-            {worktrees.map((wt) => (
-              <ListWorktreeBox
-                key={wt.id}
-                worktree={wt}
-                onFileClick={onFileClick}
-                onDiffModeChange={onDiffModeChange}
-                onRequestBranchList={onRequestBranchList}
-                onCheckoutBranch={onCheckoutBranch}
-                onFetchBranches={onFetchBranches}
-                onSwapBranches={onSwapBranches}
-              />
-            ))}
-            {worktrees.length === 0 && (
-              <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
-            )}
+        <div ref={pan.translateRef}>
+          <div ref={pan.contentRef} className="p-6">
+            <div className="flex flex-row gap-4 items-start">
+              {worktrees.map((wt) => (
+                <ListWorktreeBox
+                  key={wt.id}
+                  worktree={wt}
+                  onFileClick={onFileClick}
+                  onDiffModeChange={onDiffModeChange}
+                  onRequestBranchList={onRequestBranchList}
+                  onCheckoutBranch={onCheckoutBranch}
+                  onFetchBranches={onFetchBranches}
+                  onSwapBranches={onSwapBranches}
+                />
+              ))}
+              {worktrees.length === 0 && (
+                <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
+              )}
+            </div>
           </div>
         </div>
       </div>

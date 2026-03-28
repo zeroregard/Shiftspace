@@ -38,7 +38,7 @@ interface ShiftspaceStore {
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   worktrees: new Map(),
   lodLevel: 'worktree',
-  viewMode: 'tree',
+  viewMode: 'list',
   branchLists: new Map(),
   diffModeLoading: new Set(),
   fetchLoading: new Set(),

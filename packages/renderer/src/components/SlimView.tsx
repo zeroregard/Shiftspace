@@ -35,26 +35,28 @@ export const SlimView = React.memo(
         onPointerUp={pan.onPointerUp}
         onClickCapture={pan.onClickCapture}
       >
-        <div ref={pan.contentRef} className="p-6" style={{ willChange: 'transform' }}>
-          <div className="flex flex-col gap-2 max-w-3xl mx-auto">
-            {worktrees.map((wt) => (
-              <div
-                key={wt.id}
-                className="px-4 py-2.5 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha text-text-primary"
-              >
-                <WorktreeHeader
-                  worktree={wt}
-                  onDiffModeChange={onDiffModeChange}
-                  onRequestBranchList={onRequestBranchList}
-                  onCheckoutBranch={onCheckoutBranch}
-                  onFetchBranches={onFetchBranches}
-                  onSwapBranches={onSwapBranches}
-                />
-              </div>
-            ))}
-            {worktrees.length === 0 && (
-              <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
-            )}
+        <div ref={pan.translateRef}>
+          <div ref={pan.contentRef} className="p-6">
+            <div className="flex flex-row gap-4 items-start">
+              {worktrees.map((wt) => (
+                <div
+                  key={wt.id}
+                  className="min-w-72 px-4 py-2.5 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha text-text-primary"
+                >
+                  <WorktreeHeader
+                    worktree={wt}
+                    onDiffModeChange={onDiffModeChange}
+                    onRequestBranchList={onRequestBranchList}
+                    onCheckoutBranch={onCheckoutBranch}
+                    onFetchBranches={onFetchBranches}
+                    onSwapBranches={onSwapBranches}
+                  />
+                </div>
+              ))}
+              {worktrees.length === 0 && (
+                <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -188,6 +188,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
     return { nodes: allNodes, edges: allEdges };
   }, [
+    viewMode,
     wtArray,
     worktrees,
     numActions,

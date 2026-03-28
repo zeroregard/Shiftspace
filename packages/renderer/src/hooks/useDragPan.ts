@@ -17,6 +17,7 @@ const BASE_GRID_SIZE = 24;
  */
 export function useDragPan() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const translateRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const posRef = useRef({ x: 0, y: 0 });
@@ -25,9 +26,11 @@ export function useDragPan() {
   const lastTouchDistRef = useRef<number | null>(null);
 
   const apply = (x: number, y: number, zoom: number) => {
+    if (translateRef.current) {
+      translateRef.current.style.transform = `translate(${x}px,${y}px)`;
+    }
     if (contentRef.current) {
-      contentRef.current.style.transform = `translate(${x}px,${y}px) scale(${zoom})`;
-      contentRef.current.style.transformOrigin = '0 0';
+      contentRef.current.style.zoom = String(zoom);
     }
     if (containerRef.current) {
       containerRef.current.style.backgroundPosition = `${x}px ${y}px`;
@@ -178,5 +181,13 @@ export function useDragPan() {
     }
   };
 
-  return { containerRef, contentRef, onPointerDown, onPointerMove, onPointerUp, onClickCapture };
+  return {
+    containerRef,
+    translateRef,
+    contentRef,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onClickCapture,
+  };
 }
