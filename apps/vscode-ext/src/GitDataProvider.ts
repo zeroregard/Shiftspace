@@ -515,6 +515,20 @@ export class GitDataProvider implements vscode.Disposable {
     return this.worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch }));
   }
 
+  /**
+   * Returns all currently tracked file paths (relative to each worktree root)
+   * across all worktrees. Used by IconThemeProvider to pre-resolve icons.
+   */
+  getAllFilePaths(): string[] {
+    const paths: string[] = [];
+    for (const wt of this.worktrees) {
+      for (const f of wt.files) {
+        paths.push(f.path);
+      }
+    }
+    return paths;
+  }
+
   dispose(): void {
     this.tearDownWatchers();
   }

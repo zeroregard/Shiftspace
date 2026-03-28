@@ -5,6 +5,7 @@ import { GitDataProvider } from './GitDataProvider';
 import { ActionManager } from './ActionManager';
 import type { ExtensionActionConfig } from './ActionManager';
 import { getGitRoot } from './git/worktrees';
+import { IconThemeProvider } from './IconThemeProvider';
 
 export class ShiftspacePanel {
   private static currentPanel: ShiftspacePanel | undefined;
@@ -12,6 +13,8 @@ export class ShiftspacePanel {
   private _disposables: vscode.Disposable[] = [];
   private _gitProvider: GitDataProvider | undefined;
   private _actionManager: ActionManager | undefined;
+
+  private _iconProvider: IconThemeProvider | undefined;
 
   // Workspace-switching state
   private _gitRootCache = new Map<string, string>(); // dir → gitRoot
@@ -120,19 +123,24 @@ export class ShiftspacePanel {
     // Reset providers and state
     this._gitProvider?.dispose();
     this._actionManager?.dispose();
+    this._iconProvider?.dispose();
     this._settingsChangeDisposable?.dispose();
 
     this._gitProvider = new GitDataProvider(postMessage);
     this._actionManager = new ActionManager(postMessage);
+    this._iconProvider = new IconThemeProvider();
     this._currentGitRoot = undefined;
 
     // Load and send initial action configs
     this.reloadActionConfigs();
 
-    // Watch for settings changes
+    // Watch for settings changes (actions + icon theme)
     this._settingsChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('shiftspace.actions')) {
         this.reloadActionConfigs();
+      }
+      if (e.affectsConfiguration('workbench.iconTheme')) {
+        void this.reloadIcons();
       }
     });
 
@@ -159,6 +167,25 @@ export class ShiftspacePanel {
 
     // Let the ActionManager know about the worktrees (for path/branch lookup)
     this.syncWorktreesToActionManager();
+
+    // Resolve and send file icons (non-blocking — icons are an enhancement)
+    void this.reloadIcons();
+  }
+
+  /**
+   * Load the active icon theme and send the resolved IconMap to the webview.
+   * Called once after initial git data loads, and again when the icon theme
+   * changes. Failures are swallowed — icons are a non-critical enhancement.
+   */
+  private async reloadIcons(): Promise<void> {
+    if (!this._iconProvider || !this._gitProvider) return;
+
+    const loaded = await this._iconProvider.load();
+    if (!loaded) return;
+
+    const filePaths = this._gitProvider.getAllFilePaths();
+    const iconMap = await this._iconProvider.resolveForFiles(filePaths);
+    void this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
   }
 
   private reloadActionConfigs(): void {
@@ -284,6 +311,8 @@ export class ShiftspacePanel {
     this._gitProvider = undefined;
     this._actionManager?.dispose();
     this._actionManager = undefined;
+    this._iconProvider?.dispose();
+    this._iconProvider = undefined;
     this._panel.dispose();
     for (const d of this._disposables) d.dispose();
     this._disposables = [];
