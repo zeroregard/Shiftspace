@@ -7,10 +7,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ---------------------------------------------------------------------------
-// Hoist mocks so they're available inside the vi.mock() factory
-// ---------------------------------------------------------------------------
-
 const { mockReadFile, mockGetConfiguration, mockExtensions } = vi.hoisted(() => {
   const mockReadFile = vi.fn<[{ fsPath: string }], Promise<Uint8Array>>();
   const mockGetConfiguration = vi.fn();
@@ -30,8 +26,6 @@ vi.mock('vscode', () => ({
     file: (p: string) => ({ fsPath: p }),
   },
 }));
-
-import * as vscode from 'vscode';
 
 // ---------------------------------------------------------------------------
 // Helpers
