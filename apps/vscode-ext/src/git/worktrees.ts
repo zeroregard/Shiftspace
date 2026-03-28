@@ -49,6 +49,7 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
       files: [],
       diffMode: { type: 'working' },
       defaultBranch: 'main',
+      isMainWorktree: i === 0,
     });
   }
 

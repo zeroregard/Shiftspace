@@ -10,6 +10,8 @@ export interface WorktreeState {
   process?: { port: number; command: string };
   diffMode: DiffMode;
   defaultBranch: string;
+  /** True for the main (non-linked) worktree — always the first entry from `git worktree list`. */
+  isMainWorktree: boolean;
 }
 
 export interface DiffLine {

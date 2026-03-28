@@ -101,7 +101,7 @@ DiffOverlayContent.displayName = 'DiffOverlayContent';
 
 export const DiffPopover = React.memo(
   ({ file, children }: { file: FileChange; children: React.ReactNode }) => (
-    <HoverCard.Root openDelay={300} closeDelay={200}>
+    <HoverCard.Root openDelay={300} closeDelay={50}>
       <HoverCard.Trigger asChild>{children}</HoverCard.Trigger>
       <HoverCard.Portal>
         <HoverCard.Content

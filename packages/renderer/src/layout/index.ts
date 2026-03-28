@@ -42,8 +42,7 @@ export function computeSingleWorktreeLayout(
   // Ensure the container is wide enough to fit the header label + diff mode button.
   // Estimate: ~8px per character at text-13 semibold + padding + ~120px for the diff mode button.
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
-  const isMain = wt.branch === 'main' || wt.branch === 'master';
-  const headerText = isMain ? wt.branch : `${folderName} (${wt.branch})`;
+  const headerText = wt.isMainWorktree ? wt.branch : `${folderName} (${wt.branch})`;
   const DIFF_MODE_BUTTON_W = 120;
   const headerMinW = headerText.length * 8 + CONTAINER_PAD_X * 2 + DIFF_MODE_BUTTON_W;
   const containerW = Math.max(totalW + CONTAINER_PAD_X * 2, headerMinW);
