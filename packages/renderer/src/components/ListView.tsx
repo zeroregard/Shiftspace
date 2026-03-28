@@ -111,14 +111,6 @@ const ListWorktreeBox = React.memo(
   }: ListWorktreeBoxProps) => {
     const { committed, staged, unstaged } = partitionFiles(wt);
     const isEmpty = committed.length === 0 && staged.length === 0 && unstaged.length === 0;
-    console.log('[ListWorktreeBox]', wt.id, {
-      diffMode: wt.diffMode,
-      filesLen: wt.files.length,
-      branchFilesLen: wt.branchFiles?.length ?? 'undefined',
-      committed: committed.length,
-      staged: staged.length,
-      unstaged: unstaged.length,
-    });
 
     return (
       <div className="min-w-80 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">

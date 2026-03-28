@@ -166,7 +166,7 @@ describe('store applyEvent — branch mode guard', () => {
     expect(wt.files[0].path).toBe('new.ts');
   });
 
-  it('blocks file-changed in branch mode', () => {
+  it('applies file-changed in branch mode (working-tree changes are always tracked)', () => {
     seedWorktree({ type: 'branch', branch: 'main' });
     useShiftspaceStore.getState().applyEvent({
       type: 'file-changed',
@@ -174,7 +174,8 @@ describe('store applyEvent — branch mode guard', () => {
       file: makeFile('new.ts', false),
     });
     const wt = useShiftspaceStore.getState().worktrees.get('wt-test')!;
-    expect(wt.files).toHaveLength(0);
+    expect(wt.files).toHaveLength(1);
+    expect(wt.files[0].path).toBe('new.ts');
   });
 
   it('updateWorktreeFiles replaces files and sets diffMode', () => {

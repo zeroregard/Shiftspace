@@ -31,7 +31,13 @@ type HostMessage =
   | { type: 'init'; worktrees: WorktreeState[] }
   | { type: 'event'; event: ShiftspaceEvent }
   | { type: 'error'; message: string }
-  | { type: 'worktree-files-updated'; worktreeId: string; files: FileChange[]; diffMode: DiffMode }
+  | {
+      type: 'worktree-files-updated';
+      worktreeId: string;
+      files: FileChange[];
+      diffMode: DiffMode;
+      branchFiles?: FileChange[];
+    }
   | { type: 'branch-list'; worktreeId: string; branches: string[] }
   | { type: 'fetch-loading'; worktreeId: string; loading: boolean }
   | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] }
@@ -75,7 +81,7 @@ const App: React.FC = () => {
       } else if (msg.type === 'error') {
         setErrorMessage(msg.message);
       } else if (msg.type === 'worktree-files-updated') {
-        updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode);
+        updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode, msg.branchFiles);
       } else if (msg.type === 'branch-list') {
         setBranchList(msg.worktreeId, msg.branches);
       } else if (msg.type === 'fetch-loading') {

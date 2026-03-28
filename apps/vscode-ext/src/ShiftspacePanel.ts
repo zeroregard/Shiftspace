@@ -181,10 +181,17 @@ export class ShiftspacePanel {
     if (!this._iconProvider || !this._gitProvider) return;
 
     const loaded = await this._iconProvider.load();
+    console.log('[Shiftspace] reloadIcons: theme loaded =', loaded);
     if (!loaded) return;
 
     const filePaths = this._gitProvider.getAllFilePaths();
     const iconMap = await this._iconProvider.resolveForFiles(filePaths);
+    console.log(
+      '[Shiftspace] reloadIcons: filePaths.length =',
+      filePaths.length,
+      '| iconMap keys =',
+      Object.keys(iconMap).length
+    );
     void this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
   }
 
