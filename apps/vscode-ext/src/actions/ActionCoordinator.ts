@@ -56,7 +56,7 @@ export class ActionCoordinator implements vscode.Disposable {
 
     await this.configLoader.load(repoRoot);
 
-    this.configLoader.setOnChange((config) => {
+    this.configLoader.setOnChange((_config) => {
       this.sendConfigToWebview();
     });
 
@@ -170,7 +170,7 @@ export class ActionCoordinator implements vscode.Disposable {
         durationMs: result.durationMs,
         exitCode: result.exitCode,
       });
-    } catch (err) {
+    } catch {
       this.activeChecks.delete(`${worktreeId}:${actionId}`);
       if (controller.signal.aborted) {
         // Cancelled — leave state as-is or reset to idle

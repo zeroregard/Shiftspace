@@ -47,11 +47,13 @@ function getTooltipText(
   }
   if (status === 'running') return `${config.label}: running...`;
   if (status === 'passed') {
-    const dur = state?.durationMs != null ? ` (${(state.durationMs / 1000).toFixed(1)}s)` : '';
+    const dur =
+      state?.durationMs !== undefined ? ` (${(state.durationMs / 1000).toFixed(1)}s)` : '';
     return `${config.label}: passed${dur}`;
   }
   if (status === 'failed') {
-    const dur = state?.durationMs != null ? ` (${(state.durationMs / 1000).toFixed(1)}s)` : '';
+    const dur =
+      state?.durationMs !== undefined ? ` (${(state.durationMs / 1000).toFixed(1)}s)` : '';
     return `${config.label}: failed${dur}`;
   }
   if (status === 'stale') return `${config.label}: stale (re-run to refresh)`;

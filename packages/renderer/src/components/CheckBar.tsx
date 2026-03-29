@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useShiftspaceStore } from '../store';
-import type { ActionConfig, ActionState, ActionStatus } from '../types';
+import type { ActionConfig, ActionStatus } from '../types';
 import { Tooltip } from './Tooltip';
 
 interface CheckBarProps {
@@ -49,7 +49,8 @@ const CheckChip: React.FC<CheckChipProps> = React.memo(
     const type = action.type ?? (action.persistent ? 'service' : 'check');
     const status: ActionStatus = state?.status ?? (type === 'service' ? 'stopped' : 'idle');
     const isRunning = status === 'running';
-    const durationSec = state?.durationMs != null ? (state.durationMs / 1000).toFixed(1) : null;
+    const durationSec =
+      state?.durationMs !== undefined ? (state.durationMs / 1000).toFixed(1) : null;
 
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
