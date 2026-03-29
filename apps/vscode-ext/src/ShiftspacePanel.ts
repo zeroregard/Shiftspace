@@ -324,7 +324,7 @@ export class ShiftspacePanel {
     }
   }
 
-  private async sendInsightDetail(worktreeId: string, insightId: string): Promise<void> {
+  private async sendInsightDetail(worktreeId: string, _insightId: string): Promise<void> {
     // Re-run insights for this worktree and send the requested detail
     await this.runInsightsForWorktree(worktreeId);
   }

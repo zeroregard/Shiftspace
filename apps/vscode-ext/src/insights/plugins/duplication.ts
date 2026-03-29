@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { insightRegistry } from '../registry';
 import type { InsightPlugin, InsightSummary, InsightDetail } from '../types';
-import type { FileChange } from '@shiftspace/renderer';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -326,11 +325,7 @@ export function detectDuplication(
 // File content reading
 // ---------------------------------------------------------------------------
 
-async function readFileContent(
-  filePath: string,
-  worktreeRoot: string,
-  status: FileChange['status']
-): Promise<string | null> {
+async function readFileContent(filePath: string, worktreeRoot: string): Promise<string | null> {
   const fullPath = path.join(worktreeRoot, filePath);
   try {
     return fs.readFileSync(fullPath, 'utf-8');
@@ -365,7 +360,7 @@ const duplicationPlugin: InsightPlugin = {
       if (file.status === 'deleted') continue;
       if (isBinaryFile(file.path)) continue;
 
-      const content = await readFileContent(file.path, worktreeRoot, file.status);
+      const content = await readFileContent(file.path, worktreeRoot);
       if (content !== null) {
         fileContents.set(file.path, content);
       }
