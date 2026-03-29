@@ -80,6 +80,54 @@
           "description": "Glob patterns for files to hide from the Shiftspace view. Examples: *.lock, **/lang/*.json, *.min.js",
           "scope": "resource"
         },
+        "shiftspace.package": {
+          "type": "string",
+          "default": "",
+          "description": "The package/app name for filtered commands in .shiftspace.json (e.g. 'studio', 'web'). Replaces {package} in command templates.",
+          "scope": "resource"
+        },
+        "shiftspace.additionalActions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the action"
+              },
+              "label": {
+                "type": "string",
+                "description": "Display name"
+              },
+              "command": {
+                "type": "string",
+                "description": "Shell command to run"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "check",
+                  "service"
+                ],
+                "description": "check = one-shot (pass/fail), service = long-running"
+              },
+              "icon": {
+                "type": "string",
+                "description": "Codicon name (e.g. 'play', 'beaker', 'check')"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "command",
+              "type",
+              "icon"
+            ]
+          },
+          "default": [],
+          "description": "Additional personal actions beyond what's defined in .shiftspace.json. Personal overrides win on duplicate ID.",
+          "scope": "resource"
+        },
         "shiftspace.actions": {
           "type": "array",
           "items": {
@@ -115,7 +163,7 @@
             ]
           },
           "default": [],
-          "description": "Commands available as action buttons on each worktree. Use 'Shiftspace: Detect Actions' to auto-detect from your project.",
+          "description": "Legacy: Commands available as action buttons on each worktree. Use .shiftspace.json + shiftspace.additionalActions instead.",
           "scope": "resource"
         }
       }

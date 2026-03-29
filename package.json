@@ -17,7 +17,7 @@
     "test": "bun run --filter '*' test",
     "test:coverage": "bun run --filter '*' test:coverage",
     "preview": "bun run --filter @shiftspace/preview dev",
-    "install-ext": "bun run --filter shiftspace build && bun run --filter shiftspace local-install",
+    "install-ext": "bun run build && bun run --filter shiftspace local-install",
     "prepare": "husky"
   },
   "lint-staged": {

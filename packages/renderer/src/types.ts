@@ -66,13 +66,37 @@ export interface ActionConfig {
   icon: string;
   /** True for long-running processes (dev server), false for one-shot (build/test) */
   persistent: boolean;
+  /** Explicit type: 'check' for one-shot, 'service' for persistent. Optional for backward compat. */
+  type?: 'check' | 'service';
 }
 
-export type ActionStatus = 'idle' | 'running' | 'failed';
+export type ActionStatus =
+  | 'idle' // check: not run yet
+  | 'running' // both: currently executing
+  | 'passed' // check: exited 0
+  | 'failed' // both: exited non-zero or service crashed
+  | 'stale' // check: was passed/failed but git changed since
+  | 'stopped' // service: not running
+  | 'unconfigured'; // requires {package} but none selected
 
 export interface ActionState {
   status: ActionStatus;
   port?: number;
+  /** For checks: how long the last run took in milliseconds */
+  durationMs?: number;
+  /** Redundant with config but useful in state */
+  type?: 'check' | 'service';
+}
+
+export interface PipelineConfig {
+  steps: string[];
+  stopOnFailure: boolean;
+}
+
+/** Log entry for the check log panel */
+export interface LogEntry {
+  text: string;
+  isStderr: boolean;
 }
 
 // ---------------------------------------------------------------------------

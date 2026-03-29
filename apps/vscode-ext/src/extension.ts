@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ShiftspacePanel } from './ShiftspacePanel';
-import { runDetectActionsCommand } from './ActionManager';
+import { runDetectActionsCommand } from './actions/detect';
 
 export function activate(context: vscode.ExtensionContext) {
   // Restore any Shiftspace tabs that were open before a window reload.

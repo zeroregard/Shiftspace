@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { getWebviewHtml } from './webview/html';
 import { GitDataProvider } from './GitDataProvider';
-import { ActionManager } from './ActionManager';
-import type { ExtensionActionConfig } from './ActionManager';
+import { ActionCoordinator } from './actions/ActionCoordinator';
 import { getGitRoot } from './git/worktrees';
 import { IconThemeProvider } from './IconThemeProvider';
 
@@ -12,7 +11,7 @@ export class ShiftspacePanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
   private _gitProvider: GitDataProvider | undefined;
-  private _actionManager: ActionManager | undefined;
+  private _actionCoordinator: ActionCoordinator | undefined;
 
   private _iconProvider: IconThemeProvider | undefined;
 
@@ -82,6 +81,8 @@ export class ShiftspacePanel {
         branch?: string;
         folderPath?: string;
         actionId?: string;
+        pipelineId?: string;
+        packageName?: string;
       }) => {
         if (message.type === 'ready') {
           void this.onReady();
@@ -100,12 +101,23 @@ export class ShiftspacePanel {
           void this._gitProvider?.handleFolderClick(message.worktreeId, message.folderPath);
         } else if (message.type === 'fetch-branches' && message.worktreeId) {
           void this._gitProvider?.handleFetchBranches(message.worktreeId);
-        } else if (message.type === 'run-action' && message.worktreeId && message.actionId) {
-          void this._actionManager?.runAction(message.worktreeId, message.actionId);
-        } else if (message.type === 'stop-action' && message.worktreeId && message.actionId) {
-          this._actionManager?.stopAction(message.worktreeId, message.actionId);
         } else if (message.type === 'swap-branches' && message.worktreeId) {
           void this._gitProvider?.handleSwapBranches(message.worktreeId);
+          // New action coordinator messages
+        } else if (message.type === 'run-action' && message.worktreeId && message.actionId) {
+          void this._actionCoordinator?.runAction(message.worktreeId, message.actionId);
+        } else if (message.type === 'stop-action' && message.worktreeId && message.actionId) {
+          this._actionCoordinator?.stopAction(message.worktreeId, message.actionId);
+        } else if (message.type === 'run-pipeline' && message.worktreeId && message.pipelineId) {
+          void this._actionCoordinator?.runPipeline(message.worktreeId, message.pipelineId);
+        } else if (message.type === 'cancel-pipeline' && message.worktreeId) {
+          this._actionCoordinator?.cancelPipeline(message.worktreeId);
+        } else if (message.type === 'get-log' && message.worktreeId && message.actionId) {
+          this._actionCoordinator?.getLog(message.worktreeId, message.actionId);
+        } else if (message.type === 'set-package' && message.packageName !== undefined) {
+          void this._actionCoordinator?.setPackage(message.packageName);
+        } else if (message.type === 'detect-packages') {
+          void this._actionCoordinator?.detectAndSendPackages();
         }
       },
       null,
@@ -122,23 +134,20 @@ export class ShiftspacePanel {
 
     // Reset providers and state
     this._gitProvider?.dispose();
-    this._actionManager?.dispose();
+    this._actionCoordinator?.dispose();
     this._iconProvider?.dispose();
     this._settingsChangeDisposable?.dispose();
 
-    this._gitProvider = new GitDataProvider(postMessage);
-    this._actionManager = new ActionManager(postMessage);
+    this._gitProvider = new GitDataProvider(postMessage, (worktreeId) => {
+      // Called by GitDataProvider when files change → stale check states
+      this._actionCoordinator?.markAllStale(worktreeId);
+    });
+    this._actionCoordinator = new ActionCoordinator(postMessage);
     this._iconProvider = new IconThemeProvider();
     this._currentGitRoot = undefined;
 
-    // Load and send initial action configs
-    this.reloadActionConfigs();
-
-    // Watch for settings changes (actions + icon theme)
+    // Watch for icon theme changes
     this._settingsChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('shiftspace.actions')) {
-        this.reloadActionConfigs();
-      }
       if (e.affectsConfiguration('workbench.iconTheme')) {
         void this.reloadIcons();
       }
@@ -165,90 +174,44 @@ export class ShiftspacePanel {
     this._currentGitRoot = gitRoot;
     await this._gitProvider.switchRepo(gitRoot);
 
-    // Let the ActionManager know about the worktrees (for path/branch lookup)
-    this.syncWorktreesToActionManager();
+    // Initialize action coordinator with the repo root
+    await this._actionCoordinator.initialize(gitRoot);
 
-    // Resolve and send file icons (non-blocking — icons are an enhancement)
+    // Let the coordinator know about current worktrees
+    this.syncWorktreesToCoordinator();
+
+    // Resolve and send file icons (non-blocking)
     void this.reloadIcons();
   }
 
-  /**
-   * Load the active icon theme and send the resolved IconMap to the webview.
-   * Called once after initial git data loads, and again when the icon theme
-   * changes. Failures are swallowed — icons are a non-critical enhancement.
-   */
   private async reloadIcons(): Promise<void> {
-    console.log(
-      '[Shiftspace] reloadIcons: called | _iconProvider =',
-      !!this._iconProvider,
-      '| _gitProvider =',
-      !!this._gitProvider
-    );
     if (!this._iconProvider || !this._gitProvider) return;
-
     const loaded = await this._iconProvider.load();
-    console.log('[Shiftspace] reloadIcons: theme loaded =', loaded);
     if (!loaded) return;
-
     const filePaths = this._gitProvider.getAllFilePaths();
-    console.log('[Shiftspace] reloadIcons: filePaths =', filePaths);
     const iconMap = await this._iconProvider.resolveForFiles(filePaths);
-    console.log(
-      '[Shiftspace] reloadIcons: filePaths.length =',
-      filePaths.length,
-      '| iconMap keys =',
-      Object.keys(iconMap).length,
-      '| iconMap sample keys:',
-      Object.keys(iconMap).slice(0, 5)
-    );
-    const postResult = await this._panel.webview.postMessage({
-      type: 'icon-theme',
-      payload: iconMap,
-    });
-    console.log(
-      '[Shiftspace] reloadIcons: postMessage result (false = webview not visible) =',
-      postResult
-    );
+    await this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
   }
 
-  private reloadActionConfigs(): void {
-    const config = vscode.workspace.getConfiguration('shiftspace');
-    const rawActions = config.get<ExtensionActionConfig[]>('actions') ?? [];
-    this._actionManager?.updateConfigs(rawActions);
-    this._actionManager?.sendConfigs();
-  }
-
-  private syncWorktreesToActionManager(): void {
-    if (!this._gitProvider || !this._actionManager) return;
+  private syncWorktreesToCoordinator(): void {
+    if (!this._gitProvider || !this._actionCoordinator) return;
     const worktrees = this._gitProvider.getWorktrees();
-    this._actionManager.updateWorktrees(
+    this._actionCoordinator.updateWorktrees(
       worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch }))
     );
   }
 
-  /**
-   * Determine the initial git root to show.
-   *
-   * Priority:
-   *  1. VSCode's built-in git extension — already has repos discovered, no subprocess needed.
-   *     Prefers the repo containing the active file; falls back to the first discovered repo.
-   *  2. Active text editor file path (runs git rev-parse ourselves).
-   *  3. Each workspace folder in order (runs git rev-parse ourselves).
-   */
   private async detectInitialGitRoot(): Promise<string | null> {
     const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
 
-    // Tier 1: ask VS Code's built-in git extension — fastest and most reliable
     const fromExtension = this.getGitRootFromVscodeExtension(activeFile);
     if (fromExtension) return fromExtension;
 
-    // Tier 2: run git ourselves against the active file's directory
     if (activeFile) {
       const root = await this.resolveGitRoot(activeFile);
       if (root) return root;
     }
 
-    // Tier 3: run git ourselves against each workspace folder
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
       const folderPath = folder.uri.fsPath;
       const cached = this._gitRootCache.get(folderPath);
@@ -262,12 +225,6 @@ export class ShiftspacePanel {
     return null;
   }
 
-  /**
-   * Ask VS Code's built-in git extension for already-discovered repositories.
-   * Returns the root of the repo containing `activeFilePath` if provided,
-   * otherwise the first discovered repo root. Returns undefined if the
-   * extension is unavailable or has no repos yet.
-   */
   private getGitRootFromVscodeExtension(activeFilePath?: string): string | undefined {
     const gitExt = vscode.extensions.getExtension<{
       getAPI(version: 1): { repositories: Array<{ rootUri: vscode.Uri }> };
@@ -287,11 +244,9 @@ export class ShiftspacePanel {
   }
 
   private onActiveEditorChange(editor: vscode.TextEditor | undefined): void {
-    // No editor or untitled file → keep showing the current repo
     const filePath = editor?.document.uri.fsPath;
     if (!filePath) return;
 
-    // Debounce rapid tab switching (e.g. Cmd+Tab through many files)
     if (this._repoSwitchTimer !== undefined) clearTimeout(this._repoSwitchTimer);
     this._repoSwitchTimer = setTimeout(() => {
       this._repoSwitchTimer = undefined;
@@ -301,19 +256,19 @@ export class ShiftspacePanel {
 
   private async maybeSwitch(filePath: string): Promise<void> {
     const gitRoot = await this.resolveGitRoot(filePath);
-    if (!gitRoot) return; // not in a git repo — keep current view
-    if (gitRoot === this._currentGitRoot) return; // same repo — no-op
+    if (!gitRoot) return;
+    if (gitRoot === this._currentGitRoot) return;
     this._currentGitRoot = gitRoot;
     await this._gitProvider?.switchRepo(gitRoot);
-    this.syncWorktreesToActionManager();
+    await this._actionCoordinator?.initialize(gitRoot);
+    this.syncWorktreesToCoordinator();
   }
 
-  /** Resolve git root for a file path (not a directory), using a per-directory cache. */
   private async resolveGitRoot(filePath: string): Promise<string | null> {
     const dir = path.dirname(filePath);
     const cached = this._gitRootCache.get(dir);
     if (cached !== undefined) return cached;
-    const root = await getGitRoot(dir); // getGitRoot expects a directory
+    const root = await getGitRoot(dir);
     if (root) this._gitRootCache.set(dir, root);
     return root;
   }
@@ -332,8 +287,8 @@ export class ShiftspacePanel {
 
     this._gitProvider?.dispose();
     this._gitProvider = undefined;
-    this._actionManager?.dispose();
-    this._actionManager = undefined;
+    this._actionCoordinator?.dispose();
+    this._actionCoordinator = undefined;
     this._iconProvider?.dispose();
     this._iconProvider = undefined;
     this._panel.dispose();

@@ -1,8 +1,11 @@
 import React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState, DiffMode } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
-import { GitCompareIcon } from '../icons';
+import { GitBranchIcon, GitCompareIcon } from '../icons';
+import { CheckRow } from './CheckRow';
+import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -17,15 +20,31 @@ interface WorktreeCardProps {
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
+  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
+  onRunAction?: (worktreeId: string, actionId: string) => void;
+  onStopAction?: (worktreeId: string, actionId: string) => void;
+  onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
 }
 
 export const WorktreeCard = React.memo(
-  ({ worktree: wt, onDiffModeChange, onRequestBranchList, onFetchBranches }: WorktreeCardProps) => {
+  ({
+    worktree: wt,
+    onDiffModeChange,
+    onRequestBranchList,
+    onFetchBranches,
+    onCheckoutBranch,
+    onRunAction,
+    onStopAction,
+    onRunPipeline,
+  }: WorktreeCardProps) => {
     const enterInspection = useShiftspaceStore((s) => s.enterInspection);
     const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
     const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(wt.id));
     const isFetchingBranches = useShiftspaceStore((s) => s.fetchLoading.has(wt.id));
     const lastFetchAt = useShiftspaceStore((s) => s.lastFetchAt.get(wt.id));
+    const occupiedBranches = useShiftspaceStore(
+      useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
+    );
 
     const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
     const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
@@ -54,6 +73,7 @@ export const WorktreeCard = React.memo(
     ];
 
     const diffModeBranches = branchList.filter((b) => b !== wt.branch);
+    const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
 
     const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
 
@@ -67,14 +87,33 @@ export const WorktreeCard = React.memo(
           if (e.key === 'Enter' || e.key === ' ') enterInspection(wt.id);
         }}
       >
-        {/* Name + branch */}
-        <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-13 text-text-primary truncate">
-            {wt.isMainWorktree ? wt.branch : folderName}
-          </span>
-          {!wt.isMainWorktree && (
-            <span className="text-11 text-text-muted truncate">{wt.branch}</span>
-          )}
+        {/* Workspace name + branch picker */}
+        <div
+          className="flex flex-col gap-0.5"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <span className="font-semibold text-13 text-text-primary truncate">{folderName}</span>
+          <BranchPickerPopover
+            trigger={
+              <button
+                className="flex items-center gap-1 text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-11"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                title="Switch branch"
+              >
+                <GitBranchIcon />
+                <span className="truncate">{wt.branch}</span>
+              </button>
+            }
+            branches={checkoutBranches}
+            selectedBranch={wt.branch}
+            onSelectBranch={(branch) => onCheckoutBranch?.(wt.id, branch)}
+            onOpen={() => onRequestBranchList?.(wt.id)}
+            onFetch={onFetchBranches ? () => onFetchBranches!(wt.id) : undefined}
+            isFetching={isFetchingBranches}
+            lastFetchAt={lastFetchAt}
+          />
         </div>
 
         {/* Stats */}
@@ -88,7 +127,13 @@ export const WorktreeCard = React.memo(
           </span>
         </div>
 
-        {/* TODO: check status indicators */}
+        {/* Check status indicators */}
+        <CheckRow
+          worktreeId={wt.id}
+          onRunAction={onRunAction}
+          onStopAction={onStopAction}
+          onRunPipeline={onRunPipeline}
+        />
 
         {/* Diff mode dropdown */}
         <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>

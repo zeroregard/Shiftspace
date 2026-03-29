@@ -9,6 +9,7 @@ import type {
   ActionState,
   AppMode,
   IconMap,
+  PipelineConfig,
 } from '../types';
 
 interface ShiftspaceStore {
@@ -22,6 +23,14 @@ interface ShiftspaceStore {
   actionConfigs: ActionConfig[];
   /** Key: `${worktreeId}:${actionId}` */
   actionStates: Map<string, ActionState>;
+  /** Current package filter (default '') */
+  selectedPackage: string;
+  /** Key: `${worktreeId}:${actionId}` */
+  actionLogs: Map<string, string>;
+  /** Pipeline configs keyed by pipeline id */
+  pipelines: Record<string, PipelineConfig>;
+  /** Detected package list */
+  availablePackages: string[];
   /**
    * File icon map populated by the VSCode extension host.
    * Empty object in the preview app — FileNode falls back to built-in icons.
@@ -46,6 +55,13 @@ interface ShiftspaceStore {
   setActionConfigs: (configs: ActionConfig[]) => void;
   setActionState: (worktreeId: string, actionId: string, state: ActionState) => void;
   setIconMap: (map: IconMap) => void;
+  setSelectedPackage: (pkg: string) => void;
+  setActionLog: (worktreeId: string, actionId: string, log: string) => void;
+  appendActionLog: (worktreeId: string, actionId: string, chunk: string) => void;
+  setPipelines: (pipelines: Record<string, PipelineConfig>) => void;
+  setAvailablePackages: (packages: string[]) => void;
+  /** Transitions passed/failed check states to 'stale' for the given worktree */
+  markAllStale: (worktreeId: string) => void;
 }
 
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
@@ -58,6 +74,10 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   lastFetchAt: new Map(),
   actionConfigs: [],
   actionStates: new Map(),
+  selectedPackage: '',
+  actionLogs: new Map(),
+  pipelines: {},
+  availablePackages: [],
   iconMap: {},
 
   setLODLevel: (level) => set({ lodLevel: level }),
@@ -136,6 +156,43 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
     }),
 
   setIconMap: (map) => set({ iconMap: map }),
+
+  setSelectedPackage: (pkg) => set({ selectedPackage: pkg }),
+
+  setActionLog: (worktreeId, actionId, log) =>
+    set((s) => {
+      const actionLogs = new Map(s.actionLogs);
+      actionLogs.set(`${worktreeId}:${actionId}`, log);
+      return { actionLogs };
+    }),
+
+  appendActionLog: (worktreeId, actionId, chunk) =>
+    set((s) => {
+      const key = `${worktreeId}:${actionId}`;
+      const actionLogs = new Map(s.actionLogs);
+      actionLogs.set(key, (actionLogs.get(key) ?? '') + chunk);
+      return { actionLogs };
+    }),
+
+  setPipelines: (pipelines) => set({ pipelines }),
+
+  setAvailablePackages: (packages) => set({ availablePackages: packages }),
+
+  markAllStale: (worktreeId) =>
+    set((s) => {
+      const actionStates = new Map(s.actionStates);
+      let changed = false;
+      for (const [key, state] of actionStates) {
+        if (
+          key.startsWith(`${worktreeId}:`) &&
+          (state.status === 'passed' || state.status === 'failed')
+        ) {
+          actionStates.set(key, { ...state, status: 'stale' });
+          changed = true;
+        }
+      }
+      return changed ? { actionStates } : {};
+    }),
 
   applyEvent: (event) =>
     set((state) => {

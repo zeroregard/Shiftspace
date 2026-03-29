@@ -1,6 +1,9 @@
 export { WorktreeNode } from './WorktreeNode';
 export { FolderNode } from './FolderNode';
 export { FileNode } from './FileNode';
+export { CheckRow } from './CheckRow';
+export { CheckBar } from './CheckBar';
+export { PackageSwitcher } from './PackageSwitcher';
 
 import { WorktreeNode } from './WorktreeNode';
 import { FolderNode } from './FolderNode';
