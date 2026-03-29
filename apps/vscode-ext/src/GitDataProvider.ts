@@ -16,6 +16,7 @@ import { diffFileChanges } from './git/eventDiff';
 import { filterIgnoredFiles } from './git/ignoreFilter';
 
 type PostMessage = (msg: object) => void;
+type OnFileChange = (worktreeId: string) => void;
 
 function getIgnorePatterns(): string[] {
   const config = vscode.workspace.getConfiguration('shiftspace');
@@ -56,7 +57,10 @@ export class GitDataProvider implements vscode.Disposable {
   private currentRoot: string | undefined;
   private defaultBranch = 'main';
 
-  constructor(private readonly postMessage: PostMessage) {}
+  constructor(
+    private readonly postMessage: PostMessage,
+    private readonly onFileChange?: OnFileChange
+  ) {}
 
   /**
    * Switch to tracking a different git repo root.
@@ -283,6 +287,11 @@ export class GitDataProvider implements vscode.Disposable {
 
       for (const event of events) {
         this.postMessage({ type: 'event', event });
+      }
+
+      // Notify stale callback if files actually changed
+      if (events.length > 0) {
+        this.onFileChange?.(wt.id);
       }
     } catch (err) {
       console.error('[Shiftspace] refreshWorktree error for', wt.path, err);

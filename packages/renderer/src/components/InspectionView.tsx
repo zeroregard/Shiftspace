@@ -12,6 +12,7 @@ import { GitCompareIcon, GitBranchIcon } from '../icons';
 import { partitionFiles } from '../utils/listSections';
 import { computeSingleWorktreeLayout } from '../layout';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
+import { CheckBar } from './CheckBar';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -124,6 +125,8 @@ interface InspectionViewProps {
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
   onSwapBranches?: (worktreeId: string) => void;
+  onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
+  onGetLog?: (worktreeId: string, actionId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -139,6 +142,8 @@ export const InspectionView = React.memo(
     onRunAction,
     onStopAction,
     onSwapBranches,
+    onRunPipeline,
+    onGetLog,
     panZoomConfig,
   }: InspectionViewProps) => {
     const exitInspection = useShiftspaceStore((s) => s.exitInspection);
@@ -330,6 +335,17 @@ export const InspectionView = React.memo(
             onOpen={() => onRequestBranchList?.(wt.id)}
           />
         </div>
+
+        {/* Check bar */}
+        {actionConfigs.length > 0 && (
+          <CheckBar
+            worktreeId={worktreeId}
+            onRunAction={stableRunAction}
+            onStopAction={stableStopAction}
+            onRunPipeline={onRunPipeline}
+            onGetLog={onGetLog}
+          />
+        )}
 
         {/* Split panels */}
         <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">

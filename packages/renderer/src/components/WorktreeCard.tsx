@@ -3,6 +3,7 @@ import type { WorktreeState, DiffMode } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { GitCompareIcon } from '../icons';
+import { CheckRow } from './CheckRow';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -17,10 +18,21 @@ interface WorktreeCardProps {
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
+  onRunAction?: (worktreeId: string, actionId: string) => void;
+  onStopAction?: (worktreeId: string, actionId: string) => void;
+  onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
 }
 
 export const WorktreeCard = React.memo(
-  ({ worktree: wt, onDiffModeChange, onRequestBranchList, onFetchBranches }: WorktreeCardProps) => {
+  ({
+    worktree: wt,
+    onDiffModeChange,
+    onRequestBranchList,
+    onFetchBranches,
+    onRunAction,
+    onStopAction,
+    onRunPipeline,
+  }: WorktreeCardProps) => {
     const enterInspection = useShiftspaceStore((s) => s.enterInspection);
     const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
     const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(wt.id));
@@ -88,7 +100,13 @@ export const WorktreeCard = React.memo(
           </span>
         </div>
 
-        {/* TODO: check status indicators */}
+        {/* Check status indicators */}
+        <CheckRow
+          worktreeId={wt.id}
+          onRunAction={onRunAction}
+          onStopAction={onStopAction}
+          onRunPipeline={onRunPipeline}
+        />
 
         {/* Diff mode dropdown */}
         <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>

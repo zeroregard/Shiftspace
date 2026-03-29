@@ -4,6 +4,7 @@ import { useShiftspaceStore } from './store';
 import { type PanZoomConfig } from './TreeCanvas';
 import { GroveView } from './components/GroveView';
 import { InspectionView } from './components/InspectionView';
+import { PackageSwitcher } from './components/PackageSwitcher';
 
 interface Props {
   initialWorktrees?: WorktreeState[];
@@ -18,6 +19,10 @@ interface Props {
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
   onSwapBranches?: (worktreeId: string) => void;
+  onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
+  onSetPackage?: (packageName: string) => void;
+  onDetectPackages?: () => void;
+  onGetLog?: (worktreeId: string, actionId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -39,6 +44,10 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onRunAction,
   onStopAction,
   onSwapBranches,
+  onRunPipeline,
+  onSetPackage,
+  onDetectPackages,
+  onGetLog,
   panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
@@ -114,6 +123,28 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   swapBranchesRef.current = onSwapBranches;
   const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
 
+  const runPipelineRef = useRef(onRunPipeline);
+  runPipelineRef.current = onRunPipeline;
+  const stableRunPipeline = useCallback(
+    (wtId: string, pipelineId: string) => runPipelineRef.current?.(wtId, pipelineId),
+    []
+  );
+
+  const setPackageRef = useRef(onSetPackage);
+  setPackageRef.current = onSetPackage;
+  const stableSetPackage = useCallback((pkg: string) => setPackageRef.current?.(pkg), []);
+
+  const detectPackagesRef = useRef(onDetectPackages);
+  detectPackagesRef.current = onDetectPackages;
+  const stableDetectPackages = useCallback(() => detectPackagesRef.current?.(), []);
+
+  const getLogRef = useRef(onGetLog);
+  getLogRef.current = onGetLog;
+  const stableGetLog = useCallback(
+    (wtId: string, actionId: string) => getLogRef.current?.(wtId, actionId),
+    []
+  );
+
   // Sorted worktree array (main/master first)
   const wtArray = useMemo(
     () =>
@@ -126,29 +157,41 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   );
 
   return (
-    <div className="w-full h-full bg-canvas relative">
-      {mode.type === 'grove' ? (
-        <GroveView
-          worktrees={wtArray}
-          onDiffModeChange={stableDiffModeChange}
-          onRequestBranchList={stableRequestBranchList}
-          onFetchBranches={stableFetchBranches}
-        />
-      ) : (
-        <InspectionView
-          worktreeId={mode.worktreeId}
-          onFileClick={stableFileClick}
-          onDiffModeChange={stableDiffModeChange}
-          onRequestBranchList={stableRequestBranchList}
-          onCheckoutBranch={stableCheckoutBranch}
-          onFolderClick={stableFolderClick}
-          onFetchBranches={stableFetchBranches}
-          onRunAction={stableRunAction}
-          onStopAction={stableStopAction}
-          onSwapBranches={stableSwapBranches}
-          panZoomConfig={panZoomConfig}
-        />
-      )}
+    <div className="w-full h-full bg-canvas flex flex-col relative">
+      {/* Global toolbar */}
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
+        <PackageSwitcher onSetPackage={stableSetPackage} onDetectPackages={stableDetectPackages} />
+      </div>
+      {/* Main content */}
+      <div className="flex-1 min-h-0">
+        {mode.type === 'grove' ? (
+          <GroveView
+            worktrees={wtArray}
+            onDiffModeChange={stableDiffModeChange}
+            onRequestBranchList={stableRequestBranchList}
+            onFetchBranches={stableFetchBranches}
+            onRunAction={stableRunAction}
+            onStopAction={stableStopAction}
+            onRunPipeline={stableRunPipeline}
+          />
+        ) : (
+          <InspectionView
+            worktreeId={mode.worktreeId}
+            onFileClick={stableFileClick}
+            onDiffModeChange={stableDiffModeChange}
+            onRequestBranchList={stableRequestBranchList}
+            onCheckoutBranch={stableCheckoutBranch}
+            onFolderClick={stableFolderClick}
+            onFetchBranches={stableFetchBranches}
+            onRunAction={stableRunAction}
+            onStopAction={stableStopAction}
+            onSwapBranches={stableSwapBranches}
+            onRunPipeline={stableRunPipeline}
+            onGetLog={stableGetLog}
+            panZoomConfig={panZoomConfig}
+          />
+        )}
+      </div>
     </div>
   );
 };

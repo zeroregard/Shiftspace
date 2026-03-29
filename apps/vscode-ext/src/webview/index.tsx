@@ -11,6 +11,7 @@ import type {
   ActionStatus,
   IconMap,
   AppMode,
+  PipelineConfig,
 } from '@shiftspace/renderer';
 import './styles.css';
 
@@ -42,6 +43,7 @@ type HostMessage =
   | { type: 'branch-list'; worktreeId: string; branches: string[] }
   | { type: 'fetch-loading'; worktreeId: string; loading: boolean }
   | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] }
+  // Legacy action messages (kept for backward compat)
   | { type: 'actions-config'; actions: ActionConfig[] }
   | {
       type: 'action-status';
@@ -50,6 +52,33 @@ type HostMessage =
       status: ActionStatus;
       port?: number;
     }
+  // New check system messages
+  | {
+      type: 'actions-config-v2';
+      actions: Array<{ id: string; label: string; type: 'check' | 'service'; icon: string }>;
+      pipelines?: Record<string, PipelineConfig>;
+      selectedPackage: string;
+    }
+  | {
+      type: 'action-state-update';
+      worktreeId: string;
+      actionId: string;
+      state: {
+        type: 'check' | 'service';
+        status: ActionStatus;
+        durationMs?: number;
+        port?: number;
+      };
+    }
+  | {
+      type: 'action-log-chunk';
+      worktreeId: string;
+      actionId: string;
+      chunk: string;
+      isStderr: boolean;
+    }
+  | { type: 'action-log'; worktreeId: string; actionId: string; content: string }
+  | { type: 'packages-list'; packages: string[] }
   | { type: 'icon-theme'; payload: IconMap };
 
 const App: React.FC = () => {
@@ -64,6 +93,11 @@ const App: React.FC = () => {
     setActionConfigs,
     setActionState,
     setIconMap,
+    setPipelines,
+    setSelectedPackage,
+    setAvailablePackages,
+    setActionLog,
+    appendActionLog,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useShiftspaceStore((s) => s.mode as AppMode);
@@ -82,16 +116,13 @@ const App: React.FC = () => {
   }, [mode]);
 
   useEffect(() => {
-    // Register the message listener first, then send 'ready' so we cannot
-    // miss a fast synchronous reply from the extension host.
-    console.log('[Shiftspace webview] message listener registered');
     const handler = (e: MessageEvent<HostMessage>) => {
-      // Guard against messages from unexpected origins (basic prompt-injection defence)
+      // Guard against messages from unexpected origins
       if (e.origin && !e.origin.startsWith('vscode-webview://')) {
-        console.log('[Shiftspace webview] message blocked by origin guard | origin =', e.origin);
         return;
       }
       const msg = e.data;
+
       if (msg.type === 'init') {
         setErrorMessage(undefined);
         setWorktrees(msg.worktrees);
@@ -109,6 +140,7 @@ const App: React.FC = () => {
         setFetchLoading(msg.worktreeId, false);
         setLastFetchAt(msg.worktreeId, msg.timestamp);
         setBranchList(msg.worktreeId, msg.branches);
+        // Legacy action messages
       } else if (msg.type === 'actions-config') {
         setActionConfigs(msg.actions);
       } else if (msg.type === 'action-status') {
@@ -116,23 +148,33 @@ const App: React.FC = () => {
           status: msg.status,
           port: msg.port,
         });
+        // New check system messages
+      } else if (msg.type === 'actions-config-v2') {
+        // Convert new format to ActionConfig for renderer compatibility
+        const configs: ActionConfig[] = msg.actions.map((a) => ({
+          id: a.id,
+          label: a.label,
+          icon: a.icon,
+          persistent: a.type === 'service',
+          type: a.type,
+        }));
+        setActionConfigs(configs);
+        if (msg.pipelines) setPipelines(msg.pipelines);
+        setSelectedPackage(msg.selectedPackage);
+      } else if (msg.type === 'action-state-update') {
+        setActionState(msg.worktreeId, msg.actionId, {
+          status: msg.state.status,
+          port: msg.state.port,
+          durationMs: msg.state.durationMs,
+          type: msg.state.type,
+        });
+      } else if (msg.type === 'action-log-chunk') {
+        appendActionLog(msg.worktreeId, msg.actionId, msg.chunk);
+      } else if (msg.type === 'action-log') {
+        setActionLog(msg.worktreeId, msg.actionId, msg.content);
+      } else if (msg.type === 'packages-list') {
+        setAvailablePackages(msg.packages);
       } else if (msg.type === 'icon-theme') {
-        const keys = Object.keys(msg.payload);
-        console.log(
-          '[Shiftspace webview] icon-theme received | keys:',
-          keys.length,
-          '| sample:',
-          keys.slice(0, 5)
-        );
-        if (keys.length > 0) {
-          const sampleEntry = msg.payload[keys[0]!];
-          console.log(
-            '[Shiftspace webview] icon-theme sample entry for',
-            keys[0],
-            ':',
-            sampleEntry?.dark?.slice(0, 60) + '...'
-          );
-        }
         setIconMap(msg.payload);
       }
     };
@@ -152,6 +194,11 @@ const App: React.FC = () => {
     setActionConfigs,
     setActionState,
     setIconMap,
+    setPipelines,
+    setSelectedPackage,
+    setAvailablePackages,
+    setActionLog,
+    appendActionLog,
   ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
@@ -194,6 +241,22 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'swap-branches', worktreeId });
   }, []);
 
+  const handleRunPipeline = useCallback((worktreeId: string, pipelineId: string) => {
+    vscode?.postMessage({ type: 'run-pipeline', worktreeId, pipelineId });
+  }, []);
+
+  const handleSetPackage = useCallback((packageName: string) => {
+    vscode?.postMessage({ type: 'set-package', packageName });
+  }, []);
+
+  const handleDetectPackages = useCallback(() => {
+    vscode?.postMessage({ type: 'detect-packages' });
+  }, []);
+
+  const handleGetLog = useCallback((worktreeId: string, actionId: string) => {
+    vscode?.postMessage({ type: 'get-log', worktreeId, actionId });
+  }, []);
+
   if (errorMessage) {
     return (
       <div
@@ -213,7 +276,7 @@ const App: React.FC = () => {
   }
 
   const panZoomConfig: PanZoomConfig = {
-    pinchSensitivity: 0.03, // Electron delivers smaller pinch deltaY than Chrome
+    pinchSensitivity: 0.03,
     maxZoom: 1.5,
   };
 
@@ -229,6 +292,10 @@ const App: React.FC = () => {
         onRunAction={handleRunAction}
         onStopAction={handleStopAction}
         onSwapBranches={handleSwapBranches}
+        onRunPipeline={handleRunPipeline}
+        onSetPackage={handleSetPackage}
+        onDetectPackages={handleDetectPackages}
+        onGetLog={handleGetLog}
         panZoomConfig={panZoomConfig}
       />
     </div>

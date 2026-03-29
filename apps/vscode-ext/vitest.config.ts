@@ -6,7 +6,8 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/git/**/*.ts'],
+      include: ['src/git/**/*.ts', 'src/actions/**/*.ts'],
+      exclude: ['src/actions/ActionCoordinator.ts', 'src/actions/packageDetector.ts'],
       reporter: ['text', 'html'],
       thresholds: {
         lines: 80,
@@ -19,6 +20,8 @@ export default defineConfig({
       // Resolve @shiftspace/renderer to source so tests don't need a build step
       '@shiftspace/renderer': new URL('../../packages/renderer/src/index.ts', import.meta.url)
         .pathname,
+      // Stub out vscode for unit tests (not available outside extension host)
+      vscode: new URL('./tests/__mocks__/vscode.ts', import.meta.url).pathname,
     },
   },
 });

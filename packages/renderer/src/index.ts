@@ -14,5 +14,7 @@ export type {
   AppMode,
   IconEntry,
   IconMap,
+  PipelineConfig,
+  LogEntry,
 } from './types';
 export { DiffPopover, DiffHoverCard } from './components/DiffOverlay';
