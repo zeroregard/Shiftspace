@@ -10,7 +10,7 @@ import {
   CONTAINER_PAD_TOP,
   CONTAINER_PAD_BOTTOM,
   CONTAINER_GAP,
-} from './constants';
+} from './config';
 
 export interface SingleWorktreeLayout {
   nodes: LayoutNode[]; // positioned relative to x=0 for this worktree

@@ -1,7 +1,7 @@
 import type { LayoutRect } from './algorithm';
 import type { LayoutNode, LayoutEdge } from '../TreeCanvas';
 import type { FileChange } from '../types';
-import { FILE_NODE_W, FILE_NODE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './constants';
+import { FILE_NODE_W, FILE_NODE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './config';
 
 export interface WorktreeNodeData {
   worktree: import('../types').WorktreeState;

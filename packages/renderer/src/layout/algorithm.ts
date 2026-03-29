@@ -8,7 +8,7 @@ import {
   FOLDER_NODE_W,
   FOLDER_NODE_H,
   FILES_TOP_GAP,
-} from './constants';
+} from './config';
 
 export interface LayoutRect {
   node: TreeNode;

@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
 import { useShiftspaceStore } from './store';
 import { type PanZoomConfig } from './TreeCanvas';
-import { GroveView } from './components/GroveView';
-import { InspectionView } from './components/InspectionView';
-import { PackageSwitcher } from './components/PackageSwitcher';
+import { GroveView } from './views/grove';
+import { InspectionView } from './views/inspection';
+import { PackageSwitcher } from './shared/PackageSwitcher';
 
 interface Props {
   initialWorktrees?: WorktreeState[];
