@@ -64,12 +64,12 @@ export const PackageSwitcher: React.FC<PackageSwitcherProps> = React.memo(
               />
             </div>
             <div className="max-h-48 overflow-y-auto py-1">
-              {/* None option */}
+              {/* All option */}
               <button
                 className="w-full text-left px-2 py-1 text-11 text-text-muted hover:bg-node-file-pulse cursor-pointer bg-transparent border-none"
                 onClick={() => handleSelect('')}
               >
-                None
+                All
               </button>
               {filtered.length === 0 && (
                 <div className="px-2 py-1 text-11 text-text-faint">

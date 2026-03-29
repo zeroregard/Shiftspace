@@ -4,7 +4,7 @@ import type { WorktreeState } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { GitBranchIcon } from '../icons';
-import { CheckRow } from './CheckRow';
+import { ActionBar } from './ActionBar';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 
 const EMPTY_BRANCHES: string[] = [];
@@ -76,6 +76,20 @@ export const WorktreeCard = React.memo(
           </div>
         </div>
 
+        {/* Action buttons */}
+        <div
+          className="flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <ActionBar
+            worktreeId={wt.id}
+            onRunAction={onRunAction}
+            onStopAction={onStopAction}
+            onRunPipeline={onRunPipeline}
+          />
+        </div>
+
         {/* Stats */}
         <div className="flex items-center justify-between text-11">
           <span className="text-text-muted">
@@ -86,14 +100,6 @@ export const WorktreeCard = React.memo(
             <span className="text-status-deleted">-{totalRemoved}</span>
           </span>
         </div>
-
-        {/* Check status indicators */}
-        <CheckRow
-          worktreeId={wt.id}
-          onRunAction={onRunAction}
-          onStopAction={onStopAction}
-          onRunPipeline={onRunPipeline}
-        />
       </div>
     );
   }

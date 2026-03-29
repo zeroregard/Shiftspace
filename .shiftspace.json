@@ -1,0 +1,52 @@
+{
+  "actions": [
+    {
+      "id": "fmt",
+      "label": "fmt",
+      "command": "pnpm run fmt:check",
+      "type": "check",
+      "icon": "whitespace"
+    },
+    {
+      "id": "lint",
+      "label": "lint",
+      "command": "pnpm run lint:check",
+      "type": "check",
+      "icon": "checklist"
+    },
+    {
+      "id": "typecheck",
+      "label": "tsc",
+      "command": "pnpm run typecheck",
+      "type": "check",
+      "icon": "symbol-parameter"
+    },
+    {
+      "id": "test",
+      "label": "test",
+      "command": "pnpm run test",
+      "type": "check",
+      "icon": "beaker"
+    },
+    {
+      "id": "build",
+      "label": "build",
+      "command": "pnpm run build",
+      "type": "check",
+      "icon": "build"
+    },
+    {
+      "id": "dev-preview",
+      "label": "dev",
+      "command": "pnpm run --filter preview dev",
+      "type": "service",
+      "icon": "play"
+    }
+  ],
+  "pipelines": {
+    "verify": {
+      "steps": ["fmt", "lint", "typecheck", "test"],
+      "stopOnFailure": false
+    }
+  }
+}

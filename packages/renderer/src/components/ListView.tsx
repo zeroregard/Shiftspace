@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { useDragPan } from '../hooks/useDragPan';
-import type { WorktreeState, FileChange, DiffMode } from '../types';
+import type { WorktreeState, FileChange } from '../types';
 import { DiffPopover } from './DiffOverlay';
 import { ThemedFileIcon } from './ThemedFileIcon';
 import { WorktreeHeader } from './WorktreeHeader';
@@ -82,7 +82,6 @@ ListFileRow.displayName = 'ListFileRow';
 interface ListWorktreeBoxProps {
   worktree: WorktreeState;
   onFileClick?: (worktreeId: string, filePath: string) => void;
-  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
@@ -103,7 +102,6 @@ const ListWorktreeBox = React.memo(
   ({
     worktree: wt,
     onFileClick,
-    onDiffModeChange,
     onRequestBranchList,
     onCheckoutBranch,
     onFetchBranches,
@@ -183,7 +181,6 @@ ListWorktreeBox.displayName = 'ListWorktreeBox';
 interface ListViewProps {
   worktrees: WorktreeState[];
   onFileClick?: (worktreeId: string, filePath: string) => void;
-  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
@@ -194,7 +191,6 @@ export const ListView = React.memo(
   ({
     worktrees,
     onFileClick,
-    onDiffModeChange,
     onRequestBranchList,
     onCheckoutBranch,
     onFetchBranches,
@@ -222,7 +218,6 @@ export const ListView = React.memo(
                   key={wt.id}
                   worktree={wt}
                   onFileClick={onFileClick}
-                  onDiffModeChange={onDiffModeChange}
                   onRequestBranchList={onRequestBranchList}
                   onCheckoutBranch={onCheckoutBranch}
                   onFetchBranches={onFetchBranches}

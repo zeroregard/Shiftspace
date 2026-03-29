@@ -7,25 +7,72 @@ interface ActionBarProps {
   worktreeId: string;
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
+  onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
+}
+
+function deriveActionType(action: ActionConfig): 'check' | 'service' {
+  return action.type ?? (action.persistent ? 'service' : 'check');
 }
 
 export const ActionBar: React.FC<ActionBarProps> = React.memo(
-  ({ worktreeId, onRunAction, onStopAction }) => {
+  ({ worktreeId, onRunAction, onStopAction, onRunPipeline }) => {
     const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
+    const pipelines = useShiftspaceStore((s) => s.pipelines);
 
-    if (actionConfigs.length === 0) return null;
+    const checks = actionConfigs.filter((a) => deriveActionType(a) === 'check');
+    const services = actionConfigs.filter((a) => deriveActionType(a) === 'service');
+
+    if (checks.length === 0 && services.length === 0) return null;
+
+    const defaultPipelineId = Object.keys(pipelines)[0];
 
     return (
-      <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border-dashed">
-        {actionConfigs.map((action) => (
-          <ActionButton
-            key={action.id}
-            action={action}
-            worktreeId={worktreeId}
-            onRun={onRunAction}
-            onStop={onStopAction}
-          />
-        ))}
+      <div className="flex flex-col gap-1">
+        {checks.length > 0 && (
+          <div className="flex items-center gap-1">
+            {checks.map((action) => (
+              <ActionButton
+                key={action.id}
+                action={action}
+                worktreeId={worktreeId}
+                onRun={onRunAction}
+                onStop={onStopAction}
+              />
+            ))}
+            {defaultPipelineId && onRunPipeline && (
+              <Tooltip content="Run all checks" delayDuration={300}>
+                <button
+                  className="flex items-center justify-center w-6 h-6 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default bg-transparent cursor-pointer transition-colors shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRunPipeline(worktreeId, defaultPipelineId);
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  aria-label="Run all checks"
+                >
+                  <i
+                    className="codicon codicon-run-all"
+                    style={{ fontSize: 12 }}
+                    aria-hidden="true"
+                  />
+                </button>
+              </Tooltip>
+            )}
+          </div>
+        )}
+        {services.length > 0 && (
+          <div className="flex items-center gap-1">
+            {services.map((action) => (
+              <ActionButton
+                key={action.id}
+                action={action}
+                worktreeId={worktreeId}
+                onRun={onRunAction}
+                onStop={onStopAction}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -46,6 +93,7 @@ const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId, on
 
   const isRunning = status === 'running';
   const isFailed = status === 'failed';
+  const isPassed = status === 'passed';
   const isOneShot = !action.persistent;
 
   const handleClick = (e: React.MouseEvent) => {
@@ -64,7 +112,7 @@ const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId, on
     : action.label;
 
   const iconColor =
-    isRunning && action.persistent
+    (isRunning && action.persistent) || isPassed
       ? 'var(--color-status-added)'
       : isFailed
         ? 'var(--color-status-deleted)'

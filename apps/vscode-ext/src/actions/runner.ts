@@ -1,7 +1,29 @@
 import { spawn } from 'child_process';
+import * as os from 'os';
+import * as path from 'path';
 import type { CheckResult } from './types';
 
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Build an env with augmented PATH so that tools installed outside /usr/bin
+ * (bun, homebrew, nvm, etc.) are found when VSCode spawns a non-login shell.
+ */
+function buildEnv(): NodeJS.ProcessEnv {
+  const home = os.homedir();
+  const extra = [
+    path.join(home, '.bun', 'bin'),
+    path.join(home, '.volta', 'bin'),
+    '/opt/homebrew/bin',
+    '/opt/homebrew/sbin',
+    '/usr/local/bin',
+  ];
+  const existing = process.env.PATH ?? '';
+  const merged = [...extra, existing].join(':');
+  return { ...process.env, PATH: merged };
+}
+
+const SPAWN_ENV = buildEnv();
 
 export interface RunOptions {
   cwd: string;
@@ -26,6 +48,7 @@ export function runCheck(
       cwd: opts.cwd,
       shell: true,
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: SPAWN_ENV,
     });
 
     let stdout = '';
@@ -122,6 +145,7 @@ export function startService(command: string, opts: RunOptions): ServiceHandle {
     shell: true,
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: false,
+    env: SPAWN_ENV,
   });
 
   let stdoutBuf = '';

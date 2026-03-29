@@ -459,10 +459,9 @@ export class GitDataProvider implements vscode.Disposable {
       await this.initialize();
     } catch (err) {
       console.error('[Shiftspace] handleCheckoutBranch error:', err);
-      this.postMessage({
-        type: 'error',
-        message: `Failed to checkout "${branch}": ${(err as Error).message}`,
-      });
+      void vscode.window.showErrorMessage(
+        `Failed to checkout "${branch}": ${(err as Error).message}`
+      );
     }
   }
 
