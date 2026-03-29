@@ -13,6 +13,7 @@
  *    renderer falls back to its built-in SVG icons.
  *  - All errors are caught and result in null / empty map — never throws.
  */
+// TODO: this is not working!
 
 import * as vscode from 'vscode';
 import * as path from 'path';
