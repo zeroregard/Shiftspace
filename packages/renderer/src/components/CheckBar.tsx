@@ -49,9 +49,6 @@ const CheckChip: React.FC<CheckChipProps> = React.memo(
     const type = action.type ?? (action.persistent ? 'service' : 'check');
     const status: ActionStatus = state?.status ?? (type === 'service' ? 'stopped' : 'idle');
     const isRunning = status === 'running';
-    const durationSec =
-      state?.durationMs !== undefined ? (state.durationMs / 1000).toFixed(1) : null;
-
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (status === 'unconfigured') return;
@@ -81,7 +78,7 @@ const CheckChip: React.FC<CheckChipProps> = React.memo(
           aria-hidden="true"
         />
         <span className="text-10 text-text-muted ml-0.5">{action.label}</span>
-        {durationSec && <span className="text-10 text-text-faint ml-0.5">{durationSec}s</span>}
+
         {/* Expand/collapse log caret */}
         <button
           className="ml-0.5 text-text-faint hover:text-text-muted cursor-pointer bg-transparent border-none p-0"

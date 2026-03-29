@@ -6,7 +6,6 @@ import { flattenRect } from './flatten';
 import type { WorktreeNodeData } from './flatten';
 import {
   WT_HEADER_H,
-  ACTION_BAR_H,
   CONTAINER_PAD_X,
   CONTAINER_PAD_TOP,
   CONTAINER_PAD_BOTTOM,
@@ -28,14 +27,10 @@ export function computeSingleWorktreeLayout(
   onCheckoutBranch?: (worktreeId: string, branch: string) => void,
   onFolderClick?: (worktreeId: string, folderPath: string) => void,
   onFetchBranches?: (worktreeId: string) => void,
-  onRunAction?: (worktreeId: string, actionId: string) => void,
-  onStopAction?: (worktreeId: string, actionId: string) => void,
-  numActions?: number,
   onSwapBranches?: (worktreeId: string) => void
 ): SingleWorktreeLayout {
   const treeChildren = buildTree(wt.id, wt.files);
-  const actionBarH = (numActions ?? 0) > 0 ? ACTION_BAR_H : 0;
-  const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP + actionBarH;
+  const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
   const { layouts, totalW, totalH } = layoutWorktreeContents(treeChildren, contentsStartY);
 
   // Ensure the container is wide enough to fit the header label.
@@ -55,8 +50,6 @@ export function computeSingleWorktreeLayout(
     onRequestBranchList,
     onCheckoutBranch,
     onFetchBranches,
-    onRunAction,
-    onStopAction,
     onSwapBranches,
   };
   nodes.push({
@@ -96,9 +89,6 @@ export function computeFullLayout(
   onCheckoutBranch?: (worktreeId: string, branch: string) => void,
   onFolderClick?: (worktreeId: string, folderPath: string) => void,
   onFetchBranches?: (worktreeId: string) => void,
-  onRunAction?: (worktreeId: string, actionId: string) => void,
-  onStopAction?: (worktreeId: string, actionId: string) => void,
-  numActions?: number,
   onSwapBranches?: (worktreeId: string) => void
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const perLayouts = wtArray.map((wt) =>
@@ -109,9 +99,6 @@ export function computeFullLayout(
       onCheckoutBranch,
       onFolderClick,
       onFetchBranches,
-      onRunAction,
-      onStopAction,
-      numActions,
       onSwapBranches
     )
   );

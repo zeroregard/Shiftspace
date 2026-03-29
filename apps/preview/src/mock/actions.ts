@@ -15,7 +15,7 @@ export const MOCK_PIPELINES: Record<string, PipelineConfig> = {
 
 /** Returns varied initial states so the preview shows a realistic mix. */
 export function getMockInitialStates(
-  worktreeId: string
+  _worktreeId: string
 ): Array<{ actionId: string; state: ActionState }> {
   const initialStatuses: ActionState[] = [
     { status: 'passed', durationMs: 1200 },

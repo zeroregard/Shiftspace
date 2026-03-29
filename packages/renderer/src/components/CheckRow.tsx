@@ -46,16 +46,8 @@ function getTooltipText(
     return `${config.label}: running on :${state.port}`;
   }
   if (status === 'running') return `${config.label}: running...`;
-  if (status === 'passed') {
-    const dur =
-      state?.durationMs !== undefined ? ` (${(state.durationMs / 1000).toFixed(1)}s)` : '';
-    return `${config.label}: passed${dur}`;
-  }
-  if (status === 'failed') {
-    const dur =
-      state?.durationMs !== undefined ? ` (${(state.durationMs / 1000).toFixed(1)}s)` : '';
-    return `${config.label}: failed${dur}`;
-  }
+  if (status === 'passed') return `${config.label}: passed`;
+  if (status === 'failed') return `${config.label}: failed`;
   if (status === 'stale') return `${config.label}: stale (re-run to refresh)`;
   if (type === 'service' && status === 'stopped') return `${config.label}: stopped`;
   return config.label;

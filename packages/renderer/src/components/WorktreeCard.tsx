@@ -4,6 +4,7 @@ import type { WorktreeState } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { GitBranchIcon } from '../icons';
+import { ActionBar } from './ActionBar';
 import { CheckRow } from './CheckRow';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 
@@ -74,6 +75,11 @@ export const WorktreeCard = React.memo(
               lastFetchAt={lastFetchAt}
             />
           </div>
+        </div>
+
+        {/* Action buttons */}
+        <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+          <ActionBar worktreeId={wt.id} onRunAction={onRunAction} onStopAction={onStopAction} />
         </div>
 
         {/* Stats */}

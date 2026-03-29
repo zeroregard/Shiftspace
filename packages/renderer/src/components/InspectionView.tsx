@@ -165,13 +165,6 @@ export const InspectionView = React.memo(
       []
     );
 
-    const diffModeChangeRef = useRef(onDiffModeChange);
-    diffModeChangeRef.current = onDiffModeChange;
-    const stableDiffModeChange = useCallback(
-      (wtId: string, mode: DiffMode) => diffModeChangeRef.current?.(wtId, mode),
-      []
-    );
-
     const requestBranchListRef = useRef(onRequestBranchList);
     requestBranchListRef.current = onRequestBranchList;
     const stableRequestBranchList = useCallback(
@@ -216,7 +209,6 @@ export const InspectionView = React.memo(
     const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
 
     // Compute tree layout for the tree panel
-    const numActions = actionConfigs.length;
     const { nodes, edges } = useMemo(() => {
       if (!wt) return { nodes: [], edges: [] };
       const layout = computeSingleWorktreeLayout(
@@ -226,22 +218,16 @@ export const InspectionView = React.memo(
         stableCheckoutBranch,
         stableFolderClick,
         stableFetchBranches,
-        stableRunAction,
-        stableStopAction,
-        numActions,
         stableSwapBranches
       );
       return { nodes: layout.nodes, edges: layout.edges };
     }, [
       wt,
-      numActions,
       stableFileClick,
       stableRequestBranchList,
       stableCheckoutBranch,
       stableFolderClick,
       stableFetchBranches,
-      stableRunAction,
-      stableStopAction,
       stableSwapBranches,
     ]);
 
@@ -292,7 +278,6 @@ export const InspectionView = React.memo(
             onClick={exitInspection}
           >
             <i className="codicon codicon-arrow-left" style={{ fontSize: 11 }} aria-hidden="true" />
-            Back
           </button>
 
           {/* Worktree / branch name */}
