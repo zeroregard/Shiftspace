@@ -11,7 +11,7 @@ export type {
   ActionConfig,
   ActionState,
   ActionStatus,
-  ViewMode,
+  AppMode,
   IconEntry,
   IconMap,
 } from './types';
