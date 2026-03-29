@@ -100,6 +100,45 @@ export interface LogEntry {
 }
 
 // ---------------------------------------------------------------------------
+// Insights
+// ---------------------------------------------------------------------------
+
+export type InsightSeverity = 'none' | 'low' | 'medium' | 'high';
+
+export interface InsightConfig {
+  id: string;
+  label: string;
+  icon: string;
+  enabled: boolean;
+}
+
+export interface InsightSummary {
+  insightId: string;
+  worktreeId: string;
+  score: number;
+  label: string;
+  severity: InsightSeverity;
+}
+
+export interface FileSimilarity {
+  fileA: string;
+  fileB: string;
+  overallSimilarity: number;
+  matchedBlocks: Array<{
+    fileA: string;
+    fileB: string;
+    startLineA: number;
+    endLineA: number;
+    startLineB: number;
+    endLineB: number;
+  }>;
+}
+
+export interface DuplicationDetailData {
+  pairs: FileSimilarity[];
+}
+
+// ---------------------------------------------------------------------------
 // File icon theme (populated by the VSCode extension host, not the preview app)
 // ---------------------------------------------------------------------------
 

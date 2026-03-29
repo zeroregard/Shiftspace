@@ -10,6 +10,9 @@ import type {
   AppMode,
   IconMap,
   PipelineConfig,
+  InsightConfig,
+  InsightSummary,
+  DuplicationDetailData,
 } from '../types';
 
 interface ShiftspaceStore {
@@ -36,6 +39,15 @@ interface ShiftspaceStore {
    * Empty object in the preview app — FileNode falls back to built-in icons.
    */
   iconMap: IconMap;
+  /** Insight configs (which insights are available) */
+  insightConfigs: InsightConfig[];
+  /** Insight summaries keyed by `${worktreeId}:${insightId}` */
+  insightSummaries: Map<string, InsightSummary>;
+  /** Duplication detail data keyed by worktreeId */
+  duplicationDetails: Map<string, DuplicationDetailData>;
+  setInsightConfigs: (configs: InsightConfig[]) => void;
+  setInsightSummaries: (worktreeId: string, summaries: InsightSummary[]) => void;
+  setDuplicationDetail: (worktreeId: string, data: DuplicationDetailData) => void;
   setLODLevel: (level: LODLevel) => void;
   enterInspection: (worktreeId: string) => void;
   exitInspection: () => void;
@@ -79,6 +91,27 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   pipelines: {},
   availablePackages: [],
   iconMap: {},
+  insightConfigs: [],
+  insightSummaries: new Map(),
+  duplicationDetails: new Map(),
+
+  setInsightConfigs: (configs) => set({ insightConfigs: configs }),
+
+  setInsightSummaries: (worktreeId, summaries) =>
+    set((state) => {
+      const insightSummaries = new Map(state.insightSummaries);
+      for (const s of summaries) {
+        insightSummaries.set(`${worktreeId}:${s.insightId}`, s);
+      }
+      return { insightSummaries };
+    }),
+
+  setDuplicationDetail: (worktreeId, data) =>
+    set((state) => {
+      const duplicationDetails = new Map(state.duplicationDetails);
+      duplicationDetails.set(worktreeId, data);
+      return { duplicationDetails };
+    }),
 
   setLODLevel: (level) => set({ lodLevel: level }),
 

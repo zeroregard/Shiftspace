@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import '@vscode/codicons/dist/codicon.css';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
-import type { ShiftspaceEvent, DiffMode } from '@shiftspace/renderer';
+import type {
+  ShiftspaceEvent,
+  DiffMode,
+  InsightConfig,
+  InsightSummary,
+  DuplicationDetailData,
+} from '@shiftspace/renderer';
 import { MockEngine, MOCK_BRANCHES } from './mock/engine';
 import {
   MOCK_ACTION_CONFIGS,
@@ -27,6 +33,9 @@ export const App: React.FC = () => {
     setActionConfigs,
     setPipelines,
     setActionState,
+    setInsightConfigs,
+    setInsightSummaries,
+    setDuplicationDetail,
   } = useShiftspaceStore();
 
   if (!engineRef.current) {
@@ -38,6 +47,70 @@ export const App: React.FC = () => {
     setActionConfigs(MOCK_ACTION_CONFIGS);
     setPipelines(MOCK_PIPELINES);
   }, [resetKey, setActionConfigs, setPipelines]);
+
+  // Seed mock insight configs
+  useEffect(() => {
+    const mockInsightConfigs: InsightConfig[] = [
+      { id: 'duplication', label: 'Duplication', icon: 'copy', enabled: true },
+    ];
+    setInsightConfigs(mockInsightConfigs);
+  }, [setInsightConfigs]);
+
+  // Seed mock insight summaries + duplication details after worktrees are known
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    const worktrees = engine.getWorktrees();
+    for (const wt of worktrees) {
+      const files = wt.files;
+      const pairs: DuplicationDetailData['pairs'] = [];
+      if (files.length >= 2) {
+        pairs.push({
+          fileA: files[0]!.path,
+          fileB: files[1]!.path,
+          overallSimilarity: 0.72,
+          matchedBlocks: [
+            {
+              fileA: files[0]!.path,
+              fileB: files[1]!.path,
+              startLineA: 5,
+              endLineA: 15,
+              startLineB: 10,
+              endLineB: 20,
+            },
+          ],
+        });
+      }
+      if (files.length >= 4) {
+        pairs.push({
+          fileA: files[2]!.path,
+          fileB: files[3]!.path,
+          overallSimilarity: 0.55,
+          matchedBlocks: [
+            {
+              fileA: files[2]!.path,
+              fileB: files[3]!.path,
+              startLineA: 1,
+              endLineA: 8,
+              startLineB: 3,
+              endLineB: 10,
+            },
+          ],
+        });
+      }
+
+      const score = pairs.length;
+      const summary: InsightSummary = {
+        insightId: 'duplication',
+        worktreeId: wt.id,
+        score,
+        label: score === 1 ? '1 duplication' : `${score} duplications`,
+        severity: score === 0 ? 'none' : score <= 2 ? 'low' : score <= 5 ? 'medium' : 'high',
+      };
+      setInsightSummaries(wt.id, [summary]);
+      setDuplicationDetail(wt.id, { pairs });
+    }
+  }, [resetKey, setInsightSummaries, setDuplicationDetail]);
 
   useEffect(() => {
     const engine = engineRef.current!;
@@ -68,11 +141,8 @@ export const App: React.FC = () => {
     };
   }, [resetKey, setActionState]);
 
-  // Cleanup simulations on unmount
   useEffect(() => {
     return () => {
-      for (const cancel of activeSimulations.current.values()) cancel();
-      activeSimulations.current.clear();
       engineRef.current?.destroy();
     };
   }, []);
@@ -123,12 +193,10 @@ export const App: React.FC = () => {
       const key = `${worktreeId}:${actionId}`;
 
       if (config.type === 'service') {
-        // Toggle: if already running, do nothing (stop handles that)
         setActionState(worktreeId, actionId, { status: 'running', port: 5173 });
         return;
       }
 
-      // Cancel any existing simulation for this action
       activeSimulations.current.get(key)?.();
 
       const cancel = simulateCheck(worktreeId, actionId, setActionState);

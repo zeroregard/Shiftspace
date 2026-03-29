@@ -5,6 +5,7 @@ import { useShiftspaceStore } from '../../../store';
 import { BranchPickerPopover } from '../../../overlays/BranchPickerPopover';
 import { GitBranchIcon } from '../../../icons';
 import { ActionBar } from '../../inspection/components/ActionBar';
+import { InsightRow } from '../../../nodes/InsightRow';
 import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
 
 const EMPTY_BRANCHES: string[] = [];
@@ -100,6 +101,9 @@ export const WorktreeCard = React.memo(
             <span className="text-status-deleted">-{totalRemoved}</span>
           </span>
         </div>
+
+        {/* Insight badges */}
+        <InsightRow worktreeId={wt.id} />
       </div>
     );
   }

@@ -128,6 +128,28 @@
           "description": "Additional personal actions beyond what's defined in .shiftspace.json. Personal overrides win on duplicate ID.",
           "scope": "resource"
         },
+        "shiftspace.insights.duplication.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable duplication detection between changed files",
+          "scope": "resource"
+        },
+        "shiftspace.insights.duplication.threshold": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.1,
+          "maximum": 1,
+          "description": "Minimum similarity score (0.0-1.0) to flag as duplication. Lower = more sensitive.",
+          "scope": "resource"
+        },
+        "shiftspace.insights.duplication.minBlockLines": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 2,
+          "maximum": 50,
+          "description": "Minimum number of lines for a code block to be considered for duplication detection",
+          "scope": "resource"
+        },
         "shiftspace.actions": {
           "type": "array",
           "items": {

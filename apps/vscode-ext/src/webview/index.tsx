@@ -12,6 +12,7 @@ import type {
   IconMap,
   AppMode,
   PipelineConfig,
+  DuplicationDetailData,
 } from '@shiftspace/renderer';
 import './styles.css';
 
@@ -79,7 +80,29 @@ type HostMessage =
     }
   | { type: 'action-log'; worktreeId: string; actionId: string; content: string }
   | { type: 'packages-list'; packages: string[] }
-  | { type: 'icon-theme'; payload: IconMap };
+  | { type: 'icon-theme'; payload: IconMap }
+  // Insight messages
+  | {
+      type: 'insight-configs';
+      configs: Array<{ id: string; label: string; icon: string; enabled: boolean }>;
+    }
+  | {
+      type: 'insight-summaries';
+      worktreeId: string;
+      summaries: Array<{
+        insightId: string;
+        worktreeId: string;
+        score: number;
+        label: string;
+        severity: 'none' | 'low' | 'medium' | 'high';
+      }>;
+    }
+  | {
+      type: 'insight-detail';
+      worktreeId: string;
+      insightId: string;
+      detail: unknown;
+    };
 
 const App: React.FC = () => {
   const {
@@ -98,6 +121,9 @@ const App: React.FC = () => {
     setAvailablePackages,
     setActionLog,
     appendActionLog,
+    setInsightConfigs,
+    setInsightSummaries,
+    setDuplicationDetail,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useShiftspaceStore((s) => s.mode as AppMode);
@@ -176,6 +202,14 @@ const App: React.FC = () => {
         setAvailablePackages(msg.packages);
       } else if (msg.type === 'icon-theme') {
         setIconMap(msg.payload);
+      } else if (msg.type === 'insight-configs') {
+        setInsightConfigs(msg.configs);
+      } else if (msg.type === 'insight-summaries') {
+        setInsightSummaries(msg.worktreeId, msg.summaries);
+      } else if (msg.type === 'insight-detail') {
+        if (msg.insightId === 'duplication') {
+          setDuplicationDetail(msg.worktreeId, msg.detail as DuplicationDetailData);
+        }
       }
     };
 
@@ -199,6 +233,9 @@ const App: React.FC = () => {
     setAvailablePackages,
     setActionLog,
     appendActionLog,
+    setInsightConfigs,
+    setInsightSummaries,
+    setDuplicationDetail,
   ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
@@ -257,6 +294,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'get-log', worktreeId, actionId });
   }, []);
 
+  const handleRequestInsightDetail = useCallback((worktreeId: string, insightId: string) => {
+    vscode?.postMessage({ type: 'request-insight-detail', worktreeId, insightId });
+  }, []);
+
   if (errorMessage) {
     return (
       <div
@@ -296,6 +337,7 @@ const App: React.FC = () => {
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
         onGetLog={handleGetLog}
+        onRequestInsightDetail={handleRequestInsightDetail}
         panZoomConfig={panZoomConfig}
       />
     </div>

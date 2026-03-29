@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef } from 'react';
+import React, { useMemo, useCallback, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import type { DiffMode, FileChange } from '../../types';
@@ -13,6 +13,7 @@ import { partitionFiles } from '../../utils/listSections';
 import { computeSingleWorktreeLayout } from '../../layout';
 import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
+import { RelationView } from '../../nodes/RelationView';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -146,8 +147,15 @@ export const InspectionView = React.memo(
     onGetLog,
     panZoomConfig,
   }: InspectionViewProps) => {
+    const [rightTab, setRightTab] = useState<'hierarchy' | 'relation'>('hierarchy');
     const exitInspection = useShiftspaceStore((s) => s.exitInspection);
     const wt = useShiftspaceStore((s) => s.worktrees.get(worktreeId));
+    const hasDuplicationData = useShiftspaceStore(
+      (s) => (s.duplicationDetails.get(worktreeId)?.pairs.length ?? 0) > 0
+    );
+    const duplicationEnabled = useShiftspaceStore((s) =>
+      s.insightConfigs.some((c) => c.id === 'duplication' && c.enabled)
+    );
     const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
     const branchList = useShiftspaceStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
     const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(worktreeId));
@@ -383,14 +391,58 @@ export const InspectionView = React.memo(
             </div>
           </div>
 
-          {/* Tree panel (~65%) */}
-          <div className="flex-1 min-h-0 min-w-0 relative">
-            <TreeCanvas
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={NODE_TYPES}
-              panZoomConfig={panZoomConfig}
-            />
+          {/* Right panel (~65%) */}
+          <div className="flex-1 min-h-0 min-w-0 relative flex flex-col">
+            {/* Tab switcher — only show when relation tab is available */}
+            {duplicationEnabled && hasDuplicationData && (
+              <div className="flex items-center gap-0 px-2 border-b border-border-dashed shrink-0">
+                <button
+                  className={clsx(
+                    'px-3 py-1.5 text-10 font-medium bg-transparent border-none cursor-pointer transition-colors',
+                    rightTab === 'hierarchy'
+                      ? 'text-text-primary border-b-2 border-text-primary'
+                      : 'text-text-muted hover:text-text-primary'
+                  )}
+                  style={
+                    rightTab === 'hierarchy'
+                      ? { borderBottom: '2px solid var(--color-text-primary, #ccc)' }
+                      : undefined
+                  }
+                  onClick={() => setRightTab('hierarchy')}
+                >
+                  Hierarchy
+                </button>
+                <button
+                  className={clsx(
+                    'px-3 py-1.5 text-10 font-medium bg-transparent border-none cursor-pointer transition-colors',
+                    rightTab === 'relation'
+                      ? 'text-text-primary'
+                      : 'text-text-muted hover:text-text-primary'
+                  )}
+                  style={
+                    rightTab === 'relation'
+                      ? { borderBottom: '2px solid var(--color-text-primary, #ccc)' }
+                      : undefined
+                  }
+                  onClick={() => setRightTab('relation')}
+                >
+                  Relation
+                </button>
+              </div>
+            )}
+
+            <div className="flex-1 min-h-0">
+              {rightTab === 'hierarchy' || !duplicationEnabled || !hasDuplicationData ? (
+                <TreeCanvas
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={NODE_TYPES}
+                  panZoomConfig={panZoomConfig}
+                />
+              ) : (
+                <RelationView worktreeId={worktreeId} onFileClick={onFileClick} />
+              )}
+            </div>
           </div>
         </div>
       </div>
