@@ -23,7 +23,6 @@ interface Props {
   onSetPackage?: (packageName: string) => void;
   onDetectPackages?: () => void;
   onGetLog?: (worktreeId: string, actionId: string) => void;
-  onRequestInsightDetail?: (worktreeId: string, insightId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -49,7 +48,6 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onSetPackage,
   onDetectPackages,
   onGetLog,
-  onRequestInsightDetail,
   panZoomConfig,
 }) => {
   const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
@@ -147,13 +145,6 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     []
   );
 
-  const requestInsightDetailRef = useRef(onRequestInsightDetail);
-  requestInsightDetailRef.current = onRequestInsightDetail;
-  const stableRequestInsightDetail = useCallback(
-    (wtId: string, insightId: string) => requestInsightDetailRef.current?.(wtId, insightId),
-    []
-  );
-
   // Sorted worktree array (main/master first)
   const wtArray = useMemo(
     () =>
@@ -202,7 +193,6 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
             onSwapBranches={stableSwapBranches}
             onRunPipeline={stableRunPipeline}
             onGetLog={stableGetLog}
-            onRequestInsightDetail={stableRequestInsightDetail}
             panZoomConfig={panZoomConfig}
           />
         )}

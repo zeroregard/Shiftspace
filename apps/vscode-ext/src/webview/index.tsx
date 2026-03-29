@@ -294,10 +294,6 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'get-log', worktreeId, actionId });
   }, []);
 
-  const handleRequestInsightDetail = useCallback((worktreeId: string, insightId: string) => {
-    vscode?.postMessage({ type: 'request-insight-detail', worktreeId, insightId });
-  }, []);
-
   if (errorMessage) {
     return (
       <div
@@ -337,7 +333,6 @@ const App: React.FC = () => {
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
         onGetLog={handleGetLog}
-        onRequestInsightDetail={handleRequestInsightDetail}
         panZoomConfig={panZoomConfig}
       />
     </div>
