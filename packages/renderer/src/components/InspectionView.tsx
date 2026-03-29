@@ -7,7 +7,7 @@ import { TreeCanvas, type PanZoomConfig } from '../TreeCanvas';
 import { NODE_TYPES } from './index';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { DiffPopover } from './DiffOverlay';
-import { FileIcon } from '../icons';
+import { ThemedFileIcon } from './ThemedFileIcon';
 import { GitCompareIcon, GitBranchIcon } from '../icons';
 import { partitionFiles } from '../utils/listSections';
 import { computeSingleWorktreeLayout } from '../layout';
@@ -60,19 +60,9 @@ const InspectionFileRow = React.memo(
           )}
           onClick={() => onFileClick?.(worktreeId, file.path)}
         >
-          {/* Status letter */}
-          <span
-            className={clsx(
-              'text-11 font-mono font-semibold w-3 shrink-0',
-              STATUS_COLOR_CLASS[file.status]
-            )}
-          >
-            {STATUS_LETTER[file.status]}
-          </span>
-
           {/* File icon */}
           <span className="shrink-0 flex items-center">
-            <FileIcon filename={fileName} size={12} />
+            <ThemedFileIcon filePath={file.path} size={16} />
           </span>
 
           {/* Filename + directory */}
@@ -92,12 +82,14 @@ const InspectionFileRow = React.memo(
             )}
           </span>
 
-          {/* Lines added/removed */}
-          <span className="shrink-0 flex items-center gap-1 text-10">
-            {file.linesAdded > 0 && <span className="text-status-added">+{file.linesAdded}</span>}
-            {file.linesRemoved > 0 && (
-              <span className="text-status-deleted">-{file.linesRemoved}</span>
+          {/* Status letter */}
+          <span
+            className={clsx(
+              'text-11 font-mono font-semibold w-3 shrink-0',
+              STATUS_COLOR_CLASS[file.status]
             )}
+          >
+            {STATUS_LETTER[file.status]}
           </span>
         </button>
       </DiffPopover>

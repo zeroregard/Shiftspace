@@ -84,9 +84,13 @@ const App: React.FC = () => {
   useEffect(() => {
     // Register the message listener first, then send 'ready' so we cannot
     // miss a fast synchronous reply from the extension host.
+    console.log('[Shiftspace webview] message listener registered');
     const handler = (e: MessageEvent<HostMessage>) => {
       // Guard against messages from unexpected origins (basic prompt-injection defence)
-      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
+      if (e.origin && !e.origin.startsWith('vscode-webview://')) {
+        console.log('[Shiftspace webview] message blocked by origin guard | origin =', e.origin);
+        return;
+      }
       const msg = e.data;
       if (msg.type === 'init') {
         setErrorMessage(undefined);
@@ -113,6 +117,22 @@ const App: React.FC = () => {
           port: msg.port,
         });
       } else if (msg.type === 'icon-theme') {
+        const keys = Object.keys(msg.payload);
+        console.log(
+          '[Shiftspace webview] icon-theme received | keys:',
+          keys.length,
+          '| sample:',
+          keys.slice(0, 5)
+        );
+        if (keys.length > 0) {
+          const sampleEntry = msg.payload[keys[0]!];
+          console.log(
+            '[Shiftspace webview] icon-theme sample entry for',
+            keys[0],
+            ':',
+            sampleEntry?.dark?.slice(0, 60) + '...'
+          );
+        }
         setIconMap(msg.payload);
       }
     };

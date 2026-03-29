@@ -4,8 +4,7 @@ import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from './DiffOverlay';
-import { FileIcon } from '../icons';
-import { useShiftspaceStore } from '../store';
+import { ThemedFileIcon } from './ThemedFileIcon';
 
 export interface FileNodeData {
   file: FileChange;
@@ -30,10 +29,6 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
   const isDeleted = file.status === 'deleted';
 
-  // Themed icon from the extension host (undefined in the preview app).
-  const iconEntry = useShiftspaceStore((s) => s.iconMap[file.path]);
-  const iconSrc = iconEntry?.dark;
-
   return (
     <DiffPopover file={file}>
       <div
@@ -53,18 +48,7 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
         >
           <div className="flex items-center gap-1">
             <span className="shrink-0 flex items-center">
-              {iconSrc ? (
-                <img
-                  src={iconSrc}
-                  width={12}
-                  height={12}
-                  alt=""
-                  aria-hidden="true"
-                  style={{ display: 'block', flexShrink: 0 }}
-                />
-              ) : (
-                <FileIcon filename={fileName} size={12} />
-              )}
+              <ThemedFileIcon filePath={file.path} size={12} />
             </span>
             <span
               className={clsx(

@@ -178,6 +178,12 @@ export class ShiftspacePanel {
    * changes. Failures are swallowed — icons are a non-critical enhancement.
    */
   private async reloadIcons(): Promise<void> {
+    console.log(
+      '[Shiftspace] reloadIcons: called | _iconProvider =',
+      !!this._iconProvider,
+      '| _gitProvider =',
+      !!this._gitProvider
+    );
     if (!this._iconProvider || !this._gitProvider) return;
 
     const loaded = await this._iconProvider.load();
@@ -185,14 +191,24 @@ export class ShiftspacePanel {
     if (!loaded) return;
 
     const filePaths = this._gitProvider.getAllFilePaths();
+    console.log('[Shiftspace] reloadIcons: filePaths =', filePaths);
     const iconMap = await this._iconProvider.resolveForFiles(filePaths);
     console.log(
       '[Shiftspace] reloadIcons: filePaths.length =',
       filePaths.length,
       '| iconMap keys =',
-      Object.keys(iconMap).length
+      Object.keys(iconMap).length,
+      '| iconMap sample keys:',
+      Object.keys(iconMap).slice(0, 5)
     );
-    void this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
+    const postResult = await this._panel.webview.postMessage({
+      type: 'icon-theme',
+      payload: iconMap,
+    });
+    console.log(
+      '[Shiftspace] reloadIcons: postMessage result (false = webview not visible) =',
+      postResult
+    );
   }
 
   private reloadActionConfigs(): void {

@@ -2,8 +2,8 @@ import React from 'react';
 import clsx from 'clsx';
 import { useDragPan } from '../hooks/useDragPan';
 import type { WorktreeState, FileChange, DiffMode } from '../types';
-import { FileIcon } from '../icons';
 import { DiffPopover } from './DiffOverlay';
+import { ThemedFileIcon } from './ThemedFileIcon';
 import { WorktreeHeader } from './WorktreeHeader';
 import { partitionFiles } from '../utils/listSections';
 
@@ -43,7 +43,7 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
       >
         {/* File icon */}
         <span className="shrink-0 flex items-center">
-          <FileIcon filename={fileName} size={12} />
+          <ThemedFileIcon filePath={file.path} size={16} />
         </span>
 
         {/* Filename + directory */}
