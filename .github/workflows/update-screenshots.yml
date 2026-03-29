@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update:
@@ -50,13 +51,117 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bun run --filter @shiftspace/preview playwright:install
 
+      - name: Record baseline SHA
+        id: baseline
+        run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
       - name: Update snapshots
         run: bun run --filter @shiftspace/preview test:e2e:update
 
       - name: Commit updated screenshots
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apps/preview/e2e/__screenshots__/
-          git diff --cached --quiet || git commit -m "chore: update playwright screenshots"
-          git push
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No screenshot changes detected."
+          else
+            git commit -m "chore: update playwright screenshots"
+            git push
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "new_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Find associated PR
+        if: steps.commit.outputs.changed == 'true'
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --head "${{ github.ref_name }}" \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+          echo "pr_number=${PR_NUMBER:-}" >> $GITHUB_OUTPUT
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No open PR found for branch ${{ github.ref_name }} — skipping comment."
+          else
+            echo "Found PR #$PR_NUMBER"
+          fi
+
+      - name: Post before/after screenshot comparison
+        if: steps.commit.outputs.changed == 'true' && steps.find-pr.outputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          OLD_SHA: ${{ steps.baseline.outputs.sha }}
+          NEW_SHA: ${{ steps.commit.outputs.new_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          # Build the comment header
+          {
+            echo "## 📸 Screenshot Comparison"
+            echo ""
+            echo "Screenshots updated by the [Update Screenshots workflow](${RUN_URL}) on branch \`${BRANCH}\`."
+            echo ""
+          } > /tmp/pr-comment.md
+
+          CHANGED_COUNT=0
+
+          while IFS=$'\t' read -r status file; do
+            [ -z "$file" ] && continue
+            CHANGED_COUNT=$((CHANGED_COUNT + 1))
+            NAME=$(basename "$file")
+
+            case "$status" in
+              M)
+                BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
+                AFTER_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${file}"
+                {
+                  echo "### \`${NAME}\`"
+                  echo ""
+                  echo "| Before | After |"
+                  echo "|--------|-------|"
+                  echo "| ![before](${BEFORE_URL}) | ![after](${AFTER_URL}) |"
+                  echo ""
+                } >> /tmp/pr-comment.md
+                ;;
+              A)
+                AFTER_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${file}"
+                {
+                  echo "### \`${NAME}\` _(new)_"
+                  echo ""
+                  echo "| Added |"
+                  echo "|-------|"
+                  echo "| ![new](${AFTER_URL}) |"
+                  echo ""
+                } >> /tmp/pr-comment.md
+                ;;
+              D)
+                BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
+                {
+                  echo "### \`${NAME}\` _(removed)_"
+                  echo ""
+                  echo "| Removed |"
+                  echo "|---------|"
+                  echo "| ![removed](${BEFORE_URL}) |"
+                  echo ""
+                } >> /tmp/pr-comment.md
+                ;;
+            esac
+          done < <(git diff --name-status "${OLD_SHA}" "${NEW_SHA}" -- apps/preview/e2e/__screenshots__/)
+
+          if [ "$CHANGED_COUNT" -eq 0 ]; then
+            echo "No screenshot file changes found in diff — skipping PR comment."
+            exit 0
+          fi
+
+          echo "Posting comparison for ${CHANGED_COUNT} changed screenshot(s) to PR #${{ steps.find-pr.outputs.pr_number }}."
+          gh pr comment "${{ steps.find-pr.outputs.pr_number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file /tmp/pr-comment.md
