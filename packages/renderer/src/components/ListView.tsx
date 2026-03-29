@@ -118,7 +118,6 @@ const ListWorktreeBox = React.memo(
         <div className="px-4 py-2.5 border-b border-border-dashed">
           <WorktreeHeader
             worktree={wt}
-            onDiffModeChange={onDiffModeChange}
             onRequestBranchList={onRequestBranchList}
             onCheckoutBranch={onCheckoutBranch}
             onFetchBranches={onFetchBranches}

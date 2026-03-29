@@ -1,10 +1,9 @@
 import React from 'react';
-import type { WorktreeState, DiffMode } from '../types';
+import type { WorktreeState } from '../types';
 import { WorktreeCard } from './WorktreeCard';
 
 interface GroveViewProps {
   worktrees: WorktreeState[];
-  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
@@ -16,7 +15,6 @@ interface GroveViewProps {
 export const GroveView = React.memo(
   ({
     worktrees,
-    onDiffModeChange,
     onRequestBranchList,
     onFetchBranches,
     onCheckoutBranch,
@@ -35,7 +33,6 @@ export const GroveView = React.memo(
                 <WorktreeCard
                   key={wt.id}
                   worktree={wt}
-                  onDiffModeChange={onDiffModeChange}
                   onRequestBranchList={onRequestBranchList}
                   onFetchBranches={onFetchBranches}
                   onCheckoutBranch={onCheckoutBranch}
