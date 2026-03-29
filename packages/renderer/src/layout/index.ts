@@ -42,8 +42,7 @@ export function computeSingleWorktreeLayout(
   // Ensure the container is wide enough to fit the header label + diff mode button.
   // Estimate: ~8px per character at text-13 semibold + padding + ~120px for the diff mode button.
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
-  const isMain = wt.branch === 'main' || wt.branch === 'master';
-  const headerText = isMain ? wt.branch : `${folderName} (${wt.branch})`;
+  const headerText = wt.isMainWorktree ? wt.branch : `${folderName} (${wt.branch})`;
   const DIFF_MODE_BUTTON_W = 120;
   const headerMinW = headerText.length * 8 + CONTAINER_PAD_X * 2 + DIFF_MODE_BUTTON_W;
   const containerW = Math.max(totalW + CONTAINER_PAD_X * 2, headerMinW);
@@ -106,9 +105,8 @@ export function computeFullLayout(
   numActions?: number,
   onSwapBranches?: (worktreeId: string) => void
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
-  const perLayouts = wtArray.map((wt) => ({
-    wt,
-    layout: computeSingleWorktreeLayout(
+  const perLayouts = wtArray.map((wt) =>
+    computeSingleWorktreeLayout(
       wt,
       onFileClick,
       onDiffModeChange,
@@ -120,20 +118,21 @@ export function computeFullLayout(
       onStopAction,
       numActions,
       onSwapBranches
-    ),
-  }));
+    )
+  );
 
-  // Lay out worktrees horizontally, top-aligned (y=0), centered around x=0.
-  // Per the spec: "containers are laid out horizontally, side by side, top-aligned."
-  const totalW =
-    perLayouts.reduce((sum, { layout }) => sum + layout.containerW, 0) +
+  // Lay worktrees out horizontally, side-by-side, top-aligned.
+  // Center the entire group around x = 0.
+  const totalGroupW =
+    perLayouts.reduce((sum, l) => sum + l.containerW, 0) +
     Math.max(perLayouts.length - 1, 0) * CONTAINER_GAP;
-  let cursorX = -totalW / 2;
+
+  let cursorX = -totalGroupW / 2;
 
   const allNodes: LayoutNode[] = [];
   const allEdges: LayoutEdge[] = [];
 
-  for (const { layout } of perLayouts) {
+  for (const layout of perLayouts) {
     for (const n of layout.nodes) {
       allNodes.push({ ...n, position: { x: n.position.x + cursorX, y: n.position.y } });
     }

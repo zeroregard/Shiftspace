@@ -6,10 +6,18 @@ export interface WorktreeState {
   id: string;
   path: string;
   branch: string;
+  /** Working-tree files: staged + unstaged. Always used for Staged/Unstaged sections. */
   files: FileChange[];
+  /**
+   * Branch-diff files: changes committed on this branch vs the base branch.
+   * Only populated in branch diff mode. Feeds the "Committed" section.
+   */
+  branchFiles?: FileChange[];
   process?: { port: number; command: string };
   diffMode: DiffMode;
   defaultBranch: string;
+  /** True for the main (non-linked) worktree — always the first entry from `git worktree list`. */
+  isMainWorktree: boolean;
 }
 
 export interface DiffLine {
@@ -26,6 +34,7 @@ export interface FileChange {
   path: string; // relative to worktree root
   status: 'added' | 'modified' | 'deleted';
   staged: boolean;
+  committed?: boolean; // true for files from a branch diff (already committed)
   linesAdded: number;
   linesRemoved: number;
   lastChangedAt: number; // timestamp, used for pulse animation
@@ -43,6 +52,8 @@ export type ShiftspaceEvent =
   | { type: 'process-stopped'; worktreeId: string };
 
 export type LODLevel = 'worktree' | 'directory' | 'file';
+
+export type ViewMode = 'tree' | 'simple' | 'list';
 
 // ---------------------------------------------------------------------------
 // Action buttons

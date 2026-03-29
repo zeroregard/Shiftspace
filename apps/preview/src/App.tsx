@@ -1,17 +1,36 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import '@vscode/codicons/dist/codicon.css';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
-import type { ShiftspaceEvent, DiffMode } from '@shiftspace/renderer';
+import type { ShiftspaceEvent, DiffMode, ViewMode } from '@shiftspace/renderer';
 import { MockEngine, MOCK_BRANCHES } from './mock/engine';
 import { ControlPanel } from './controls/ControlPanel';
+
+const VIEW_MODE_KEY = 'shiftspace.viewMode';
+
+function loadPersistedViewMode(): ViewMode {
+  try {
+    const stored = localStorage.getItem(VIEW_MODE_KEY);
+    if (stored === 'tree' || stored === 'simple' || stored === 'list') {
+      return stored;
+    }
+  } catch {
+    // ignore
+  }
+  return 'list';
+}
 
 export const App: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState(0);
 
-  const { updateWorktreeFiles, setDiffModeLoading, setBranchList, setDiffMode } =
+  const { updateWorktreeFiles, setDiffModeLoading, setBranchList, setViewMode } =
     useShiftspaceStore();
+
+  // Initialize persisted view mode on mount
+  useEffect(() => {
+    setViewMode(loadPersistedViewMode());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -50,24 +69,29 @@ export const App: React.FC = () => {
 
   const handleDiffModeChange = useCallback(
     (worktreeId: string, diffMode: DiffMode) => {
-      // Optimistically update the diff mode
-      setDiffMode(worktreeId, diffMode);
+      // Show loading indicator while "fetching" — do NOT call setDiffMode first,
+      // because that would leave diffMode.type === 'branch' with branchFiles === undefined,
+      // causing committed files to appear in the "Unstaged" section during the delay.
       setDiffModeLoading(worktreeId, true);
 
-      // Simulate async fetch
+      // Simulate async fetch — updateWorktreeFiles atomically sets files + diffMode + branchFiles
       setTimeout(() => {
         const engine = engineRef.current;
         if (!engine) return;
 
-        const files =
-          diffMode.type === 'working'
-            ? [] // For working mode, return empty (agents will populate via events)
-            : engine.getMockBranchFiles(worktreeId); // Branch mode: mock files
-
-        updateWorktreeFiles(worktreeId, files, diffMode);
+        if (diffMode.type === 'working') {
+          updateWorktreeFiles(worktreeId, engine.getMockWorkingFiles(worktreeId), diffMode);
+        } else {
+          updateWorktreeFiles(
+            worktreeId,
+            engine.getMockWorkingFiles(worktreeId),
+            diffMode,
+            engine.getMockBranchFiles(worktreeId)
+          );
+        }
       }, 200);
     },
-    [setDiffMode, setDiffModeLoading, updateWorktreeFiles]
+    [setDiffModeLoading, updateWorktreeFiles]
   );
 
   const handleRequestBranchList = useCallback(
@@ -76,6 +100,14 @@ export const App: React.FC = () => {
     },
     [setBranchList]
   );
+
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, mode);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleReset = () => {
     engineRef.current?.reset();
@@ -99,6 +131,7 @@ export const App: React.FC = () => {
         onEvent={onEvent}
         onDiffModeChange={handleDiffModeChange}
         onRequestBranchList={handleRequestBranchList}
+        onViewModeChange={handleViewModeChange}
       />
       <ControlPanel
         engine={engineRef.current}

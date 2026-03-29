@@ -7,12 +7,14 @@ import type {
   FileChange,
   ActionConfig,
   ActionState,
+  ViewMode,
   IconMap,
 } from '../types';
 
 interface ShiftspaceStore {
   worktrees: Map<string, WorktreeState>;
   lodLevel: LODLevel;
+  viewMode: ViewMode;
   branchLists: Map<string, string[]>;
   diffModeLoading: Set<string>;
   fetchLoading: Set<string>;
@@ -26,12 +28,18 @@ interface ShiftspaceStore {
    */
   iconMap: IconMap;
   setLODLevel: (level: LODLevel) => void;
+  setViewMode: (mode: ViewMode) => void;
   applyEvent: (event: ShiftspaceEvent) => void;
   setWorktrees: (worktrees: WorktreeState[]) => void;
   setDiffMode: (worktreeId: string, diffMode: DiffMode) => void;
   setDiffModeLoading: (worktreeId: string, loading: boolean) => void;
   setBranchList: (worktreeId: string, branches: string[]) => void;
-  updateWorktreeFiles: (worktreeId: string, files: FileChange[], diffMode: DiffMode) => void;
+  updateWorktreeFiles: (
+    worktreeId: string,
+    files: FileChange[],
+    diffMode: DiffMode,
+    branchFiles?: FileChange[]
+  ) => void;
   setFetchLoading: (worktreeId: string, loading: boolean) => void;
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
   setActionConfigs: (configs: ActionConfig[]) => void;
@@ -42,6 +50,7 @@ interface ShiftspaceStore {
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   worktrees: new Map(),
   lodLevel: 'worktree',
+  viewMode: 'list',
   branchLists: new Map(),
   diffModeLoading: new Set(),
   fetchLoading: new Set(),
@@ -51,6 +60,8 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   iconMap: {},
 
   setLODLevel: (level) => set({ lodLevel: level }),
+
+  setViewMode: (mode) => set({ viewMode: mode }),
 
   setWorktrees: (worktrees) =>
     set({
@@ -85,12 +96,12 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
       return { branchLists };
     }),
 
-  updateWorktreeFiles: (worktreeId, files, diffMode) =>
+  updateWorktreeFiles: (worktreeId, files, diffMode, branchFiles) =>
     set((state) => {
       const worktrees = new Map(state.worktrees);
       const wt = worktrees.get(worktreeId);
       if (wt) {
-        worktrees.set(worktreeId, { ...wt, files, diffMode });
+        worktrees.set(worktreeId, { ...wt, files, diffMode, branchFiles });
       }
       const diffModeLoading = new Set(state.diffModeLoading);
       diffModeLoading.delete(worktreeId);

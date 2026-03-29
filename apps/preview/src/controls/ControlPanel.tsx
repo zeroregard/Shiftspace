@@ -75,7 +75,7 @@ export const ControlPanel: React.FC<Props> = ({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fixed bottom-3 right-3 bg-[rgba(0,0,0,0.7)] border border-[rgba(0,255,0,0.3)] rounded px-2 py-1 text-debug-green font-mono text-10 font-bold cursor-pointer z-1000 tracking-widest"
+        className="fixed bottom-3 left-3 bg-[rgba(0,0,0,0.7)] border border-[rgba(0,255,0,0.3)] rounded px-2 py-1 text-debug-green font-mono text-10 font-bold cursor-pointer z-1000 tracking-widest"
       >
         DEBUG
       </button>
@@ -83,7 +83,7 @@ export const ControlPanel: React.FC<Props> = ({
   }
 
   return (
-    <div className="fixed bottom-3 right-3 bg-debug-bg border border-[rgba(0,255,0,0.25)] rounded-xs px-2.5 py-2 w-65 text-[rgba(0,255,0,0.8)] font-mono text-11 z-1000 backdrop-blur [WebkitBackdropFilter:blur(8px)]">
+    <div className="fixed bottom-3 left-3 bg-debug-bg border border-[rgba(0,255,0,0.25)] rounded-xs px-2.5 py-2 w-65 text-[rgba(0,255,0,0.8)] font-mono text-11 z-1000 backdrop-blur [WebkitBackdropFilter:blur(8px)]">
       {/* Header with DEBUG badge and collapse button */}
       <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-[rgba(0,255,0,0.15)]">
         <div className="flex items-center gap-1.5">

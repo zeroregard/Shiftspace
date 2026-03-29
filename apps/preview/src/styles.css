@@ -75,6 +75,12 @@
   --color-diff-added-bg:   rgba(78, 201, 78, 0.08);
   --color-diff-removed-bg: rgba(224, 92, 92, 0.08);
   --color-diff-hunk-bg:    rgba(255, 255, 255, 0.03);
+
+  /* Heatmap mode colors */
+  --color-heat-cool: #2a5a8a;
+  --color-heat-warm: #8a7a2a;
+  --color-heat-hot:  #8a4a2a;
+  --color-heat-max:  #8a2a2a;
 }
 
 /* @pierre/diffs theme integration */
@@ -89,6 +95,11 @@
   --diffs-bg-deletion: var(--color-diff-removed-bg);
   --diffs-border: var(--color-border-default);
   --diffs-line-number: var(--color-text-faint);
+  --diffs-font-family: var(--font-mono);
+  --diffs-bg-addition-number-override: rgba(78, 201, 78, 0.12);
+  --diffs-bg-deletion-number-override: rgba(224, 92, 92, 0.12);
+  --diffs-bg-addition-hover-override:  rgba(78, 201, 78, 0.12);
+  --diffs-bg-deletion-hover-override:  rgba(224, 92, 92, 0.12);
 }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -100,12 +111,23 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideUpAndFade {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideRightAndFade {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideLeftAndFade {
+  from { opacity: 0; transform: translateX(4px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 .animate-hover-card-open  { animation: slideDownAndFade 0.15s ease; }
 .animate-hover-card-close { animation: slideUpAndFade  0.1s  ease; }
-.animate-popover-open     { animation: slideDownAndFade 0.15s ease; }
+.animate-popover-open[data-side="bottom"] { animation: slideDownAndFade  0.15s ease; }
+.animate-popover-open[data-side="top"]    { animation: slideUpAndFade    0.15s ease; }
+.animate-popover-open[data-side="right"]  { animation: slideRightAndFade 0.15s ease; }
+.animate-popover-open[data-side="left"]   { animation: slideLeftAndFade  0.15s ease; }
 .animate-popover-close    { animation: slideUpAndFade  0.1s  ease; }
 
 html, body, #root { width: 100%; height: 100%; background: var(--color-canvas); }

@@ -49,6 +49,7 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
       files: [],
       diffMode: { type: 'working' },
       defaultBranch: 'main',
+      isMainWorktree: i === 0,
     });
   }
 
@@ -245,7 +246,7 @@ export interface SwapBranchesOptions {
   worktreeAPath: string;
   /** Branch currently checked out in worktreeA. */
   branchA: string;
-  /** Path to the main worktree (the swap target). */
+  /** Path to the primary worktree (the swap target). */
   worktreeBPath: string;
   /** Branch currently checked out in worktreeB. */
   branchB: string;

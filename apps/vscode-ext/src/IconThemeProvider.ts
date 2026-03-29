@@ -13,6 +13,7 @@
  *    renderer falls back to its built-in SVG icons.
  *  - All errors are caught and result in null / empty map — never throws.
  */
+// TODO: this is not working!
 
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -126,9 +127,29 @@ export class IconThemeProvider implements vscode.Disposable {
     for (const filePath of filePaths) {
       const filename = path.basename(filePath);
       const iconId = this._resolveIconId(filename);
-      if (!iconId) continue;
+      if (!iconId) {
+        console.log(
+          '[Shiftspace] IconTheme: no iconId for',
+          filename,
+          '| fileExtensions keys (sample):',
+          Object.keys(this._themeJson.fileExtensions ?? {}).slice(0, 5),
+          '| has file default:',
+          !!this._themeJson.file
+        );
+        continue;
+      }
 
       const dataUri = await this._resolveIconDataUri(iconId);
+      if (!dataUri) {
+        console.log(
+          '[Shiftspace] IconTheme: no dataUri for',
+          filename,
+          '-> iconId:',
+          iconId,
+          '| def:',
+          this._themeJson.iconDefinitions[iconId]
+        );
+      }
       if (dataUri) {
         result[filePath] = { dark: dataUri };
       }
