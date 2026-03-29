@@ -4,6 +4,7 @@ import {
   fnv1a,
   fingerprintBlocks,
   detectDuplication,
+  getFormatGroup,
 } from '../../src/insights/plugins/duplication';
 
 describe('normalizeSource', () => {
@@ -197,5 +198,90 @@ describe('detectDuplication', () => {
     ]);
     const results = detectDuplication(fileContents, 0.5, 5);
     expect(results).toHaveLength(1);
+  });
+});
+
+describe('getFormatGroup', () => {
+  it('groups .ts and .tsx together as js-ts', () => {
+    expect(getFormatGroup('src/a.ts')).toBe('js-ts');
+    expect(getFormatGroup('src/b.tsx')).toBe('js-ts');
+    expect(getFormatGroup('src/c.js')).toBe('js-ts');
+    expect(getFormatGroup('src/d.jsx')).toBe('js-ts');
+    expect(getFormatGroup('src/e.mjs')).toBe('js-ts');
+  });
+
+  it('groups .json and .jsonc together', () => {
+    expect(getFormatGroup('package.json')).toBe('json');
+    expect(getFormatGroup('tsconfig.jsonc')).toBe('json');
+  });
+
+  it('falls back to extension for unknown types', () => {
+    expect(getFormatGroup('main.rs')).toBe('.rs');
+    expect(getFormatGroup('lib.py')).toBe('.py');
+  });
+
+  it('same unknown extension produces same group', () => {
+    expect(getFormatGroup('a.rs')).toBe(getFormatGroup('b.rs'));
+  });
+
+  it('different unknown extensions produce different groups', () => {
+    expect(getFormatGroup('a.rs')).not.toBe(getFormatGroup('a.py'));
+  });
+});
+
+describe('format group filtering', () => {
+  const content = 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8';
+
+  it('.ts file only compared against other js-ts files, not .json', () => {
+    const fileContents = new Map([
+      ['src/a.ts', content],
+      ['src/b.tsx', content],
+      ['package.json', content],
+    ]);
+    const results = detectDuplication(fileContents, 0.5, 5);
+    // Should find a.ts↔b.tsx but NOT a.ts↔package.json or b.tsx↔package.json
+    expect(results).toHaveLength(1);
+    expect(results[0]!.fileA).toContain('.ts');
+    expect(results[0]!.fileB).toContain('.tsx');
+  });
+
+  it('.json files only compared against other .json files', () => {
+    const fileContents = new Map([
+      ['package.json', content],
+      ['tsconfig.json', content],
+      ['src/index.ts', content],
+    ]);
+    const results = detectDuplication(fileContents, 0.5, 5);
+    // Only json↔json, not json↔ts
+    expect(results).toHaveLength(1);
+    const pair = results[0]!;
+    expect(pair.fileA).toContain('.json');
+    expect(pair.fileB).toContain('.json');
+  });
+
+  it('unknown extension only compared against same extension', () => {
+    const fileContents = new Map([
+      ['a.rs', content],
+      ['b.rs', content],
+      ['c.py', content],
+    ]);
+    const results = detectDuplication(fileContents, 0.5, 5);
+    // Only a.rs↔b.rs, not rs↔py
+    expect(results).toHaveLength(1);
+    expect(results[0]!.fileA).toContain('.rs');
+    expect(results[0]!.fileB).toContain('.rs');
+  });
+
+  it('css family files compared together', () => {
+    const fileContents = new Map([
+      ['styles.css', content],
+      ['theme.scss', content],
+      ['app.ts', content],
+    ]);
+    const results = detectDuplication(fileContents, 0.5, 5);
+    expect(results).toHaveLength(1);
+    const pair = results[0]!;
+    const exts = [pair.fileA.split('.').pop(), pair.fileB.split('.').pop()].sort();
+    expect(exts).toEqual(['css', 'scss']);
   });
 });

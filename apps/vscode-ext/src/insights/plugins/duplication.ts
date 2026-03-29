@@ -169,6 +169,44 @@ function mergeAdjacentBlocks(blocks: BlockMatch[]): BlockMatch[] {
 }
 
 // ---------------------------------------------------------------------------
+// Format groups — only compare files within the same group
+// ---------------------------------------------------------------------------
+
+const FORMAT_GROUPS: Record<string, string> = {
+  // JS/TS family
+  '.js': 'js-ts',
+  '.jsx': 'js-ts',
+  '.ts': 'js-ts',
+  '.tsx': 'js-ts',
+  '.mjs': 'js-ts',
+  '.mts': 'js-ts',
+  '.cjs': 'js-ts',
+  '.cts': 'js-ts',
+  // CSS family
+  '.css': 'css',
+  '.scss': 'css',
+  '.less': 'css',
+  '.sass': 'css',
+  // JSON family
+  '.json': 'json',
+  '.jsonc': 'json',
+  // Markup family
+  '.html': 'markup',
+  '.htm': 'markup',
+  '.xml': 'markup',
+  '.svg': 'markup',
+  // Config family
+  '.yaml': 'config',
+  '.yml': 'config',
+  '.toml': 'config',
+};
+
+export function getFormatGroup(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  return FORMAT_GROUPS[ext] || ext; // fallback: same extension = same group
+}
+
+// ---------------------------------------------------------------------------
 // Core analysis
 // ---------------------------------------------------------------------------
 
@@ -183,52 +221,68 @@ export function detectDuplication(
     normalizedFiles.set(filePath, normalizeSource(content));
   }
 
-  // Build global hash map
-  const globalBlocks = new Map<number, BlockLocation[]>();
-  for (const [filePath, lines] of normalizedFiles) {
-    if (lines.length < minBlockLines) continue;
-    const blocks = fingerprintBlocks(filePath, lines, minBlockLines);
-    for (const [hash, locations] of blocks) {
-      const existing = globalBlocks.get(hash);
-      if (existing) {
-        existing.push(...locations);
-      } else {
-        globalBlocks.set(hash, [...locations]);
-      }
+  // Group files by format group
+  const groupedFiles = new Map<string, string[]>();
+  for (const filePath of fileContents.keys()) {
+    const group = getFormatGroup(filePath);
+    const existing = groupedFiles.get(group);
+    if (existing) {
+      existing.push(filePath);
+    } else {
+      groupedFiles.set(group, [filePath]);
     }
   }
 
-  // Find cross-file matches
+  // Build per-group hash maps and find matches
   const pairMatches = new Map<string, BlockMatch[]>();
 
-  for (const locations of globalBlocks.values()) {
-    if (locations.length < 2) continue;
+  for (const groupFiles of groupedFiles.values()) {
+    if (groupFiles.length < 2) continue;
 
-    // Check all pairs of locations in different files
-    for (let i = 0; i < locations.length; i++) {
-      for (let j = i + 1; j < locations.length; j++) {
-        const a = locations[i]!;
-        const b = locations[j]!;
-        if (a.filePath === b.filePath) continue;
-
-        // Canonical pair key (sorted)
-        const [fileA, fileB] = [a.filePath, b.filePath].sort();
-        const pairKey = `${fileA}::${fileB}`;
-
-        const match: BlockMatch = {
-          fileA: fileA!,
-          fileB: fileB!,
-          startLineA: a.filePath === fileA ? a.startLine : b.startLine,
-          endLineA: a.filePath === fileA ? a.endLine : b.endLine,
-          startLineB: a.filePath === fileB ? a.startLine : b.startLine,
-          endLineB: a.filePath === fileB ? a.endLine : b.endLine,
-        };
-
-        const existing = pairMatches.get(pairKey);
+    // Build hash map only for files in this group
+    const groupBlocks = new Map<number, BlockLocation[]>();
+    for (const filePath of groupFiles) {
+      const lines = normalizedFiles.get(filePath);
+      if (!lines || lines.length < minBlockLines) continue;
+      const blocks = fingerprintBlocks(filePath, lines, minBlockLines);
+      for (const [hash, locations] of blocks) {
+        const existing = groupBlocks.get(hash);
         if (existing) {
-          existing.push(match);
+          existing.push(...locations);
         } else {
-          pairMatches.set(pairKey, [match]);
+          groupBlocks.set(hash, [...locations]);
+        }
+      }
+    }
+
+    // Find cross-file matches within this group
+    for (const locations of groupBlocks.values()) {
+      if (locations.length < 2) continue;
+
+      for (let i = 0; i < locations.length; i++) {
+        for (let j = i + 1; j < locations.length; j++) {
+          const a = locations[i]!;
+          const b = locations[j]!;
+          if (a.filePath === b.filePath) continue;
+
+          const [fileA, fileB] = [a.filePath, b.filePath].sort();
+          const pairKey = `${fileA}::${fileB}`;
+
+          const match: BlockMatch = {
+            fileA: fileA!,
+            fileB: fileB!,
+            startLineA: a.filePath === fileA ? a.startLine : b.startLine,
+            endLineA: a.filePath === fileA ? a.endLine : b.endLine,
+            startLineB: a.filePath === fileB ? a.startLine : b.startLine,
+            endLineB: a.filePath === fileB ? a.endLine : b.endLine,
+          };
+
+          const existing = pairMatches.get(pairKey);
+          if (existing) {
+            existing.push(match);
+          } else {
+            pairMatches.set(pairKey, [match]);
+          }
         }
       }
     }
