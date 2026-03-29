@@ -82,6 +82,7 @@ export class ActionCoordinator implements vscode.Disposable {
     });
 
     this.sendConfigToWebview();
+    void this.detectAndSendPackages();
   }
 
   updateWorktrees(worktrees: WorktreeInfo[]): void {
