@@ -10,6 +10,7 @@ import type {
   ActionConfig,
   ActionStatus,
   IconMap,
+  AppMode,
 } from '@shiftspace/renderer';
 import './styles.css';
 
@@ -65,6 +66,20 @@ const App: React.FC = () => {
     setIconMap,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const mode = useShiftspaceStore((s) => s.mode as AppMode);
+
+  // Notify the extension host when the mode changes (informational).
+  const prevModeRef = React.useRef<AppMode>(mode);
+  useEffect(() => {
+    const prev = prevModeRef.current;
+    prevModeRef.current = mode;
+    if (prev === mode) return;
+    if (mode.type === 'inspection') {
+      vscode?.postMessage({ type: 'enter-inspection', worktreeId: mode.worktreeId });
+    } else {
+      vscode?.postMessage({ type: 'exit-inspection' });
+    }
+  }, [mode]);
 
   useEffect(() => {
     // Register the message listener first, then send 'ready' so we cannot

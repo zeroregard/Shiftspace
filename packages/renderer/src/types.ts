@@ -53,7 +53,7 @@ export type ShiftspaceEvent =
 
 export type LODLevel = 'worktree' | 'directory' | 'file';
 
-export type ViewMode = 'tree' | 'simple' | 'list';
+export type AppMode = { type: 'grove' } | { type: 'inspection'; worktreeId: string };
 
 // ---------------------------------------------------------------------------
 // Action buttons

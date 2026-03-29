@@ -7,14 +7,14 @@ import type {
   FileChange,
   ActionConfig,
   ActionState,
-  ViewMode,
+  AppMode,
   IconMap,
 } from '../types';
 
 interface ShiftspaceStore {
   worktrees: Map<string, WorktreeState>;
   lodLevel: LODLevel;
-  viewMode: ViewMode;
+  mode: AppMode;
   branchLists: Map<string, string[]>;
   diffModeLoading: Set<string>;
   fetchLoading: Set<string>;
@@ -28,7 +28,8 @@ interface ShiftspaceStore {
    */
   iconMap: IconMap;
   setLODLevel: (level: LODLevel) => void;
-  setViewMode: (mode: ViewMode) => void;
+  enterInspection: (worktreeId: string) => void;
+  exitInspection: () => void;
   applyEvent: (event: ShiftspaceEvent) => void;
   setWorktrees: (worktrees: WorktreeState[]) => void;
   setDiffMode: (worktreeId: string, diffMode: DiffMode) => void;
@@ -50,7 +51,7 @@ interface ShiftspaceStore {
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   worktrees: new Map(),
   lodLevel: 'worktree',
-  viewMode: 'list',
+  mode: { type: 'grove' },
   branchLists: new Map(),
   diffModeLoading: new Set(),
   fetchLoading: new Set(),
@@ -61,7 +62,9 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setLODLevel: (level) => set({ lodLevel: level }),
 
-  setViewMode: (mode) => set({ viewMode: mode }),
+  enterInspection: (worktreeId) => set({ mode: { type: 'inspection', worktreeId } }),
+
+  exitInspection: () => set({ mode: { type: 'grove' } }),
 
   setWorktrees: (worktrees) =>
     set({
