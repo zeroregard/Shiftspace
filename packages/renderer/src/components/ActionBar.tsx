@@ -16,7 +16,7 @@ export const ActionBar: React.FC<ActionBarProps> = React.memo(
     if (actionConfigs.length === 0) return null;
 
     return (
-      <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border-dashed">
+      <div className="flex items-center gap-1">
         {actionConfigs.map((action) => (
           <ActionButton
             key={action.id}
@@ -46,6 +46,7 @@ const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId, on
 
   const isRunning = status === 'running';
   const isFailed = status === 'failed';
+  const isPassed = status === 'passed';
   const isOneShot = !action.persistent;
 
   const handleClick = (e: React.MouseEvent) => {
@@ -64,7 +65,7 @@ const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId, on
     : action.label;
 
   const iconColor =
-    isRunning && action.persistent
+    (isRunning && action.persistent) || isPassed
       ? 'var(--color-status-added)'
       : isFailed
         ? 'var(--color-status-deleted)'

@@ -5,7 +5,7 @@ import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from './BranchPickerPopover';
 import { GitBranchIcon } from '../icons';
 import { ActionBar } from './ActionBar';
-import { CheckRow } from './CheckRow';
+import { Tooltip } from './Tooltip';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 
 const EMPTY_BRANCHES: string[] = [];
@@ -37,11 +37,13 @@ export const WorktreeCard = React.memo(
     const occupiedBranches = useShiftspaceStore(
       useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
     );
+    const pipelines = useShiftspaceStore((s) => s.pipelines);
 
     const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
     const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
     const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
     const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
+    const defaultPipelineId = Object.keys(pipelines)[0];
 
     return (
       <div className="w-64 flex flex-col gap-3 p-4 rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-colors">
@@ -77,9 +79,32 @@ export const WorktreeCard = React.memo(
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+        {/* Action buttons + run-all */}
+        <div
+          className="flex items-center justify-between gap-1"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <ActionBar worktreeId={wt.id} onRunAction={onRunAction} onStopAction={onStopAction} />
+          {defaultPipelineId && onRunPipeline && (
+            <Tooltip content="Run all checks" delayDuration={300}>
+              <button
+                className="flex items-center justify-center w-6 h-6 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default bg-transparent cursor-pointer transition-colors shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRunPipeline(wt.id, defaultPipelineId);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label="Run all checks"
+              >
+                <i
+                  className="codicon codicon-run-all"
+                  style={{ fontSize: 12 }}
+                  aria-hidden="true"
+                />
+              </button>
+            </Tooltip>
+          )}
         </div>
 
         {/* Stats */}
@@ -92,14 +117,6 @@ export const WorktreeCard = React.memo(
             <span className="text-status-deleted">-{totalRemoved}</span>
           </span>
         </div>
-
-        {/* Check status indicators */}
-        <CheckRow
-          worktreeId={wt.id}
-          onRunAction={onRunAction}
-          onStopAction={onStopAction}
-          onRunPipeline={onRunPipeline}
-        />
       </div>
     );
   }
