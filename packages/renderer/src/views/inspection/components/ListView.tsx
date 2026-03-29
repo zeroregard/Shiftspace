@@ -1,11 +1,11 @@
 import React from 'react';
 import clsx from 'clsx';
-import { useDragPan } from '../hooks/useDragPan';
-import type { WorktreeState, FileChange } from '../types';
-import { DiffPopover } from './DiffOverlay';
-import { ThemedFileIcon } from './ThemedFileIcon';
-import { WorktreeHeader } from './WorktreeHeader';
-import { partitionFiles } from '../utils/listSections';
+import { useDragPan } from '../../../hooks/useDragPan';
+import type { WorktreeState, FileChange } from '../../../types';
+import { DiffPopover } from '../../../overlays/DiffPopover';
+import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
+import { WorktreeHeader } from '../../../nodes/WorktreeHeader';
+import { partitionFiles } from '../../../utils/listSections';
 
 const STATUS_LETTER: Record<FileChange['status'], string> = {
   added: 'A',

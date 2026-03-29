@@ -1,6 +1,6 @@
 import React from 'react';
-import type { WorktreeState } from '../types';
-import { WorktreeCard } from './WorktreeCard';
+import type { WorktreeState } from '../../types';
+import { WorktreeCard } from './components/WorktreeCard';
 
 interface GroveViewProps {
   worktrees: WorktreeState[];

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useShiftspaceStore } from '../store';
-import type { ActionConfig, ActionStatus } from '../types';
-import { Tooltip } from './Tooltip';
+import { useShiftspaceStore } from '../../../store';
+import type { ActionConfig, ActionStatus } from '../../../types';
+import { Tooltip } from '../../../overlays/Tooltip';
 
 interface CheckBarProps {
   worktreeId: string;

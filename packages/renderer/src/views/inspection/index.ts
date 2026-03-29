@@ -1,0 +1,1 @@
+export { InspectionView } from './InspectionView';
