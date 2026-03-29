@@ -158,10 +158,15 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   return (
     <div className="w-full h-full bg-canvas flex flex-col relative">
-      {/* Global toolbar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
-        <PackageSwitcher onSetPackage={stableSetPackage} onDetectPackages={stableDetectPackages} />
-      </div>
+      {/* Global toolbar — only shown when package switching is wired up (VSCode extension) */}
+      {onSetPackage && (
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
+          <PackageSwitcher
+            onSetPackage={stableSetPackage}
+            onDetectPackages={stableDetectPackages}
+          />
+        </div>
+      )}
       {/* Main content */}
       <div className="flex-1 min-h-0">
         {mode.type === 'grove' ? (
