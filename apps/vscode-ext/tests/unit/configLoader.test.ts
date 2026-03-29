@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import {
   parseShiftspaceConfig,
   validateConfig,
   mergeConfigs,
+  readShiftspaceConfigFile,
+  ConfigLoader,
 } from '../../src/actions/configLoader';
 import type { ShiftspaceConfig, ShiftspaceActionConfig } from '../../src/actions/types';
 
@@ -112,5 +117,79 @@ describe('mergeConfigs', () => {
     ];
     const result = mergeConfigs(base, overrides);
     expect(result).toHaveLength(2); // still 2, not 3
+  });
+});
+
+describe('readShiftspaceConfigFile', () => {
+  it('returns null when directory does not exist', () => {
+    expect(readShiftspaceConfigFile('/nonexistent/path')).toBeNull();
+  });
+
+  it('returns null when file contains invalid JSON', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shiftspace-test-'));
+    fs.writeFileSync(path.join(dir, '.shiftspace.json'), 'not json');
+    const result = readShiftspaceConfigFile(dir);
+    expect(result).toBeNull();
+    fs.rmSync(dir, { recursive: true });
+  });
+
+  it('reads and parses a valid config file', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shiftspace-test-'));
+    const config = {
+      actions: [
+        { id: 'fmt', label: 'Format', command: 'pnpm fmt', type: 'check', icon: 'whitespace' },
+      ],
+    };
+    fs.writeFileSync(path.join(dir, '.shiftspace.json'), JSON.stringify(config));
+    const result = readShiftspaceConfigFile(dir);
+    expect(result?.actions).toHaveLength(1);
+    expect(result?.actions[0]!.id).toBe('fmt');
+    fs.rmSync(dir, { recursive: true });
+  });
+});
+
+describe('ConfigLoader', () => {
+  it('load() returns empty config when no file exists', async () => {
+    const loader = new ConfigLoader();
+    const config = await loader.load('/nonexistent');
+    expect(config.actions).toHaveLength(0);
+  });
+
+  it('load() reads config from .shiftspace.json', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shiftspace-test-'));
+    const fileConfig = {
+      actions: [
+        { id: 'fmt', label: 'Format', command: 'pnpm fmt', type: 'check', icon: 'whitespace' },
+      ],
+    };
+    fs.writeFileSync(path.join(dir, '.shiftspace.json'), JSON.stringify(fileConfig));
+    const loader = new ConfigLoader();
+    const result = await loader.load(dir);
+    expect(result.actions).toHaveLength(1);
+    loader.dispose();
+    fs.rmSync(dir, { recursive: true });
+  });
+
+  it('setOnChange callback fires when load() is called', async () => {
+    const loader = new ConfigLoader();
+    let callCount = 0;
+    loader.setOnChange(() => {
+      callCount++;
+    });
+    await loader.load('/nonexistent');
+    expect(callCount).toBe(1);
+  });
+
+  it('config getter returns the loaded config', async () => {
+    const loader = new ConfigLoader();
+    await loader.load('/nonexistent');
+    expect(loader.config).toBeDefined();
+    expect(loader.config.actions).toHaveLength(0);
+  });
+
+  it('dispose() cleans up without error', async () => {
+    const loader = new ConfigLoader();
+    await loader.load('/nonexistent');
+    expect(() => loader.dispose()).not.toThrow();
   });
 });

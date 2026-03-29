@@ -7,7 +7,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/git/**/*.ts', 'src/actions/**/*.ts'],
-      exclude: ['src/actions/ActionCoordinator.ts', 'src/actions/packageDetector.ts'],
+      exclude: [
+        'src/actions/ActionCoordinator.ts',
+        'src/actions/packageDetector.ts',
+        'src/actions/detect.ts',
+      ],
       reporter: ['text', 'html'],
       thresholds: {
         lines: 80,

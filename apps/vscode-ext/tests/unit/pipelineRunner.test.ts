@@ -110,4 +110,20 @@ describe('runPipeline', () => {
     expect(result.steps).toHaveLength(1); // only fmt ran
     expect(result.passed).toBe(true);
   });
+
+  it('treats non-abort runCheck errors as failed results', async () => {
+    const runner = await import('../../src/actions/runner');
+    vi.spyOn(runner, 'runCheck').mockRejectedValueOnce(new Error('spawn ENOENT'));
+
+    const pipeline: PipelineConfig = { steps: ['fmt'], stopOnFailure: false };
+    const actions = makeActions(['fmt']);
+    const result = await runPipeline(pipeline, actions, { cwd: '/tmp' });
+
+    expect(result.passed).toBe(false);
+    expect(result.steps).toHaveLength(1);
+    expect(result.steps[0]!.status).toBe('failed');
+    expect(result.steps[0]!.stderr).toContain('ENOENT');
+
+    vi.restoreAllMocks();
+  });
 });
