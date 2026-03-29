@@ -2,7 +2,7 @@ import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../types';
 import { useShiftspaceStore } from '../store';
-import { BranchPickerPopover } from './BranchPickerPopover';
+import { BranchPickerPopover } from '../overlays/BranchPickerPopover';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 import { GitBranchIcon, SwapIcon } from '../icons';
 

@@ -1,18 +1,18 @@
 import React, { useMemo, useCallback, useRef } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
-import type { DiffMode, FileChange } from '../types';
-import { useShiftspaceStore } from '../store';
-import { TreeCanvas, type PanZoomConfig } from '../TreeCanvas';
-import { NODE_TYPES } from './index';
-import { BranchPickerPopover } from './BranchPickerPopover';
-import { DiffPopover } from './DiffOverlay';
-import { ThemedFileIcon } from './ThemedFileIcon';
-import { GitCompareIcon, GitBranchIcon } from '../icons';
-import { partitionFiles } from '../utils/listSections';
-import { computeSingleWorktreeLayout } from '../layout';
-import { filterCheckoutableBranches } from '../utils/worktreeUtils';
-import { CheckBar } from './CheckBar';
+import type { DiffMode, FileChange } from '../../types';
+import { useShiftspaceStore } from '../../store';
+import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
+import { NODE_TYPES } from '../../nodes';
+import { BranchPickerPopover } from '../../overlays/BranchPickerPopover';
+import { DiffPopover } from '../../overlays/DiffPopover';
+import { ThemedFileIcon } from '../../shared/ThemedFileIcon';
+import { GitCompareIcon, GitBranchIcon } from '../../icons';
+import { partitionFiles } from '../../utils/listSections';
+import { computeSingleWorktreeLayout } from '../../layout';
+import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
+import { CheckBar } from './components/CheckBar';
 
 const EMPTY_BRANCHES: string[] = [];
 

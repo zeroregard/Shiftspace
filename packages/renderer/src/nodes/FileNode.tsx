@@ -3,8 +3,8 @@ import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
-import { DiffPopover } from './DiffOverlay';
-import { ThemedFileIcon } from './ThemedFileIcon';
+import { DiffPopover } from '../overlays/DiffPopover';
+import { ThemedFileIcon } from '../shared/ThemedFileIcon';
 
 export interface FileNodeData {
   file: FileChange;

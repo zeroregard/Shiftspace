@@ -1,11 +1,11 @@
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { WorktreeState } from '../types';
-import { useShiftspaceStore } from '../store';
-import { BranchPickerPopover } from './BranchPickerPopover';
-import { GitBranchIcon } from '../icons';
-import { ActionBar } from './ActionBar';
-import { filterCheckoutableBranches } from '../utils/worktreeUtils';
+import type { WorktreeState } from '../../../types';
+import { useShiftspaceStore } from '../../../store';
+import { BranchPickerPopover } from '../../../overlays/BranchPickerPopover';
+import { GitBranchIcon } from '../../../icons';
+import { ActionBar } from '../../inspection/components/ActionBar';
+import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
 
 const EMPTY_BRANCHES: string[] = [];
 

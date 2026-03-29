@@ -16,7 +16,7 @@ import {
   CONTAINER_PAD_TOP,
   CONTAINER_PAD_BOTTOM,
   CONTAINER_GAP,
-} from '../layout/constants';
+} from '../layout/config';
 
 // ---------------------------------------------------------------------------
 // Test helpers
