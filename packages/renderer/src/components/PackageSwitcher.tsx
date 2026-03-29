@@ -48,7 +48,7 @@ export const PackageSwitcher: React.FC<PackageSwitcherProps> = React.memo(
           aria-label="Select package"
         >
           <i className="codicon codicon-package" style={{ fontSize: 11 }} aria-hidden="true" />
-          <span>{selectedPackage || 'No package'}</span>
+          <span>{selectedPackage || 'All packages'}</span>
           <i className="codicon codicon-chevron-down" style={{ fontSize: 9 }} aria-hidden="true" />
         </button>
 

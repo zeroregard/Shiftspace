@@ -7,6 +7,7 @@ interface GroveViewProps {
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
+  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
   onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
@@ -18,6 +19,7 @@ export const GroveView = React.memo(
     onDiffModeChange,
     onRequestBranchList,
     onFetchBranches,
+    onCheckoutBranch,
     onRunAction,
     onStopAction,
     onRunPipeline,
@@ -36,6 +38,7 @@ export const GroveView = React.memo(
                   onDiffModeChange={onDiffModeChange}
                   onRequestBranchList={onRequestBranchList}
                   onFetchBranches={onFetchBranches}
+                  onCheckoutBranch={onCheckoutBranch}
                   onRunAction={onRunAction}
                   onStopAction={onStopAction}
                   onRunPipeline={onRunPipeline}

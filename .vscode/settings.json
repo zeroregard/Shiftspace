@@ -5,5 +5,6 @@
   "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
-  "tailwindCSS.experimental.configFile": "apps/preview/src/styles.css"
+  "tailwindCSS.experimental.configFile": "apps/preview/src/styles.css",
+  "shiftspace.package": ""
 }

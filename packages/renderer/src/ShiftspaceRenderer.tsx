@@ -175,6 +175,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
             onDiffModeChange={stableDiffModeChange}
             onRequestBranchList={stableRequestBranchList}
             onFetchBranches={stableFetchBranches}
+            onCheckoutBranch={stableCheckoutBranch}
             onRunAction={stableRunAction}
             onStopAction={stableStopAction}
             onRunPipeline={stableRunPipeline}
