@@ -222,7 +222,6 @@ export const InspectionView = React.memo(
       const layout = computeSingleWorktreeLayout(
         wt,
         stableFileClick,
-        stableDiffModeChange,
         stableRequestBranchList,
         stableCheckoutBranch,
         stableFolderClick,
@@ -237,7 +236,6 @@ export const InspectionView = React.memo(
       wt,
       numActions,
       stableFileClick,
-      stableDiffModeChange,
       stableRequestBranchList,
       stableCheckoutBranch,
       stableFolderClick,

@@ -5,7 +5,6 @@ import { FILE_NODE_W, FILE_NODE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './consta
 
 export interface WorktreeNodeData {
   worktree: import('../types').WorktreeState;
-  onDiffModeChange?: (worktreeId: string, diffMode: import('../types').DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;

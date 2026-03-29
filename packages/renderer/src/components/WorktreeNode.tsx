@@ -1,12 +1,11 @@
 import React from 'react';
 import type { NodeComponentProps } from '../TreeCanvas';
-import type { WorktreeState, DiffMode } from '../types';
+import type { WorktreeState } from '../types';
 import { WorktreeHeader } from './WorktreeHeader';
 import { ActionBar } from './ActionBar';
 
 export interface WorktreeNodeData {
   worktree: WorktreeState;
-  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
@@ -28,7 +27,6 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
       />
       <WorktreeHeader
         worktree={wt}
-        onDiffModeChange={data.onDiffModeChange}
         onRequestBranchList={data.onRequestBranchList}
         onCheckoutBranch={data.onCheckoutBranch}
         onFetchBranches={data.onFetchBranches}

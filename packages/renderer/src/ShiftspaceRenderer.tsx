@@ -172,7 +172,6 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
         {mode.type === 'grove' ? (
           <GroveView
             worktrees={wtArray}
-            onDiffModeChange={stableDiffModeChange}
             onRequestBranchList={stableRequestBranchList}
             onFetchBranches={stableFetchBranches}
             onCheckoutBranch={stableCheckoutBranch}
