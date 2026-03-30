@@ -6,7 +6,7 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/git/**/*.ts', 'src/actions/**/*.ts'],
+      include: ['src/git/**/*.ts', 'src/actions/**/*.ts', 'src/insights/**/*.ts'],
       exclude: [
         'src/actions/ActionCoordinator.ts',
         'src/actions/packageDetector.ts',

@@ -360,6 +360,11 @@ export class ActionCoordinator implements vscode.Disposable {
     }
   }
 
+  /** Returns validated smell rules from the current .shiftspace.json config. */
+  getSmellRules(): import('./types').SmellRule[] {
+    return this.configLoader.config.smells ?? [];
+  }
+
   dispose(): void {
     // Stop all services
     for (const [, handle] of this.activeServices) {

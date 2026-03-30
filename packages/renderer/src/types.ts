@@ -100,6 +100,33 @@ export interface LogEntry {
 }
 
 // ---------------------------------------------------------------------------
+// Insight findings (populated by the VSCode extension host insight runner)
+// ---------------------------------------------------------------------------
+
+/** A single rule that was triggered for a file. */
+export interface InsightFinding {
+  ruleId: string;
+  ruleLabel: string;
+  /** Number of regex matches found in this file. */
+  count: number;
+  /** Minimum matches to trigger this rule. */
+  threshold: number;
+}
+
+/** All findings for a single file from one insight plugin. */
+export interface FileInsight {
+  filePath: string;
+  findings: InsightFinding[];
+}
+
+/** Per-worktree result from one insight plugin. */
+export interface InsightDetail {
+  insightId: string;
+  worktreeId: string;
+  fileInsights: FileInsight[];
+}
+
+// ---------------------------------------------------------------------------
 // File icon theme (populated by the VSCode extension host, not the preview app)
 // ---------------------------------------------------------------------------
 

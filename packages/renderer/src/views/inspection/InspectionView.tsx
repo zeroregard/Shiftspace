@@ -2,11 +2,12 @@ import React, { useMemo, useCallback, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import type { DiffMode, FileChange } from '../../types';
-import { useShiftspaceStore } from '../../store';
+import { useShiftspaceStore, getFileFindings } from '../../store';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { BranchPickerPopover } from '../../overlays/BranchPickerPopover';
 import { DiffPopover } from '../../overlays/DiffPopover';
+import { Tooltip } from '../../overlays/Tooltip';
 import { ThemedFileIcon } from '../../shared/ThemedFileIcon';
 import { GitCompareIcon, GitBranchIcon } from '../../icons';
 import { partitionFiles } from '../../utils/listSections';
@@ -51,6 +52,11 @@ const InspectionFileRow = React.memo(
     const dirPath = parts.join('/');
     const isDeleted = file.status === 'deleted';
 
+    const findings = useShiftspaceStore((s) =>
+      getFileFindings(s.insightDetails, worktreeId, file.path)
+    );
+    const totalFindings = findings.length;
+
     return (
       <DiffPopover file={file}>
         <button
@@ -82,6 +88,28 @@ const InspectionFileRow = React.memo(
               </span>
             )}
           </span>
+
+          {/* Smell pill */}
+          {totalFindings > 0 && (
+            <Tooltip
+              content={
+                <div className="flex flex-col gap-0.5">
+                  {findings.map((f) => (
+                    <span key={f.ruleId}>
+                      {f.threshold === 1
+                        ? `${f.ruleLabel}: ${f.count} found`
+                        : `${f.ruleLabel}: 1 found (${f.count} occurrences, threshold: ${f.threshold})`}
+                    </span>
+                  ))}
+                </div>
+              }
+              delayDuration={200}
+            >
+              <span className="text-10 text-status-modified font-medium shrink-0 px-1 py-0.5 rounded border border-status-modified/30 bg-status-modified/10">
+                ⚠ {totalFindings}
+              </span>
+            </Tooltip>
+          )}
 
           {/* Status letter */}
           <span

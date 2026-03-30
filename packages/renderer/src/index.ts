@@ -33,4 +33,7 @@ export type {
   IconMap,
   PipelineConfig,
   LogEntry,
+  InsightFinding,
+  FileInsight,
+  InsightDetail,
 } from './types';
