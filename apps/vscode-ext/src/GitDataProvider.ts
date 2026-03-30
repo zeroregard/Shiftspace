@@ -470,13 +470,9 @@ export class GitDataProvider implements vscode.Disposable {
     const linkedWt = this.worktrees.find((w) => w.id === worktreeId);
     if (!linkedWt) return;
 
-    const mainWt = this.worktrees.find(
-      (w) => w.branch === this.defaultBranch && w.id !== worktreeId
-    );
+    const mainWt = this.worktrees.find((w) => w.isMainWorktree && w.id !== worktreeId);
     if (!mainWt) {
-      void vscode.window.showErrorMessage(
-        `Cannot swap: no worktree found on branch "${this.defaultBranch}".`
-      );
+      void vscode.window.showErrorMessage(`Cannot swap: primary worktree not found.`);
       return;
     }
 

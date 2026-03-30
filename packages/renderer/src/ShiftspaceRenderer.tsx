@@ -178,6 +178,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
             onRunAction={stableRunAction}
             onStopAction={stableStopAction}
             onRunPipeline={stableRunPipeline}
+            onSwapBranches={stableSwapBranches}
           />
         ) : (
           <InspectionView
