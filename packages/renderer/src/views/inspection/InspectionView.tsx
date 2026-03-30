@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef } from 'react';
+import React, { useMemo, useCallback, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import type { DiffMode, FileChange } from '../../types';
@@ -265,8 +265,33 @@ export const InspectionView = React.memo(
     const diffModeBranches = branchList.filter((b) => b !== wt.branch);
     const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchRegexError, setSearchRegexError] = useState(false);
+
     const { committed, staged, unstaged } = partitionFiles(wt);
-    const isEmpty = committed.length === 0 && staged.length === 0 && unstaged.length === 0;
+
+    const filterFiles = useCallback(
+      (files: FileChange[]): FileChange[] => {
+        if (!searchQuery) return files;
+        try {
+          const re = new RegExp(searchQuery, 'i');
+          setSearchRegexError(false);
+          return files.filter((f) => re.test(f.path));
+        } catch {
+          setSearchRegexError(true);
+          return files.filter((f) => f.path.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+      },
+      [searchQuery]
+    );
+
+    const filteredCommitted = useMemo(() => filterFiles(committed), [filterFiles, committed]);
+    const filteredStaged = useMemo(() => filterFiles(staged), [filterFiles, staged]);
+    const filteredUnstaged = useMemo(() => filterFiles(unstaged), [filterFiles, unstaged]);
+    const isEmpty =
+      filteredCommitted.length === 0 &&
+      filteredStaged.length === 0 &&
+      filteredUnstaged.length === 0;
 
     return (
       <div className="w-full h-full flex flex-col bg-canvas">
@@ -333,16 +358,52 @@ export const InspectionView = React.memo(
         {/* Split panels */}
         <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">
           {/* List panel (~35%) */}
-          <div className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed overflow-y-auto shrink-0">
-            <div className="p-2">
+          <div className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0">
+            {/* Search filter */}
+            <div className="px-2 pt-2 pb-1 shrink-0">
+              <div className="relative">
+                <i
+                  className="codicon codicon-search absolute left-2 top-1/2 -translate-y-1/2 text-text-faint"
+                  style={{ fontSize: 12 }}
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter files (regex)"
+                  className={clsx(
+                    'w-full pl-7 pr-2 py-1.5 rounded-md text-11 bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
+                    searchRegexError
+                      ? 'border-status-deleted'
+                      : 'border-border-dashed focus:border-text-muted'
+                  )}
+                />
+                {searchQuery && (
+                  <button
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <i
+                      className="codicon codicon-close"
+                      style={{ fontSize: 12 }}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 pt-0">
               {isEmpty ? (
-                <div className="text-text-faint text-11 px-3 py-2">No changes</div>
+                <div className="text-text-faint text-11 px-3 py-2">
+                  {searchQuery ? 'No matching files' : 'No changes'}
+                </div>
               ) : (
                 <>
-                  {committed.length > 0 && (
+                  {filteredCommitted.length > 0 && (
                     <>
                       <SectionLabel label="Committed" />
-                      {committed.map((file) => (
+                      {filteredCommitted.map((file) => (
                         <InspectionFileRow
                           key={file.path}
                           file={file}
@@ -352,10 +413,10 @@ export const InspectionView = React.memo(
                       ))}
                     </>
                   )}
-                  {staged.length > 0 && (
+                  {filteredStaged.length > 0 && (
                     <>
                       <SectionLabel label="Staged" />
-                      {staged.map((file) => (
+                      {filteredStaged.map((file) => (
                         <InspectionFileRow
                           key={file.path}
                           file={file}
@@ -365,10 +426,10 @@ export const InspectionView = React.memo(
                       ))}
                     </>
                   )}
-                  {unstaged.length > 0 && (
+                  {filteredUnstaged.length > 0 && (
                     <>
                       <SectionLabel label="Unstaged" />
-                      {unstaged.map((file) => (
+                      {filteredUnstaged.map((file) => (
                         <InspectionFileRow
                           key={file.path}
                           file={file}
