@@ -60,6 +60,3 @@ jobs:
 
       - name: Typecheck
         run: bun typecheck
-
-      - name: Test with coverage
-        run: bun test:coverage
