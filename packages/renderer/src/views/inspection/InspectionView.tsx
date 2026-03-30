@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef, useState } from 'react';
+import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import type { DiffMode, FileChange } from '../../types';
@@ -6,8 +6,8 @@ import { useShiftspaceStore } from '../../store';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { BranchPickerPopover } from '../../overlays/BranchPickerPopover';
-import { DiffPopover } from '../../overlays/DiffPopover';
 import { ThemedFileIcon } from '../../shared/ThemedFileIcon';
+import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
 import { GitCompareIcon, GitBranchIcon } from '../../icons';
 import { partitionFiles } from '../../utils/listSections';
 import { computeSingleWorktreeLayout } from '../../layout';
@@ -42,58 +42,59 @@ interface InspectionFileRowProps {
   file: FileChange;
   worktreeId: string;
   onFileClick?: (worktreeId: string, filePath: string) => void;
+  onHoverFile?: (filePath: string | null) => void;
 }
 
 const InspectionFileRow = React.memo(
-  ({ file, worktreeId, onFileClick }: InspectionFileRowProps) => {
+  ({ file, worktreeId, onFileClick, onHoverFile }: InspectionFileRowProps) => {
     const parts = file.path.split('/');
     const fileName = parts.pop() ?? file.path;
     const dirPath = parts.join('/');
     const isDeleted = file.status === 'deleted';
 
     return (
-      <DiffPopover file={file}>
-        <button
-          className={clsx(
-            'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
-            'hover:bg-node-file-pulse',
-            onFileClick ? 'cursor-pointer' : 'cursor-default'
-          )}
-          onClick={() => onFileClick?.(worktreeId, file.path)}
-        >
-          {/* File icon */}
-          <span className="shrink-0 flex items-center">
-            <ThemedFileIcon filePath={file.path} size={16} />
-          </span>
+      <button
+        className={clsx(
+          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
+          'hover:bg-node-file-pulse',
+          onFileClick ? 'cursor-pointer' : 'cursor-default'
+        )}
+        onClick={() => onFileClick?.(worktreeId, file.path)}
+        onMouseEnter={() => onHoverFile?.(file.path)}
+        onMouseLeave={() => onHoverFile?.(null)}
+      >
+        {/* File icon */}
+        <span className="shrink-0 flex items-center">
+          <ThemedFileIcon filePath={file.path} size={16} />
+        </span>
 
-          {/* Filename + directory */}
-          <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
-            <span
-              className={clsx(
-                'shrink-0',
-                isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
-              )}
-            >
-              {fileName}
-            </span>
-            {dirPath && (
-              <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
-                {dirPath}
-              </span>
-            )}
-          </span>
-
-          {/* Status letter */}
+        {/* Filename + directory */}
+        <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
           <span
             className={clsx(
-              'text-11 font-mono font-semibold w-3 shrink-0',
-              STATUS_COLOR_CLASS[file.status]
+              'shrink-0',
+              isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
             )}
           >
-            {STATUS_LETTER[file.status]}
+            {fileName}
           </span>
-        </button>
-      </DiffPopover>
+          {dirPath && (
+            <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+              {dirPath}
+            </span>
+          )}
+        </span>
+
+        {/* Status letter */}
+        <span
+          className={clsx(
+            'text-11 font-mono font-semibold w-3 shrink-0',
+            STATUS_COLOR_CLASS[file.status]
+          )}
+        >
+          {STATUS_LETTER[file.status]}
+        </span>
+      </button>
     );
   }
 );
@@ -208,6 +209,33 @@ export const InspectionView = React.memo(
     swapBranchesRef.current = onSwapBranches;
     const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchRegexError, setSearchRegexError] = useState(false);
+    const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
+
+    // Clear filter and hover when switching worktrees
+    useEffect(() => {
+      setSearchQuery('');
+      setSearchRegexError(false);
+      setHoveredFilePath(null);
+    }, [worktreeId]);
+
+    // Compute the combined file list for the hierarchy panel (must match list panel).
+    // In branch diff mode, include branchFiles + staged + unstaged.
+    // Apply search filter so hierarchy matches the list panel.
+    const hierarchyFiles = useMemo(() => {
+      if (!wt) return [];
+      const { committed, staged, unstaged } = partitionFiles(wt);
+      const all = [...committed, ...staged, ...unstaged];
+      if (!searchQuery) return all;
+      try {
+        const re = new RegExp(searchQuery, 'i');
+        return all.filter((f) => re.test(f.path));
+      } catch {
+        return all.filter((f) => f.path.toLowerCase().includes(searchQuery.toLowerCase()));
+      }
+    }, [wt, searchQuery]);
+
     // Compute tree layout for the tree panel
     const { nodes, edges } = useMemo(() => {
       if (!wt) return { nodes: [], edges: [] };
@@ -218,11 +246,13 @@ export const InspectionView = React.memo(
         stableCheckoutBranch,
         stableFolderClick,
         stableFetchBranches,
-        stableSwapBranches
+        stableSwapBranches,
+        { bare: true, filesOverride: hierarchyFiles }
       );
       return { nodes: layout.nodes, edges: layout.edges };
     }, [
       wt,
+      hierarchyFiles,
       stableFileClick,
       stableRequestBranchList,
       stableCheckoutBranch,
@@ -265,9 +295,6 @@ export const InspectionView = React.memo(
     const diffModeBranches = branchList.filter((b) => b !== wt.branch);
     const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchRegexError, setSearchRegexError] = useState(false);
-
     const { committed, staged, unstaged } = partitionFiles(wt);
 
     const filterFiles = useCallback(
@@ -285,13 +312,15 @@ export const InspectionView = React.memo(
       [searchQuery]
     );
 
+    const hoverContextValue = useMemo(() => ({ hoveredFilePath }), [hoveredFilePath]);
+
     const filteredCommitted = useMemo(() => filterFiles(committed), [filterFiles, committed]);
     const filteredStaged = useMemo(() => filterFiles(staged), [filterFiles, staged]);
     const filteredUnstaged = useMemo(() => filterFiles(unstaged), [filterFiles, unstaged]);
-    const isEmpty =
-      filteredCommitted.length === 0 &&
-      filteredStaged.length === 0 &&
-      filteredUnstaged.length === 0;
+    const totalFileCount = committed.length + staged.length + unstaged.length;
+    const filteredFileCount =
+      filteredCommitted.length + filteredStaged.length + filteredUnstaged.length;
+    const isEmpty = filteredFileCount === 0;
 
     return (
       <div className="w-full h-full flex flex-col bg-canvas">
@@ -373,7 +402,7 @@ export const InspectionView = React.memo(
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter files (regex)"
                   className={clsx(
-                    'w-full pl-7 pr-2 py-1.5 rounded-md text-11 bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
+                    'w-full pl-7 pr-7 py-1.5 rounded-md text-11 font-mono bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
                     searchRegexError
                       ? 'border-status-deleted'
                       : 'border-border-dashed focus:border-text-muted'
@@ -392,6 +421,11 @@ export const InspectionView = React.memo(
                   </button>
                 )}
               </div>
+              {searchQuery && (
+                <div className="text-10 text-text-faint px-1 pt-1">
+                  {filteredFileCount} / {totalFileCount} files
+                </div>
+              )}
             </div>
             <div className="flex-1 overflow-y-auto p-2 pt-0">
               {isEmpty ? (
@@ -409,6 +443,7 @@ export const InspectionView = React.memo(
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
+                          onHoverFile={setHoveredFilePath}
                         />
                       ))}
                     </>
@@ -422,6 +457,7 @@ export const InspectionView = React.memo(
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
+                          onHoverFile={setHoveredFilePath}
                         />
                       ))}
                     </>
@@ -435,6 +471,7 @@ export const InspectionView = React.memo(
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
+                          onHoverFile={setHoveredFilePath}
                         />
                       ))}
                     </>
@@ -446,12 +483,14 @@ export const InspectionView = React.memo(
 
           {/* Tree panel (~65%) */}
           <div className="flex-1 min-h-0 min-w-0 relative">
-            <TreeCanvas
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={NODE_TYPES}
-              panZoomConfig={panZoomConfig}
-            />
+            <InspectionHoverContext.Provider value={hoverContextValue}>
+              <TreeCanvas
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={NODE_TYPES}
+                panZoomConfig={panZoomConfig}
+              />
+            </InspectionHoverContext.Provider>
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ export interface WorktreeNodeData {
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
   onSwapBranches?: (worktreeId: string) => void;
+  bare?: boolean;
   [key: string]: unknown;
 }
 

@@ -5,6 +5,7 @@ import type { FileChange } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
+import { useInspectionHover } from '../shared/InspectionHoverContext';
 
 export interface FileNodeData {
   file: FileChange;
@@ -15,17 +16,23 @@ export interface FileNodeData {
 
 export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) => {
   const { file, onFileClick, worktreeId } = data;
+  const { hoveredFilePath } = useInspectionHover();
   const fileName = file.path.split('/').pop() ?? file.path;
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
   const isDeleted = file.status === 'deleted';
+  const isHovered = hoveredFilePath === file.path;
 
   return (
     <DiffPopover file={file}>
       <button
         className={clsx(
-          'w-full h-full flex items-center gap-1 px-2 py-1.5 text-left bg-transparent transition-[background] duration-300 rounded-md',
+          'w-full h-full flex items-center gap-1 px-2 py-1.5 text-left bg-transparent transition-[background,border-color] duration-300 rounded-md',
           onFileClick ? 'cursor-pointer' : 'cursor-default',
-          isPulsing ? 'bg-node-file-pulse' : 'hover:bg-node-file-pulse'
+          isHovered
+            ? 'bg-node-file-pulse ring-1 ring-border-staged'
+            : isPulsing
+              ? 'bg-node-file-pulse'
+              : 'hover:bg-node-file-pulse'
         )}
         onClick={() => onFileClick?.(worktreeId, file.path)}
       >
