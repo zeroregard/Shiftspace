@@ -71,8 +71,9 @@ test.describe('Graph rendering', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(500);
 
-    // Enter inspection mode for the first worktree (path = /projects/myapp → folderName = myapp)
-    await page.getByRole('button', { name: 'myapp' }).click();
+    // Enter inspection mode for the first worktree (path = /projects/myapp → folderName = myapp).
+    // exact: true is required — default substring match would also hit "myapp-auth" (wt-1).
+    await page.getByRole('button', { name: 'myapp', exact: true }).click();
 
     // Wait for the inspection view header (back arrow) to appear
     await page.locator('button:has(.codicon-arrow-left)').waitFor();
