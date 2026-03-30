@@ -10,6 +10,7 @@ interface GroveViewProps {
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
   onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
+  onSwapBranches?: (worktreeId: string) => void;
 }
 
 export const GroveView = React.memo(
@@ -21,6 +22,7 @@ export const GroveView = React.memo(
     onRunAction,
     onStopAction,
     onRunPipeline,
+    onSwapBranches,
   }: GroveViewProps) => {
     return (
       <div className="w-full h-full overflow-auto">
@@ -39,6 +41,7 @@ export const GroveView = React.memo(
                   onRunAction={onRunAction}
                   onStopAction={onStopAction}
                   onRunPipeline={onRunPipeline}
+                  onSwapBranches={onSwapBranches}
                 />
               ))}
             </div>

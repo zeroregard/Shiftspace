@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../../../types';
 import { useShiftspaceStore } from '../../../store';
 import { BranchPickerPopover } from '../../../overlays/BranchPickerPopover';
-import { GitBranchIcon } from '../../../icons';
+import { GitBranchIcon, SwapIcon } from '../../../icons';
 import { ActionBar } from '../../inspection/components/ActionBar';
 import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
 
@@ -17,6 +17,7 @@ interface WorktreeCardProps {
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
   onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
+  onSwapBranches?: (worktreeId: string) => void;
 }
 
 export const WorktreeCard = React.memo(
@@ -28,6 +29,7 @@ export const WorktreeCard = React.memo(
     onRunAction,
     onStopAction,
     onRunPipeline,
+    onSwapBranches,
   }: WorktreeCardProps) => {
     const enterInspection = useShiftspaceStore((s) => s.enterInspection);
     const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
@@ -52,7 +54,7 @@ export const WorktreeCard = React.memo(
           >
             {folderName}
           </button>
-          <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
             <BranchPickerPopover
               trigger={
                 <button
@@ -73,6 +75,18 @@ export const WorktreeCard = React.memo(
               isFetching={isFetchingBranches}
               lastFetchAt={lastFetchAt}
             />
+            {!wt.isMainWorktree && onSwapBranches && (
+              <button
+                className="flex items-center justify-center w-5 h-5 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted cursor-pointer bg-transparent"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSwapBranches(wt.id);
+                }}
+                title="Swap branch with primary worktree"
+              >
+                <SwapIcon />
+              </button>
+            )}
           </div>
         </div>
 
