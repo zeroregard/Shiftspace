@@ -74,10 +74,10 @@ test.describe('Graph rendering', () => {
     // Enter inspection mode for wt-0 via its data-testid.
     await page.getByTestId('enter-inspection-wt-0').click();
 
-    // Wait for the filter input that is unique to the InspectionView list panel.
-    // It is always rendered regardless of file count, making it the most
-    // reliable signal that inspection mode is active.
-    await page.locator('input[placeholder="Filter files (regex)"]').waitFor();
+    // Wait for the back button that is unique to the InspectionView header.
+    // It is always rendered, making it the most reliable signal that
+    // inspection mode is active.
+    await page.locator('.codicon-arrow-left').waitFor();
     await page.waitForTimeout(300);
 
     await expect(page).toHaveScreenshot('inspection-insight-pills.png');
