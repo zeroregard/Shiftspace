@@ -71,12 +71,18 @@ test.describe('Graph rendering', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(500);
 
-    // Enter inspection mode for the first worktree (path = /projects/myapp → folderName = myapp).
-    // exact: true is required — default substring match would also hit "myapp-auth" (wt-1).
-    await page.getByRole('button', { name: 'myapp', exact: true }).click();
+    // Enter inspection mode for wt-0 (folderName = "myapp").
+    // exact: true prevents substring-matching "myapp-auth" (wt-1).
+    // filter({ hasText }) is used as an additional guard for robustness.
+    await page
+      .locator('button')
+      .filter({ hasText: /^myapp$/ })
+      .click();
 
-    // Wait for the inspection view header (back arrow) to appear
-    await page.locator('button:has(.codicon-arrow-left)').waitFor();
+    // Wait for the filter input that is unique to the InspectionView list panel.
+    // It is always rendered regardless of file count, making it the most
+    // reliable signal that inspection mode is active.
+    await page.locator('input[placeholder="Filter files (regex)"]').waitFor();
     await page.waitForTimeout(300);
 
     await expect(page).toHaveScreenshot('inspection-insight-pills.png');
