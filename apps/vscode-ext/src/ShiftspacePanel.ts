@@ -83,6 +83,7 @@ export class ShiftspacePanel {
         actionId?: string;
         pipelineId?: string;
         packageName?: string;
+        newName?: string;
       }) => {
         if (message.type === 'ready') {
           void this.onReady();
@@ -103,6 +104,10 @@ export class ShiftspacePanel {
           void this._gitProvider?.handleFetchBranches(message.worktreeId);
         } else if (message.type === 'swap-branches' && message.worktreeId) {
           void this._gitProvider?.handleSwapBranches(message.worktreeId);
+        } else if (message.type === 'remove-worktree' && message.worktreeId) {
+          void this._gitProvider?.handleRemoveWorktree(message.worktreeId);
+        } else if (message.type === 'rename-worktree' && message.worktreeId && message.newName) {
+          void this._gitProvider?.handleRenameWorktree(message.worktreeId, message.newName);
           // New action coordinator messages
         } else if (message.type === 'run-action' && message.worktreeId && message.actionId) {
           void this._actionCoordinator?.runAction(message.worktreeId, message.actionId);

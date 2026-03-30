@@ -20,6 +20,14 @@ export function SwapIcon() {
   return <i className="codicon codicon-arrow-swap" style={{ fontSize: 12 }} aria-hidden="true" />;
 }
 
+export function TrashIcon() {
+  return <i className="codicon codicon-trash" style={{ fontSize: 12 }} aria-hidden="true" />;
+}
+
+export function PencilIcon() {
+  return <i className="codicon codicon-edit" style={{ fontSize: 12 }} aria-hidden="true" />;
+}
+
 // ---------------------------------------------------------------------------
 // SVG base shapes
 // ---------------------------------------------------------------------------

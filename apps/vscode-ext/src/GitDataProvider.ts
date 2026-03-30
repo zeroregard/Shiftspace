@@ -10,6 +10,8 @@ import {
   fetchRemote,
   checkWorktreeSafety,
   swapBranches,
+  removeWorktree,
+  moveWorktree,
 } from './git/worktrees';
 import { getFileChanges, getBranchDiffFileChanges } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
@@ -299,9 +301,12 @@ export class GitDataProvider implements vscode.Disposable {
   }
 
   private startWorktreePolling(): void {
+    // Poll every 3 seconds so branch switches (e.g. by agents) are reflected
+    // quickly. The HEAD watcher is unreliable on some platforms because git
+    // uses atomic lock-file renames that VSCode's file watcher can miss.
     this.worktreePollingTimer = setInterval(() => {
       void this.checkForWorktreeChanges();
-    }, 15_000);
+    }, 3_000);
   }
 
   /**
@@ -523,6 +528,59 @@ export class GitDataProvider implements vscode.Disposable {
         }
       }
     );
+  }
+
+  /** Remove a linked (non-primary) worktree. */
+  async handleRemoveWorktree(worktreeId: string): Promise<void> {
+    const wt = this.worktrees.find((w) => w.id === worktreeId);
+    if (!wt) return;
+
+    if (wt.isMainWorktree) {
+      void vscode.window.showErrorMessage('Cannot remove the primary worktree.');
+      return;
+    }
+
+    const answer = await vscode.window.showWarningMessage(
+      `Remove worktree "${wt.path.split('/').pop()}" (${wt.branch})? This will delete the directory.`,
+      { modal: true },
+      'Remove',
+      'Force Remove'
+    );
+    if (!answer) return;
+
+    try {
+      await removeWorktree(wt.path, answer === 'Force Remove');
+      // Re-detect worktrees to update the UI
+      await this.checkForWorktreeChanges();
+    } catch (err) {
+      console.error('[Shiftspace] handleRemoveWorktree error:', err);
+      void vscode.window.showErrorMessage(
+        `Failed to remove worktree: ${(err as Error).message}. Try "Force Remove" if it has local modifications.`
+      );
+    }
+  }
+
+  /** Rename/move a worktree to a new path. */
+  async handleRenameWorktree(worktreeId: string, newName: string): Promise<void> {
+    const wt = this.worktrees.find((w) => w.id === worktreeId);
+    if (!wt) return;
+
+    if (wt.isMainWorktree) {
+      void vscode.window.showErrorMessage('Cannot rename the primary worktree.');
+      return;
+    }
+
+    const parentDir = path.dirname(wt.path);
+    const newPath = path.join(parentDir, newName);
+
+    try {
+      await moveWorktree(wt.path, newPath);
+      // Re-detect worktrees to update the UI
+      await this.checkForWorktreeChanges();
+    } catch (err) {
+      console.error('[Shiftspace] handleRenameWorktree error:', err);
+      void vscode.window.showErrorMessage(`Failed to rename worktree: ${(err as Error).message}`);
+    }
   }
 
   /** Reveal a folder in the VS Code Explorer. */
