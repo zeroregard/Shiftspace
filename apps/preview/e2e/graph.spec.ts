@@ -1,5 +1,16 @@
 import { test, expect } from '@playwright/test';
 
+/** Deterministic seeded LCG — keeps mock engine file selection stable across runs */
+function seedMathRandom(page: import('@playwright/test').Page) {
+  return page.addInitScript(() => {
+    let seed = 0xdeadbeef;
+    Math.random = () => {
+      seed = (Math.imul(1664525, seed) + 1013904223) | 0;
+      return (seed >>> 0) / 0x100000000;
+    };
+  });
+}
+
 test.describe('Graph rendering', () => {
   test('initial state with default worktrees', async ({ page }) => {
     await page.goto('/');
@@ -52,5 +63,21 @@ test.describe('Graph rendering', () => {
     await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot('after-reset.png');
+  });
+
+  test('inspection mode shows insight smell pills', async ({ page }) => {
+    await seedMathRandom(page);
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(500);
+
+    // Enter inspection mode for the first worktree (path = /projects/myapp → folderName = myapp)
+    await page.getByRole('button', { name: 'myapp' }).click();
+
+    // Wait for the inspection view header (back arrow) to appear
+    await page.locator('button:has(.codicon-arrow-left)').waitFor();
+    await page.waitForTimeout(300);
+
+    await expect(page).toHaveScreenshot('inspection-insight-pills.png');
   });
 });

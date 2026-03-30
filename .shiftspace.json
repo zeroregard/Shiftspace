@@ -48,5 +48,34 @@
       "steps": ["fmt", "lint", "typecheck", "test"],
       "stopOnFailure": false
     }
-  }
+  },
+  "smells": [
+    {
+      "id": "console-log",
+      "label": "Console Log",
+      "pattern": "console\\.log",
+      "threshold": 1,
+      "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
+    },
+    {
+      "id": "eslint-disable",
+      "label": "ESLint Disable",
+      "pattern": "eslint-disable",
+      "threshold": 1,
+      "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
+    },
+    {
+      "id": "use-effect-overuse",
+      "label": "useEffect Overuse",
+      "pattern": "useEffect\\s*\\(",
+      "threshold": 5,
+      "fileTypes": [".jsx", ".tsx"]
+    },
+    {
+      "id": "todo-comment",
+      "label": "TODO Comment",
+      "pattern": "//\\s*TODO",
+      "threshold": 3
+    }
+  ]
 }
