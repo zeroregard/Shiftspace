@@ -71,13 +71,8 @@ test.describe('Graph rendering', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(500);
 
-    // Enter inspection mode for wt-0 (folderName = "myapp").
-    // exact: true prevents substring-matching "myapp-auth" (wt-1).
-    // filter({ hasText }) is used as an additional guard for robustness.
-    await page
-      .locator('button')
-      .filter({ hasText: /^myapp$/ })
-      .click();
+    // Enter inspection mode for wt-0 via its data-testid.
+    await page.getByTestId('enter-inspection-wt-0').click();
 
     // Wait for the filter input that is unique to the InspectionView list panel.
     // It is always rendered regardless of file count, making it the most
