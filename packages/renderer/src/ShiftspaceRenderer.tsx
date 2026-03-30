@@ -19,6 +19,8 @@ interface Props {
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
   onSwapBranches?: (worktreeId: string) => void;
+  onRemoveWorktree?: (worktreeId: string) => void;
+  onRenameWorktree?: (worktreeId: string, newName: string) => void;
   onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
   onSetPackage?: (packageName: string) => void;
   onDetectPackages?: () => void;
@@ -44,6 +46,8 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onRunAction,
   onStopAction,
   onSwapBranches,
+  onRemoveWorktree,
+  onRenameWorktree,
   onRunPipeline,
   onSetPackage,
   onDetectPackages,
@@ -123,6 +127,17 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   swapBranchesRef.current = onSwapBranches;
   const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
 
+  const removeWorktreeRef = useRef(onRemoveWorktree);
+  removeWorktreeRef.current = onRemoveWorktree;
+  const stableRemoveWorktree = useCallback((wtId: string) => removeWorktreeRef.current?.(wtId), []);
+
+  const renameWorktreeRef = useRef(onRenameWorktree);
+  renameWorktreeRef.current = onRenameWorktree;
+  const stableRenameWorktree = useCallback(
+    (wtId: string, newName: string) => renameWorktreeRef.current?.(wtId, newName),
+    []
+  );
+
   const runPipelineRef = useRef(onRunPipeline);
   runPipelineRef.current = onRunPipeline;
   const stableRunPipeline = useCallback(
@@ -179,6 +194,8 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
             onStopAction={stableStopAction}
             onRunPipeline={stableRunPipeline}
             onSwapBranches={stableSwapBranches}
+            onRemoveWorktree={stableRemoveWorktree}
+            onRenameWorktree={stableRenameWorktree}
           />
         ) : (
           <InspectionView

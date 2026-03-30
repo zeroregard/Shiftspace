@@ -241,6 +241,14 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'swap-branches', worktreeId });
   }, []);
 
+  const handleRemoveWorktree = useCallback((worktreeId: string) => {
+    vscode?.postMessage({ type: 'remove-worktree', worktreeId });
+  }, []);
+
+  const handleRenameWorktree = useCallback((worktreeId: string, newName: string) => {
+    vscode?.postMessage({ type: 'rename-worktree', worktreeId, newName });
+  }, []);
+
   const handleRunPipeline = useCallback((worktreeId: string, pipelineId: string) => {
     vscode?.postMessage({ type: 'run-pipeline', worktreeId, pipelineId });
   }, []);
@@ -292,6 +300,8 @@ const App: React.FC = () => {
         onRunAction={handleRunAction}
         onStopAction={handleStopAction}
         onSwapBranches={handleSwapBranches}
+        onRemoveWorktree={handleRemoveWorktree}
+        onRenameWorktree={handleRenameWorktree}
         onRunPipeline={handleRunPipeline}
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}

@@ -1,5 +1,7 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
 
 const execFileAsync = promisify(execFile);
@@ -152,6 +154,43 @@ export async function fetchRemote(repoRoot: string): Promise<void> {
 }
 
 /**
+ * Resolve the git directory for a worktree path.
+ * For linked worktrees this returns e.g. `/repo/.git/worktrees/<name>`.
+ * For the main worktree it returns `/repo/.git`.
+ */
+async function resolveGitDir(worktreePath: string): Promise<string> {
+  const { stdout } = await execFileAsync('git', ['rev-parse', '--git-dir'], {
+    cwd: worktreePath,
+    timeout: 5000,
+  });
+  return path.resolve(worktreePath, stdout.trim());
+}
+
+/**
+ * Remove stale git lock files (index.lock) from a worktree's git directory.
+ * A lock file is considered stale if it's older than `maxAgeMs` (default 5s).
+ * Returns true if a stale lock was cleaned up.
+ */
+export async function cleanStaleLockFile(worktreePath: string, maxAgeMs = 5000): Promise<boolean> {
+  try {
+    const gitDir = await resolveGitDir(worktreePath);
+    const lockFile = path.join(gitDir, 'index.lock');
+    const stat = await fs.stat(lockFile);
+    const ageMs = Date.now() - stat.mtimeMs;
+    if (ageMs > maxAgeMs) {
+      await fs.unlink(lockFile);
+      console.log(`[Shiftspace] Cleaned stale lock file: ${lockFile} (age: ${ageMs}ms)`);
+      return true;
+    }
+    // Lock file exists but is fresh — a git operation is likely in progress
+    return false;
+  } catch {
+    // Lock file doesn't exist — nothing to do
+    return true;
+  }
+}
+
+/**
  * Check if a worktree is safe for a branch swap.
  * Returns a human-readable error string if unsafe, or null if safe.
  */
@@ -200,6 +239,12 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
     }
   } catch {
     // If this fails, ignore — not a blocking condition
+  }
+
+  // Lock file check — try to clean stale locks, fail if a fresh lock exists
+  const lockCleaned = await cleanStaleLockFile(worktreePath);
+  if (!lockCleaned) {
+    return 'A git operation is in progress (index.lock exists). Try again in a moment.';
   }
 
   return null;
@@ -276,6 +321,10 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
   let bCheckedOut = false;
 
   try {
+    // ── Step 0: Clean stale lock files from both worktrees ────────────────
+    await cleanStaleLockFile(worktreeAPath);
+    await cleanStaleLockFile(worktreeBPath);
+
     // ── Step 1: Stash uncommitted changes ──────────────────────────────────
     log('Stashing changes...');
 
@@ -425,6 +474,27 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
       rollbackIssues.length > 0 ? ` Rollback issues: ${rollbackIssues.join('; ')}` : '';
     throw new Error(`${(err as Error).message}${rollbackNote}`);
   }
+}
+
+/**
+ * Remove a linked (non-primary) worktree.
+ * Uses `git worktree remove` with optional `--force` for worktrees with modifications.
+ */
+export async function removeWorktree(worktreePath: string, force = false): Promise<void> {
+  const args = ['worktree', 'remove', worktreePath];
+  if (force) args.push('--force');
+  await execFileAsync('git', args, { cwd: worktreePath, timeout: 30_000 });
+}
+
+/**
+ * Move/rename a worktree to a new path.
+ * Uses `git worktree move <old-path> <new-path>`.
+ */
+export async function moveWorktree(oldPath: string, newPath: string): Promise<void> {
+  await execFileAsync('git', ['worktree', 'move', oldPath, newPath], {
+    cwd: oldPath,
+    timeout: 10_000,
+  });
 }
 
 /**
