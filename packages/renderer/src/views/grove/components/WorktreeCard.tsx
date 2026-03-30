@@ -54,7 +54,11 @@ export const WorktreeCard = React.memo(
           >
             {folderName}
           </button>
-          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+          <div
+            className="flex items-center gap-1.5"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <BranchPickerPopover
               trigger={
                 <button
