@@ -6,6 +6,7 @@ import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { Tooltip } from '../overlays/Tooltip';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
+import { useShallow } from 'zustand/react/shallow';
 import { useShiftspaceStore, getFileFindings } from '../store';
 
 export interface FileNodeData {
@@ -21,8 +22,8 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
   const isDeleted = file.status === 'deleted';
 
-  const findings = useShiftspaceStore((s) =>
-    getFileFindings(s.insightDetails, worktreeId, file.path)
+  const findings = useShiftspaceStore(
+    useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
   );
   const totalFindings = findings.length;
 

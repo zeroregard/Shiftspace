@@ -52,8 +52,8 @@ const InspectionFileRow = React.memo(
     const dirPath = parts.join('/');
     const isDeleted = file.status === 'deleted';
 
-    const findings = useShiftspaceStore((s) =>
-      getFileFindings(s.insightDetails, worktreeId, file.path)
+    const findings = useShiftspaceStore(
+      useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
     );
     const totalFindings = findings.length;
 
