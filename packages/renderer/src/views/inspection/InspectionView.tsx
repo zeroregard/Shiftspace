@@ -28,6 +28,7 @@ function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
   return true;
 }
 
+// TODO: remove this
 // ---------------------------------------------------------------------------
 // File row (list panel)
 // ---------------------------------------------------------------------------
@@ -419,7 +420,7 @@ export const InspectionView = React.memo(
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter files (regex)"
+                  placeholder="Filter files"
                   className={clsx(
                     'w-full pl-7 pr-7 py-1.5 rounded-md text-11 font-mono bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
                     searchRegexError
