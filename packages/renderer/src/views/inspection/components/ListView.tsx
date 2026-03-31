@@ -134,7 +134,7 @@ const ListWorktreeBox = React.memo(
                   <SectionLabel label="Committed" />
                   {committed.map((file) => (
                     <ListFileRow
-                      key={file.path}
+                      key={`committed:${file.path}`}
                       file={file}
                       worktreeId={wt.id}
                       onFileClick={onFileClick}
@@ -147,7 +147,7 @@ const ListWorktreeBox = React.memo(
                   <SectionLabel label="Staged" />
                   {staged.map((file) => (
                     <ListFileRow
-                      key={file.path}
+                      key={`staged:${file.path}`}
                       file={file}
                       worktreeId={wt.id}
                       onFileClick={onFileClick}
@@ -160,7 +160,7 @@ const ListWorktreeBox = React.memo(
                   <SectionLabel label="Unstaged" />
                   {unstaged.map((file) => (
                     <ListFileRow
-                      key={file.path}
+                      key={`unstaged:${file.path}`}
                       file={file}
                       worktreeId={wt.id}
                       onFileClick={onFileClick}

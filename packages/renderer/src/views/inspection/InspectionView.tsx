@@ -458,7 +458,7 @@ export const InspectionView = React.memo(
                       <SectionLabel label="Committed" />
                       {filteredCommitted.map((file) => (
                         <InspectionFileRow
-                          key={file.path}
+                          key={`committed:${file.path}`}
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
@@ -472,7 +472,7 @@ export const InspectionView = React.memo(
                       <SectionLabel label="Staged" />
                       {filteredStaged.map((file) => (
                         <InspectionFileRow
-                          key={file.path}
+                          key={`staged:${file.path}`}
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
@@ -486,7 +486,7 @@ export const InspectionView = React.memo(
                       <SectionLabel label="Unstaged" />
                       {filteredUnstaged.map((file) => (
                         <InspectionFileRow
-                          key={file.path}
+                          key={`unstaged:${file.path}`}
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
