@@ -6,11 +6,15 @@ import { ActionCoordinator } from './actions/ActionCoordinator';
 import { getGitRoot } from './git/worktrees';
 import { IconThemeProvider } from './IconThemeProvider';
 import { InsightRunner } from './insights/runner';
+import type { ShiftspaceMcpHttpServer } from './mcp/httpServer';
+import { McpToolHandlers } from './mcp/handlers';
+import type { WorktreeState } from '@shiftspace/renderer';
 // Register built-in insight plugins (side-effect import)
 import './insights/plugins/codeSmells';
 
 export class ShiftspacePanel {
   private static currentPanel: ShiftspacePanel | undefined;
+  private static mcpHttpServer: ShiftspaceMcpHttpServer | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
   private _gitProvider: GitDataProvider | undefined;
@@ -18,6 +22,10 @@ export class ShiftspacePanel {
 
   private _iconProvider: IconThemeProvider | undefined;
   private _insightRunner: InsightRunner | undefined;
+
+  static setMcpHttpServer(server: ShiftspaceMcpHttpServer): void {
+    ShiftspacePanel.mcpHttpServer = server;
+  }
 
   // Insight state
   private _currentInspectedWorktreeId: string | undefined;
@@ -218,6 +226,9 @@ export class ShiftspacePanel {
     // Let the coordinator know about current worktrees
     this.syncWorktreesToCoordinator();
 
+    // Register MCP tool handlers now that providers are ready
+    this.registerMcpHandlers(gitRoot);
+
     // Resolve and send file icons (non-blocking)
     void this.reloadIcons();
   }
@@ -341,6 +352,44 @@ export class ShiftspacePanel {
     } catch (err) {
       console.error('[Shiftspace] runInsights error:', err);
     }
+  }
+
+  private registerMcpHandlers(repoRoot: string): void {
+    const server = ShiftspacePanel.mcpHttpServer;
+    if (!server || !this._gitProvider || !this._actionCoordinator || !this._insightRunner) return;
+
+    const gitProvider = this._gitProvider;
+    const coordinator = this._actionCoordinator;
+    const insightRunner = this._insightRunner;
+
+    const handlers = new McpToolHandlers({
+      worktreeProvider: {
+        getWorktrees(): WorktreeState[] {
+          const infos = gitProvider.getWorktrees();
+          // Build full WorktreeState from the GitDataProvider's internal data
+          return infos.map((info) => ({
+            id: info.id,
+            path: info.path,
+            branch: info.branch,
+            files: gitProvider.getWorktreeFiles(info.id),
+            diffMode: { type: 'working' as const },
+            defaultBranch: 'main',
+            isMainWorktree: false,
+          }));
+        },
+      },
+      configLoader: coordinator['configLoader'] as import('./actions/configLoader').ConfigLoader,
+      stateManager: coordinator['stateManager'] as import('./actions/stateManager').StateManager,
+      insightRunner,
+      repoRoot,
+      getPackageName: () => (coordinator['selectedPackage'] as string) ?? '',
+      getSmellRules: () => {
+        const rules = coordinator.getSmellRules();
+        return { codeSmells: { smellRules: rules } };
+      },
+    });
+
+    server.setHandlers(handlers);
   }
 
   private dispose() {
