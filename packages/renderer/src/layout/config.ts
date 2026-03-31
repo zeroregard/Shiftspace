@@ -2,7 +2,18 @@ export const NODE_H_GAP = 30;
 export const FOLDER_V_GAP = 50;
 export const FILE_V_GAP = 8;
 export const FILE_NODE_W = 200;
-export const FILE_NODE_H = 44;
+export const FILE_NODE_BASE_H = 44;
+/** @deprecated Use FILE_NODE_BASE_H or computeFileNodeHeight() */
+export const FILE_NODE_H = FILE_NODE_BASE_H;
+export const INSIGHT_SECTION_HEADER_H = 20;
+export const INSIGHT_ROW_H = 18;
+
+/** Compute total file node height given a findings count. */
+export function computeFileNodeHeight(findingsCount: number): number {
+  if (findingsCount === 0) return FILE_NODE_BASE_H;
+  return FILE_NODE_BASE_H + INSIGHT_SECTION_HEADER_H + findingsCount * INSIGHT_ROW_H;
+}
+
 export const FOLDER_NODE_W = 140;
 export const FOLDER_NODE_H = 32;
 export const WT_HEADER_H = 68;

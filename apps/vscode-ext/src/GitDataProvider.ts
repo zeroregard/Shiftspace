@@ -277,22 +277,25 @@ export class GitDataProvider implements vscode.Disposable {
 
   private async refreshWorktree(wt: WorktreeState): Promise<void> {
     try {
-      // Always refresh working-tree files. Branch diff only changes on explicit
-      // mode switch (handleSetDiffMode), not on filesystem events.
-      const patterns = getIgnorePatterns();
-      const newFiles = filterIgnoredFiles(await getFileChanges(wt.path), patterns);
+      const { files: newFiles, branchFiles } = await this.getFilesForMode(wt);
       const prevFiles = this.fileStates.get(wt.id) ?? [];
       const events = diffFileChanges(wt.id, prevFiles, newFiles);
 
+      // Detect branchFiles changes (e.g. after a commit)
+      const prevBranch = wt.branchFiles ?? [];
+      const newBranch = branchFiles ?? [];
+      const branchChanged = diffFileChanges(wt.id, prevBranch, newBranch).length > 0;
+
       wt.files = newFiles;
+      wt.branchFiles = branchFiles;
       this.fileStates.set(wt.id, newFiles);
 
       for (const event of events) {
         this.postMessage({ type: 'event', event });
       }
 
-      // Notify stale callback if files actually changed
-      if (events.length > 0) {
+      // Notify stale callback if working files or branch diff changed
+      if (events.length > 0 || branchChanged) {
         this.onFileChange?.(wt.id);
       }
     } catch (err) {
@@ -384,6 +387,7 @@ export class GitDataProvider implements vscode.Disposable {
         this.fileStates.set(freshWt.id, freshWt.files);
 
         this.postMessage({ type: 'event', event: { type: 'worktree-added', worktree: freshWt } });
+        this.onFileChange?.(freshWt.id);
       }
 
       // Preserve user-set diffMode for worktrees whose branch hasn't changed.

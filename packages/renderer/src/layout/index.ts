@@ -10,6 +10,7 @@ import {
   CONTAINER_PAD_TOP,
   CONTAINER_PAD_BOTTOM,
   CONTAINER_GAP,
+  computeFileNodeHeight,
 } from './config';
 
 export interface SingleWorktreeLayout {
@@ -35,12 +36,20 @@ export function computeSingleWorktreeLayout(
   onFolderClick?: (worktreeId: string, folderPath: string) => void,
   onFetchBranches?: (worktreeId: string) => void,
   onSwapBranches?: (worktreeId: string) => void,
-  options?: SingleWorktreeLayoutOptions
+  options?: SingleWorktreeLayoutOptions,
+  getFileFindingsCount?: (worktreeId: string, filePath: string) => number
 ): SingleWorktreeLayout {
   const files = options?.filesOverride ?? wt.files;
   const treeChildren = buildTree(wt.id, files);
   const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
-  const { layouts, totalW, totalH } = layoutWorktreeContents(treeChildren, contentsStartY);
+  const getFileH = getFileFindingsCount
+    ? (path: string) => computeFileNodeHeight(getFileFindingsCount(wt.id, path))
+    : undefined;
+  const { layouts, totalW, totalH } = layoutWorktreeContents(
+    treeChildren,
+    contentsStartY,
+    getFileH
+  );
 
   // Ensure the container is wide enough to fit the header label.
   // Estimate: ~8px per character at text-13 semibold + padding.
@@ -85,7 +94,8 @@ export function computeSingleWorktreeLayout(
       nodes,
       edges,
       false,
-      onFolderClick
+      onFolderClick,
+      getFileH
     );
   }
 
