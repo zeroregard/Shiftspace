@@ -10,7 +10,12 @@ import { Tooltip } from '../../overlays/Tooltip';
 import { ThemedFileIcon } from '../../shared/ThemedFileIcon';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
 import { GitCompareIcon, GitBranchIcon } from '../../icons';
-import { partitionFiles } from '../../utils/listSections';
+import {
+  partitionFiles,
+  filterFilesByQuery,
+  getAllFilteredFiles,
+  isValidRegex,
+} from '../../utils/listSections';
 import { computeSingleWorktreeLayout } from '../../layout';
 import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
@@ -238,31 +243,23 @@ export const InspectionView = React.memo(
     const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchRegexError, setSearchRegexError] = useState(false);
     const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
+
+    const searchRegexError = useMemo(() => !isValidRegex(searchQuery), [searchQuery]);
 
     // Clear filter and hover when switching worktrees
     useEffect(() => {
       setSearchQuery('');
-      setSearchRegexError(false);
       setHoveredFilePath(null);
     }, [worktreeId]);
 
     // Compute the combined file list for the hierarchy panel (must match list panel).
     // In branch diff mode, include branchFiles + staged + unstaged.
     // Apply search filter so hierarchy matches the list panel.
-    const hierarchyFiles = useMemo(() => {
-      if (!wt) return [];
-      const { committed, staged, unstaged } = partitionFiles(wt);
-      const all = [...committed, ...staged, ...unstaged];
-      if (!searchQuery) return all;
-      try {
-        const re = new RegExp(searchQuery, 'i');
-        return all.filter((f) => re.test(f.path));
-      } catch {
-        return all.filter((f) => f.path.toLowerCase().includes(searchQuery.toLowerCase()));
-      }
-    }, [wt, searchQuery]);
+    const hierarchyFiles = useMemo(
+      () => (wt ? getAllFilteredFiles(wt, searchQuery) : []),
+      [wt, searchQuery]
+    );
 
     // Compute tree layout for the tree panel
     const { nodes, edges } = useMemo(() => {
@@ -325,26 +322,20 @@ export const InspectionView = React.memo(
 
     const { committed, staged, unstaged } = partitionFiles(wt);
 
-    const filterFiles = useCallback(
-      (files: FileChange[]): FileChange[] => {
-        if (!searchQuery) return files;
-        try {
-          const re = new RegExp(searchQuery, 'i');
-          setSearchRegexError(false);
-          return files.filter((f) => re.test(f.path));
-        } catch {
-          setSearchRegexError(true);
-          return files.filter((f) => f.path.toLowerCase().includes(searchQuery.toLowerCase()));
-        }
-      },
-      [searchQuery]
-    );
-
     const hoverContextValue = useMemo(() => ({ hoveredFilePath }), [hoveredFilePath]);
 
-    const filteredCommitted = useMemo(() => filterFiles(committed), [filterFiles, committed]);
-    const filteredStaged = useMemo(() => filterFiles(staged), [filterFiles, staged]);
-    const filteredUnstaged = useMemo(() => filterFiles(unstaged), [filterFiles, unstaged]);
+    const filteredCommitted = useMemo(
+      () => filterFilesByQuery(committed, searchQuery),
+      [committed, searchQuery]
+    );
+    const filteredStaged = useMemo(
+      () => filterFilesByQuery(staged, searchQuery),
+      [staged, searchQuery]
+    );
+    const filteredUnstaged = useMemo(
+      () => filterFilesByQuery(unstaged, searchQuery),
+      [unstaged, searchQuery]
+    );
     const totalFileCount = committed.length + staged.length + unstaged.length;
     const filteredFileCount =
       filteredCommitted.length + filteredStaged.length + filteredUnstaged.length;
