@@ -267,9 +267,11 @@ export class MockEngine {
     const template = FILE_TREE_TEMPLATES[templateKey];
     const count = Math.max(2, Math.floor(template.length * (0.3 + Math.random() * 0.3)));
     const shuffled = [...template].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, count);
+    // Reserve one well-known path for the partially staged entry (added below).
+    const partialPath = template[0];
+    const selected = shuffled.filter((p) => p !== partialPath).slice(0, count);
     const now = Date.now();
-    return selected.map((filePath, i) => {
+    const files: FileChange[] = selected.map((filePath, i) => {
       const linesAdded = rand(1, 40);
       const linesRemoved = rand(0, 20);
       const statuses: FileChange['status'][] = ['added', 'modified', 'modified', 'modified'];
@@ -288,6 +290,24 @@ export class MockEngine {
         rawDiff: hunksToRawDiff(filePath, diff, status),
       };
     });
+
+    // Always include one partially staged file (simulates `git add -p`) so
+    // the Inspector list view demonstrates that a file can appear in both
+    // the Staged and Unstaged sections simultaneously.
+    const partialDiff = makeDiff(partialPath, 8, 3, 'modified');
+    files.unshift({
+      path: partialPath,
+      status: 'modified',
+      staged: true,
+      partiallyStaged: true,
+      linesAdded: 8,
+      linesRemoved: 3,
+      lastChangedAt: now,
+      diff: partialDiff,
+      rawDiff: hunksToRawDiff(partialPath, partialDiff, 'modified'),
+    });
+
+    return files;
   }
 
   /** Generate mock files for a branch diff (different subset from working diff). */
