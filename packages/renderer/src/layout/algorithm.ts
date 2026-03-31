@@ -4,7 +4,7 @@ import {
   FOLDER_V_GAP,
   FILE_V_GAP,
   FILE_NODE_W,
-  FILE_NODE_H,
+  FILE_NODE_BASE_H,
   FOLDER_NODE_W,
   FOLDER_NODE_H,
   FILES_TOP_GAP,
@@ -22,28 +22,33 @@ export interface LayoutRect {
 }
 
 /** Layout a folder subtree. Folders fan out horizontally; files stack vertically. */
-export function layoutFolder(node: TreeNode, startY: number): LayoutRect {
+export function layoutFolder(
+  node: TreeNode,
+  startY: number,
+  getFileH?: (filePath: string) => number
+): LayoutRect {
   const folders = node.children.filter((c) => c.kind === 'folder');
   const files = node.children.filter((c) => c.kind === 'file');
 
   const folderY = startY + FOLDER_NODE_H + FOLDER_V_GAP;
-  const childFolderLayouts = folders.map((f) => layoutFolder(f, folderY));
+  const childFolderLayouts = folders.map((f) => layoutFolder(f, folderY, getFileH));
 
   const fileStartY = startY + FOLDER_NODE_H + FILES_TOP_GAP;
   const childFileLayouts: LayoutRect[] = [];
   let fileY = fileStartY;
   for (const f of files) {
+    const fh = getFileH?.(f.file!.path) ?? FILE_NODE_BASE_H;
     childFileLayouts.push({
       node: f,
       x: 0,
       y: fileY,
       w: FILE_NODE_W,
-      h: FILE_NODE_H,
+      h: fh,
       subtreeW: FILE_NODE_W,
-      subtreeH: FILE_NODE_H,
+      subtreeH: fh,
       children: [],
     });
-    fileY += FILE_NODE_H + FILE_V_GAP;
+    fileY += fh + FILE_V_GAP;
   }
   const fileColumnH = files.length > 0 ? fileY - fileStartY - FILE_V_GAP : 0;
   const fileColumnW = files.length > 0 ? FILE_NODE_W : 0;
@@ -107,27 +112,29 @@ export function shiftSubtreeX(rect: LayoutRect, dx: number) {
 /** Layout all top-level children of a worktree (mix of folders and root files). */
 export function layoutWorktreeContents(
   children: TreeNode[],
-  startY: number
+  startY: number,
+  getFileH?: (filePath: string) => number
 ): { layouts: LayoutRect[]; totalW: number; totalH: number } {
   const folders = children.filter((c) => c.kind === 'folder');
   const rootFiles = children.filter((c) => c.kind === 'file');
 
-  const folderLayouts = folders.map((f) => layoutFolder(f, startY));
+  const folderLayouts = folders.map((f) => layoutFolder(f, startY, getFileH));
 
   const rootFileLayouts: LayoutRect[] = [];
   let fileY = startY;
   for (const f of rootFiles) {
+    const fh = getFileH?.(f.file!.path) ?? FILE_NODE_BASE_H;
     rootFileLayouts.push({
       node: f,
       x: 0,
       y: fileY,
       w: FILE_NODE_W,
-      h: FILE_NODE_H,
+      h: fh,
       subtreeW: FILE_NODE_W,
-      subtreeH: FILE_NODE_H,
+      subtreeH: fh,
       children: [],
     });
-    fileY += FILE_NODE_H + FILE_V_GAP;
+    fileY += fh + FILE_V_GAP;
   }
   const rootFileColumnW = rootFiles.length > 0 ? FILE_NODE_W : 0;
   const rootFileColumnH = rootFiles.length > 0 ? fileY - startY - FILE_V_GAP : 0;

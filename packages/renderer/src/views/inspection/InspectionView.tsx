@@ -183,6 +183,7 @@ export const InspectionView = React.memo(
   }: InspectionViewProps) => {
     const exitInspection = useShiftspaceStore((s) => s.exitInspection);
     const wt = useShiftspaceStore((s) => s.worktrees.get(worktreeId));
+    const insightDetails = useShiftspaceStore((s) => s.insightDetails);
     const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
     const branchList = useShiftspaceStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
     const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(worktreeId));
@@ -273,12 +274,14 @@ export const InspectionView = React.memo(
         stableFolderClick,
         stableFetchBranches,
         stableSwapBranches,
-        { bare: true, filesOverride: hierarchyFiles }
+        { bare: true, filesOverride: hierarchyFiles },
+        (wtId, filePath) => getFileFindings(insightDetails, wtId, filePath).length
       );
       return { nodes: layout.nodes, edges: layout.edges };
     }, [
       wt,
       hierarchyFiles,
+      insightDetails,
       stableFileClick,
       stableRequestBranchList,
       stableCheckoutBranch,
@@ -422,7 +425,7 @@ export const InspectionView = React.memo(
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter files"
                   className={clsx(
-                    'w-full pl-7 pr-7 py-1.5 rounded-md text-11 font-mono bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
+                    'w-full pl-7 pr-7 py-1.5 rounded-md text-11 bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
                     searchRegexError
                       ? 'border-status-deleted'
                       : 'border-border-dashed focus:border-text-muted'
