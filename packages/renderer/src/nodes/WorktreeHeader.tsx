@@ -14,6 +14,8 @@ export interface WorktreeHeaderProps {
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
   onSwapBranches?: (worktreeId: string) => void;
+  /** When true, hides branch picker and stats — used in the tree canvas nodes */
+  compact?: boolean;
 }
 
 export const WorktreeHeader = React.memo(
@@ -23,6 +25,7 @@ export const WorktreeHeader = React.memo(
     onCheckoutBranch,
     onFetchBranches,
     onSwapBranches,
+    compact,
   }: WorktreeHeaderProps) => {
     const isSingle = useShiftspaceStore((s) => s.worktrees.size <= 1);
     const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
@@ -38,6 +41,16 @@ export const WorktreeHeader = React.memo(
     // Show folder prefix only for linked (non-main) worktrees when multiple are visible
     const pathPart = !isSingle && !wt.isMainWorktree ? folderName : null;
     const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
+
+    if (compact) {
+      return (
+        <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
+          {pathPart && <span>{pathPart} </span>}
+          <GitBranchIcon />
+          <span>{pathPart ? `(${wt.branch})` : wt.branch}</span>
+        </div>
+      );
+    }
 
     return (
       <div className="flex flex-col gap-1">

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import '@vscode/codicons/dist/codicon.css';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
-import type { ShiftspaceEvent, DiffMode } from '@shiftspace/renderer';
+import type { ShiftspaceEvent, DiffMode, InsightDetail } from '@shiftspace/renderer';
 import { MockEngine, MOCK_BRANCHES } from './mock/engine';
 import {
   MOCK_ACTION_CONFIGS,
@@ -11,6 +11,73 @@ import {
   simulatePipeline,
 } from './mock/actions';
 import { ControlPanel } from './controls/ControlPanel';
+
+// ---------------------------------------------------------------------------
+// Mock insight data — seeded so insight pills are always visible in the
+// preview app's inspection mode, covering all files from each template.
+// ---------------------------------------------------------------------------
+
+function smellDetail(
+  worktreeId: string,
+  entries: Array<[string, Array<[string, string, number, number]>]>
+): InsightDetail {
+  return {
+    insightId: 'codeSmells',
+    worktreeId,
+    fileInsights: entries.map(([filePath, findings]) => ({
+      filePath,
+      findings: findings.map(([ruleId, ruleLabel, count, threshold]) => ({
+        ruleId,
+        ruleLabel,
+        count,
+        threshold,
+      })),
+    })),
+  };
+}
+
+// nextjs template — wt-0
+const MOCK_CODE_SMELL_DETAIL_WT0 = smellDetail('wt-0', [
+  ['src/app/page.tsx', [['console-log', 'Console Log', 2, 1]]],
+  ['src/components/Header.tsx', [['eslint-disable', 'ESLint Disable', 1, 1]]],
+  ['src/components/Button.tsx', [['console-log', 'Console Log', 1, 1]]],
+  ['src/lib/api.ts', [['console-log', 'Console Log', 3, 1]]],
+  [
+    'src/lib/utils.ts',
+    [
+      ['todo-comment', 'TODO Comment', 4, 3],
+      ['console-log', 'Console Log', 1, 1],
+    ],
+  ],
+  ['src/hooks/useData.ts', [['use-effect-overuse', 'useEffect Overuse', 6, 5]]],
+  ['src/hooks/useAuth.ts', [['console-log', 'Console Log', 1, 1]]],
+]);
+
+// api template — wt-1
+const MOCK_CODE_SMELL_DETAIL_WT1 = smellDetail('wt-1', [
+  [
+    'src/routes/users.ts',
+    [
+      ['console-log', 'Console Log', 2, 1],
+      ['eslint-disable', 'ESLint Disable', 1, 1],
+    ],
+  ],
+  ['src/routes/auth.ts', [['console-log', 'Console Log', 1, 1]]],
+  ['src/routes/products.ts', [['todo-comment', 'TODO Comment', 3, 3]]],
+  ['src/middleware/auth.ts', [['console-log', 'Console Log', 1, 1]]],
+  ['src/models/User.ts', [['console-log', 'Console Log', 1, 1]]],
+  ['src/models/Product.ts', [['eslint-disable', 'ESLint Disable', 2, 1]]],
+  [
+    'src/services/database.ts',
+    [
+      ['console-log', 'Console Log', 4, 1],
+      ['todo-comment', 'TODO Comment', 3, 3],
+    ],
+  ],
+  ['src/services/email.ts', [['console-log', 'Console Log', 2, 1]]],
+  ['src/utils/validate.ts', [['todo-comment', 'TODO Comment', 4, 3]]],
+  ['src/index.ts', [['console-log', 'Console Log', 1, 1]]],
+]);
 
 export const App: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
@@ -27,6 +94,7 @@ export const App: React.FC = () => {
     setActionConfigs,
     setPipelines,
     setActionState,
+    setInsightDetail,
   } = useShiftspaceStore();
 
   if (!engineRef.current) {
@@ -51,6 +119,14 @@ export const App: React.FC = () => {
       }
     }
 
+    // Seed mock code smell insight data so pills are visible in inspection mode
+    if (initialWorktrees[0]) {
+      setInsightDetail('wt-0', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT0);
+    }
+    if (initialWorktrees[1]) {
+      setInsightDetail('wt-1', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT1);
+    }
+
     const unsub = engine.subscribe((event: ShiftspaceEvent) => {
       if (event.type === 'worktree-added') {
         setWorktreeIds((ids) => [...ids, event.worktree.id]);
@@ -66,7 +142,7 @@ export const App: React.FC = () => {
     return () => {
       unsub();
     };
-  }, [resetKey, setActionState]);
+  }, [resetKey, setActionState, setInsightDetail]);
 
   // Cleanup simulations on unmount
   useEffect(() => {

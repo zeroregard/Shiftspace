@@ -12,6 +12,7 @@ import type {
   IconMap,
   AppMode,
   PipelineConfig,
+  InsightDetail,
 } from '@shiftspace/renderer';
 import './styles.css';
 
@@ -79,7 +80,8 @@ type HostMessage =
     }
   | { type: 'action-log'; worktreeId: string; actionId: string; content: string }
   | { type: 'packages-list'; packages: string[] }
-  | { type: 'icon-theme'; payload: IconMap };
+  | { type: 'icon-theme'; payload: IconMap }
+  | { type: 'insight-detail'; detail: InsightDetail };
 
 const App: React.FC = () => {
   const {
@@ -98,6 +100,8 @@ const App: React.FC = () => {
     setAvailablePackages,
     setActionLog,
     appendActionLog,
+    setInsightDetail,
+    clearInsightDetails,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useShiftspaceStore((s) => s.mode as AppMode);
@@ -111,9 +115,13 @@ const App: React.FC = () => {
     if (mode.type === 'inspection') {
       vscode?.postMessage({ type: 'enter-inspection', worktreeId: mode.worktreeId });
     } else {
+      // Clear insight details from the previous inspection to free memory
+      if (prev.type === 'inspection') {
+        clearInsightDetails(prev.worktreeId);
+      }
       vscode?.postMessage({ type: 'exit-inspection' });
     }
-  }, [mode]);
+  }, [mode, clearInsightDetails]);
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
@@ -176,6 +184,8 @@ const App: React.FC = () => {
         setAvailablePackages(msg.packages);
       } else if (msg.type === 'icon-theme') {
         setIconMap(msg.payload);
+      } else if (msg.type === 'insight-detail') {
+        setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
       }
     };
 
@@ -199,6 +209,7 @@ const App: React.FC = () => {
     setAvailablePackages,
     setActionLog,
     appendActionLog,
+    setInsightDetail,
   ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
