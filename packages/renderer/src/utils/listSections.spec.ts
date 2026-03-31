@@ -9,9 +9,10 @@ import type { WorktreeState, FileChange } from '../types';
 function makeFile(
   path: string,
   staged: boolean,
-  status: FileChange['status'] = 'modified'
+  status: FileChange['status'] = 'modified',
+  partiallyStaged?: boolean
 ): FileChange {
-  return { path, status, staged, linesAdded: 1, linesRemoved: 0, lastChangedAt: 0 };
+  return { path, status, staged, partiallyStaged, linesAdded: 1, linesRemoved: 0, lastChangedAt: 0 };
 }
 
 function makeWt(overrides: Partial<WorktreeState> = {}): WorktreeState {
@@ -67,6 +68,57 @@ describe('partitionFiles — working mode', () => {
     const wt = makeWt({ files: [] });
     const result = partitionFiles(wt);
     expect(result).toEqual({ committed: [], staged: [], unstaged: [] });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// partitionFiles — partial staging (git add -p)
+// ---------------------------------------------------------------------------
+
+describe('partitionFiles — partial staging', () => {
+  it('a partiallyStaged file appears in both staged and unstaged', () => {
+    const wt = makeWt({
+      files: [makeFile('src/api.ts', true, 'modified', true)],
+    });
+    const { staged, unstaged, committed } = partitionFiles(wt);
+    expect(staged.map((f) => f.path)).toEqual(['src/api.ts']);
+    expect(unstaged.map((f) => f.path)).toEqual(['src/api.ts']);
+    expect(committed).toEqual([]);
+  });
+
+  it('partiallyStaged file appears in both sections regardless of staged flag value', () => {
+    // staged:false + partiallyStaged:true should still appear in both sections
+    const wt = makeWt({
+      files: [makeFile('src/api.ts', false, 'modified', true)],
+    });
+    const { staged, unstaged } = partitionFiles(wt);
+    expect(staged.map((f) => f.path)).toEqual(['src/api.ts']);
+    expect(unstaged.map((f) => f.path)).toEqual(['src/api.ts']);
+  });
+
+  it('mixes normal staged, normal unstaged, and partially staged files correctly', () => {
+    const wt = makeWt({
+      files: [
+        makeFile('only-staged.ts', true),
+        makeFile('only-unstaged.ts', false),
+        makeFile('partial.ts', true, 'modified', true),
+      ],
+    });
+    const { staged, unstaged } = partitionFiles(wt);
+    expect(staged.map((f) => f.path).sort()).toEqual(['only-staged.ts', 'partial.ts'].sort());
+    expect(unstaged.map((f) => f.path).sort()).toEqual(['only-unstaged.ts', 'partial.ts'].sort());
+  });
+
+  it('partiallyStaged file appears in both sections in branch mode', () => {
+    const wt = makeWt({
+      diffMode: { type: 'branch', branch: 'main' },
+      branchFiles: [makeFile('committed.ts', false)],
+      files: [makeFile('partial.ts', true, 'modified', true)],
+    });
+    const { committed, staged, unstaged } = partitionFiles(wt);
+    expect(committed.map((f) => f.path)).toEqual(['committed.ts']);
+    expect(staged.map((f) => f.path)).toEqual(['partial.ts']);
+    expect(unstaged.map((f) => f.path)).toEqual(['partial.ts']);
   });
 });
 

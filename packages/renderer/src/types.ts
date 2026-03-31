@@ -34,6 +34,12 @@ export interface FileChange {
   path: string; // relative to worktree root
   status: 'added' | 'modified' | 'deleted';
   staged: boolean;
+  /**
+   * True when the file has both staged and unstaged chunks (i.e. `git add -p`
+   * was used to partially stage it). When set, the file appears in **both**
+   * the Staged and Unstaged sections of the Inspector list view.
+   */
+  partiallyStaged?: boolean;
   committed?: boolean; // true for files from a branch diff (already committed)
   linesAdded: number;
   linesRemoved: number;
