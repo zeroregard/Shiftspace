@@ -247,8 +247,8 @@ The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen densi
   - Install browsers once: `pnpm --filter @shiftspace/preview exec playwright install chromium`
   - Run tests: `pnpm --filter @shiftspace/preview test:e2e`
   - Interactive UI mode: `pnpm --filter @shiftspace/preview test:e2e:ui`
-- **Updating snapshots:** `pnpm --filter @shiftspace/preview test:e2e:update` locally, or trigger the "Update Screenshots" workflow in GitHub Actions for CI-consistent baselines
-- **CI:** `e2e-tests.yml` runs on every PR and push to main; `update-screenshots.yml` is manually triggered via `workflow_dispatch` to regenerate baselines on a specified branch
+- **Updating snapshots:** `pnpm --filter @shiftspace/preview test:e2e:update` locally, or open a PR — CI will auto-update and commit snapshots for you
+- **CI:** `e2e.yml` runs on every PR — always updates snapshots, auto-commits them back to the PR branch, and posts a before/after screenshot comparison comment
 - **Adding new tests:** Put `.spec.ts` files in `apps/preview/e2e/`. Use `toHaveScreenshot('descriptive-name.png')` for visual regression. Screenshots generated on first run become the baseline.
 
 ---

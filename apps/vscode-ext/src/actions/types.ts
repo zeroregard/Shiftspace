@@ -12,9 +12,21 @@ export interface PipelineConfig {
   stopOnFailure: boolean;
 }
 
+export interface SmellRule {
+  id: string;
+  label: string;
+  /** JavaScript regex pattern, matched per line. */
+  pattern: string;
+  /** Minimum matches in a file to flag it (>= 1). */
+  threshold: number;
+  /** File extensions this rule applies to (e.g. ['.ts', '.tsx']). Omit to apply to all. */
+  fileTypes?: string[];
+}
+
 export interface ShiftspaceConfig {
   actions: ShiftspaceActionConfig[];
   pipelines?: Record<string, PipelineConfig>;
+  smells?: SmellRule[];
 }
 
 // Check states

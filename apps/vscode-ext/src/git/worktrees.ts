@@ -179,7 +179,6 @@ export async function cleanStaleLockFile(worktreePath: string, maxAgeMs = 5000):
     const ageMs = Date.now() - stat.mtimeMs;
     if (ageMs > maxAgeMs) {
       await fs.unlink(lockFile);
-      console.log(`[Shiftspace] Cleaned stale lock file: ${lockFile} (age: ${ageMs}ms)`);
       return true;
     }
     // Lock file exists but is fresh — a git operation is likely in progress

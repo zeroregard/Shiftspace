@@ -1,0 +1,282 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  e2e:
+    name: 🎭 E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Restore Playwright browsers cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/preview/package.json') }}
+
+      - name: Install Playwright system deps
+        run: bun run --filter @shiftspace/preview playwright:install-deps
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bun run --filter @shiftspace/preview playwright:install
+
+      - name: Check for e2e tests
+        id: check-tests
+        run: |
+          if find apps/preview/e2e -name '*.spec.ts' 2>/dev/null | grep -q .; then
+            echo "exist=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exist=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record baseline SHA
+        id: baseline
+        run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Run Playwright with --update-snapshots
+        id: playwright
+        if: steps.check-tests.outputs.exist == 'true'
+        continue-on-error: true
+        run: bun run --filter @shiftspace/preview test:e2e:update
+
+      - name: Detect screenshot changes
+        id: detect
+        if: steps.check-tests.outputs.exist == 'true'
+        run: |
+          # Staged changes
+          MODIFIED=$(git diff --name-only -- 'apps/preview/e2e/__screenshots__/**/*.png' 'apps/preview/e2e/__screenshots__/**/*.jpg' 2>/dev/null || true)
+          # Untracked new files
+          NEW=$(git ls-files --others --exclude-standard -- 'apps/preview/e2e/__screenshots__/**/*.png' 'apps/preview/e2e/__screenshots__/**/*.jpg' 2>/dev/null || true)
+
+          if [ -n "$MODIFIED" ] || [ -n "$NEW" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit updated screenshots
+        id: commit
+        if: steps.check-tests.outputs.exist == 'true' && steps.detect.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add 'apps/preview/e2e/__screenshots__/'
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No screenshot changes to commit."
+          else
+            git commit -m "chore: update e2e snapshots"
+            git push -u origin ${{ github.head_ref }}
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "new_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Playwright report
+        if: steps.playwright.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/preview/playwright-report/
+          retention-days: 7
+
+      - name: Build PR comment
+        id: build-comment
+        if: steps.check-tests.outputs.exist == 'true'
+        env:
+          REPO: ${{ github.repository }}
+          OLD_SHA: ${{ steps.baseline.outputs.sha }}
+          NEW_SHA: ${{ steps.commit.outputs.new_sha || steps.baseline.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          SCREENSHOTS_DIR="apps/preview/e2e/__screenshots__"
+
+          # Collect changed/added/deleted screenshots vs base branch
+          CHANGED_FILES=$(git diff --name-status "${OLD_SHA}" "${NEW_SHA}" -- "${SCREENSHOTS_DIR}/" 2>/dev/null || true)
+
+          CHANGED_LIST=""
+          NEW_LIST=""
+          DELETED_LIST=""
+          UNCHANGED_LIST=""
+
+          # Process changed files
+          while IFS=$'\t' read -r status file; do
+            [ -z "$file" ] && continue
+            NAME=$(basename "$file")
+            case "$status" in
+              M)
+                BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
+                AFTER_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${file}"
+                CHANGED_LIST="${CHANGED_LIST}
+          <details>
+          <summary>🔄 ${NAME}</summary>
+
+          | Before | After |
+          |--------|-------|
+          | ![before](${BEFORE_URL}) | ![after](${AFTER_URL}) |
+
+          </details>
+          "
+                ;;
+              A)
+                AFTER_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${file}"
+                NEW_LIST="${NEW_LIST}
+          <details>
+          <summary>🆕 ${NAME}</summary>
+
+          ![new](${AFTER_URL})
+
+          </details>
+          "
+                ;;
+              D)
+                BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
+                DELETED_LIST="${DELETED_LIST}
+          <details>
+          <summary>🗑️ ${NAME}</summary>
+
+          ![removed](${BEFORE_URL})
+
+          </details>
+          "
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          # Collect unchanged screenshots (all tracked pngs not in the above lists)
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            NAME=$(basename "$file")
+            # Skip if already listed as changed/added/deleted
+            if echo "$CHANGED_FILES" | grep -q "$file"; then
+              continue
+            fi
+            UNCHANGED_LIST="${UNCHANGED_LIST}${NAME}, "
+          done < <(git ls-files -- "${SCREENSHOTS_DIR}/**/*.png" "${SCREENSHOTS_DIR}/**/*.jpg" 2>/dev/null || true)
+          UNCHANGED_LIST="${UNCHANGED_LIST%, }"
+
+          # Counts
+          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c '^M' || true)
+          NEW_COUNT=$(echo "$CHANGED_FILES" | grep -c '^A' || true)
+          DELETED_COUNT=$(echo "$CHANGED_FILES" | grep -c '^D' || true)
+
+          # Build comment
+          {
+            echo "<!-- e2e-screenshot-report -->"
+            echo "## 📸 E2E Screenshot Report"
+            echo ""
+
+            if [ "$CHANGED_COUNT" -eq 0 ] && [ "$NEW_COUNT" -eq 0 ] && [ "$DELETED_COUNT" -eq 0 ]; then
+              echo "📸 All screenshots unchanged."
+            else
+              if [ "$CHANGED_COUNT" -gt 0 ]; then
+                echo "### Changed (${CHANGED_COUNT})"
+                echo ""
+                echo "${CHANGED_LIST}"
+              fi
+              if [ "$NEW_COUNT" -gt 0 ]; then
+                echo "### New (${NEW_COUNT})"
+                echo ""
+                echo "${NEW_LIST}"
+              fi
+              if [ "$DELETED_COUNT" -gt 0 ]; then
+                echo "### Removed (${DELETED_COUNT})"
+                echo ""
+                echo "${DELETED_LIST}"
+              fi
+              if [ -n "$UNCHANGED_LIST" ]; then
+                echo "### Unchanged"
+                echo ""
+                echo "${UNCHANGED_LIST}"
+              fi
+            fi
+
+            echo ""
+            echo "_[View workflow run](${RUN_URL})_"
+          } > /tmp/pr-comment.md
+
+          echo "comment_file=/tmp/pr-comment.md" >> "$GITHUB_OUTPUT"
+
+      - name: Find existing PR comment
+        id: find-comment
+        if: steps.check-tests.outputs.exist == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_ID=$(gh api \
+            repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            --jq '[.[] | select(.body | startswith("<!-- e2e-screenshot-report -->"))] | last | .id // empty')
+          echo "comment_id=${COMMENT_ID:-}" >> "$GITHUB_OUTPUT"
+
+      - name: Post or update PR comment
+        if: steps.check-tests.outputs.exist == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_ID="${{ steps.find-comment.outputs.comment_id }}"
+          if [ -n "$COMMENT_ID" ]; then
+            echo "Updating existing comment #${COMMENT_ID}."
+            gh api \
+              repos/${{ github.repository }}/issues/comments/${COMMENT_ID} \
+              -X PATCH \
+              -f body="$(cat /tmp/pr-comment.md)"
+          else
+            echo "Posting new comment."
+            gh pr comment "${{ github.event.pull_request.number }}" \
+              --repo "${{ github.repository }}" \
+              --body-file /tmp/pr-comment.md
+          fi
+
+      - name: Post "no e2e tests" comment
+        if: steps.check-tests.outputs.exist == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "<!-- e2e-screenshot-report -->
+          ## 📸 E2E Screenshot Report
+
+          No e2e tests found."
+
+      - name: Fail if Playwright tests failed
+        if: steps.playwright.outcome == 'failure'
+        run: |
+          echo "Playwright tests failed. See uploaded report for details."
+          exit 1

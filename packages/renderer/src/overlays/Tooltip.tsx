@@ -2,7 +2,7 @@ import React from 'react';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 
 interface Props {
-  content: string;
+  content: React.ReactNode;
   children: React.ReactNode;
   delayDuration?: number;
 }

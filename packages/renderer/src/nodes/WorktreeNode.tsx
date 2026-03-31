@@ -29,6 +29,7 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
         onCheckoutBranch={data.onCheckoutBranch}
         onFetchBranches={data.onFetchBranches}
         onSwapBranches={data.onSwapBranches}
+        compact
       />
     </div>
   );

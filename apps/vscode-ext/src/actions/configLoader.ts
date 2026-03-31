@@ -12,6 +12,53 @@ export function parseShiftspaceConfig(content: string): ShiftspaceConfig {
   return parsed as ShiftspaceConfig;
 }
 
+/**
+ * Validate smell rules, returning an array of valid rules.
+ * Invalid patterns are skipped with a warning; invalid thresholds are corrected.
+ */
+export function validateSmellRules(rules: unknown[]): import('./types').SmellRule[] {
+  const seen = new Set<string>();
+  const valid: import('./types').SmellRule[] = [];
+
+  for (const rule of rules) {
+    if (typeof rule !== 'object' || rule === null) continue;
+    const r = rule as Record<string, unknown>;
+
+    const id = typeof r['id'] === 'string' ? r['id'] : undefined;
+    const label = typeof r['label'] === 'string' ? r['label'] : undefined;
+    const pattern = typeof r['pattern'] === 'string' ? r['pattern'] : undefined;
+    const threshold = typeof r['threshold'] === 'number' ? r['threshold'] : 1;
+
+    if (!id || !label || !pattern) {
+      console.warn('[Shiftspace] Smell rule missing required fields, skipping:', rule);
+      continue;
+    }
+    if (seen.has(id)) {
+      console.warn(`[Shiftspace] Duplicate smell rule id "${id}", skipping`);
+      continue;
+    }
+    if (threshold < 1) {
+      console.warn(`[Shiftspace] Smell rule "${id}" has threshold < 1, defaulting to 1`);
+    }
+
+    try {
+      new RegExp(pattern);
+    } catch {
+      console.warn(`[Shiftspace] Smell rule "${id}" has invalid regex pattern, skipping`);
+      continue;
+    }
+
+    const fileTypes = Array.isArray(r['fileTypes'])
+      ? (r['fileTypes'] as unknown[]).filter((ft): ft is string => typeof ft === 'string')
+      : undefined;
+
+    seen.add(id);
+    valid.push({ id, label, pattern, threshold: Math.max(1, threshold), fileTypes });
+  }
+
+  return valid;
+}
+
 /** Validate config, return array of error strings (empty = valid) */
 export function validateConfig(config: ShiftspaceConfig): string[] {
   const errors: string[] = [];
@@ -97,9 +144,14 @@ export class ConfigLoader implements vscode.Disposable {
     const additionalActions = vsSettings.get<ShiftspaceActionConfig[]>('additionalActions') ?? [];
 
     const baseActions = fileConfig?.actions ?? [];
+    const smells = Array.isArray(fileConfig?.smells)
+      ? validateSmellRules(fileConfig.smells as unknown[])
+      : [];
+
     const merged: ShiftspaceConfig = {
       actions: mergeConfigs(baseActions, additionalActions),
       pipelines: fileConfig?.pipelines,
+      smells,
     };
 
     const errors = validateConfig(merged);

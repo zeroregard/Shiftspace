@@ -85,6 +85,7 @@ export const WorktreeCard = React.memo(
               />
             ) : (
               <button
+                data-testid={`enter-inspection-${wt.id}`}
                 className="font-semibold text-13 text-text-primary truncate text-left bg-transparent border-none p-0 cursor-pointer hover:text-text-secondary transition-colors flex-1 min-w-0"
                 onClick={() => enterInspection(wt.id)}
               >

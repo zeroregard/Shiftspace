@@ -5,6 +5,9 @@ import { GitDataProvider } from './GitDataProvider';
 import { ActionCoordinator } from './actions/ActionCoordinator';
 import { getGitRoot } from './git/worktrees';
 import { IconThemeProvider } from './IconThemeProvider';
+import { InsightRunner } from './insights/runner';
+// Register built-in insight plugins (side-effect import)
+import './insights/plugins/codeSmells';
 
 export class ShiftspacePanel {
   private static currentPanel: ShiftspacePanel | undefined;
@@ -14,6 +17,11 @@ export class ShiftspacePanel {
   private _actionCoordinator: ActionCoordinator | undefined;
 
   private _iconProvider: IconThemeProvider | undefined;
+  private _insightRunner: InsightRunner | undefined;
+
+  // Insight state
+  private _currentInspectedWorktreeId: string | undefined;
+  private _insightDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Workspace-switching state
   private _gitRootCache = new Map<string, string>(); // dir → gitRoot
@@ -123,6 +131,15 @@ export class ShiftspacePanel {
           void this._actionCoordinator?.setPackage(message.packageName);
         } else if (message.type === 'detect-packages') {
           void this._actionCoordinator?.detectAndSendPackages();
+        } else if (message.type === 'enter-inspection' && message.worktreeId) {
+          this._currentInspectedWorktreeId = message.worktreeId;
+          void this.runInsights(message.worktreeId);
+        } else if (message.type === 'exit-inspection') {
+          this._currentInspectedWorktreeId = undefined;
+          if (this._insightDebounceTimer !== undefined) {
+            clearTimeout(this._insightDebounceTimer);
+            this._insightDebounceTimer = undefined;
+          }
         }
       },
       null,
@@ -142,10 +159,26 @@ export class ShiftspacePanel {
     this._actionCoordinator?.dispose();
     this._iconProvider?.dispose();
     this._settingsChangeDisposable?.dispose();
+    this._currentInspectedWorktreeId = undefined;
+    if (this._insightDebounceTimer !== undefined) {
+      clearTimeout(this._insightDebounceTimer);
+      this._insightDebounceTimer = undefined;
+    }
+
+    this._insightRunner = new InsightRunner();
 
     this._gitProvider = new GitDataProvider(postMessage, (worktreeId) => {
       // Called by GitDataProvider when files change → stale check states
       this._actionCoordinator?.markAllStale(worktreeId);
+      // If currently inspecting this worktree, debounce insight re-analysis
+      if (this._currentInspectedWorktreeId === worktreeId) {
+        if (this._insightDebounceTimer !== undefined) clearTimeout(this._insightDebounceTimer);
+        this._insightDebounceTimer = setTimeout(() => {
+          this._insightDebounceTimer = undefined;
+          this._insightRunner?.clearCache(worktreeId);
+          void this.runInsights(worktreeId);
+        }, 2000);
+      }
     });
     this._actionCoordinator = new ActionCoordinator(postMessage);
     this._iconProvider = new IconThemeProvider();
@@ -278,12 +311,48 @@ export class ShiftspacePanel {
     return root;
   }
 
+  private async runInsights(worktreeId: string): Promise<void> {
+    if (!this._insightRunner || !this._gitProvider || !this._currentGitRoot) return;
+
+    const worktrees = this._gitProvider.getWorktrees();
+    const wt = worktrees.find((w) => w.id === worktreeId);
+    if (!wt) return;
+
+    const files = this._gitProvider.getWorktreeFiles(worktreeId);
+    const smellRules = this._actionCoordinator?.getSmellRules() ?? [];
+
+    const extraSettings: Record<string, Record<string, unknown>> = {
+      codeSmells: { smellRules },
+    };
+
+    try {
+      const { details } = await this._insightRunner.analyzeWorktree(
+        worktreeId,
+        files,
+        this._currentGitRoot,
+        wt.path,
+        undefined,
+        extraSettings
+      );
+
+      for (const detail of details) {
+        void this._panel.webview.postMessage({ type: 'insight-detail', detail });
+      }
+    } catch (err) {
+      console.error('[Shiftspace] runInsights error:', err);
+    }
+  }
+
   private dispose() {
     ShiftspacePanel.currentPanel = undefined;
 
     if (this._repoSwitchTimer !== undefined) {
       clearTimeout(this._repoSwitchTimer);
       this._repoSwitchTimer = undefined;
+    }
+    if (this._insightDebounceTimer !== undefined) {
+      clearTimeout(this._insightDebounceTimer);
+      this._insightDebounceTimer = undefined;
     }
     this._editorChangeDisposable?.dispose();
     this._editorChangeDisposable = undefined;
@@ -296,6 +365,7 @@ export class ShiftspacePanel {
     this._actionCoordinator = undefined;
     this._iconProvider?.dispose();
     this._iconProvider = undefined;
+    this._insightRunner = undefined;
     this._panel.dispose();
     for (const d of this._disposables) d.dispose();
     this._disposables = [];

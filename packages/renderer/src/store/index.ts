@@ -10,6 +10,8 @@ import type {
   AppMode,
   IconMap,
   PipelineConfig,
+  InsightDetail,
+  InsightFinding,
 } from '../types';
 
 interface ShiftspaceStore {
@@ -36,6 +38,8 @@ interface ShiftspaceStore {
    * Empty object in the preview app — FileNode falls back to built-in icons.
    */
   iconMap: IconMap;
+  /** Insight details keyed by `${worktreeId}:${insightId}` */
+  insightDetails: Map<string, InsightDetail>;
   setLODLevel: (level: LODLevel) => void;
   enterInspection: (worktreeId: string) => void;
   exitInspection: () => void;
@@ -62,6 +66,27 @@ interface ShiftspaceStore {
   setAvailablePackages: (packages: string[]) => void;
   /** Transitions passed/failed check states to 'stale' for the given worktree */
   markAllStale: (worktreeId: string) => void;
+  setInsightDetail: (worktreeId: string, insightId: string, detail: InsightDetail) => void;
+  /** Clear all insight details for a worktree (called on exit inspection). */
+  clearInsightDetails: (worktreeId: string) => void;
+}
+
+/**
+ * Collect all InsightFindings for a file across all loaded insight plugins.
+ * Pass `store.insightDetails` as the first argument.
+ */
+export function getFileFindings(
+  details: Map<string, InsightDetail>,
+  worktreeId: string,
+  filePath: string
+): InsightFinding[] {
+  const findings: InsightFinding[] = [];
+  for (const [key, detail] of details) {
+    if (!key.startsWith(`${worktreeId}:`)) continue;
+    const fi = detail.fileInsights.find((f) => f.filePath === filePath);
+    if (fi) findings.push(...fi.findings);
+  }
+  return findings;
 }
 
 export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
@@ -79,6 +104,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   pipelines: {},
   availablePackages: [],
   iconMap: {},
+  insightDetails: new Map(),
 
   setLODLevel: (level) => set({ lodLevel: level }),
 
@@ -177,6 +203,26 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   setPipelines: (pipelines) => set({ pipelines }),
 
   setAvailablePackages: (packages) => set({ availablePackages: packages }),
+
+  setInsightDetail: (worktreeId, insightId, detail) =>
+    set((s) => {
+      const insightDetails = new Map(s.insightDetails);
+      insightDetails.set(`${worktreeId}:${insightId}`, detail);
+      return { insightDetails };
+    }),
+
+  clearInsightDetails: (worktreeId) =>
+    set((s) => {
+      const insightDetails = new Map(s.insightDetails);
+      let changed = false;
+      for (const key of insightDetails.keys()) {
+        if (key.startsWith(`${worktreeId}:`)) {
+          insightDetails.delete(key);
+          changed = true;
+        }
+      }
+      return changed ? { insightDetails } : {};
+    }),
 
   markAllStale: (worktreeId) =>
     set((s) => {
