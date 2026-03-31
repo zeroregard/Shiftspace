@@ -6,6 +6,7 @@ import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { Tooltip } from '../overlays/Tooltip';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
+import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useShallow } from 'zustand/react/shallow';
 import { useShiftspaceStore, getFileFindings } from '../store';
 
@@ -28,9 +29,11 @@ function getChangeTint(file: FileChange): string {
 
 export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) => {
   const { file, onFileClick, worktreeId } = data;
+  const { hoveredFilePath } = useInspectionHover();
   const fileName = file.path.split('/').pop() ?? file.path;
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
   const isDeleted = file.status === 'deleted';
+  const isHovered = hoveredFilePath === file.path;
 
   const findings = useShiftspaceStore(
     useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
@@ -41,10 +44,14 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
     <DiffPopover file={file}>
       <div
         className={clsx(
-          'w-full h-full border border-border-default rounded-md text-text-secondary transition-[background,opacity] duration-300',
-          isPulsing ? 'bg-node-file-pulse' : 'bg-node-file'
+          'w-full h-full border border-border-default rounded-md text-text-secondary transition-[background,opacity,border-color] duration-300',
+          isHovered
+            ? 'bg-node-file-pulse border-border-staged'
+            : isPulsing
+              ? 'bg-node-file-pulse'
+              : 'bg-node-file'
         )}
-        style={{ background: getChangeTint(file) }}
+        style={{ background: isHovered ? undefined : getChangeTint(file) }}
       >
         <button
           className={clsx(

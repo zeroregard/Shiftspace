@@ -19,6 +19,13 @@ export interface SingleWorktreeLayout {
   containerH: number;
 }
 
+export interface SingleWorktreeLayoutOptions {
+  /** When true, the worktree container renders without border, background, or header. */
+  bare?: boolean;
+  /** Override the file list used for building the tree (e.g. to include branch diff files). */
+  filesOverride?: import('../types').FileChange[];
+}
+
 /** Compute layout for a single worktree, with all nodes positioned from x=0. */
 export function computeSingleWorktreeLayout(
   wt: WorktreeState,
@@ -27,9 +34,11 @@ export function computeSingleWorktreeLayout(
   onCheckoutBranch?: (worktreeId: string, branch: string) => void,
   onFolderClick?: (worktreeId: string, folderPath: string) => void,
   onFetchBranches?: (worktreeId: string) => void,
-  onSwapBranches?: (worktreeId: string) => void
+  onSwapBranches?: (worktreeId: string) => void,
+  options?: SingleWorktreeLayoutOptions
 ): SingleWorktreeLayout {
-  const treeChildren = buildTree(wt.id, wt.files);
+  const files = options?.filesOverride ?? wt.files;
+  const treeChildren = buildTree(wt.id, files);
   const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
   const { layouts, totalW, totalH } = layoutWorktreeContents(treeChildren, contentsStartY);
 
@@ -51,6 +60,7 @@ export function computeSingleWorktreeLayout(
     onCheckoutBranch,
     onFetchBranches,
     onSwapBranches,
+    bare: options?.bare,
   };
   nodes.push({
     id: wtNodeId,

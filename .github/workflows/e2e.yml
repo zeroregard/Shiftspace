@@ -66,9 +66,14 @@ jobs:
             echo "exist=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Record baseline SHA
+      - name: Record baseline and head SHAs
         id: baseline
-        run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        run: |
+          # Use the merge-base with the PR target so that NEW screenshots
+          # added in the PR show up as "Added" in the comparison comment.
+          BASE_SHA=$(git merge-base HEAD origin/${{ github.base_ref }})
+          echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
+          echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
       - name: Run Playwright with --update-snapshots
         id: playwright
@@ -122,7 +127,7 @@ jobs:
         env:
           REPO: ${{ github.repository }}
           OLD_SHA: ${{ steps.baseline.outputs.sha }}
-          NEW_SHA: ${{ steps.commit.outputs.new_sha || steps.baseline.outputs.sha }}
+          NEW_SHA: ${{ steps.commit.outputs.new_sha || steps.baseline.outputs.head_sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           SCREENSHOTS_DIR="apps/preview/e2e/__screenshots__"

@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef } from 'react';
+import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import type { DiffMode, FileChange } from '../../types';
@@ -6,11 +6,16 @@ import { useShiftspaceStore, getFileFindings } from '../../store';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { BranchPickerPopover } from '../../overlays/BranchPickerPopover';
-import { DiffPopover } from '../../overlays/DiffPopover';
 import { Tooltip } from '../../overlays/Tooltip';
 import { ThemedFileIcon } from '../../shared/ThemedFileIcon';
+import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
 import { GitCompareIcon, GitBranchIcon } from '../../icons';
-import { partitionFiles } from '../../utils/listSections';
+import {
+  partitionFiles,
+  filterFilesByQuery,
+  getAllFilteredFiles,
+  isValidRegex,
+} from '../../utils/listSections';
 import { computeSingleWorktreeLayout } from '../../layout';
 import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
@@ -43,10 +48,11 @@ interface InspectionFileRowProps {
   file: FileChange;
   worktreeId: string;
   onFileClick?: (worktreeId: string, filePath: string) => void;
+  onHoverFile?: (filePath: string | null) => void;
 }
 
 const InspectionFileRow = React.memo(
-  ({ file, worktreeId, onFileClick }: InspectionFileRowProps) => {
+  ({ file, worktreeId, onFileClick, onHoverFile }: InspectionFileRowProps) => {
     const parts = file.path.split('/');
     const fileName = parts.pop() ?? file.path;
     const dirPath = parts.join('/');
@@ -58,70 +64,70 @@ const InspectionFileRow = React.memo(
     const totalFindings = findings.length;
 
     return (
-      <DiffPopover file={file}>
-        <button
-          className={clsx(
-            'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
-            'hover:bg-node-file-pulse',
-            onFileClick ? 'cursor-pointer' : 'cursor-default'
-          )}
-          onClick={() => onFileClick?.(worktreeId, file.path)}
-        >
-          {/* File icon */}
-          <span className="shrink-0 flex items-center">
-            <ThemedFileIcon filePath={file.path} size={16} />
-          </span>
+      <button
+        className={clsx(
+          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
+          'hover:bg-node-file-pulse',
+          onFileClick ? 'cursor-pointer' : 'cursor-default'
+        )}
+        onClick={() => onFileClick?.(worktreeId, file.path)}
+        onMouseEnter={() => onHoverFile?.(file.path)}
+        onMouseLeave={() => onHoverFile?.(null)}
+      >
+        {/* File icon */}
+        <span className="shrink-0 flex items-center">
+          <ThemedFileIcon filePath={file.path} size={16} />
+        </span>
 
-          {/* Filename + directory */}
-          <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
-            <span
-              className={clsx(
-                'shrink-0',
-                isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
-              )}
-            >
-              {fileName}
-            </span>
-            {dirPath && (
-              <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
-                {dirPath}
-              </span>
-            )}
-          </span>
-
-          {/* Smell pill */}
-          {totalFindings > 0 && (
-            <Tooltip
-              content={
-                <div className="flex flex-col gap-0.5">
-                  {findings.map((f) => (
-                    <span key={f.ruleId}>
-                      {f.threshold === 1
-                        ? `${f.ruleLabel}: ${f.count} found`
-                        : `${f.ruleLabel}: 1 found (${f.count} occurrences, threshold: ${f.threshold})`}
-                    </span>
-                  ))}
-                </div>
-              }
-              delayDuration={200}
-            >
-              <span className="text-10 text-status-modified font-medium shrink-0 px-1 py-0.5 rounded border border-status-modified/30 bg-status-modified/10">
-                ⚠ {totalFindings}
-              </span>
-            </Tooltip>
-          )}
-
-          {/* Status letter */}
+        {/* Filename + directory */}
+        <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
           <span
             className={clsx(
-              'text-11 font-mono font-semibold w-3 shrink-0',
-              STATUS_COLOR_CLASS[file.status]
+              'shrink-0',
+              isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
             )}
           >
-            {STATUS_LETTER[file.status]}
+            {fileName}
           </span>
-        </button>
-      </DiffPopover>
+          {dirPath && (
+            <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+              {dirPath}
+            </span>
+          )}
+        </span>
+
+        {/* Smell pill */}
+        {totalFindings > 0 && (
+          <Tooltip
+            content={
+              <div className="flex flex-col gap-0.5">
+                {findings.map((f) => (
+                  <span key={f.ruleId}>
+                    {f.threshold === 1
+                      ? `${f.ruleLabel}: ${f.count} found`
+                      : `${f.ruleLabel}: 1 found (${f.count} occurrences, threshold: ${f.threshold})`}
+                  </span>
+                ))}
+              </div>
+            }
+            delayDuration={200}
+          >
+            <span className="text-10 text-status-modified font-medium shrink-0 px-1 py-0.5 rounded border border-status-modified/30 bg-status-modified/10">
+              ⚠ {totalFindings}
+            </span>
+          </Tooltip>
+        )}
+
+        {/* Status letter */}
+        <span
+          className={clsx(
+            'text-11 font-mono font-semibold w-3 shrink-0',
+            STATUS_COLOR_CLASS[file.status]
+          )}
+        >
+          {STATUS_LETTER[file.status]}
+        </span>
+      </button>
     );
   }
 );
@@ -236,6 +242,25 @@ export const InspectionView = React.memo(
     swapBranchesRef.current = onSwapBranches;
     const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
+
+    const searchRegexError = useMemo(() => !isValidRegex(searchQuery), [searchQuery]);
+
+    // Clear filter and hover when switching worktrees
+    useEffect(() => {
+      setSearchQuery('');
+      setHoveredFilePath(null);
+    }, [worktreeId]);
+
+    // Compute the combined file list for the hierarchy panel (must match list panel).
+    // In branch diff mode, include branchFiles + staged + unstaged.
+    // Apply search filter so hierarchy matches the list panel.
+    const hierarchyFiles = useMemo(
+      () => (wt ? getAllFilteredFiles(wt, searchQuery) : []),
+      [wt, searchQuery]
+    );
+
     // Compute tree layout for the tree panel
     const { nodes, edges } = useMemo(() => {
       if (!wt) return { nodes: [], edges: [] };
@@ -246,11 +271,13 @@ export const InspectionView = React.memo(
         stableCheckoutBranch,
         stableFolderClick,
         stableFetchBranches,
-        stableSwapBranches
+        stableSwapBranches,
+        { bare: true, filesOverride: hierarchyFiles }
       );
       return { nodes: layout.nodes, edges: layout.edges };
     }, [
       wt,
+      hierarchyFiles,
       stableFileClick,
       stableRequestBranchList,
       stableCheckoutBranch,
@@ -294,7 +321,25 @@ export const InspectionView = React.memo(
     const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
 
     const { committed, staged, unstaged } = partitionFiles(wt);
-    const isEmpty = committed.length === 0 && staged.length === 0 && unstaged.length === 0;
+
+    const hoverContextValue = useMemo(() => ({ hoveredFilePath }), [hoveredFilePath]);
+
+    const filteredCommitted = useMemo(
+      () => filterFilesByQuery(committed, searchQuery),
+      [committed, searchQuery]
+    );
+    const filteredStaged = useMemo(
+      () => filterFilesByQuery(staged, searchQuery),
+      [staged, searchQuery]
+    );
+    const filteredUnstaged = useMemo(
+      () => filterFilesByQuery(unstaged, searchQuery),
+      [unstaged, searchQuery]
+    );
+    const totalFileCount = committed.length + staged.length + unstaged.length;
+    const filteredFileCount =
+      filteredCommitted.length + filteredStaged.length + filteredUnstaged.length;
+    const isEmpty = filteredFileCount === 0;
 
     return (
       <div className="w-full h-full flex flex-col bg-canvas">
@@ -361,47 +406,91 @@ export const InspectionView = React.memo(
         {/* Split panels */}
         <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">
           {/* List panel (~35%) */}
-          <div className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed overflow-y-auto shrink-0">
-            <div className="p-2">
+          <div className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0">
+            {/* Search filter */}
+            <div className="px-2 pt-2 pb-1 shrink-0">
+              <div className="relative">
+                <i
+                  className="codicon codicon-search absolute left-2 top-1/2 -translate-y-1/2 text-text-faint"
+                  style={{ fontSize: 12 }}
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter files (regex)"
+                  className={clsx(
+                    'w-full pl-7 pr-7 py-1.5 rounded-md text-11 font-mono bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
+                    searchRegexError
+                      ? 'border-status-deleted'
+                      : 'border-border-dashed focus:border-text-muted'
+                  )}
+                />
+                {searchQuery && (
+                  <button
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <i
+                      className="codicon codicon-close"
+                      style={{ fontSize: 12 }}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <div className="text-10 text-text-faint px-1 pt-1">
+                  {filteredFileCount} / {totalFileCount} files
+                </div>
+              )}
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 pt-0">
               {isEmpty ? (
-                <div className="text-text-faint text-11 px-3 py-2">No changes</div>
+                <div className="text-text-faint text-11 px-3 py-2">
+                  {searchQuery ? 'No matching files' : 'No changes'}
+                </div>
               ) : (
                 <>
-                  {committed.length > 0 && (
+                  {filteredCommitted.length > 0 && (
                     <>
                       <SectionLabel label="Committed" />
-                      {committed.map((file) => (
+                      {filteredCommitted.map((file) => (
                         <InspectionFileRow
                           key={file.path}
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
+                          onHoverFile={setHoveredFilePath}
                         />
                       ))}
                     </>
                   )}
-                  {staged.length > 0 && (
+                  {filteredStaged.length > 0 && (
                     <>
                       <SectionLabel label="Staged" />
-                      {staged.map((file) => (
+                      {filteredStaged.map((file) => (
                         <InspectionFileRow
                           key={file.path}
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
+                          onHoverFile={setHoveredFilePath}
                         />
                       ))}
                     </>
                   )}
-                  {unstaged.length > 0 && (
+                  {filteredUnstaged.length > 0 && (
                     <>
                       <SectionLabel label="Unstaged" />
-                      {unstaged.map((file) => (
+                      {filteredUnstaged.map((file) => (
                         <InspectionFileRow
                           key={file.path}
                           file={file}
                           worktreeId={wt.id}
                           onFileClick={onFileClick}
+                          onHoverFile={setHoveredFilePath}
                         />
                       ))}
                     </>
@@ -413,12 +502,14 @@ export const InspectionView = React.memo(
 
           {/* Tree panel (~65%) */}
           <div className="flex-1 min-h-0 min-w-0 relative">
-            <TreeCanvas
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={NODE_TYPES}
-              panZoomConfig={panZoomConfig}
-            />
+            <InspectionHoverContext.Provider value={hoverContextValue}>
+              <TreeCanvas
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={NODE_TYPES}
+                panZoomConfig={panZoomConfig}
+              />
+            </InspectionHoverContext.Provider>
           </div>
         </div>
       </div>
