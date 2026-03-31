@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import '@vscode/codicons/dist/codicon.css';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
-import type { ShiftspaceEvent, DiffMode, InsightDetail } from '@shiftspace/renderer';
+import type {
+  ShiftspaceEvent,
+  DiffMode,
+  InsightDetail,
+  FileDiagnosticSummary,
+} from '@shiftspace/renderer';
 import { MockEngine, MOCK_BRANCHES } from './mock/engine';
 import {
   MOCK_ACTION_CONFIGS,
@@ -79,6 +84,110 @@ const MOCK_CODE_SMELL_DETAIL_WT1 = smellDetail('wt-1', [
   ['src/index.ts', [['console-log', 'Console Log', 1, 1]]],
 ]);
 
+// ---------------------------------------------------------------------------
+// Mock diagnostic data — simulates VSCode diagnostics (TS errors, lint warnings)
+// ---------------------------------------------------------------------------
+
+const MOCK_DIAGNOSTICS_WT0: FileDiagnosticSummary[] = [
+  {
+    filePath: 'src/app/page.tsx',
+    errors: 1,
+    warnings: 1,
+    info: 0,
+    hints: 0,
+    details: [
+      {
+        severity: 'error',
+        message: "Property 'onClick' does not exist on type 'IntrinsicAttributes'",
+        source: 'ts',
+        line: 12,
+      },
+      {
+        severity: 'warning',
+        message: "'useState' is defined but never used",
+        source: 'eslint',
+        line: 3,
+      },
+    ],
+  },
+  {
+    filePath: 'src/lib/api.ts',
+    errors: 0,
+    warnings: 2,
+    info: 0,
+    hints: 0,
+    details: [
+      {
+        severity: 'warning',
+        message: 'Unexpected console.log statement',
+        source: 'oxlint',
+        line: 15,
+      },
+      {
+        severity: 'warning',
+        message: "Variable 'response' is never reassigned. Use 'const' instead of 'let'",
+        source: 'oxlint',
+        line: 22,
+      },
+    ],
+  },
+  {
+    filePath: 'src/hooks/useAuth.ts',
+    errors: 2,
+    warnings: 0,
+    info: 0,
+    hints: 0,
+    details: [
+      {
+        severity: 'error',
+        message: "Cannot find module '@/lib/auth' or its corresponding type declarations",
+        source: 'ts',
+        line: 1,
+      },
+      {
+        severity: 'error',
+        message: "Type 'string | undefined' is not assignable to type 'string'",
+        source: 'ts',
+        line: 44,
+      },
+    ],
+  },
+];
+
+const MOCK_DIAGNOSTICS_WT1: FileDiagnosticSummary[] = [
+  {
+    filePath: 'src/routes/users.ts',
+    errors: 0,
+    warnings: 1,
+    info: 0,
+    hints: 0,
+    details: [
+      { severity: 'warning', message: "'req' is defined but never used", source: 'ts', line: 8 },
+    ],
+  },
+  {
+    filePath: 'src/services/database.ts',
+    errors: 1,
+    warnings: 1,
+    info: 0,
+    hints: 0,
+    details: [
+      {
+        severity: 'error',
+        message: "Property 'connect' does not exist on type 'DatabasePool'",
+        source: 'ts',
+        line: 31,
+      },
+      {
+        severity: 'warning',
+        message: 'Unexpected console.log statement',
+        source: 'oxlint',
+        line: 45,
+      },
+    ],
+  },
+];
+
 export const App: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
@@ -95,6 +204,7 @@ export const App: React.FC = () => {
     setPipelines,
     setActionState,
     setInsightDetail,
+    setFileDiagnostics,
   } = useShiftspaceStore();
 
   if (!engineRef.current) {
@@ -122,9 +232,11 @@ export const App: React.FC = () => {
     // Seed mock code smell insight data so pills are visible in inspection mode
     if (initialWorktrees[0]) {
       setInsightDetail('wt-0', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT0);
+      setFileDiagnostics('wt-0', MOCK_DIAGNOSTICS_WT0);
     }
     if (initialWorktrees[1]) {
       setInsightDetail('wt-1', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT1);
+      setFileDiagnostics('wt-1', MOCK_DIAGNOSTICS_WT1);
     }
 
     const unsub = engine.subscribe((event: ShiftspaceEvent) => {
@@ -142,7 +254,7 @@ export const App: React.FC = () => {
     return () => {
       unsub();
     };
-  }, [resetKey, setActionState, setInsightDetail]);
+  }, [resetKey, setActionState, setInsightDetail, setFileDiagnostics]);
 
   // Cleanup simulations on unmount
   useEffect(() => {

@@ -13,6 +13,7 @@ import type {
   AppMode,
   PipelineConfig,
   InsightDetail,
+  FileDiagnosticSummary,
 } from '@shiftspace/renderer';
 import './styles.css';
 
@@ -81,7 +82,8 @@ type HostMessage =
   | { type: 'action-log'; worktreeId: string; actionId: string; content: string }
   | { type: 'packages-list'; packages: string[] }
   | { type: 'icon-theme'; payload: IconMap }
-  | { type: 'insight-detail'; detail: InsightDetail };
+  | { type: 'insight-detail'; detail: InsightDetail }
+  | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] };
 
 const App: React.FC = () => {
   const {
@@ -102,6 +104,8 @@ const App: React.FC = () => {
     appendActionLog,
     setInsightDetail,
     clearInsightDetails,
+    setFileDiagnostics,
+    clearFileDiagnostics,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useShiftspaceStore((s) => s.mode as AppMode);
@@ -115,13 +119,14 @@ const App: React.FC = () => {
     if (mode.type === 'inspection') {
       vscode?.postMessage({ type: 'enter-inspection', worktreeId: mode.worktreeId });
     } else {
-      // Clear insight details from the previous inspection to free memory
+      // Clear insight details and diagnostics from the previous inspection to free memory
       if (prev.type === 'inspection') {
         clearInsightDetails(prev.worktreeId);
+        clearFileDiagnostics(prev.worktreeId);
       }
       vscode?.postMessage({ type: 'exit-inspection' });
     }
-  }, [mode, clearInsightDetails]);
+  }, [mode, clearInsightDetails, clearFileDiagnostics]);
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
@@ -186,6 +191,8 @@ const App: React.FC = () => {
         setIconMap(msg.payload);
       } else if (msg.type === 'insight-detail') {
         setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
+      } else if (msg.type === 'diagnostics-update') {
+        setFileDiagnostics(msg.worktreeId, msg.files);
       }
     };
 
@@ -210,6 +217,7 @@ const App: React.FC = () => {
     setActionLog,
     appendActionLog,
     setInsightDetail,
+    setFileDiagnostics,
   ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {

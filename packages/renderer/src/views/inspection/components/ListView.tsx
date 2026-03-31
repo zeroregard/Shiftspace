@@ -3,9 +3,11 @@ import clsx from 'clsx';
 import { useDragPan } from '../../../hooks/useDragPan';
 import type { WorktreeState, FileChange } from '../../../types';
 import { DiffPopover } from '../../../overlays/DiffPopover';
+import { Tooltip } from '../../../overlays/Tooltip';
 import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
 import { WorktreeHeader } from '../../../nodes/WorktreeHeader';
 import { partitionFiles } from '../../../utils/listSections';
+import { useShiftspaceStore } from '../../../store';
 
 const STATUS_LETTER: Record<FileChange['status'], string> = {
   added: 'A',
@@ -30,6 +32,12 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
   const fileName = parts.pop() ?? file.path;
   const dirPath = parts.join('/');
   const isDeleted = file.status === 'deleted';
+
+  const diagnostics = useShiftspaceStore((s) =>
+    s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
+  );
+  const hasErrors = (diagnostics?.errors ?? 0) > 0;
+  const hasWarnings = (diagnostics?.warnings ?? 0) > 0;
 
   return (
     <DiffPopover file={file}>
@@ -62,6 +70,39 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
             </span>
           )}
         </span>
+
+        {/* Diagnostic pills */}
+        {(hasErrors || hasWarnings) && diagnostics && (
+          <Tooltip
+            content={
+              <div className="flex flex-col gap-0.5">
+                {diagnostics.details.map((d, i) => (
+                  <span key={i}>
+                    L{d.line}: {d.message} ({d.source})
+                  </span>
+                ))}
+                {diagnostics.errors + diagnostics.warnings + diagnostics.info + diagnostics.hints >
+                  diagnostics.details.length && (
+                  <span className="text-text-muted">
+                    (and{' '}
+                    {diagnostics.errors +
+                      diagnostics.warnings +
+                      diagnostics.info +
+                      diagnostics.hints -
+                      diagnostics.details.length}{' '}
+                    more)
+                  </span>
+                )}
+              </div>
+            }
+            delayDuration={200}
+          >
+            <span className="text-10 font-medium shrink-0 flex items-center gap-0.5">
+              {hasErrors && <span className="text-status-deleted">❌{diagnostics.errors}</span>}
+              {hasWarnings && <span className="text-status-modified">⚠{diagnostics.warnings}</span>}
+            </span>
+          </Tooltip>
+        )}
 
         {/* Status letter */}
         <span

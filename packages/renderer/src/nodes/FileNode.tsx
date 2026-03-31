@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
-import type { FileChange } from '../types';
+import type { FileChange, FileDiagnosticSummary } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { Tooltip } from '../overlays/Tooltip';
@@ -27,6 +27,64 @@ function getChangeTint(file: FileChange): string {
   return 'rgba(224, 196, 78, 0.10)';
 }
 
+function buildDiagnosticTooltip(diagnostics: FileDiagnosticSummary): React.ReactNode {
+  const grouped: Record<string, FileDiagnosticSummary['details']> = {};
+  for (const d of diagnostics.details) {
+    const label =
+      d.severity === 'error'
+        ? 'Errors'
+        : d.severity === 'warning'
+          ? 'Warnings'
+          : d.severity === 'info'
+            ? 'Info'
+            : 'Hints';
+    (grouped[label] ??= []).push(d);
+  }
+  const total = diagnostics.errors + diagnostics.warnings + diagnostics.info + diagnostics.hints;
+  const truncated = total > diagnostics.details.length;
+
+  return (
+    <div className="flex flex-col gap-1">
+      {Object.entries(grouped).map(([label, items]) => (
+        <div key={label}>
+          <span className="font-semibold">
+            {label} ({items.length}):
+          </span>
+          {items.map((d, i) => (
+            <div key={i} className="pl-2">
+              L{d.line}: {d.message} ({d.source})
+            </div>
+          ))}
+        </div>
+      ))}
+      {truncated && (
+        <span className="text-text-muted">(and {total - diagnostics.details.length} more)</span>
+      )}
+    </div>
+  );
+}
+
+const DiagnosticPill = React.memo(({ diagnostics }: { diagnostics: FileDiagnosticSummary }) => {
+  return (
+    <Tooltip content={buildDiagnosticTooltip(diagnostics)} delayDuration={200}>
+      <span className="text-10 font-medium px-1 py-0.5 rounded flex items-center gap-1">
+        {diagnostics.errors > 0 && (
+          <span className="text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
+            ❌ {diagnostics.errors}
+          </span>
+        )}
+        {diagnostics.warnings > 0 && (
+          <span className="text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
+            ⚠ {diagnostics.warnings}
+          </span>
+        )}
+      </span>
+    </Tooltip>
+  );
+});
+
+DiagnosticPill.displayName = 'DiagnosticPill';
+
 export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) => {
   const { file, onFileClick, worktreeId } = data;
   const { hoveredFilePath } = useInspectionHover();
@@ -39,6 +97,13 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
     useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
   );
   const totalFindings = findings.length;
+
+  const diagnostics = useShiftspaceStore((s) =>
+    s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
+  );
+  const hasErrors = (diagnostics?.errors ?? 0) > 0;
+  const hasWarnings = (diagnostics?.warnings ?? 0) > 0;
+  const showDiagnostics = hasErrors || hasWarnings;
 
   return (
     <DiffPopover file={file}>
@@ -79,6 +144,7 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
                 STATUS_CLASSES[file.status]
               )}
             />
+            {showDiagnostics && <DiagnosticPill diagnostics={diagnostics!} />}
             {totalFindings > 0 && (
               <Tooltip
                 content={
