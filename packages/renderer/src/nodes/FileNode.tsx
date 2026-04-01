@@ -4,7 +4,6 @@ import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange, FileDiagnosticSummary, InsightFinding } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
-import { Tooltip } from '../overlays/Tooltip';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
 import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useShallow } from 'zustand/react/shallow';
@@ -27,64 +26,6 @@ function getChangeTint(file: FileChange): string {
   return 'rgba(224, 196, 78, 0.10)';
 }
 
-function buildDiagnosticTooltip(diagnostics: FileDiagnosticSummary): React.ReactNode {
-  const grouped: Record<string, FileDiagnosticSummary['details']> = {};
-  for (const d of diagnostics.details) {
-    const label =
-      d.severity === 'error'
-        ? 'Errors'
-        : d.severity === 'warning'
-          ? 'Warnings'
-          : d.severity === 'info'
-            ? 'Info'
-            : 'Hints';
-    (grouped[label] ??= []).push(d);
-  }
-  const total = diagnostics.errors + diagnostics.warnings + diagnostics.info + diagnostics.hints;
-  const truncated = total > diagnostics.details.length;
-
-  return (
-    <div className="flex flex-col gap-1">
-      {Object.entries(grouped).map(([label, items]) => (
-        <div key={label}>
-          <span className="font-semibold">
-            {label} ({items.length}):
-          </span>
-          {items.map((d, i) => (
-            <div key={i} className="pl-2">
-              L{d.line}: {d.message} ({d.source})
-            </div>
-          ))}
-        </div>
-      ))}
-      {truncated && (
-        <span className="text-text-muted">(and {total - diagnostics.details.length} more)</span>
-      )}
-    </div>
-  );
-}
-
-const DiagnosticPill = React.memo(({ diagnostics }: { diagnostics: FileDiagnosticSummary }) => {
-  return (
-    <Tooltip content={buildDiagnosticTooltip(diagnostics)} delayDuration={200}>
-      <span className="text-10 font-medium px-1 py-0.5 rounded flex items-center gap-1">
-        {diagnostics.errors > 0 && (
-          <span className="text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
-            ❌ {diagnostics.errors}
-          </span>
-        )}
-        {diagnostics.warnings > 0 && (
-          <span className="text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
-            ⚠ {diagnostics.warnings}
-          </span>
-        )}
-      </span>
-    </Tooltip>
-  );
-});
-
-DiagnosticPill.displayName = 'DiagnosticPill';
-
 export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) => {
   const { file, onFileClick, worktreeId } = data;
   const { hoveredFilePath } = useInspectionHover();
@@ -100,9 +41,9 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
   const diagnostics = useShiftspaceStore((s) =>
     s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
   );
-  const hasErrors = (diagnostics?.errors ?? 0) > 0;
-  const hasWarnings = (diagnostics?.warnings ?? 0) > 0;
-  const showDiagnostics = hasErrors || hasWarnings;
+
+  const hasAnnotations =
+    (diagnostics?.errors ?? 0) > 0 || (diagnostics?.warnings ?? 0) > 0 || findings.length > 0;
 
   return (
     <DiffPopover file={file}>
@@ -143,18 +84,48 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
                 STATUS_CLASSES[file.status]
               )}
             />
-            {showDiagnostics && <DiagnosticPill diagnostics={diagnostics!} />}
           </div>
-          {findings.length > 0 && <InsightsList findings={findings} />}
+          {hasAnnotations && <AnnotationsList diagnostics={diagnostics} findings={findings} />}
         </button>
       </div>
     </DiffPopover>
   );
 });
 
-function InsightsList({ findings }: { findings: InsightFinding[] }) {
+function AnnotationsList({
+  diagnostics,
+  findings,
+}: {
+  diagnostics: FileDiagnosticSummary | undefined;
+  findings: InsightFinding[];
+}) {
+  const errors = diagnostics?.errors ?? 0;
+  const warnings = diagnostics?.warnings ?? 0;
+
   return (
     <div className="mt-1 pt-1 border-border-default/40">
+      {errors > 0 && (
+        <div className="flex items-center gap-0.5 py-0.5 text-status-deleted">
+          <i
+            className="codicon codicon-error shrink-0"
+            style={{ fontSize: 16 }}
+            aria-hidden="true"
+          />
+          <span className="text-11 ml-0.5 mt-px">{errors}</span>
+          <span className="text-11 truncate mt-px">{errors === 1 ? 'error' : 'errors'}</span>
+        </div>
+      )}
+      {warnings > 0 && (
+        <div className="flex items-center gap-0.5 py-0.5 text-status-modified">
+          <i
+            className="codicon codicon-warning shrink-0"
+            style={{ fontSize: 16 }}
+            aria-hidden="true"
+          />
+          <span className="text-11 ml-0.5 mt-px">{warnings}</span>
+          <span className="text-11 truncate mt-px">{warnings === 1 ? 'warning' : 'warnings'}</span>
+        </div>
+      )}
       {findings.map((f) => (
         <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-status-deleted">
           <i
