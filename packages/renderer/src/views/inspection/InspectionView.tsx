@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import type { DiffMode, FileChange } from '../../types';
@@ -19,6 +19,11 @@ import {
 import { computeSingleWorktreeLayout } from '../../layout';
 import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
+import { useActions } from '../../ui/ActionsContext';
+import { Badge } from '../../ui/Badge';
+import { Codicon } from '../../ui/Codicon';
+import { IconButton } from '../../ui/IconButton';
+import { SectionLabel as SectionLabelPrimitive } from '../../ui/SectionLabel';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -90,7 +95,7 @@ const InspectionFileRow = React.memo(
           )}
         </span>
 
-        {/* Insight pills */}
+        {/* Annotation badges */}
         {(errors > 0 || warnings > 0 || totalFindings > 0) && (
           <span className="shrink-0 flex items-center gap-1">
             {errors > 0 && (
@@ -108,14 +113,10 @@ const InspectionFileRow = React.memo(
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded flex items-center gap-0.5">
-                  <i
-                    className="codicon codicon-error"
-                    style={{ fontSize: 12 }}
-                    aria-hidden="true"
-                  />
+                <Badge variant="error">
+                  <Codicon name="error" size={12} />
                   {errors}
-                </span>
+                </Badge>
               </Tooltip>
             )}
             {warnings > 0 && (
@@ -133,14 +134,10 @@ const InspectionFileRow = React.memo(
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded flex items-center gap-0.5">
-                  <i
-                    className="codicon codicon-warning"
-                    style={{ fontSize: 12 }}
-                    aria-hidden="true"
-                  />
+                <Badge variant="warning">
+                  <Codicon name="warning" size={12} />
                   {warnings}
-                </span>
+                </Badge>
               </Tooltip>
             )}
             {totalFindings > 0 && (
@@ -156,14 +153,10 @@ const InspectionFileRow = React.memo(
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-text-muted border border-text-muted/30 bg-text-muted/10 px-1 rounded flex items-center gap-0.5">
-                  <i
-                    className="codicon codicon-debug-breakpoint-unsupported"
-                    style={{ fontSize: 12 }}
-                    aria-hidden="true"
-                  />
+                <Badge variant="finding">
+                  <Codicon name="debug-breakpoint-unsupported" size={12} />
                   {totalFindings}
-                </span>
+                </Badge>
               </Tooltip>
             )}
           </span>
@@ -175,12 +168,10 @@ const InspectionFileRow = React.memo(
 
 InspectionFileRow.displayName = 'InspectionFileRow';
 
-function SectionLabel({ label }: { label: string }) {
+function FileSectionLabel({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 px-3 pt-2 pb-0.5">
-      <span className="text-10 font-semibold uppercase tracking-wider text-text-faint">
-        {label}
-      </span>
+      <SectionLabelPrimitive>{label}</SectionLabelPrimitive>
     </div>
   );
 }
@@ -191,38 +182,12 @@ function SectionLabel({ label }: { label: string }) {
 
 interface InspectionViewProps {
   worktreeId: string;
-  onFileClick?: (worktreeId: string, filePath: string) => void;
-  onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
-  onRequestBranchList?: (worktreeId: string) => void;
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
-  onFolderClick?: (worktreeId: string, folderPath: string) => void;
-  onFetchBranches?: (worktreeId: string) => void;
-  onRunAction?: (worktreeId: string, actionId: string) => void;
-  onStopAction?: (worktreeId: string, actionId: string) => void;
-  onSwapBranches?: (worktreeId: string) => void;
-  onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
-  onGetLog?: (worktreeId: string, actionId: string) => void;
-  onRecheckInsights?: (worktreeId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
 export const InspectionView = React.memo(
-  ({
-    worktreeId,
-    onFileClick,
-    onDiffModeChange,
-    onRequestBranchList,
-    onCheckoutBranch,
-    onFolderClick,
-    onFetchBranches,
-    onRunAction,
-    onStopAction,
-    onSwapBranches,
-    onRunPipeline,
-    onGetLog,
-    onRecheckInsights,
-    panZoomConfig,
-  }: InspectionViewProps) => {
+  ({ worktreeId, panZoomConfig }: InspectionViewProps) => {
+    const actions = useActions();
     const exitInspection = useShiftspaceStore((s) => s.exitInspection);
     const wt = useShiftspaceStore((s) => s.worktrees.get(worktreeId));
     const insightDetails = useShiftspaceStore((s) => s.insightDetails);
@@ -235,67 +200,16 @@ export const InspectionView = React.memo(
       useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
     );
 
-    // Stable callback refs for layout
-    const fileClickRef = useRef(onFileClick);
-    fileClickRef.current = onFileClick;
-    const stableFileClick = useCallback(
-      (wtId: string, path: string) => fileClickRef.current?.(wtId, path),
-      []
-    );
-
-    const requestBranchListRef = useRef(onRequestBranchList);
-    requestBranchListRef.current = onRequestBranchList;
-    const stableRequestBranchList = useCallback(
-      (wtId: string) => requestBranchListRef.current?.(wtId),
-      []
-    );
-
-    const checkoutBranchRef = useRef(onCheckoutBranch);
-    checkoutBranchRef.current = onCheckoutBranch;
-    const stableCheckoutBranch = useCallback(
-      (wtId: string, branch: string) => checkoutBranchRef.current?.(wtId, branch),
-      []
-    );
-
-    const folderClickRef = useRef(onFolderClick);
-    folderClickRef.current = onFolderClick;
-    const stableFolderClick = useCallback(
-      (wtId: string, path: string) => folderClickRef.current?.(wtId, path),
-      []
-    );
-
-    const fetchBranchesRef = useRef(onFetchBranches);
-    fetchBranchesRef.current = onFetchBranches;
-    const stableFetchBranches = useCallback((wtId: string) => fetchBranchesRef.current?.(wtId), []);
-
-    const runActionRef = useRef(onRunAction);
-    runActionRef.current = onRunAction;
-    const stableRunAction = useCallback(
-      (wtId: string, actionId: string) => runActionRef.current?.(wtId, actionId),
-      []
-    );
-
-    const stopActionRef = useRef(onStopAction);
-    stopActionRef.current = onStopAction;
-    const stableStopAction = useCallback(
-      (wtId: string, actionId: string) => stopActionRef.current?.(wtId, actionId),
-      []
-    );
-
-    const swapBranchesRef = useRef(onSwapBranches);
-    swapBranchesRef.current = onSwapBranches;
-    const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
-
     const [searchQuery, setSearchQuery] = useState('');
     const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
     const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
 
     const handleFileRowClick = useCallback(
       (wtId: string, filePath: string) => {
-        onFileClick?.(wtId, filePath);
+        actions.fileClick(wtId, filePath);
         setFocusNodeId(`file-${wtId}-${filePath}`);
       },
-      [onFileClick]
+      [actions]
     );
 
     const handleFocusComplete = useCallback(() => {
@@ -311,40 +225,27 @@ export const InspectionView = React.memo(
       setHoveredFilePath(null);
     }, [worktreeId]);
 
-    // Compute the combined file list for the hierarchy panel (must match list panel).
-    // In branch diff mode, include branchFiles + staged + unstaged.
-    // Apply search filter so hierarchy matches the list panel.
     const hierarchyFiles = useMemo(
       () => (wt ? getAllFilteredFiles(wt, searchQuery) : []),
       [wt, searchQuery]
     );
 
-    // Compute tree layout for the tree panel
+    // Compute tree layout — actions are stable (from context), so this won't re-compute spuriously
     const { nodes, edges } = useMemo(() => {
       if (!wt) return { nodes: [], edges: [] };
       const layout = computeSingleWorktreeLayout(
         wt,
-        stableFileClick,
-        stableRequestBranchList,
-        stableCheckoutBranch,
-        stableFolderClick,
-        stableFetchBranches,
-        stableSwapBranches,
+        actions.fileClick,
+        actions.requestBranchList,
+        actions.checkoutBranch,
+        actions.folderClick,
+        actions.fetchBranches,
+        actions.swapBranches,
         { bare: true, filesOverride: hierarchyFiles },
         (wtId, filePath) => getFileFindings(insightDetails, wtId, filePath).length
       );
       return { nodes: layout.nodes, edges: layout.edges };
-    }, [
-      wt,
-      hierarchyFiles,
-      insightDetails,
-      stableFileClick,
-      stableRequestBranchList,
-      stableCheckoutBranch,
-      stableFolderClick,
-      stableFetchBranches,
-      stableSwapBranches,
-    ]);
+    }, [wt, hierarchyFiles, insightDetails, actions]);
 
     if (!wt) {
       return (
@@ -363,7 +264,7 @@ export const InspectionView = React.memo(
         key: 'working',
         label: 'Working changes',
         selected: diffMode.type === 'working',
-        onSelect: () => onDiffModeChange?.(wt.id, { type: 'working' }),
+        onSelect: () => actions.diffModeChange(wt.id, { type: 'working' }),
       },
       ...(branchList.includes(defaultBranch) || !defaultBranch
         ? []
@@ -372,7 +273,8 @@ export const InspectionView = React.memo(
               key: `default-${defaultBranch}`,
               label: `vs ${defaultBranch}`,
               selected: isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch }),
-              onSelect: () => onDiffModeChange?.(wt.id, { type: 'branch', branch: defaultBranch }),
+              onSelect: () =>
+                actions.diffModeChange(wt.id, { type: 'branch', branch: defaultBranch }),
             },
           ]),
     ];
@@ -406,12 +308,7 @@ export const InspectionView = React.memo(
         {/* Header bar */}
         <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border-dashed shrink-0">
           {/* Back button */}
-          <button
-            className="flex items-center gap-1.5 px-2 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-11 cursor-pointer bg-transparent transition-colors"
-            onClick={exitInspection}
-          >
-            <i className="codicon codicon-arrow-left" style={{ fontSize: 11 }} aria-hidden="true" />
-          </button>
+          <IconButton icon="arrow-left" label="Back" onClick={exitInspection} iconSize={11} />
 
           {/* Worktree / branch name */}
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -427,24 +324,21 @@ export const InspectionView = React.memo(
               }
               branches={checkoutBranches}
               selectedBranch={wt.branch}
-              onSelectBranch={(branch) => onCheckoutBranch?.(wt.id, branch)}
-              onOpen={() => onRequestBranchList?.(wt.id)}
-              onFetch={onFetchBranches ? () => onFetchBranches!(wt.id) : undefined}
+              onSelectBranch={(branch) => actions.checkoutBranch(wt.id, branch)}
+              onOpen={() => actions.requestBranchList(wt.id)}
+              onFetch={() => actions.fetchBranches(wt.id)}
               isFetching={isFetchingBranches}
               lastFetchAt={lastFetchAt}
             />
           </div>
 
           {/* Re-check insights */}
-          {onRecheckInsights && (
-            <button
-              className="flex items-center gap-1.5 px-2 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-11 cursor-pointer bg-transparent transition-colors"
-              onClick={() => onRecheckInsights(worktreeId)}
-              title="Re-check insights"
-            >
-              <i className="codicon codicon-refresh" style={{ fontSize: 11 }} aria-hidden="true" />
-            </button>
-          )}
+          <IconButton
+            icon="refresh"
+            label="Re-check insights"
+            iconSize={11}
+            onClick={() => actions.recheckInsights(worktreeId)}
+          />
 
           {/* Diff mode dropdown */}
           <BranchPickerPopover
@@ -458,21 +352,15 @@ export const InspectionView = React.memo(
             selectedBranch={diffMode.type === 'branch' ? diffMode.branch : null}
             staticOptions={diffModeStaticOptions}
             branchLabel={(b) => `vs ${b}`}
-            onSelectBranch={(branch) => onDiffModeChange?.(wt.id, { type: 'branch', branch })}
-            onOpen={() => onRequestBranchList?.(wt.id)}
+            onSelectBranch={(branch) =>
+              actions.diffModeChange(wt.id, { type: 'branch', branch })
+            }
+            onOpen={() => actions.requestBranchList(wt.id)}
           />
         </div>
 
         {/* Check bar */}
-        {actionConfigs.length > 0 && (
-          <CheckBar
-            worktreeId={worktreeId}
-            onRunAction={stableRunAction}
-            onStopAction={stableStopAction}
-            onRunPipeline={onRunPipeline}
-            onGetLog={onGetLog}
-          />
-        )}
+        {actionConfigs.length > 0 && <CheckBar worktreeId={worktreeId} />}
 
         {/* Split panels */}
         <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">
@@ -481,10 +369,10 @@ export const InspectionView = React.memo(
             {/* Search filter */}
             <div className="px-2 pt-2 pb-1 shrink-0">
               <div className="relative">
-                <i
-                  className="codicon codicon-search absolute left-2 top-1/2 -translate-y-1/2 text-text-faint"
-                  style={{ fontSize: 12 }}
-                  aria-hidden="true"
+                <Codicon
+                  name="search"
+                  size={12}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-text-faint"
                 />
                 <input
                   type="text"
@@ -503,11 +391,7 @@ export const InspectionView = React.memo(
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0"
                     onClick={() => setSearchQuery('')}
                   >
-                    <i
-                      className="codicon codicon-close"
-                      style={{ fontSize: 12 }}
-                      aria-hidden="true"
-                    />
+                    <Codicon name="close" size={12} />
                   </button>
                 )}
               </div>
@@ -526,7 +410,7 @@ export const InspectionView = React.memo(
                 <>
                   {filteredCommitted.length > 0 && (
                     <>
-                      <SectionLabel label="Committed" />
+                      <FileSectionLabel label="Committed" />
                       {filteredCommitted.map((file) => (
                         <InspectionFileRow
                           key={`committed:${file.path}`}
@@ -540,7 +424,7 @@ export const InspectionView = React.memo(
                   )}
                   {filteredStaged.length > 0 && (
                     <>
-                      <SectionLabel label="Staged" />
+                      <FileSectionLabel label="Staged" />
                       {filteredStaged.map((file) => (
                         <InspectionFileRow
                           key={`staged:${file.path}`}
@@ -554,7 +438,7 @@ export const InspectionView = React.memo(
                   )}
                   {filteredUnstaged.length > 0 && (
                     <>
-                      <SectionLabel label="Unstaged" />
+                      <FileSectionLabel label="Unstaged" />
                       {filteredUnstaged.map((file) => (
                         <InspectionFileRow
                           key={`unstaged:${file.path}`}

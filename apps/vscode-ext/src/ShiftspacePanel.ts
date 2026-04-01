@@ -3,6 +3,7 @@ import * as path from 'path';
 import { getWebviewHtml } from './webview/html';
 import { GitDataProvider } from './GitDataProvider';
 import { ActionCoordinator } from './actions/ActionCoordinator';
+import { log } from './logger';
 import { getGitRoot } from './git/worktrees';
 import { IconThemeProvider } from './IconThemeProvider';
 import { InsightRunner } from './insights/runner';
@@ -449,7 +450,7 @@ export class ShiftspacePanel {
         void this._panel.webview.postMessage({ type: 'insight-detail', detail });
       }
     } catch (err) {
-      console.error('[Shiftspace] runInsights error:', err);
+      log.error('runInsights error:', err);
     }
   }
 

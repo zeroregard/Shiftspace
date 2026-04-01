@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
 import { gitReadOnly, gitWrite } from './gitUtils';
+import { log } from '../logger';
 
 /**
  * Parse the output of `git worktree list --porcelain` into WorktreeState[].
@@ -384,7 +385,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
       try {
         await popStashByMessage(worktreeBPath, 'shiftspace-swap-A');
       } catch (err) {
-        console.error('[Shiftspace] swapBranches: failed to pop stash A on B:', err);
+        log.error('swapBranches: failed to pop stash A on B:', err);
         // Non-fatal: stash is preserved in the stash list
       }
     }
@@ -392,7 +393,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
       try {
         await popStashByMessage(worktreeAPath, 'shiftspace-swap-B');
       } catch (err) {
-        console.error('[Shiftspace] swapBranches: failed to pop stash B on A:', err);
+        log.error('swapBranches: failed to pop stash B on A:', err);
       }
     }
   } catch (err) {

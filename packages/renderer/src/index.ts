@@ -16,6 +16,21 @@ export { BranchPickerPopover } from './overlays/BranchPickerPopover';
 export { ThemedFileIcon } from './shared/ThemedFileIcon';
 export { PackageSwitcher } from './shared/PackageSwitcher';
 
+// Design system primitives
+export {
+  Badge,
+  Codicon,
+  IconButton,
+  Input,
+  ListItem,
+  SectionLabel,
+  Spinner,
+  StatusDot,
+  ActionsProvider,
+  useActions,
+  type ShiftspaceActions,
+} from './ui';
+
 // All types
 export type {
   WorktreeState,

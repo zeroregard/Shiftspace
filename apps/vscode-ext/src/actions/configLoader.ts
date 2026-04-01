@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { ShiftspaceConfig, ShiftspaceActionConfig } from './types';
+import { log } from '../logger';
 
 /** Parse .shiftspace.json content string. Throws on invalid JSON. */
 export function parseShiftspaceConfig(content: string): ShiftspaceConfig {
@@ -30,21 +31,21 @@ export function validateSmellRules(rules: unknown[]): import('./types').SmellRul
     const threshold = typeof r['threshold'] === 'number' ? r['threshold'] : 1;
 
     if (!id || !label || !pattern) {
-      console.warn('[Shiftspace] Smell rule missing required fields, skipping:', rule);
+      log.warn('Smell rule missing required fields, skipping:', rule);
       continue;
     }
     if (seen.has(id)) {
-      console.warn(`[Shiftspace] Duplicate smell rule id "${id}", skipping`);
+      log.warn(`Duplicate smell rule id "${id}", skipping`);
       continue;
     }
     if (threshold < 1) {
-      console.warn(`[Shiftspace] Smell rule "${id}" has threshold < 1, defaulting to 1`);
+      log.warn(`Smell rule "${id}" has threshold < 1, defaulting to 1`);
     }
 
     try {
       new RegExp(pattern);
     } catch {
-      console.warn(`[Shiftspace] Smell rule "${id}" has invalid regex pattern, skipping`);
+      log.warn(`Smell rule "${id}" has invalid regex pattern, skipping`);
       continue;
     }
 
@@ -156,7 +157,7 @@ export class ConfigLoader implements vscode.Disposable {
 
     const errors = validateConfig(merged);
     if (errors.length > 0) {
-      console.warn('[Shiftspace] Config validation errors:', errors);
+      log.warn('Config validation errors:', errors);
     }
 
     this._config = merged;

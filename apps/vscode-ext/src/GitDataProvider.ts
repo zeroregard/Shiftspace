@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { log } from './logger';
 import type { WorktreeState, ShiftspaceEvent, DiffMode, FileChange } from '@shiftspace/renderer';
 import {
   detectWorktrees,
@@ -127,7 +128,7 @@ export class GitDataProvider implements vscode.Disposable {
           wt.branchFiles = branchFiles;
           this.fileStates.set(wt.id, files);
         } catch (err) {
-          console.error('[Shiftspace] loadAllFileChanges error for', wt.path, err);
+          log.error('loadAllFileChanges error for', wt.path, err);
         }
       })
     );
@@ -251,7 +252,7 @@ export class GitDataProvider implements vscode.Disposable {
           this.postMessage({ type: 'event', event });
         }
       } catch (err) {
-        console.error('[Shiftspace] reloadAllWithFilter error for', wt.path, err);
+        log.error('reloadAllWithFilter error for', wt.path, err);
       }
     }
   }
@@ -302,7 +303,7 @@ export class GitDataProvider implements vscode.Disposable {
         this.onFileChange?.(wt.id);
       }
     } catch (err) {
-      console.error('[Shiftspace] refreshWorktree error for', wt.path, err);
+      log.error('refreshWorktree error for', wt.path, err);
     }
   }
 
@@ -362,7 +363,7 @@ export class GitDataProvider implements vscode.Disposable {
             wt.files = files;
             wt.branchFiles = branchFiles;
           } catch (err) {
-            console.error('[Shiftspace] getFileChanges error for new worktree', wt.path, err);
+            log.error('getFileChanges error for new worktree', wt.path, err);
           }
           const event: ShiftspaceEvent = { type: 'worktree-added', worktree: wt };
           this.postMessage({ type: 'event', event });
@@ -391,7 +392,7 @@ export class GitDataProvider implements vscode.Disposable {
           freshWt.files = files;
           freshWt.branchFiles = branchFiles;
         } catch (err) {
-          console.error('[Shiftspace] getFileChanges error after branch change', freshWt.path, err);
+          log.error('getFileChanges error after branch change', freshWt.path, err);
           freshWt.files = [];
         }
         this.fileStates.set(freshWt.id, freshWt.files);
@@ -413,7 +414,7 @@ export class GitDataProvider implements vscode.Disposable {
 
       this.worktrees = fresh;
     } catch (err) {
-      console.error('[Shiftspace] checkForWorktreeChanges error:', err);
+      log.error('checkForWorktreeChanges error:', err);
     }
   }
 
@@ -437,7 +438,7 @@ export class GitDataProvider implements vscode.Disposable {
         branchFiles,
       });
     } catch (err) {
-      console.error('[Shiftspace] handleSetDiffMode error:', err);
+      log.error('handleSetDiffMode error:', err);
       // Send back empty to clear loading state
       this.postMessage({ type: 'worktree-files-updated', worktreeId, files: [], diffMode });
     }
@@ -452,7 +453,7 @@ export class GitDataProvider implements vscode.Disposable {
       const branches = await listBranches(this.currentRoot);
       this.postMessage({ type: 'fetch-done', worktreeId, timestamp: Date.now(), branches });
     } catch (err) {
-      console.error('[Shiftspace] handleFetchBranches error:', err);
+      log.error('handleFetchBranches error:', err);
       this.postMessage({ type: 'fetch-loading', worktreeId, loading: false });
     }
   }
@@ -464,7 +465,7 @@ export class GitDataProvider implements vscode.Disposable {
       const branches = await listBranches(this.currentRoot);
       this.postMessage({ type: 'branch-list', worktreeId, branches });
     } catch (err) {
-      console.error('[Shiftspace] handleGetBranchList error:', err);
+      log.error('handleGetBranchList error:', err);
     }
   }
 
@@ -477,7 +478,7 @@ export class GitDataProvider implements vscode.Disposable {
       // Re-detect so the branch name and files reflect the new HEAD.
       await this.initialize();
     } catch (err) {
-      console.error('[Shiftspace] handleCheckoutBranch error:', err);
+      log.error('handleCheckoutBranch error:', err);
       void vscode.window.showErrorMessage(
         `Failed to checkout "${branch}": ${(err as Error).message}`
       );
@@ -535,7 +536,7 @@ export class GitDataProvider implements vscode.Disposable {
           progress.report({ message: 'Done! Refreshing...' });
           await this.initialize();
         } catch (err) {
-          console.error('[Shiftspace] handleSwapBranches error:', err);
+          log.error('handleSwapBranches error:', err);
           void vscode.window.showErrorMessage(
             `Branch swap failed: ${(err as Error).message}. Check git stash list for any stashed changes.`
           );
@@ -572,7 +573,7 @@ export class GitDataProvider implements vscode.Disposable {
       // Re-detect worktrees to update the UI
       await this.checkForWorktreeChanges();
     } catch (err) {
-      console.error('[Shiftspace] handleRemoveWorktree error:', err);
+      log.error('handleRemoveWorktree error:', err);
       void vscode.window.showErrorMessage(`Failed to remove worktree: ${(err as Error).message}`);
     }
   }
@@ -595,7 +596,7 @@ export class GitDataProvider implements vscode.Disposable {
       // Re-detect worktrees to update the UI
       await this.checkForWorktreeChanges();
     } catch (err) {
-      console.error('[Shiftspace] handleRenameWorktree error:', err);
+      log.error('handleRenameWorktree error:', err);
       void vscode.window.showErrorMessage(`Failed to rename worktree: ${(err as Error).message}`);
     }
   }
@@ -629,7 +630,7 @@ export class GitDataProvider implements vscode.Disposable {
         viewColumn: targetColumn,
       });
     } catch (err) {
-      console.error('[Shiftspace] handleFileClick error:', err);
+      log.error('handleFileClick error:', err);
     }
   }
 

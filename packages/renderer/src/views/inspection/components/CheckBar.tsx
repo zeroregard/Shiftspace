@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useShiftspaceStore } from '../../../store';
 import type { ActionConfig, ActionStatus } from '../../../types';
+import { useActions } from '../../../ui/ActionsContext';
+import { Codicon } from '../../../ui/Codicon';
+import { IconButton } from '../../../ui/IconButton';
+import { SectionLabel } from '../../../ui/SectionLabel';
 import { Tooltip } from '../../../overlays/Tooltip';
 
 interface CheckBarProps {
   worktreeId: string;
-  onRunAction?: (worktreeId: string, actionId: string) => void;
-  onStopAction?: (worktreeId: string, actionId: string) => void;
-  onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
-  onGetLog?: (worktreeId: string, actionId: string) => void;
 }
 
 function deriveActionType(action: ActionConfig): 'check' | 'service' {
@@ -43,12 +43,11 @@ interface CheckChipProps {
   worktreeId: string;
   expanded: boolean;
   onToggleExpand: () => void;
-  onRun?: (worktreeId: string, actionId: string) => void;
-  onStop?: (worktreeId: string, actionId: string) => void;
 }
 
 const CheckChip: React.FC<CheckChipProps> = React.memo(
-  ({ action, worktreeId, expanded, onToggleExpand, onRun, onStop }) => {
+  ({ action, worktreeId, expanded, onToggleExpand }) => {
+    const actions = useActions();
     const state = useShiftspaceStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
     const type = deriveActionType(action);
     const status: ActionStatus = state?.status ?? (type === 'service' ? 'stopped' : 'idle');
@@ -56,8 +55,8 @@ const CheckChip: React.FC<CheckChipProps> = React.memo(
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (status === 'unconfigured') return;
-      if (isRunning && type === 'service') onStop?.(worktreeId, action.id);
-      else if (!isRunning) onRun?.(worktreeId, action.id);
+      if (isRunning && type === 'service') actions.stopAction(worktreeId, action.id);
+      else if (!isRunning) actions.runAction(worktreeId, action.id);
     };
 
     const color = statusColor(status, type);
@@ -72,14 +71,11 @@ const CheckChip: React.FC<CheckChipProps> = React.memo(
         }}
         onClick={handleClick}
       >
-        <i
-          className={`codicon codicon-${icon}`}
-          style={{
-            fontSize: 11,
-            color,
-            animation: isRunning && type === 'check' ? 'spin 1s linear infinite' : undefined,
-          }}
-          aria-hidden="true"
+        <Codicon
+          name={icon}
+          size={11}
+          color={color}
+          animation={isRunning && type === 'check' ? 'spin 1s linear infinite' : undefined}
         />
         <span className="text-10 text-text-muted ml-0.5">{action.label}</span>
 
@@ -92,11 +88,7 @@ const CheckChip: React.FC<CheckChipProps> = React.memo(
           }}
           aria-label={expanded ? 'Collapse log' : 'Expand log'}
         >
-          <i
-            className={`codicon codicon-chevron-${expanded ? 'up' : 'down'}`}
-            style={{ fontSize: 9 }}
-            aria-hidden="true"
-          />
+          <Codicon name={expanded ? 'chevron-up' : 'chevron-down'} size={9} />
         </button>
       </div>
     );
@@ -104,112 +96,101 @@ const CheckChip: React.FC<CheckChipProps> = React.memo(
 );
 CheckChip.displayName = 'CheckChip';
 
-export const CheckBar: React.FC<CheckBarProps> = React.memo(
-  ({ worktreeId, onRunAction, onStopAction, onRunPipeline, onGetLog }) => {
-    const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
-    const actionLogs = useShiftspaceStore((s) => s.actionLogs);
-    const pipelines = useShiftspaceStore((s) => s.pipelines);
-    const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
+export const CheckBar: React.FC<CheckBarProps> = React.memo(({ worktreeId }) => {
+  const actions = useActions();
+  const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
+  const actionLogs = useShiftspaceStore((s) => s.actionLogs);
+  const pipelines = useShiftspaceStore((s) => s.pipelines);
+  const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
 
-    const checks = actionConfigs.filter((a) => deriveActionType(a) === 'check');
-    const services = actionConfigs.filter((a) => deriveActionType(a) === 'service');
+  const checks = actionConfigs.filter((a) => deriveActionType(a) === 'check');
+  const services = actionConfigs.filter((a) => deriveActionType(a) === 'service');
 
-    if (checks.length === 0 && services.length === 0) return null;
+  if (checks.length === 0 && services.length === 0) return null;
 
-    const pipelineIds = Object.keys(pipelines);
-    const defaultPipelineId = pipelineIds[0];
+  const pipelineIds = Object.keys(pipelines);
+  const defaultPipelineId = pipelineIds[0];
 
-    const handleToggleExpand = (actionId: string) => {
-      if (expandedActionId === actionId) {
-        setExpandedActionId(null);
-      } else {
-        setExpandedActionId(actionId);
-        onGetLog?.(worktreeId, actionId);
-      }
-    };
+  const handleToggleExpand = (actionId: string) => {
+    if (expandedActionId === actionId) {
+      setExpandedActionId(null);
+    } else {
+      setExpandedActionId(actionId);
+      actions.getLog(worktreeId, actionId);
+    }
+  };
 
-    const logContent = expandedActionId
-      ? (actionLogs.get(`${worktreeId}:${expandedActionId}`) ?? '')
-      : '';
+  const logContent = expandedActionId
+    ? (actionLogs.get(`${worktreeId}:${expandedActionId}`) ?? '')
+    : '';
 
-    return (
-      <div className="flex flex-col border-b border-border-dashed shrink-0">
-        {checks.length > 0 && (
-          <div className="flex items-center gap-1.5 px-4 py-1.5 flex-wrap">
-            {checks.map((action) => (
-              <CheckChip
-                key={action.id}
-                action={action}
-                worktreeId={worktreeId}
-                expanded={expandedActionId === action.id}
-                onToggleExpand={() => handleToggleExpand(action.id)}
-                onRun={onRunAction}
-                onStop={onStopAction}
-              />
-            ))}
-            {defaultPipelineId && (
-              <Tooltip content="Run all checks" delayDuration={300}>
-                <button
-                  className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default text-10 cursor-pointer bg-transparent transition-colors"
-                  onClick={() => onRunPipeline?.(worktreeId, defaultPipelineId)}
-                  aria-label="Run all"
-                >
-                  <i
-                    className="codicon codicon-run-all"
-                    style={{ fontSize: 11 }}
-                    aria-hidden="true"
-                  />
-                  <span>Run All</span>
-                </button>
-              </Tooltip>
-            )}
-          </div>
-        )}
-
-        {checks.length > 0 && services.length > 0 && (
-          <div className="border-t border-border-dashed mx-4" />
-        )}
-
-        {services.length > 0 && (
-          <div className="flex items-center gap-1.5 px-4 py-1.5 flex-wrap">
-            <span className="text-10 uppercase tracking-wider text-text-faint w-12 shrink-0">
-              Services
-            </span>
-            {services.map((action) => (
-              <CheckChip
-                key={action.id}
-                action={action}
-                worktreeId={worktreeId}
-                expanded={expandedActionId === action.id}
-                onToggleExpand={() => handleToggleExpand(action.id)}
-                onRun={onRunAction}
-                onStop={onStopAction}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Expanded log panel */}
-        {expandedActionId && (
-          <div className="border-t border-border-dashed max-h-48 overflow-y-auto bg-canvas">
-            <div className="flex items-center justify-between px-4 py-1 border-b border-border-dashed">
-              <span className="text-10 text-text-faint uppercase tracking-wider">
-                Log: {actionConfigs.find((a) => a.id === expandedActionId)?.label}
-              </span>
+  return (
+    <div className="flex flex-col border-b border-border-dashed shrink-0">
+      {checks.length > 0 && (
+        <div className="flex items-center gap-1.5 px-4 py-1.5 flex-wrap">
+          {checks.map((action) => (
+            <CheckChip
+              key={action.id}
+              action={action}
+              worktreeId={worktreeId}
+              expanded={expandedActionId === action.id}
+              onToggleExpand={() => handleToggleExpand(action.id)}
+            />
+          ))}
+          {defaultPipelineId && (
+            <Tooltip content="Run all checks" delayDuration={300}>
               <button
-                className="text-10 text-text-faint hover:text-text-muted cursor-pointer bg-transparent border-none"
-                onClick={() => setExpandedActionId(null)}
+                className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default text-10 cursor-pointer bg-transparent transition-colors"
+                onClick={() => actions.runPipeline(worktreeId, defaultPipelineId)}
+                aria-label="Run all"
               >
-                Close
+                <Codicon name="run-all" size={11} />
+                <span>Run All</span>
               </button>
-            </div>
-            <pre className="px-4 py-2 text-10 text-text-secondary font-mono whitespace-pre-wrap break-all">
-              {logContent || '(no output yet)'}
-            </pre>
+            </Tooltip>
+          )}
+        </div>
+      )}
+
+      {checks.length > 0 && services.length > 0 && (
+        <div className="border-t border-border-dashed mx-4" />
+      )}
+
+      {services.length > 0 && (
+        <div className="flex items-center gap-1.5 px-4 py-1.5 flex-wrap">
+          <SectionLabel className="w-12 shrink-0">Services</SectionLabel>
+          {services.map((action) => (
+            <CheckChip
+              key={action.id}
+              action={action}
+              worktreeId={worktreeId}
+              expanded={expandedActionId === action.id}
+              onToggleExpand={() => handleToggleExpand(action.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Expanded log panel */}
+      {expandedActionId && (
+        <div className="border-t border-border-dashed max-h-48 overflow-y-auto bg-canvas">
+          <div className="flex items-center justify-between px-4 py-1 border-b border-border-dashed">
+            <SectionLabel>
+              Log: {actionConfigs.find((a) => a.id === expandedActionId)?.label}
+            </SectionLabel>
+            <button
+              className="text-10 text-text-faint hover:text-text-muted cursor-pointer bg-transparent border-none"
+              onClick={() => setExpandedActionId(null)}
+            >
+              Close
+            </button>
           </div>
-        )}
-      </div>
-    );
-  }
-);
+          <pre className="px-4 py-2 text-10 text-text-secondary font-mono whitespace-pre-wrap break-all">
+            {logContent || '(no output yet)'}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+});
 CheckBar.displayName = 'CheckBar';

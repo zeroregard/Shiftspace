@@ -2,6 +2,7 @@ import type { FileChange } from '@shiftspace/renderer';
 import type { InsightSummary, InsightDetail } from './types';
 import { insightRegistry } from './registry';
 import { isInsightEnabled, getInsightSettings } from './settingsLoader';
+import { log } from '../logger';
 
 interface CacheEntry {
   files: FileChange[];
@@ -66,7 +67,7 @@ export class InsightRunner {
         summaries.push(result.value.summary);
         details.push(result.value.detail);
       } else {
-        console.error('[Shiftspace] Insight plugin error:', result.reason);
+        log.error('Insight plugin error:', result.reason);
       }
     }
 
