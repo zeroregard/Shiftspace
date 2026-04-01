@@ -25,7 +25,7 @@ function fitViewToNodes(nodes: LayoutNode[], w: number, h: number): Transform {
 }
 
 export interface UsePanZoomResult {
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: React.RefObject<HTMLDivElement>;
   transform: Transform;
   isFitting: boolean;
   handlePointerDown: (e: React.PointerEvent) => void;
@@ -49,7 +49,8 @@ export function usePanZoom({
   focusNodeId,
   onFocusComplete,
 }: UsePanZoomOptions): UsePanZoomResult {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null!);
+
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
   const [isFitting, setIsFitting] = useState(false);
   const isPanningRef = useRef(false);
