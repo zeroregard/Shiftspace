@@ -554,23 +554,26 @@ export class GitDataProvider implements vscode.Disposable {
       return;
     }
 
+    const wtName = wt.path.split('/').pop() ?? wt.path;
     const answer = await vscode.window.showWarningMessage(
-      `Remove worktree "${wt.path.split('/').pop()}" (${wt.branch})? This will delete the directory.`,
+      `Delete worktree "${wtName}" (${wt.branch})? This will remove the worktree directory. Uncommitted changes will be lost.`,
       { modal: true },
-      'Remove',
-      'Force Remove'
+      'Delete'
     );
-    if (!answer) return;
+    if (answer !== 'Delete') return;
 
     try {
-      await removeWorktree(wt.path, answer === 'Force Remove');
+      try {
+        await removeWorktree(wt.path, false);
+      } catch {
+        // Retry with --force if normal remove fails (e.g. uncommitted changes)
+        await removeWorktree(wt.path, true);
+      }
       // Re-detect worktrees to update the UI
       await this.checkForWorktreeChanges();
     } catch (err) {
       console.error('[Shiftspace] handleRemoveWorktree error:', err);
-      void vscode.window.showErrorMessage(
-        `Failed to remove worktree: ${(err as Error).message}. Try "Force Remove" if it has local modifications.`
-      );
+      void vscode.window.showErrorMessage(`Failed to remove worktree: ${(err as Error).message}`);
     }
   }
 
