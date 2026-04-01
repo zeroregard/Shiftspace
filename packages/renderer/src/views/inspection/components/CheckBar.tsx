@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useShiftspaceStore } from '../../../store';
-import type { ActionStatus } from '../../../types';
+import type { ActionConfig, ActionStatus } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { Codicon } from '../../../ui/Codicon';
 import { SectionLabel } from '../../../ui/SectionLabel';

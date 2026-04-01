@@ -1,5 +1,6 @@
 import React from 'react';
 import { useShiftspaceStore } from '../../../store';
+import type { ActionConfig } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { IconButton } from '../../../ui/IconButton';
 import { deriveActionType } from '../../../utils/actionUtils';
