@@ -64,6 +64,12 @@ const InspectionFileRow = React.memo(
     );
     const totalFindings = findings.length;
 
+    const diagnostics = useShiftspaceStore((s) =>
+      s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
+    );
+    const errors = diagnostics?.errors ?? 0;
+    const warnings = diagnostics?.warnings ?? 0;
+
     return (
       <button
         className={clsx(
@@ -97,6 +103,50 @@ const InspectionFileRow = React.memo(
           )}
         </span>
 
+        {/* Error pill */}
+        {errors > 0 && (
+          <Tooltip
+            content={
+              <div className="flex flex-col gap-0.5">
+                {diagnostics!.details
+                  .filter((d) => d.severity === 'error')
+                  .map((d, i) => (
+                    <span key={i}>
+                      L{d.line}: {d.message} ({d.source})
+                    </span>
+                  ))}
+              </div>
+            }
+            delayDuration={200}
+          >
+            <span className="text-10 font-medium shrink-0 text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
+              ❌ {errors}
+            </span>
+          </Tooltip>
+        )}
+
+        {/* Warning pill */}
+        {warnings > 0 && (
+          <Tooltip
+            content={
+              <div className="flex flex-col gap-0.5">
+                {diagnostics!.details
+                  .filter((d) => d.severity === 'warning')
+                  .map((d, i) => (
+                    <span key={i}>
+                      L{d.line}: {d.message} ({d.source})
+                    </span>
+                  ))}
+              </div>
+            }
+            delayDuration={200}
+          >
+            <span className="text-10 font-medium shrink-0 text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
+              ⚠ {warnings}
+            </span>
+          </Tooltip>
+        )}
+
         {/* Smell pill */}
         {totalFindings > 0 && (
           <Tooltip
@@ -104,17 +154,15 @@ const InspectionFileRow = React.memo(
               <div className="flex flex-col gap-0.5">
                 {findings.map((f) => (
                   <span key={f.ruleId}>
-                    {f.threshold === 1
-                      ? `${f.ruleLabel}: ${f.count} found`
-                      : `${f.ruleLabel}: 1 found (${f.count} occurrences, threshold: ${f.threshold})`}
+                    {f.ruleLabel}: {f.count} found
                   </span>
                 ))}
               </div>
             }
             delayDuration={200}
           >
-            <span className="text-10 text-status-modified font-medium shrink-0 px-1 py-0.5 rounded border border-status-modified/30 bg-status-modified/10">
-              ⚠ {totalFindings}
+            <span className="text-10 font-medium shrink-0 text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
+              🐛 {totalFindings}
             </span>
           </Tooltip>
         )}
