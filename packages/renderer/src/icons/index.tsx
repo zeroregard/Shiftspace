@@ -28,6 +28,10 @@ export function PencilIcon() {
   return <i className="codicon codicon-edit" style={{ fontSize: 12 }} aria-hidden="true" />;
 }
 
+export function CheckIcon() {
+  return <i className="codicon codicon-check" style={{ fontSize: 12 }} aria-hidden="true" />;
+}
+
 // ---------------------------------------------------------------------------
 // SVG base shapes
 // ---------------------------------------------------------------------------
