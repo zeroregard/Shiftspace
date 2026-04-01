@@ -2,12 +2,32 @@
   "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
   "categories": {
     "correctness": "error",
-    "suspicious": "warn"
+    "suspicious": "warn",
+    "perf": "warn"
   },
   "rules": {
     "no-unused-vars": "error",
     "no-console": "error",
     "eqeqeq": "error",
+
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "react/jsx-key": "warn",
+    "react/jsx-no-constructed-context-values": "warn",
+    "react/no-array-index-key": "warn",
+
+    "react_perf/jsx-no-new-object-as-prop": "warn",
+    "react_perf/jsx-no-new-function-as-prop": "warn",
+
+    "complexity": ["warn", { "max": 20 }],
+    "max-params": ["warn", { "max": 4 }],
+    "max-lines-per-function": [
+      "warn",
+      { "max": 150, "skipBlankLines": true, "skipComments": true }
+    ],
+
+    "no-await-in-loop": "off",
+    "unicorn/prefer-array-find": "off",
     "unicorn/require-post-message-target-origin": "off",
     "no-shadow": "off",
     "no-new": "off",

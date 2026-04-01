@@ -69,7 +69,17 @@ export function computeSingleWorktreeLayout(
 
   const contentsOffsetX = (containerW - totalW) / 2;
   for (const layout of layouts) {
-    flattenRect(layout, wtNodeId, true, contentsOffsetX, 0, wt.id, nodes, edges, false, getFileH);
+    flattenRect({
+      rect: layout,
+      parentId: wtNodeId,
+      isRootChild: true,
+      offsetX: contentsOffsetX,
+      offsetY: 0,
+      wtId: wt.id,
+      nodes,
+      edges,
+      getFileH,
+    });
   }
 
   return { nodes, edges, containerW, containerH };
