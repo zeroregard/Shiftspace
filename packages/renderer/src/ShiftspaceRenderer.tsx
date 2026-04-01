@@ -160,13 +160,15 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     []
   );
 
-  // Sorted worktree array (main/master first)
+  // Sorted worktree array (main first, then by worktree directory name)
   const wtArray = useMemo(
     () =>
       Array.from(worktrees.values()).sort((a, b) => {
         if (a.isMainWorktree && !b.isMainWorktree) return -1;
         if (!a.isMainWorktree && b.isMainWorktree) return 1;
-        return 0;
+        const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
+        const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
+        return nameA.localeCompare(nameB);
       }),
     [worktrees]
   );

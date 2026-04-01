@@ -36,6 +36,14 @@ function mockSequence(responses: Array<{ stdout?: string; error?: string }>) {
   };
 }
 
+/**
+ * Strip the --no-optional-locks flag that gitReadOnly prepends.
+ * Write commands (gitWrite) do not add this flag, so their args are unchanged.
+ */
+function normalizeGitArgs(args: string[]): string[] {
+  return args[0] === '--no-optional-locks' ? args.slice(1) : args;
+}
+
 // ---------------------------------------------------------------------------
 // checkWorktreeSafety
 // ---------------------------------------------------------------------------
@@ -113,10 +121,11 @@ describe('swapBranches — happy path', () => {
     const calls: Array<string[]> = [];
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       cb(null, { stdout: '', stderr: '' });
     }) as any);
@@ -157,10 +166,11 @@ describe('swapBranches — happy path', () => {
     const calls: Array<string[]> = [];
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       // Return non-empty status for worktree A's first status call
       if (args[0] === 'status' && calls.filter((c) => c[0] === 'status').length === 1) {
@@ -200,10 +210,11 @@ describe('swapBranches — happy path', () => {
     let statusCallCount = 0;
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       if (args[0] === 'status') {
         statusCallCount++;
@@ -246,10 +257,11 @@ describe('swapBranches — happy path', () => {
     const calls: Array<string[]> = [];
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       if (args[0] === 'status') {
         cb(null, { stdout: ' M file.ts\n', stderr: '' });
@@ -318,10 +330,11 @@ describe('swapBranches — failure and rollback', () => {
     const calls: Array<string[]> = [];
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       // Fail when checking out feature/auth on B
       if (args[0] === 'checkout' && args[1] === 'feature/auth') {
@@ -359,10 +372,11 @@ describe('swapBranches — failure and rollback', () => {
     let checkoutCount = 0;
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       if (args[0] === 'checkout' && args[1] !== '-b') {
         checkoutCount++;
@@ -403,10 +417,11 @@ describe('swapBranches — failure and rollback', () => {
     const calls: Array<string[]> = [];
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       if (args[0] === 'status') {
         cb(null, { stdout: ' M file.ts\n', stderr: '' });
@@ -445,10 +460,11 @@ describe('swapBranches — failure and rollback', () => {
     const calls: Array<string[]> = [];
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      args: string[],
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
+      const args = normalizeGitArgs(rawArgs);
       calls.push(args);
       // rev-parse for temp branch name check — simulate it already existing
       if (args[0] === 'rev-parse' && args[2] === '_shiftspace_temp_swap') {
