@@ -15,7 +15,18 @@ import type {
   FileDiagnosticSummary,
 } from '../types';
 import { applyEventReducer } from './applyEvent';
-import { createExtrasSlice } from './slices';
+
+/** Helper: delete all entries in a Map whose key starts with `${prefix}:`. */
+function deleteByPrefix<V>(map: Map<string, V>, prefix: string): boolean {
+  let changed = false;
+  for (const key of map.keys()) {
+    if (key.startsWith(`${prefix}:`)) {
+      map.delete(key);
+      changed = true;
+    }
+  }
+  return changed;
+}
 
 interface ShiftspaceStore {
   worktrees: Map<string, WorktreeState>;
@@ -182,6 +193,82 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   applyEvent: (event) => set((state) => ({ worktrees: applyEventReducer(state.worktrees, event) })),
 
-  // Action, insight, diagnostics, and misc setters — delegated to keep this function short
-  ...createExtrasSlice(set as any),
+  setActionConfigs: (configs) => set({ actionConfigs: configs }),
+
+  setActionState: (worktreeId, actionId, state) =>
+    set((s) => {
+      const actionStates = new Map(s.actionStates);
+      actionStates.set(`${worktreeId}:${actionId}`, state);
+      return { actionStates };
+    }),
+
+  setIconMap: (map) => set({ iconMap: map }),
+
+  setSelectedPackage: (pkg) => set({ selectedPackage: pkg }),
+
+  setActionLog: (worktreeId, actionId, log) =>
+    set((s) => {
+      const actionLogs = new Map(s.actionLogs);
+      actionLogs.set(`${worktreeId}:${actionId}`, log);
+      return { actionLogs };
+    }),
+
+  appendActionLog: (worktreeId, actionId, chunk) =>
+    set((s) => {
+      const key = `${worktreeId}:${actionId}`;
+      const actionLogs = new Map(s.actionLogs);
+      actionLogs.set(key, (actionLogs.get(key) ?? '') + chunk);
+      return { actionLogs };
+    }),
+
+  setPipelines: (pipelines) => set({ pipelines }),
+
+  setAvailablePackages: (packages) => set({ availablePackages: packages }),
+
+  setInsightDetail: (worktreeId, insightId, detail) =>
+    set((s) => {
+      const insightDetails = new Map(s.insightDetails);
+      insightDetails.set(`${worktreeId}:${insightId}`, detail);
+      return { insightDetails };
+    }),
+
+  clearInsightDetails: (worktreeId) =>
+    set((s) => {
+      const insightDetails = new Map(s.insightDetails);
+      const changed = deleteByPrefix(insightDetails, worktreeId);
+      return changed ? { insightDetails } : {};
+    }),
+
+  setFileDiagnostics: (worktreeId, files) =>
+    set((s) => {
+      const fileDiagnostics = new Map(s.fileDiagnostics);
+      deleteByPrefix(fileDiagnostics, worktreeId);
+      for (const file of files) {
+        fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
+      }
+      return { fileDiagnostics };
+    }),
+
+  clearFileDiagnostics: (worktreeId) =>
+    set((s) => {
+      const fileDiagnostics = new Map(s.fileDiagnostics);
+      const changed = deleteByPrefix(fileDiagnostics, worktreeId);
+      return changed ? { fileDiagnostics } : {};
+    }),
+
+  markAllStale: (worktreeId) =>
+    set((s) => {
+      const actionStates = new Map(s.actionStates);
+      let changed = false;
+      for (const [key, state] of actionStates) {
+        if (
+          key.startsWith(`${worktreeId}:`) &&
+          (state.status === 'passed' || state.status === 'failed')
+        ) {
+          actionStates.set(key, { ...state, status: 'stale' });
+          changed = true;
+        }
+      }
+      return changed ? { actionStates } : {};
+    }),
 }));
