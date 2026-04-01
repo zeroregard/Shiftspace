@@ -30,7 +30,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
     await expect(searchInput).toBeVisible();
   });
 
@@ -38,7 +38,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Type "src" — should filter to files containing "src"
     await searchInput.fill('src');
@@ -61,7 +61,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Type a single character — the critical bug scenario
     await searchInput.fill('s');
@@ -80,7 +80,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Type invalid regex "[invalid" — should not crash
     await searchInput.fill('[invalid');
@@ -90,7 +90,7 @@ test.describe('Search filter in Inspection view', () => {
     await expect(page.locator('.codicon-arrow-left')).toBeVisible();
 
     // The search input border should turn red (error state)
-    const inputEl = page.locator('input[placeholder="Filter files (regex)"]');
+    const inputEl = page.locator('input[placeholder="Filter files"]');
     await expect(inputEl).toBeVisible();
   });
 
@@ -98,7 +98,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Type a filter
     await searchInput.fill('hooks');
@@ -124,7 +124,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Type something then clear it
     await searchInput.fill('hooks');
@@ -141,7 +141,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Use a valid regex to filter tsx files
     await searchInput.fill('\\.tsx$');
@@ -159,7 +159,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Type something that matches nothing
     await searchInput.fill('zzzznonexistent');
@@ -173,7 +173,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Rapidly type and delete
     await searchInput.fill('s');
@@ -197,7 +197,7 @@ test.describe('Search filter in Inspection view', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const searchInput = page.locator('input[placeholder="Filter files (regex)"]');
+    const searchInput = page.locator('input[placeholder="Filter files"]');
 
     // Apply a filter that shows some results
     await searchInput.fill('src');

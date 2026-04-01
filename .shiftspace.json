@@ -75,7 +75,13 @@
       "id": "todo-comment",
       "label": "TODO Comment",
       "pattern": "//\\s*TODO",
-      "threshold": 3
+      "threshold": 1
+    },
+    {
+      "id": "llm-comment",
+      "label": "LLM Comment",
+      "pattern": "// ---------------------------------------------------------------------------",
+      "threshold": "1"
     }
   ]
 }
