@@ -31,8 +31,8 @@ export const AnnotationBadges = React.memo(
               <div className="flex flex-col gap-0.5">
                 {diagnostics!.details
                   .filter((d) => d.severity === 'error')
-                  .map((d, i) => (
-                    <span key={i}>
+                  .map((d) => (
+                    <span key={`${d.line}:${d.source}`}>
                       L{d.line}: {d.message} ({d.source})
                     </span>
                   ))}
@@ -52,8 +52,8 @@ export const AnnotationBadges = React.memo(
               <div className="flex flex-col gap-0.5">
                 {diagnostics!.details
                   .filter((d) => d.severity === 'warning')
-                  .map((d, i) => (
-                    <span key={i}>
+                  .map((d) => (
+                    <span key={`${d.line}:${d.source}`}>
                       L{d.line}: {d.message} ({d.source})
                     </span>
                   ))}
