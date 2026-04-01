@@ -13,13 +13,11 @@ export interface FolderNodeData {
   name: string;
   folderPath: string;
   worktreeId: string;
-  onFolderClick?: (worktreeId: string, folderPath: string) => void;
   [key: string]: unknown;
 }
 
 export interface FileNodeData {
   file: FileChange;
-  onFileClick?: (worktreeId: string, filePath: string) => void;
   worktreeId: string;
   [key: string]: unknown;
 }
@@ -31,11 +29,9 @@ export function flattenRect(
   offsetX: number,
   offsetY: number,
   wtId: string,
-  onFileClick: ((wtId: string, filePath: string) => void) | undefined,
   nodes: LayoutNode[],
   edges: LayoutEdge[],
   suppressEdge = false,
-  onFolderClick?: (wtId: string, folderPath: string) => void,
   getFileH?: (filePath: string) => number
 ) {
   const absX = offsetX + rect.x;
@@ -44,7 +40,7 @@ export function flattenRect(
   const file = rect.node.file;
 
   if (isFile && file) {
-    const data: FileNodeData = { file, worktreeId: wtId, onFileClick };
+    const data: FileNodeData = { file, worktreeId: wtId };
     nodes.push({
       id: rect.node.id,
       type: 'fileNode',
@@ -58,7 +54,6 @@ export function flattenRect(
       name: rect.node.name,
       folderPath: rect.node.path ?? rect.node.name,
       worktreeId: wtId,
-      onFolderClick,
     };
     nodes.push({
       id: rect.node.id,
@@ -90,11 +85,9 @@ export function flattenRect(
       offsetX,
       offsetY,
       wtId,
-      onFileClick,
       nodes,
       edges,
       suppress,
-      onFolderClick,
       getFileH
     );
     if (isFileChild) firstFileEdgeEmitted = true;

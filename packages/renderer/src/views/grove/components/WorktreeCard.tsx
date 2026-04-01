@@ -2,7 +2,7 @@ import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../../../types';
 import { useShiftspaceStore } from '../../../store';
-import { BranchPickerPopover } from '../../../overlays/BranchPickerPopover';
+import { BranchPicker } from '../../../overlays/BranchPicker';
 import { Codicon } from '../../../ui/Codicon';
 import { ActionBar } from '../../inspection/components/ActionBar';
 import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
@@ -136,8 +136,11 @@ export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => 
               }}
             />
           )}
-          <BranchPickerPopover
-            trigger={
+          <BranchPicker
+            onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
+            onOpen={() => actions.requestBranchList(wt.id)}
+          >
+            <BranchPicker.Trigger>
               <button
                 className="flex items-center gap-1 min-w-0 max-w-full text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-11"
                 onPointerDown={(e) => e.stopPropagation()}
@@ -149,15 +152,18 @@ export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => 
                 </span>
                 <span className="truncate">{wt.branch}</span>
               </button>
-            }
-            branches={checkoutBranches}
-            selectedBranch={wt.branch}
-            onSelectBranch={(branch) => actions.checkoutBranch(wt.id, branch)}
-            onOpen={() => actions.requestBranchList(wt.id)}
-            onFetch={() => actions.fetchBranches(wt.id)}
-            isFetching={isFetchingBranches}
-            lastFetchAt={lastFetchAt}
-          />
+            </BranchPicker.Trigger>
+            <BranchPicker.Content>
+              <BranchPicker.SearchRow
+                fetch={{
+                  onFetch: () => actions.fetchBranches(wt.id),
+                  isFetching: isFetchingBranches,
+                  lastFetchAt,
+                }}
+              />
+              <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
+            </BranchPicker.Content>
+          </BranchPicker>
         </div>
       </div>
 

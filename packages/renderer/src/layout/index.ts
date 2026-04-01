@@ -14,24 +14,20 @@ import {
 } from './config';
 
 export interface SingleWorktreeLayout {
-  nodes: LayoutNode[]; // positioned relative to x=0 for this worktree
+  nodes: LayoutNode[];
   edges: LayoutEdge[];
   containerW: number;
   containerH: number;
 }
 
 export interface SingleWorktreeLayoutOptions {
-  /** When true, the worktree container renders without border, background, or header. */
   bare?: boolean;
-  /** Override the file list used for building the tree (e.g. to include branch diff files). */
   filesOverride?: import('../types').FileChange[];
 }
 
 /** Compute layout for a single worktree, with all nodes positioned from x=0. */
 export function computeSingleWorktreeLayout(
   wt: WorktreeState,
-  onFileClick?: (worktreeId: string, filePath: string) => void,
-  onFolderClick?: (worktreeId: string, folderPath: string) => void,
   options?: SingleWorktreeLayoutOptions,
   getFileFindingsCount?: (worktreeId: string, filePath: string) => number
 ): SingleWorktreeLayout {
@@ -73,33 +69,17 @@ export function computeSingleWorktreeLayout(
 
   const contentsOffsetX = (containerW - totalW) / 2;
   for (const layout of layouts) {
-    flattenRect(
-      layout,
-      wtNodeId,
-      true,
-      contentsOffsetX,
-      0,
-      wt.id,
-      onFileClick,
-      nodes,
-      edges,
-      false,
-      onFolderClick,
-      getFileH
-    );
+    flattenRect(layout, wtNodeId, true, contentsOffsetX, 0, wt.id, nodes, edges, false, getFileH);
   }
 
   return { nodes, edges, containerW, containerH };
 }
 
-export function computeFullLayout(
-  wtArray: WorktreeState[],
-  onFileClick?: (worktreeId: string, filePath: string) => void,
-  onFolderClick?: (worktreeId: string, folderPath: string) => void
-): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
-  const perLayouts = wtArray.map((wt) =>
-    computeSingleWorktreeLayout(wt, onFileClick, onFolderClick)
-  );
+export function computeFullLayout(wtArray: WorktreeState[]): {
+  nodes: LayoutNode[];
+  edges: LayoutEdge[];
+} {
+  const perLayouts = wtArray.map((wt) => computeSingleWorktreeLayout(wt));
 
   const totalGroupW =
     perLayouts.reduce((sum, l) => sum + l.containerW, 0) +

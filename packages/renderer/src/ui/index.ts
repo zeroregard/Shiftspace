@@ -1,3 +1,4 @@
+export { AnnotationBadges } from './AnnotationBadges';
 export { Badge } from './Badge';
 export { Codicon } from './Codicon';
 export { IconButton } from './IconButton';

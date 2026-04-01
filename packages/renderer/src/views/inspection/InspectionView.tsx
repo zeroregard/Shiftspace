@@ -6,8 +6,7 @@ import { useShiftspaceStore, getFileFindings } from '../../store';
 import { useFileAnnotations } from '../../hooks/useFileAnnotations';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
-import { BranchPickerPopover } from '../../overlays/BranchPickerPopover';
-import { Tooltip } from '../../overlays/Tooltip';
+import { BranchPicker } from '../../overlays/BranchPicker';
 import { ThemedFileIcon } from '../../shared/ThemedFileIcon';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
 
@@ -21,7 +20,7 @@ import { computeSingleWorktreeLayout } from '../../layout';
 import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
 import { useActions } from '../../ui/ActionsContext';
-import { Badge } from '../../ui/Badge';
+import { AnnotationBadges } from '../../ui/AnnotationBadges';
 import { Codicon } from '../../ui/Codicon';
 import { IconButton } from '../../ui/IconButton';
 import { SectionLabel as SectionLabelPrimitive } from '../../ui/SectionLabel';
@@ -52,10 +51,7 @@ const InspectionFileRow = React.memo(
     const dirPath = parts.join('/');
     const isDeleted = file.status === 'deleted';
 
-    const { errors, warnings, findings, totalFindings, diagnostics } = useFileAnnotations(
-      worktreeId,
-      file.path
-    );
+    const annotations = useFileAnnotations(worktreeId, file.path);
 
     return (
       <button
@@ -68,12 +64,10 @@ const InspectionFileRow = React.memo(
         onMouseEnter={() => onHoverFile?.(file.path)}
         onMouseLeave={() => onHoverFile?.(null)}
       >
-        {/* File icon */}
         <span className="shrink-0 flex items-center">
           <ThemedFileIcon filePath={file.path} size={16} />
         </span>
 
-        {/* Filename + directory */}
         <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
           <span
             className={clsx(
@@ -90,72 +84,7 @@ const InspectionFileRow = React.memo(
           )}
         </span>
 
-        {/* Annotation badges */}
-        {(errors > 0 || warnings > 0 || totalFindings > 0) && (
-          <span className="shrink-0 flex items-center gap-1">
-            {errors > 0 && (
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-0.5">
-                    {diagnostics!.details
-                      .filter((d) => d.severity === 'error')
-                      .map((d, i) => (
-                        <span key={i}>
-                          L{d.line}: {d.message} ({d.source})
-                        </span>
-                      ))}
-                  </div>
-                }
-                delayDuration={200}
-              >
-                <Badge variant="error">
-                  <Codicon name="error" size={12} />
-                  {errors}
-                </Badge>
-              </Tooltip>
-            )}
-            {warnings > 0 && (
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-0.5">
-                    {diagnostics!.details
-                      .filter((d) => d.severity === 'warning')
-                      .map((d, i) => (
-                        <span key={i}>
-                          L{d.line}: {d.message} ({d.source})
-                        </span>
-                      ))}
-                  </div>
-                }
-                delayDuration={200}
-              >
-                <Badge variant="warning">
-                  <Codicon name="warning" size={12} />
-                  {warnings}
-                </Badge>
-              </Tooltip>
-            )}
-            {totalFindings > 0 && (
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-0.5">
-                    {findings.map((f) => (
-                      <span key={f.ruleId}>
-                        {f.ruleLabel}: {f.count} found
-                      </span>
-                    ))}
-                  </div>
-                }
-                delayDuration={200}
-              >
-                <Badge variant="finding">
-                  <Codicon name="debug-breakpoint-unsupported" size={12} />
-                  {totalFindings}
-                </Badge>
-              </Tooltip>
-            )}
-          </span>
-        )}
+        <AnnotationBadges annotations={annotations} />
       </button>
     );
   }
@@ -229,13 +158,11 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
     if (!wt) return { nodes: [], edges: [] };
     const layout = computeSingleWorktreeLayout(
       wt,
-      actions.fileClick,
-      actions.folderClick,
       { bare: true, filesOverride: hierarchyFiles },
       (wtId, filePath) => getFileFindings(insightDetails, wtId, filePath).length
     );
     return { nodes: layout.nodes, edges: layout.edges };
-  }, [wt, hierarchyFiles, insightDetails, actions]);
+  }, [wt, hierarchyFiles, insightDetails]);
 
   if (!wt) {
     return (
@@ -302,8 +229,11 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
 
         {/* Worktree / branch name */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <BranchPickerPopover
-            trigger={
+          <BranchPicker
+            onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
+            onOpen={() => actions.requestBranchList(wt.id)}
+          >
+            <BranchPicker.Trigger>
               <button
                 className="flex items-center gap-1 text-text-primary hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold truncate"
                 title="Switch branch"
@@ -311,15 +241,18 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
                 <Codicon name="git-branch" />
                 {wt.branch}
               </button>
-            }
-            branches={checkoutBranches}
-            selectedBranch={wt.branch}
-            onSelectBranch={(branch) => actions.checkoutBranch(wt.id, branch)}
-            onOpen={() => actions.requestBranchList(wt.id)}
-            onFetch={() => actions.fetchBranches(wt.id)}
-            isFetching={isFetchingBranches}
-            lastFetchAt={lastFetchAt}
-          />
+            </BranchPicker.Trigger>
+            <BranchPicker.Content>
+              <BranchPicker.SearchRow
+                fetch={{
+                  onFetch: () => actions.fetchBranches(wt.id),
+                  isFetching: isFetchingBranches,
+                  lastFetchAt,
+                }}
+              />
+              <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
+            </BranchPicker.Content>
+          </BranchPicker>
         </div>
 
         {/* Re-check insights */}
@@ -331,20 +264,27 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
         />
 
         {/* Diff mode dropdown */}
-        <BranchPickerPopover
-          trigger={
+        <BranchPicker
+          onSelect={(branch) => actions.diffModeChange(wt.id, { type: 'branch', branch })}
+          onOpen={() => actions.requestBranchList(wt.id)}
+        >
+          <BranchPicker.Trigger>
             <button className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-10 whitespace-nowrap cursor-pointer bg-transparent">
               <Codicon name="git-compare" />
               <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
             </button>
-          }
-          branches={diffModeBranches}
-          selectedBranch={diffMode.type === 'branch' ? diffMode.branch : null}
-          staticOptions={diffModeStaticOptions}
-          branchLabel={(b) => `vs ${b}`}
-          onSelectBranch={(branch) => actions.diffModeChange(wt.id, { type: 'branch', branch })}
-          onOpen={() => actions.requestBranchList(wt.id)}
-        />
+          </BranchPicker.Trigger>
+          <BranchPicker.Content>
+            <BranchPicker.Search />
+            <BranchPicker.Options options={diffModeStaticOptions} />
+            <BranchPicker.Separator />
+            <BranchPicker.Branches
+              branches={diffModeBranches}
+              selected={diffMode.type === 'branch' ? diffMode.branch : null}
+              labelFn={(b) => `vs ${b}`}
+            />
+          </BranchPicker.Content>
+        </BranchPicker>
       </div>
 
       {/* Check bar */}

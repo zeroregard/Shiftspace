@@ -2,7 +2,7 @@ import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../types';
 import { useShiftspaceStore } from '../store';
-import { BranchPickerPopover } from '../overlays/BranchPickerPopover';
+import { BranchPicker } from '../overlays/BranchPicker';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 import { useActions } from '../ui/ActionsContext';
 import { IconButton } from '../ui/IconButton';
@@ -46,8 +46,11 @@ export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHea
     <div className="flex flex-col gap-1">
       <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
         {pathPart && <span>{pathPart} </span>}
-        <BranchPickerPopover
-          trigger={
+        <BranchPicker
+          onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
+          onOpen={() => actions.requestBranchList(wt.id)}
+        >
+          <BranchPicker.Trigger>
             <button
               className="flex items-center gap-1 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
               onPointerDown={(e) => e.stopPropagation()}
@@ -57,15 +60,18 @@ export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHea
               <Codicon name="git-branch" />
               {pathPart ? `(${wt.branch})` : wt.branch}
             </button>
-          }
-          branches={checkoutBranches}
-          selectedBranch={wt.branch}
-          onSelectBranch={(branch) => actions.checkoutBranch(wt.id, branch)}
-          onOpen={() => actions.requestBranchList(wt.id)}
-          onFetch={() => actions.fetchBranches(wt.id)}
-          isFetching={isFetchingBranches}
-          lastFetchAt={lastFetchAt}
-        />
+          </BranchPicker.Trigger>
+          <BranchPicker.Content>
+            <BranchPicker.SearchRow
+              fetch={{
+                onFetch: () => actions.fetchBranches(wt.id),
+                isFetching: isFetchingBranches,
+                lastFetchAt,
+              }}
+            />
+            <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
+          </BranchPicker.Content>
+        </BranchPicker>
       </div>
       <div className="flex gap-1 mt-1">
         <div className="flex items-center justify-between w-full">

@@ -3,13 +3,11 @@ import clsx from 'clsx';
 import { useDragPan } from '../../../hooks/useDragPan';
 import type { WorktreeState, FileChange } from '../../../types';
 import { DiffPopover } from '../../../overlays/DiffPopover';
-import { Tooltip } from '../../../overlays/Tooltip';
 import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
 import { WorktreeHeader } from '../../../nodes/WorktreeHeader';
 import { partitionFiles } from '../../../utils/listSections';
 import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
-import { Badge } from '../../../ui/Badge';
-import { Codicon } from '../../../ui/Codicon';
+import { AnnotationBadges } from '../../../ui/AnnotationBadges';
 import { SectionLabel } from '../../../ui/SectionLabel';
 
 const STATUS_LETTER: Record<FileChange['status'], string> = {
@@ -36,10 +34,7 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
   const dirPath = parts.join('/');
   const isDeleted = file.status === 'deleted';
 
-  const { errors, warnings, findings, totalFindings, diagnostics } = useFileAnnotations(
-    worktreeId,
-    file.path
-  );
+  const annotations = useFileAnnotations(worktreeId, file.path);
 
   return (
     <DiffPopover file={file}>
@@ -51,12 +46,10 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
         )}
         onClick={() => onFileClick?.(worktreeId, file.path)}
       >
-        {/* File icon */}
         <span className="shrink-0 flex items-center">
           <ThemedFileIcon filePath={file.path} size={16} />
         </span>
 
-        {/* Filename + directory */}
         <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
           <span
             className={clsx(
@@ -73,69 +66,7 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
           )}
         </span>
 
-        {/* Insight pills */}
-        {(errors > 0 || warnings > 0 || totalFindings > 0) && (
-          <span className="shrink-0 flex items-center gap-1">
-            {errors > 0 && (
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-0.5">
-                    {diagnostics!.details
-                      .filter((d) => d.severity === 'error')
-                      .map((d, i) => (
-                        <span key={i}>
-                          L{d.line}: {d.message} ({d.source})
-                        </span>
-                      ))}
-                  </div>
-                }
-                delayDuration={200}
-              >
-                <Badge variant="error">
-                  <Codicon name="error" size={10} /> {errors}
-                </Badge>
-              </Tooltip>
-            )}
-            {warnings > 0 && (
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-0.5">
-                    {diagnostics!.details
-                      .filter((d) => d.severity === 'warning')
-                      .map((d, i) => (
-                        <span key={i}>
-                          L{d.line}: {d.message} ({d.source})
-                        </span>
-                      ))}
-                  </div>
-                }
-                delayDuration={200}
-              >
-                <Badge variant="warning">
-                  <Codicon name="warning" size={10} /> {warnings}
-                </Badge>
-              </Tooltip>
-            )}
-            {totalFindings > 0 && (
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-0.5">
-                    {findings.map((f) => (
-                      <span key={f.ruleId}>
-                        {f.ruleLabel}: {f.count} found
-                      </span>
-                    ))}
-                  </div>
-                }
-                delayDuration={200}
-              >
-                <Badge variant="finding">
-                  <Codicon name="debug-breakpoint-unsupported" size={10} /> {totalFindings}
-                </Badge>
-              </Tooltip>
-            )}
-          </span>
-        )}
+        <AnnotationBadges annotations={annotations} iconSize={10} />
 
         {/* Status letter */}
         <span
