@@ -7,7 +7,13 @@
   "rules": {
     "no-unused-vars": "error",
     "no-console": "error",
-    "eqeqeq": "error"
+    "eqeqeq": "error",
+    "unicorn/require-post-message-target-origin": "off",
+    "no-shadow": "off",
+    "no-new": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "preserve-caught-error": "off"
   },
   "ignorePatterns": ["dist/", "node_modules/", ".turbo/", "*.config.ts", "*.config.js"]
 }

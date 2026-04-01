@@ -87,10 +87,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       onSetPackage={onSetPackage}
       onDetectPackages={onDetectPackages}
     >
-      <ShiftspaceContent
-        showPackageSwitcher={!!onSetPackage}
-        panZoomConfig={panZoomConfig}
-      />
+      <ShiftspaceContent showPackageSwitcher={!!onSetPackage} panZoomConfig={panZoomConfig} />
     </ActionsProvider>
   );
 };
@@ -135,10 +132,7 @@ const ShiftspaceContent = React.memo(({ showPackageSwitcher, panZoomConfig }: Co
         {mode.type === 'grove' ? (
           <GroveView worktrees={wtArray} />
         ) : (
-          <InspectionView
-            worktreeId={mode.worktreeId}
-            panZoomConfig={panZoomConfig}
-          />
+          <InspectionView worktreeId={mode.worktreeId} panZoomConfig={panZoomConfig} />
         )}
       </div>
     </div>

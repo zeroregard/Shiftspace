@@ -21,14 +21,20 @@ interface ListItemProps {
  *   </ListItem>
  */
 export const ListItem = React.memo(
-  ({ onClick, onMouseEnter, onMouseLeave, selected, active, children, className }: ListItemProps) => (
+  ({
+    onClick,
+    onMouseEnter,
+    onMouseLeave,
+    selected,
+    active,
+    children,
+    className,
+  }: ListItemProps) => (
     <button
       className={clsx(
         'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
         onClick ? 'cursor-pointer' : 'cursor-default',
-        selected
-          ? 'bg-node-file-pulse text-text-primary'
-          : 'hover:bg-node-file-pulse',
+        selected ? 'bg-node-file-pulse text-text-primary' : 'hover:bg-node-file-pulse',
         active && 'bg-node-file-pulse',
         className
       )}

@@ -13,7 +13,9 @@ interface SectionLabelProps {
  *   <SectionLabel>Staged changes</SectionLabel>
  */
 export const SectionLabel = React.memo(({ children, className }: SectionLabelProps) => (
-  <span className={clsx('text-10 font-semibold uppercase tracking-wider text-text-faint', className)}>
+  <span
+    className={clsx('text-10 font-semibold uppercase tracking-wider text-text-faint', className)}
+  >
     {children}
   </span>
 ));

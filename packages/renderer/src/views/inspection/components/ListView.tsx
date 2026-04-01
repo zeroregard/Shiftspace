@@ -174,68 +174,67 @@ function ListSectionLabel({ label }: { label: string }) {
 }
 
 const ListWorktreeBox = React.memo(({ worktree: wt, onFileClick }: ListWorktreeBoxProps) => {
-    const { committed, staged, unstaged } = partitionFiles(wt);
-    const isEmpty = committed.length === 0 && staged.length === 0 && unstaged.length === 0;
+  const { committed, staged, unstaged } = partitionFiles(wt);
+  const isEmpty = committed.length === 0 && staged.length === 0 && unstaged.length === 0;
 
-    return (
-      <div className="min-w-80 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">
-        {/* Header */}
-        <div className="px-4 py-2.5 border-b border-border-dashed">
-          <WorktreeHeader worktree={wt} />
-        </div>
-
-        {/* File list */}
-        <div className="p-2">
-          {isEmpty ? (
-            <div className="text-text-faint text-11 px-3 py-2">No changes</div>
-          ) : (
-            <>
-              {committed.length > 0 && (
-                <>
-                  <ListSectionLabel label="Committed" />
-                  {committed.map((file) => (
-                    <ListFileRow
-                      key={`committed:${file.path}`}
-                      file={file}
-                      worktreeId={wt.id}
-                      onFileClick={onFileClick}
-                    />
-                  ))}
-                </>
-              )}
-              {staged.length > 0 && (
-                <>
-                  <ListSectionLabel label="Staged" />
-                  {staged.map((file) => (
-                    <ListFileRow
-                      key={`staged:${file.path}`}
-                      file={file}
-                      worktreeId={wt.id}
-                      onFileClick={onFileClick}
-                    />
-                  ))}
-                </>
-              )}
-              {unstaged.length > 0 && (
-                <>
-                  <ListSectionLabel label="Unstaged" />
-                  {unstaged.map((file) => (
-                    <ListFileRow
-                      key={`unstaged:${file.path}`}
-                      file={file}
-                      worktreeId={wt.id}
-                      onFileClick={onFileClick}
-                    />
-                  ))}
-                </>
-              )}
-            </>
-          )}
-        </div>
+  return (
+    <div className="min-w-80 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-2.5 border-b border-border-dashed">
+        <WorktreeHeader worktree={wt} />
       </div>
-    );
-  }
-);
+
+      {/* File list */}
+      <div className="p-2">
+        {isEmpty ? (
+          <div className="text-text-faint text-11 px-3 py-2">No changes</div>
+        ) : (
+          <>
+            {committed.length > 0 && (
+              <>
+                <ListSectionLabel label="Committed" />
+                {committed.map((file) => (
+                  <ListFileRow
+                    key={`committed:${file.path}`}
+                    file={file}
+                    worktreeId={wt.id}
+                    onFileClick={onFileClick}
+                  />
+                ))}
+              </>
+            )}
+            {staged.length > 0 && (
+              <>
+                <ListSectionLabel label="Staged" />
+                {staged.map((file) => (
+                  <ListFileRow
+                    key={`staged:${file.path}`}
+                    file={file}
+                    worktreeId={wt.id}
+                    onFileClick={onFileClick}
+                  />
+                ))}
+              </>
+            )}
+            {unstaged.length > 0 && (
+              <>
+                <ListSectionLabel label="Unstaged" />
+                {unstaged.map((file) => (
+                  <ListFileRow
+                    key={`unstaged:${file.path}`}
+                    file={file}
+                    worktreeId={wt.id}
+                    onFileClick={onFileClick}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+});
 
 ListWorktreeBox.displayName = 'ListWorktreeBox';
 
@@ -245,35 +244,34 @@ interface ListViewProps {
 }
 
 export const ListView = React.memo(({ worktrees, onFileClick }: ListViewProps) => {
-    const pan = useDragPan();
-    return (
-      <div
-        ref={pan.containerRef}
-        className="w-full h-full overflow-hidden select-none"
-        style={{
-          cursor: 'grab',
-          backgroundImage: 'radial-gradient(circle, var(--color-grid-dot) 1px, transparent 1px)',
-        }}
-        onPointerDown={pan.onPointerDown}
-        onPointerMove={pan.onPointerMove}
-        onPointerUp={pan.onPointerUp}
-        onClickCapture={pan.onClickCapture}
-      >
-        <div ref={pan.translateRef}>
-          <div ref={pan.contentRef} className="p-6">
-            <div className="flex flex-row gap-4 items-start">
-              {worktrees.map((wt) => (
-                <ListWorktreeBox key={wt.id} worktree={wt} onFileClick={onFileClick} />
-              ))}
-              {worktrees.length === 0 && (
-                <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
-              )}
-            </div>
+  const pan = useDragPan();
+  return (
+    <div
+      ref={pan.containerRef}
+      className="w-full h-full overflow-hidden select-none"
+      style={{
+        cursor: 'grab',
+        backgroundImage: 'radial-gradient(circle, var(--color-grid-dot) 1px, transparent 1px)',
+      }}
+      onPointerDown={pan.onPointerDown}
+      onPointerMove={pan.onPointerMove}
+      onPointerUp={pan.onPointerUp}
+      onClickCapture={pan.onClickCapture}
+    >
+      <div ref={pan.translateRef}>
+        <div ref={pan.contentRef} className="p-6">
+          <div className="flex flex-row gap-4 items-start">
+            {worktrees.map((wt) => (
+              <ListWorktreeBox key={wt.id} worktree={wt} onFileClick={onFileClick} />
+            ))}
+            {worktrees.length === 0 && (
+              <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
+            )}
           </div>
         </div>
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
 
 ListView.displayName = 'ListView';
