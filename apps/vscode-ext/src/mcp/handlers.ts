@@ -2,7 +2,6 @@ import { execSync } from 'child_process';
 import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
 import type { ConfigLoader } from '../actions/configLoader';
 import type { StateManager } from '../actions/stateManager';
-import type { InsightRunner } from '../insights/runner';
 import type { CheckResult, ShiftspaceActionConfig } from '../actions/types';
 import { resolveCommand } from '../actions/commandResolver';
 import { runCheck } from '../actions/runner';
@@ -16,10 +15,8 @@ export interface McpHandlerDeps {
   worktreeProvider: WorktreeProvider;
   configLoader: ConfigLoader;
   stateManager: StateManager;
-  insightRunner: InsightRunner;
   repoRoot: string;
   getPackageName: () => string;
-  getSmellRules: () => Record<string, Record<string, unknown>>;
   collectDiagnostics?: (files: FileChange[], worktreeRoot: string) => FileDiagnosticSummary[];
 }
 
@@ -48,7 +45,6 @@ export class McpToolHandlers {
     if (!cwd) {
       return worktrees[0] ?? null;
     }
-    // Resolve to a git root and find matching worktree
     let gitRoot: string;
     try {
       gitRoot = execSync('git rev-parse --show-toplevel', {
@@ -62,29 +58,14 @@ export class McpToolHandlers {
     return worktrees.find((wt) => wt.path === gitRoot) ?? null;
   }
 
-  private async handleGetInsights(params: Record<string, unknown>): Promise<object> {
+  private handleGetInsights(params: Record<string, unknown>): object {
     const wt = this.resolveWorktree(params['cwd'] as string | undefined);
     if (!wt) return { error: 'No worktree found' };
 
-    const extraSettings = this.deps.getSmellRules();
-    const { details } = await this.deps.insightRunner.analyzeWorktree(
-      wt.id,
-      wt.files,
-      this.deps.repoRoot,
-      wt.path,
-      undefined,
-      extraSettings
-    );
-
-    // Collect VSCode diagnostics (TS errors, lint warnings) for changed files
     const diagnostics = this.deps.collectDiagnostics?.(wt.files, wt.path) ?? [];
 
     return {
       worktree: { id: wt.id, branch: wt.branch, path: wt.path },
-      insights: details.map((d) => ({
-        insightId: d.insightId,
-        fileInsights: d.fileInsights,
-      })),
       diagnostics: diagnostics.map((d) => ({
         file: d.filePath,
         errors: d.errors,
@@ -178,7 +159,6 @@ export class McpToolHandlers {
     const pipeline = pipelines?.[pipelineId];
     if (!pipeline) return { error: `Unknown pipeline: ${pipelineId}` };
 
-    // Build actions map with resolved commands
     const actionsMap = new Map<string, ShiftspaceActionConfig>();
     const packageName = this.deps.getPackageName();
     for (const action of this.deps.configLoader.config.actions) {

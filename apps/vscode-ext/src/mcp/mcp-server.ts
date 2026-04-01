@@ -36,7 +36,7 @@ const TOOLS = [
   {
     name: 'get_insights',
     description:
-      'Get code smells and diagnostics for the current worktree. Returns per-file findings including pattern-based code smell detections.',
+      'Get compiler errors and lint warnings for changed files in the current worktree. Returns per-file error/warning counts and details from VSCode language servers.',
     inputSchema: {
       type: 'object' as const,
       properties: {

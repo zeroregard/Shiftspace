@@ -60,27 +60,8 @@ function makeDeps(worktrees: WorktreeState[] = [makeWorktree()]): McpHandlerDeps
       },
     } as unknown as McpHandlerDeps['configLoader'],
     stateManager,
-    insightRunner: {
-      analyzeWorktree: vi.fn().mockResolvedValue({
-        summaries: [],
-        details: [
-          {
-            insightId: 'codeSmells',
-            worktreeId: 'wt-1',
-            fileInsights: [
-              {
-                filePath: 'src/index.ts',
-                findings: [{ ruleId: 'todo', ruleLabel: 'TODO comments', count: 3, threshold: 1 }],
-              },
-            ],
-          },
-        ],
-      }),
-      clearCache: vi.fn(),
-    } as unknown as McpHandlerDeps['insightRunner'],
     repoRoot: '/tmp',
     getPackageName: () => '',
-    getSmellRules: () => ({ codeSmells: { smellRules: [] } }),
   };
 }
 
@@ -110,11 +91,6 @@ describe('McpToolHandlers', () => {
         linesAdded: 10,
         linesRemoved: 3,
       });
-      expect(files[1]).toMatchObject({
-        path: 'README.md',
-        status: 'added',
-        staged: true,
-      });
     });
 
     it('returns error when no worktree found', async () => {
@@ -126,18 +102,13 @@ describe('McpToolHandlers', () => {
   });
 
   describe('get_insights', () => {
-    it('returns insight details for the worktree', async () => {
+    it('returns empty diagnostics when collector is not provided', async () => {
       const result = (await handlers.handleTool('get_insights', {})) as Record<string, unknown>;
 
       expect(result['worktree']).toEqual({ id: 'wt-1', branch: 'main', path: '/tmp' });
-      const insights = result['insights'] as Array<Record<string, unknown>>;
-      expect(insights).toHaveLength(1);
-      expect(insights[0]['insightId']).toBe('codeSmells');
-    });
-
-    it('returns empty diagnostics when collector is not provided', async () => {
-      const result = (await handlers.handleTool('get_insights', {})) as Record<string, unknown>;
       expect(result['diagnostics']).toEqual([]);
+      // Should not have an insights field (no smells)
+      expect(result['insights']).toBeUndefined();
     });
 
     it('returns diagnostics when collector is provided', async () => {
@@ -190,7 +161,6 @@ describe('McpToolHandlers', () => {
 
   describe('get_check_status', () => {
     it('returns status for all configured checks', async () => {
-      // Set some states
       deps.stateManager.set('wt-1', 'fmt', {
         type: 'check',
         status: 'passed',

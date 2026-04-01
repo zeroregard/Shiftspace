@@ -21,13 +21,8 @@ function makeDeps(worktrees: WorktreeState[]): McpHandlerDeps {
     worktreeProvider: { getWorktrees: () => worktrees },
     configLoader: { config: { actions: [] } } as unknown as McpHandlerDeps['configLoader'],
     stateManager: new StateManager(),
-    insightRunner: {
-      analyzeWorktree: async () => ({ summaries: [], details: [] }),
-      clearCache: () => {},
-    } as unknown as McpHandlerDeps['insightRunner'],
     repoRoot: '/repo',
     getPackageName: () => '',
-    getSmellRules: () => ({}),
   };
 }
 
