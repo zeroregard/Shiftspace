@@ -233,6 +233,12 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   setFileDiagnostics: (worktreeId, files) =>
     set((s) => {
       const fileDiagnostics = new Map(s.fileDiagnostics);
+      // Remove all existing entries for this worktree to prune stale diagnostics
+      for (const key of fileDiagnostics.keys()) {
+        if (key.startsWith(`${worktreeId}:`)) {
+          fileDiagnostics.delete(key);
+        }
+      }
       for (const file of files) {
         fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
       }

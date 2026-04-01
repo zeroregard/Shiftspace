@@ -284,6 +284,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'get-log', worktreeId, actionId });
   }, []);
 
+  const handleRecheckInsights = useCallback((worktreeId: string) => {
+    vscode?.postMessage({ type: 'recheck-insights', worktreeId });
+  }, []);
+
   if (errorMessage) {
     return (
       <div
@@ -325,6 +329,7 @@ const App: React.FC = () => {
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
         onGetLog={handleGetLog}
+        onRecheckInsights={handleRecheckInsights}
         panZoomConfig={panZoomConfig}
       />
     </div>

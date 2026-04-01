@@ -53,6 +53,10 @@ interface TreeCanvasProps {
   edges: LayoutEdge[];
   nodeTypes: Record<string, React.ComponentType<NodeComponentProps<any>>>;
   panZoomConfig?: PanZoomConfig;
+  /** When set to a node ID, the canvas animates to center on that node. */
+  focusNodeId?: string | null;
+  /** Called after the focus animation completes (use to reset focusNodeId). */
+  onFocusComplete?: () => void;
 }
 
 function smoothstepPath(x1: number, y1: number, x2: number, y2: number): string {
@@ -132,6 +136,8 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   edges,
   nodeTypes,
   panZoomConfig,
+  focusNodeId,
+  onFocusComplete,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, zoom: 1 });
@@ -147,6 +153,9 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   // Keep nodes accessible in event handlers without stale closures
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
+  const isFocusingRef = useRef(false);
+  const onFocusCompleteRef = useRef(onFocusComplete);
+  onFocusCompleteRef.current = onFocusComplete;
 
   // Merge config with defaults via ref so handlers never need re-registration
   const panZoomConfigRef = useRef<Required<PanZoomConfig>>(DEFAULT_PAN_ZOOM_CONFIG);
@@ -163,6 +172,26 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
     setTransform(fitViewToNodes(nodes, w, h));
     hasFitRef.current = true;
   }, [nodes]);
+
+  // Focus on a specific node when focusNodeId changes
+  useEffect(() => {
+    if (!focusNodeId) return;
+    const node = nodesRef.current.find((n) => n.id === focusNodeId);
+    if (!node) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const { offsetWidth: w, offsetHeight: h } = el;
+    const targetZoom = Math.max(transformRef.current.zoom, 0.8);
+    const centerX = node.position.x + node.width / 2;
+    const centerY = node.position.y + node.height / 2;
+    isFocusingRef.current = true;
+    setIsFitting(true);
+    setTransform({
+      zoom: targetZoom,
+      x: w / 2 - centerX * targetZoom,
+      y: h / 2 - centerY * targetZoom,
+    });
+  }, [focusNodeId]);
 
   // Wheel handler — non-passive so we can preventDefault
   // Figma-style: scroll=pan, shift+scroll=horizontal pan, cmd/ctrl+scroll=zoom, pinch=zoom
@@ -312,6 +341,10 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
 
   const handleTransitionEnd = useCallback(() => {
     setIsFitting(false);
+    if (isFocusingRef.current) {
+      isFocusingRef.current = false;
+      onFocusCompleteRef.current?.();
+    }
   }, []);
 
   const { x, y, zoom } = transform;
