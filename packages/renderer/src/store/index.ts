@@ -14,6 +14,8 @@ import type {
   InsightFinding,
   FileDiagnosticSummary,
 } from '../types';
+import { applyEventReducer } from './applyEvent';
+import { createExtrasSlice } from './slices';
 
 interface ShiftspaceStore {
   worktrees: Map<string, WorktreeState>;
@@ -178,161 +180,8 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
       return { lastFetchAt };
     }),
 
-  setActionConfigs: (configs) => set({ actionConfigs: configs }),
+  applyEvent: (event) => set((state) => ({ worktrees: applyEventReducer(state.worktrees, event) })),
 
-  setActionState: (worktreeId, actionId, state) =>
-    set((s) => {
-      const actionStates = new Map(s.actionStates);
-      actionStates.set(`${worktreeId}:${actionId}`, state);
-      return { actionStates };
-    }),
-
-  setIconMap: (map) => set({ iconMap: map }),
-
-  setSelectedPackage: (pkg) => set({ selectedPackage: pkg }),
-
-  setActionLog: (worktreeId, actionId, log) =>
-    set((s) => {
-      const actionLogs = new Map(s.actionLogs);
-      actionLogs.set(`${worktreeId}:${actionId}`, log);
-      return { actionLogs };
-    }),
-
-  appendActionLog: (worktreeId, actionId, chunk) =>
-    set((s) => {
-      const key = `${worktreeId}:${actionId}`;
-      const actionLogs = new Map(s.actionLogs);
-      actionLogs.set(key, (actionLogs.get(key) ?? '') + chunk);
-      return { actionLogs };
-    }),
-
-  setPipelines: (pipelines) => set({ pipelines }),
-
-  setAvailablePackages: (packages) => set({ availablePackages: packages }),
-
-  setInsightDetail: (worktreeId, insightId, detail) =>
-    set((s) => {
-      const insightDetails = new Map(s.insightDetails);
-      insightDetails.set(`${worktreeId}:${insightId}`, detail);
-      return { insightDetails };
-    }),
-
-  clearInsightDetails: (worktreeId) =>
-    set((s) => {
-      const insightDetails = new Map(s.insightDetails);
-      let changed = false;
-      for (const key of insightDetails.keys()) {
-        if (key.startsWith(`${worktreeId}:`)) {
-          insightDetails.delete(key);
-          changed = true;
-        }
-      }
-      return changed ? { insightDetails } : {};
-    }),
-
-  setFileDiagnostics: (worktreeId, files) =>
-    set((s) => {
-      const fileDiagnostics = new Map(s.fileDiagnostics);
-      // Remove all existing entries for this worktree to prune stale diagnostics
-      for (const key of fileDiagnostics.keys()) {
-        if (key.startsWith(`${worktreeId}:`)) {
-          fileDiagnostics.delete(key);
-        }
-      }
-      for (const file of files) {
-        fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
-      }
-      return { fileDiagnostics };
-    }),
-
-  clearFileDiagnostics: (worktreeId) =>
-    set((s) => {
-      const fileDiagnostics = new Map(s.fileDiagnostics);
-      let changed = false;
-      for (const key of fileDiagnostics.keys()) {
-        if (key.startsWith(`${worktreeId}:`)) {
-          fileDiagnostics.delete(key);
-          changed = true;
-        }
-      }
-      return changed ? { fileDiagnostics } : {};
-    }),
-
-  markAllStale: (worktreeId) =>
-    set((s) => {
-      const actionStates = new Map(s.actionStates);
-      let changed = false;
-      for (const [key, state] of actionStates) {
-        if (
-          key.startsWith(`${worktreeId}:`) &&
-          (state.status === 'passed' || state.status === 'failed')
-        ) {
-          actionStates.set(key, { ...state, status: 'stale' });
-          changed = true;
-        }
-      }
-      return changed ? { actionStates } : {};
-    }),
-
-  applyEvent: (event) =>
-    set((state) => {
-      const worktrees = new Map(state.worktrees);
-
-      switch (event.type) {
-        case 'worktree-added': {
-          worktrees.set(event.worktree.id, event.worktree);
-          break;
-        }
-        case 'worktree-removed': {
-          worktrees.delete(event.worktreeId);
-          break;
-        }
-        case 'file-changed': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const files = wt.files.filter((f) => f.path !== event.file.path);
-            worktrees.set(event.worktreeId, { ...wt, files: [...files, event.file] });
-          }
-          break;
-        }
-        case 'file-removed': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const files = wt.files.filter((f) => f.path !== event.filePath);
-            worktrees.set(event.worktreeId, { ...wt, files });
-          }
-          break;
-        }
-        case 'file-staged': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const files = wt.files.map((f) =>
-              f.path === event.filePath ? { ...f, staged: true } : f
-            );
-            worktrees.set(event.worktreeId, { ...wt, files });
-          }
-          break;
-        }
-        case 'process-started': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            worktrees.set(event.worktreeId, {
-              ...wt,
-              process: { port: event.port, command: event.command },
-            });
-          }
-          break;
-        }
-        case 'process-stopped': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const { process: _removed, ...rest } = wt;
-            worktrees.set(event.worktreeId, rest);
-          }
-          break;
-        }
-      }
-
-      return { worktrees };
-    }),
+  // Action, insight, diagnostics, and misc setters — delegated to keep this function short
+  ...createExtrasSlice(set as any),
 }));

@@ -10,7 +10,7 @@
     "dev": "bun run --filter '*' dev",
     "build": "bun run --filter @shiftspace/renderer build && bun run --filter '*' build",
     "typecheck": "bun run --filter @shiftspace/renderer build && bun run --filter '*' typecheck",
-    "lint:check": "oxlint .",
+    "lint:check": "oxlint --deny-warnings .",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt:write": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
@@ -22,7 +22,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,json,md}": "prettier --write",
-    "*.{ts,tsx}": "oxlint"
+    "*.{ts,tsx}": "oxlint --deny-warnings"
   },
   "devDependencies": {
     "husky": "^9.0.0",

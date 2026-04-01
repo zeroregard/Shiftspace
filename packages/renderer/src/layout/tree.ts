@@ -49,7 +49,7 @@ export function buildTree(wtId: string, files: FileChange[]): TreeNode[] {
       let collapsedName = child.segment;
       let collapsedPath = folderPath;
       while (collapsed.children.size === 1 && collapsed.files.length === 0) {
-        const onlyChild = Array.from(collapsed.children.values())[0];
+        const onlyChild = Array.from(collapsed.children.values())[0]!;
         collapsedName = `${collapsedName}/${onlyChild.segment}`;
         collapsedPath = `${collapsedPath}/${onlyChild.segment}`;
         collapsed = onlyChild;

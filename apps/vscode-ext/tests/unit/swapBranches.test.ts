@@ -111,211 +111,131 @@ describe('checkWorktreeSafety', () => {
 });
 
 // ---------------------------------------------------------------------------
-// swapBranches — happy path
+// swapBranches — shared helpers
 // ---------------------------------------------------------------------------
 
-describe('swapBranches — happy path', () => {
+const DEFAULT_SWAP_OPTS = {
+  worktreeAPath: '/wt/feature',
+  branchA: 'feature/auth',
+  worktreeBPath: '/wt/main',
+  branchB: 'main',
+};
+
+type MockResult = { stdout: string; stderr: string } | { error: string };
+
+/** Set up a recording mock that tracks all git calls and returns joined strings for assertions. */
+function recordingMock(
+  handler?: (args: string[], calls: Array<string[]>) => MockResult | undefined
+) {
+  const calls: Array<string[]> = [];
+  vi.mocked(execFile).mockImplementation(((
+    _cmd: unknown,
+    rawArgs: string[],
+    _opts: unknown,
+    cb: Function
+  ) => {
+    const args = normalizeGitArgs(rawArgs);
+    calls.push(args);
+    const custom = handler?.(args, calls);
+    if (custom && 'error' in custom) {
+      cb(new Error(custom.error), { stdout: '', stderr: '' });
+      return;
+    }
+    if (custom) {
+      cb(null, custom);
+      return;
+    }
+    cb(null, { stdout: '', stderr: '' });
+  }) as any);
+  return { calls, joined: () => calls.map((a) => a.join(' ')) };
+}
+
+// ---------------------------------------------------------------------------
+// swapBranches — happy path: clean swap
+// ---------------------------------------------------------------------------
+
+describe('swapBranches — clean swap', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('performs the full swap sequence when neither worktree has changes', async () => {
-    const calls: Array<string[]> = [];
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      rawArgs: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      const args = normalizeGitArgs(rawArgs);
-      calls.push(args);
-      cb(null, { stdout: '', stderr: '' });
-    }) as any);
-
-    await swapBranches({
-      worktreeAPath: '/wt/feature',
-      branchA: 'feature/auth',
-      worktreeBPath: '/wt/main',
-      branchB: 'main',
-    });
-
-    // Verify key steps in order
-    const joined = calls.map((a) => a.join(' '));
-
-    // status checks — no changes, so no stash commands
-    expect(joined).toContain('status --porcelain');
-
-    // temp branch created on A
-    const tempCreate = joined.find((c) => c.startsWith('checkout -b _shiftspace_temp_swap'));
-    expect(tempCreate).toBeDefined();
-
-    // branchA checked out on B
-    expect(joined).toContain('checkout feature/auth');
-
-    // branchB checked out on A
-    expect(joined).toContain('checkout main');
-
-    // temp branch deleted
-    const tempDelete = joined.find((c) => c.startsWith('branch -d _shiftspace_temp_swap'));
-    expect(tempDelete).toBeDefined();
-
-    // No stash commands (both clean)
-    expect(joined.some((c) => c.startsWith('stash push'))).toBe(false);
-    expect(joined.some((c) => c.startsWith('stash pop'))).toBe(false);
-  });
-
-  it('stashes and cross-pops when worktree A has uncommitted changes', async () => {
-    const calls: Array<string[]> = [];
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      rawArgs: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      const args = normalizeGitArgs(rawArgs);
-      calls.push(args);
-      // Return non-empty status for worktree A's first status call
-      if (args[0] === 'status' && calls.filter((c) => c[0] === 'status').length === 1) {
-        cb(null, { stdout: ' M src/file.ts\n', stderr: '' });
-      } else if (args[0] === 'stash' && args[1] === 'list') {
-        // Return a stash list containing swap-A
-        cb(null, { stdout: 'stash@{0}: On feature/auth: shiftspace-swap-A\n', stderr: '' });
-      } else {
-        cb(null, { stdout: '', stderr: '' });
-      }
-    }) as any);
-
-    await swapBranches({
-      worktreeAPath: '/wt/feature',
-      branchA: 'feature/auth',
-      worktreeBPath: '/wt/main',
-      branchB: 'main',
-    });
-
-    const joined = calls.map((a) => a.join(' '));
-
-    // A's stash should be pushed
-    expect(joined.some((c) => c.includes('stash push') && c.includes('shiftspace-swap-A'))).toBe(
-      true
-    );
-
-    // A's stash should be popped on B (cross-apply)
-    const popCalls = calls.filter((a) => a[0] === 'stash' && a[1] === 'pop');
-    expect(popCalls.length).toBe(1);
-
-    // B had no changes, so no stash-swap-B push or pop
-    expect(joined.some((c) => c.includes('shiftspace-swap-B'))).toBe(false);
-  });
-
-  it('stashes and cross-pops when worktree B has uncommitted changes', async () => {
-    const calls: Array<string[]> = [];
-    let statusCallCount = 0;
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      rawArgs: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      const args = normalizeGitArgs(rawArgs);
-      calls.push(args);
-      if (args[0] === 'status') {
-        statusCallCount++;
-        // Second status call is for B — return dirty
-        if (statusCallCount === 2) {
-          cb(null, { stdout: 'M  src/main.ts\n', stderr: '' });
-          return;
-        }
-      }
-      if (args[0] === 'stash' && args[1] === 'list') {
-        cb(null, { stdout: 'stash@{0}: On main: shiftspace-swap-B\n', stderr: '' });
-        return;
-      }
-      cb(null, { stdout: '', stderr: '' });
-    }) as any);
-
-    await swapBranches({
-      worktreeAPath: '/wt/feature',
-      branchA: 'feature/auth',
-      worktreeBPath: '/wt/main',
-      branchB: 'main',
-    });
-
-    const joined = calls.map((a) => a.join(' '));
-
-    // Only B's stash should be pushed
-    expect(joined.some((c) => c.includes('stash push') && c.includes('shiftspace-swap-B'))).toBe(
-      true
-    );
-    expect(joined.some((c) => c.includes('stash push') && c.includes('shiftspace-swap-A'))).toBe(
-      false
-    );
-
-    // B's stash is popped on A (cross-apply)
-    const popCalls = calls.filter((a) => a[0] === 'stash' && a[1] === 'pop');
-    expect(popCalls.length).toBe(1);
-  });
-
-  it('stashes and cross-pops for both when both have changes', async () => {
-    const calls: Array<string[]> = [];
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      rawArgs: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      const args = normalizeGitArgs(rawArgs);
-      calls.push(args);
-      if (args[0] === 'status') {
-        cb(null, { stdout: ' M file.ts\n', stderr: '' });
-        return;
-      }
-      if (args[0] === 'stash' && args[1] === 'list') {
-        cb(null, {
-          stdout:
-            'stash@{0}: On feature/auth: shiftspace-swap-A\n' +
-            'stash@{1}: On main: shiftspace-swap-B\n',
-          stderr: '',
-        });
-        return;
-      }
-      cb(null, { stdout: '', stderr: '' });
-    }) as any);
-
-    await swapBranches({
-      worktreeAPath: '/wt/feature',
-      branchA: 'feature/auth',
-      worktreeBPath: '/wt/main',
-      branchB: 'main',
-    });
-
-    const joined = calls.map((a) => a.join(' '));
-
-    // Both stashes pushed
-    expect(joined.some((c) => c.includes('shiftspace-swap-A') && c.includes('stash push'))).toBe(
-      true
-    );
-    expect(joined.some((c) => c.includes('shiftspace-swap-B') && c.includes('stash push'))).toBe(
-      true
-    );
-
-    // Both stashes popped (cross-applied)
-    const popCalls = calls.filter((a) => a[0] === 'stash' && a[1] === 'pop');
-    expect(popCalls.length).toBe(2);
+    const { joined } = recordingMock();
+    await swapBranches(DEFAULT_SWAP_OPTS);
+    const j = joined();
+    expect(j).toContain('status --porcelain');
+    expect(j.find((c) => c.startsWith('checkout -b _shiftspace_temp_swap'))).toBeDefined();
+    expect(j).toContain('checkout feature/auth');
+    expect(j).toContain('checkout main');
+    expect(j.find((c) => c.startsWith('branch -d _shiftspace_temp_swap'))).toBeDefined();
+    expect(j.some((c) => c.startsWith('stash push'))).toBe(false);
+    expect(j.some((c) => c.startsWith('stash pop'))).toBe(false);
   });
 
   it('calls onProgress with step messages', async () => {
     vi.mocked(execFile).mockImplementation(mockSuccess() as any);
     const progress: string[] = [];
-
-    await swapBranches({
-      worktreeAPath: '/wt/feature',
-      branchA: 'feature/auth',
-      worktreeBPath: '/wt/main',
-      branchB: 'main',
-      onProgress: (msg) => progress.push(msg),
-    });
-
+    await swapBranches({ ...DEFAULT_SWAP_OPTS, onProgress: (msg) => progress.push(msg) });
     expect(progress).toContain('Stashing changes...');
     expect(progress).toContain('Swapping branches...');
     expect(progress).toContain('Restoring changes...');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// swapBranches — happy path: stash scenarios
+// ---------------------------------------------------------------------------
+
+describe('swapBranches — stash scenarios', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('stashes and cross-pops when worktree A has uncommitted changes', async () => {
+    const { calls, joined } = recordingMock((args, allCalls) => {
+      if (args[0] === 'status' && allCalls.filter((c) => c[0] === 'status').length === 1)
+        return { stdout: ' M src/file.ts\n', stderr: '' };
+      if (args[0] === 'stash' && args[1] === 'list')
+        return { stdout: 'stash@{0}: On feature/auth: shiftspace-swap-A\n', stderr: '' };
+      return undefined;
+    });
+    await swapBranches(DEFAULT_SWAP_OPTS);
+    const j = joined();
+    expect(j.some((c) => c.includes('stash push') && c.includes('shiftspace-swap-A'))).toBe(true);
+    expect(calls.filter((a) => a[0] === 'stash' && a[1] === 'pop').length).toBe(1);
+    expect(j.some((c) => c.includes('shiftspace-swap-B'))).toBe(false);
+  });
+
+  it('stashes and cross-pops when worktree B has uncommitted changes', async () => {
+    let statusCallCount = 0;
+    const { calls, joined } = recordingMock((args) => {
+      if (args[0] === 'status') {
+        statusCallCount++;
+        if (statusCallCount === 2) return { stdout: 'M  src/main.ts\n', stderr: '' };
+      }
+      if (args[0] === 'stash' && args[1] === 'list')
+        return { stdout: 'stash@{0}: On main: shiftspace-swap-B\n', stderr: '' };
+      return undefined;
+    });
+    await swapBranches(DEFAULT_SWAP_OPTS);
+    const j = joined();
+    expect(j.some((c) => c.includes('stash push') && c.includes('shiftspace-swap-B'))).toBe(true);
+    expect(j.some((c) => c.includes('stash push') && c.includes('shiftspace-swap-A'))).toBe(false);
+    expect(calls.filter((a) => a[0] === 'stash' && a[1] === 'pop').length).toBe(1);
+  });
+
+  it('stashes and cross-pops for both when both have changes', async () => {
+    const { calls, joined } = recordingMock((args) => {
+      if (args[0] === 'status') return { stdout: ' M file.ts\n', stderr: '' };
+      if (args[0] === 'stash' && args[1] === 'list')
+        return {
+          stdout:
+            'stash@{0}: On feature/auth: shiftspace-swap-A\nstash@{1}: On main: shiftspace-swap-B\n',
+          stderr: '',
+        };
+      return undefined;
+    });
+    await swapBranches(DEFAULT_SWAP_OPTS);
+    const j = joined();
+    expect(j.some((c) => c.includes('shiftspace-swap-A') && c.includes('stash push'))).toBe(true);
+    expect(j.some((c) => c.includes('shiftspace-swap-B') && c.includes('stash push'))).toBe(true);
+    expect(calls.filter((a) => a[0] === 'stash' && a[1] === 'pop').length).toBe(2);
   });
 });
 
@@ -327,85 +247,37 @@ describe('swapBranches — failure and rollback', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('rolls back and cleans temp branch when checkout on B fails', async () => {
-    const calls: Array<string[]> = [];
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      rawArgs: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      const args = normalizeGitArgs(rawArgs);
-      calls.push(args);
-      // Fail when checking out feature/auth on B
-      if (args[0] === 'checkout' && args[1] === 'feature/auth') {
-        cb(new Error('branch already checked out'), { stdout: '', stderr: '' });
-        return;
-      }
-      cb(null, { stdout: '', stderr: '' });
-    }) as any);
+    const { joined } = recordingMock((args) => {
+      if (args[0] === 'checkout' && args[1] === 'feature/auth')
+        return { error: 'branch already checked out' };
+      return undefined;
+    });
 
-    await expect(
-      swapBranches({
-        worktreeAPath: '/wt/feature',
-        branchA: 'feature/auth',
-        worktreeBPath: '/wt/main',
-        branchB: 'main',
-      })
-    ).rejects.toThrow('branch already checked out');
-
-    const joined = calls.map((a) => a.join(' '));
-
-    // Temp branch must be cleaned up
-    const tempDeleted = joined.some(
+    await expect(swapBranches(DEFAULT_SWAP_OPTS)).rejects.toThrow('branch already checked out');
+    const j = joined();
+    const tempDeleted = j.some(
       (c) =>
         (c.startsWith('branch -d') || c.startsWith('branch -D')) &&
         c.includes('_shiftspace_temp_swap')
     );
     expect(tempDeleted).toBe(true);
-
-    // A should be restored to its original branch
-    expect(joined).toContain('checkout feature/auth');
+    expect(j).toContain('checkout feature/auth');
   });
 
   it('rolls back all steps when checkout on A fails after B switched', async () => {
-    const calls: Array<string[]> = [];
     let checkoutCount = 0;
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      rawArgs: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      const args = normalizeGitArgs(rawArgs);
-      calls.push(args);
+    const { joined } = recordingMock((args) => {
       if (args[0] === 'checkout' && args[1] !== '-b') {
         checkoutCount++;
-        // Third checkout is A → main (after B already got feature/auth)
-        if (checkoutCount === 2) {
-          cb(new Error('checkout failed'), { stdout: '', stderr: '' });
-          return;
-        }
+        if (checkoutCount === 2) return { error: 'checkout failed' };
       }
-      cb(null, { stdout: '', stderr: '' });
-    }) as any);
+      return undefined;
+    });
 
-    await expect(
-      swapBranches({
-        worktreeAPath: '/wt/feature',
-        branchA: 'feature/auth',
-        worktreeBPath: '/wt/main',
-        branchB: 'main',
-      })
-    ).rejects.toThrow('checkout failed');
-
-    const joined = calls.map((a) => a.join(' '));
-
-    // B should be restored to main (to free branchA so A can go back to it)
-    const mainRestored = joined.filter((c) => c === 'checkout main');
-    expect(mainRestored.length).toBeGreaterThanOrEqual(1);
-
-    // Temp branch must be cleaned up
-    const tempDeleted = joined.some(
+    await expect(swapBranches(DEFAULT_SWAP_OPTS)).rejects.toThrow('checkout failed');
+    const j = joined();
+    expect(j.filter((c) => c === 'checkout main').length).toBeGreaterThanOrEqual(1);
+    const tempDeleted = j.some(
       (c) =>
         (c.startsWith('branch -d') || c.startsWith('branch -D')) &&
         c.includes('_shiftspace_temp_swap')
@@ -427,63 +299,30 @@ describe('swapBranches — failure and rollback', () => {
         cb(null, { stdout: ' M file.ts\n', stderr: '' });
         return;
       }
-      // Fail during temp branch checkout (early failure)
       if (args[0] === 'checkout' && args[1] === '-b') {
         cb(new Error('cannot create branch'), { stdout: '', stderr: '' });
         return;
       }
       if (args[0] === 'stash' && args[1] === 'list') {
-        cb(null, {
-          stdout: 'stash@{0}: On feature/auth: shiftspace-swap-A\n',
-          stderr: '',
-        });
+        cb(null, { stdout: 'stash@{0}: On feature/auth: shiftspace-swap-A\n', stderr: '' });
         return;
       }
       cb(null, { stdout: '', stderr: '' });
     }) as any);
 
-    await expect(
-      swapBranches({
-        worktreeAPath: '/wt/feature',
-        branchA: 'feature/auth',
-        worktreeBPath: '/wt/main',
-        branchB: 'main',
-      })
-    ).rejects.toThrow('cannot create branch');
-
-    // The stash pop (rollback) should have been attempted on the original worktree
-    const popAttempt = calls.some((a) => a[0] === 'stash' && a[1] === 'pop');
-    expect(popAttempt).toBe(true);
+    await expect(swapBranches(DEFAULT_SWAP_OPTS)).rejects.toThrow('cannot create branch');
+    expect(calls.some((a) => a[0] === 'stash' && a[1] === 'pop')).toBe(true);
   });
 
   it('handles unique temp branch name when _shiftspace_temp_swap already exists', async () => {
-    const calls: Array<string[]> = [];
-    vi.mocked(execFile).mockImplementation(((
-      _cmd: unknown,
-      rawArgs: string[],
-      _opts: unknown,
-      cb: Function
-    ) => {
-      const args = normalizeGitArgs(rawArgs);
-      calls.push(args);
-      // rev-parse for temp branch name check — simulate it already existing
-      if (args[0] === 'rev-parse' && args[2] === '_shiftspace_temp_swap') {
-        cb(null, { stdout: 'abc1234\n', stderr: '' });
-        return;
-      }
-      cb(null, { stdout: '', stderr: '' });
-    }) as any);
-
-    await swapBranches({
-      worktreeAPath: '/wt/feature',
-      branchA: 'feature/auth',
-      worktreeBPath: '/wt/main',
-      branchB: 'main',
+    const { joined } = recordingMock((args) => {
+      if (args[0] === 'rev-parse' && args[2] === '_shiftspace_temp_swap')
+        return { stdout: 'abc1234\n', stderr: '' };
+      return undefined;
     });
-
-    const joined = calls.map((a) => a.join(' '));
-    // A unique temp branch name with suffix should have been created
-    const tempCreate = joined.find(
+    await swapBranches(DEFAULT_SWAP_OPTS);
+    const j = joined();
+    const tempCreate = j.find(
       (c) =>
         c.startsWith('checkout -b _shiftspace_temp_swap_') &&
         c !== 'checkout -b _shiftspace_temp_swap'

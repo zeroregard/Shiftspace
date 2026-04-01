@@ -48,7 +48,13 @@ function makeRule(overrides: Partial<SmellRule> = {}): SmellRule {
 }
 
 async function analyze(files: FileChange[], rules: SmellRule[], signal?: AbortSignal) {
-  return codeSmellsPlugin.analyze(files, tmpDir, tmpDir, { smellRules: rules }, signal);
+  return codeSmellsPlugin.analyze({
+    files,
+    repoRoot: tmpDir,
+    worktreeRoot: tmpDir,
+    settings: { smellRules: rules },
+    signal,
+  });
 }
 
 // ---------------------------------------------------------------------------

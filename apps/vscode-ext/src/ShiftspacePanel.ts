@@ -15,6 +15,23 @@ import type { ShiftspaceMcpHttpServer } from './mcp/httpServer';
 import { McpToolHandlers } from './mcp/handlers';
 
 // ---------------------------------------------------------------------------
+// Webview message shape
+// ---------------------------------------------------------------------------
+
+interface WebviewMessage {
+  type: string;
+  worktreeId?: string;
+  filePath?: string;
+  diffMode?: unknown;
+  branch?: string;
+  folderPath?: string;
+  actionId?: string;
+  pipelineId?: string;
+  packageName?: string;
+  newName?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Persisted view settings — survives "Reload Window"
 // ---------------------------------------------------------------------------
 
@@ -131,94 +148,156 @@ export class ShiftspacePanel {
     this._panel.webview.html = getWebviewHtml(this._panel.webview, context.extensionUri);
 
     this._panel.webview.onDidReceiveMessage(
-      (message: {
-        type: string;
-        worktreeId?: string;
-        filePath?: string;
-        diffMode?: unknown;
-        branch?: string;
-        folderPath?: string;
-        actionId?: string;
-        pipelineId?: string;
-        packageName?: string;
-        newName?: string;
-      }) => {
-        if (message.type === 'ready') {
-          void this.onReady();
-        } else if (message.type === 'file-click') {
-          void this._gitProvider?.handleFileClick(message.worktreeId ?? '', message.filePath ?? '');
-        } else if (message.type === 'set-diff-mode' && message.worktreeId && message.diffMode) {
-          const diffMode = message.diffMode as DiffMode;
-          // Persist the diff mode override keyed by branch name
-          const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
-          if (wt) {
-            const settings = this._getViewSettings();
-            settings.diffModeOverrides[wt.branch] = diffMode;
-            this._saveViewSettings({ diffModeOverrides: settings.diffModeOverrides });
-          }
-          void this._gitProvider?.handleSetDiffMode(message.worktreeId, diffMode);
-        } else if (message.type === 'get-branch-list' && message.worktreeId) {
-          void this._gitProvider?.handleGetBranchList(message.worktreeId);
-        } else if (message.type === 'checkout-branch' && message.worktreeId && message.branch) {
-          void this._gitProvider?.handleCheckoutBranch(message.worktreeId, message.branch);
-        } else if (message.type === 'folder-click' && message.worktreeId && message.folderPath) {
-          void this._gitProvider?.handleFolderClick(message.worktreeId, message.folderPath);
-        } else if (message.type === 'fetch-branches' && message.worktreeId) {
-          void this._gitProvider?.handleFetchBranches(message.worktreeId);
-        } else if (message.type === 'swap-branches' && message.worktreeId) {
-          void this._gitProvider?.handleSwapBranches(message.worktreeId);
-        } else if (message.type === 'remove-worktree' && message.worktreeId) {
-          void this._gitProvider?.handleRemoveWorktree(message.worktreeId);
-        } else if (message.type === 'rename-worktree' && message.worktreeId && message.newName) {
-          void this._gitProvider?.handleRenameWorktree(message.worktreeId, message.newName);
-          // New action coordinator messages
-        } else if (message.type === 'run-action' && message.worktreeId && message.actionId) {
-          void this._actionCoordinator?.runAction(message.worktreeId, message.actionId);
-        } else if (message.type === 'stop-action' && message.worktreeId && message.actionId) {
-          this._actionCoordinator?.stopAction(message.worktreeId, message.actionId);
-        } else if (message.type === 'run-pipeline' && message.worktreeId && message.pipelineId) {
-          void this._actionCoordinator?.runPipeline(message.worktreeId, message.pipelineId);
-        } else if (message.type === 'cancel-pipeline' && message.worktreeId) {
-          this._actionCoordinator?.cancelPipeline(message.worktreeId);
-        } else if (message.type === 'get-log' && message.worktreeId && message.actionId) {
-          this._actionCoordinator?.getLog(message.worktreeId, message.actionId);
-        } else if (message.type === 'set-package' && message.packageName !== undefined) {
-          this._saveViewSettings({ selectedPackage: message.packageName });
-          void this._actionCoordinator?.setPackage(message.packageName);
-        } else if (message.type === 'detect-packages') {
-          void this._actionCoordinator?.detectAndSendPackages();
-        } else if (message.type === 'enter-inspection' && message.worktreeId) {
-          this._currentInspectedWorktreeId = message.worktreeId;
-          // Persist inspection mode keyed by branch name
-          const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
-          if (wt) {
-            this._saveViewSettings({ mode: { type: 'inspection', branch: wt.branch } });
-          }
-          void this.runInsights(message.worktreeId);
-          // Start diagnostic collection for this worktree
-          if (wt && this._diagnosticCollector) {
-            const files = this._gitProvider?.getWorktreeFiles(message.worktreeId!) ?? [];
-            this._diagnosticCollector.startInspection(message.worktreeId!, wt.path, files);
-          }
-        } else if (message.type === 'recheck-insights' && message.worktreeId) {
-          this._insightRunner?.clearCache(message.worktreeId);
-          void this.runInsights(message.worktreeId);
-          this._diagnosticCollector?.recheck();
-        } else if (message.type === 'exit-inspection') {
-          this._currentInspectedWorktreeId = undefined;
-          this._saveViewSettings({ mode: { type: 'grove' } });
-          if (this._insightDebounceTimer !== undefined) {
-            clearTimeout(this._insightDebounceTimer);
-            this._insightDebounceTimer = undefined;
-          }
-          this._diagnosticCollector?.stopInspection();
-        }
-      },
+      (message: WebviewMessage) => this._handleMessage(message),
       null,
       this._disposables
     );
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Message dispatch — each case is a tiny private method
+  // ---------------------------------------------------------------------------
+
+  private readonly _messageHandlers: Record<string, (msg: WebviewMessage) => void> = {
+    ready: () => void this.onReady(),
+    'file-click': (m) => this._handleFileClick(m),
+    'set-diff-mode': (m) => this._handleSetDiffMode(m),
+    'get-branch-list': (m) => this._handleGetBranchList(m),
+    'checkout-branch': (m) => this._handleCheckoutBranch(m),
+    'folder-click': (m) => this._handleFolderClick(m),
+    'fetch-branches': (m) => this._handleFetchBranches(m),
+    'swap-branches': (m) => this._handleSwapBranches(m),
+    'remove-worktree': (m) => this._handleRemoveWorktree(m),
+    'rename-worktree': (m) => this._handleRenameWorktree(m),
+    'run-action': (m) => this._handleRunAction(m),
+    'stop-action': (m) => this._handleStopAction(m),
+    'run-pipeline': (m) => this._handleRunPipeline(m),
+    'cancel-pipeline': (m) => this._handleCancelPipeline(m),
+    'get-log': (m) => this._handleGetLog(m),
+    'set-package': (m) => this._handleSetPackage(m),
+    'detect-packages': () => void this._actionCoordinator?.detectAndSendPackages(),
+    'enter-inspection': (m) => this._handleEnterInspection(m),
+    'recheck-insights': (m) => this._handleRecheckInsights(m),
+    'exit-inspection': () => this._handleExitInspection(),
+  };
+
+  private _handleMessage(message: WebviewMessage): void {
+    this._messageHandlers[message.type]?.(message);
+  }
+
+  private _handleFileClick(message: WebviewMessage): void {
+    void this._gitProvider?.handleFileClick(message.worktreeId ?? '', message.filePath ?? '');
+  }
+
+  private _handleSetDiffMode(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.diffMode) return;
+    const diffMode = message.diffMode as DiffMode;
+    const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
+    if (wt) {
+      const settings = this._getViewSettings();
+      settings.diffModeOverrides[wt.branch] = diffMode;
+      this._saveViewSettings({ diffModeOverrides: settings.diffModeOverrides });
+    }
+    void this._gitProvider?.handleSetDiffMode(message.worktreeId, diffMode);
+  }
+
+  private _handleGetBranchList(message: WebviewMessage): void {
+    if (!message.worktreeId) return;
+    void this._gitProvider?.handleGetBranchList(message.worktreeId);
+  }
+
+  private _handleCheckoutBranch(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.branch) return;
+    void this._gitProvider?.handleCheckoutBranch(message.worktreeId, message.branch);
+  }
+
+  private _handleFolderClick(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.folderPath) return;
+    void this._gitProvider?.handleFolderClick(message.worktreeId, message.folderPath);
+  }
+
+  private _handleFetchBranches(message: WebviewMessage): void {
+    if (!message.worktreeId) return;
+    void this._gitProvider?.handleFetchBranches(message.worktreeId);
+  }
+
+  private _handleSwapBranches(message: WebviewMessage): void {
+    if (!message.worktreeId) return;
+    void this._gitProvider?.handleSwapBranches(message.worktreeId);
+  }
+
+  private _handleRemoveWorktree(message: WebviewMessage): void {
+    if (!message.worktreeId) return;
+    void this._gitProvider?.handleRemoveWorktree(message.worktreeId);
+  }
+
+  private _handleRenameWorktree(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.newName) return;
+    void this._gitProvider?.handleRenameWorktree(message.worktreeId, message.newName);
+  }
+
+  private _handleRunAction(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.actionId) return;
+    void this._actionCoordinator?.runAction(message.worktreeId, message.actionId);
+  }
+
+  private _handleStopAction(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.actionId) return;
+    this._actionCoordinator?.stopAction(message.worktreeId, message.actionId);
+  }
+
+  private _handleRunPipeline(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.pipelineId) return;
+    void this._actionCoordinator?.runPipeline(message.worktreeId, message.pipelineId);
+  }
+
+  private _handleCancelPipeline(message: WebviewMessage): void {
+    if (!message.worktreeId) return;
+    this._actionCoordinator?.cancelPipeline(message.worktreeId);
+  }
+
+  private _handleGetLog(message: WebviewMessage): void {
+    if (!message.worktreeId || !message.actionId) return;
+    this._actionCoordinator?.getLog(message.worktreeId, message.actionId);
+  }
+
+  private _handleSetPackage(message: WebviewMessage): void {
+    if (message.packageName === undefined) return;
+    this._saveViewSettings({ selectedPackage: message.packageName });
+    void this._actionCoordinator?.setPackage(message.packageName);
+  }
+
+  private _handleEnterInspection(message: WebviewMessage): void {
+    if (!message.worktreeId) return;
+    this._currentInspectedWorktreeId = message.worktreeId;
+    const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
+    if (wt) {
+      this._saveViewSettings({ mode: { type: 'inspection', branch: wt.branch } });
+    }
+    void this.runInsights(message.worktreeId);
+    if (wt && this._diagnosticCollector) {
+      const files = this._gitProvider?.getWorktreeFiles(message.worktreeId) ?? [];
+      this._diagnosticCollector.startInspection(message.worktreeId, wt.path, files);
+    }
+  }
+
+  private _handleRecheckInsights(message: WebviewMessage): void {
+    if (!message.worktreeId) return;
+    this._insightRunner?.clearCache(message.worktreeId);
+    void this.runInsights(message.worktreeId);
+    this._diagnosticCollector?.recheck();
+  }
+
+  private _handleExitInspection(): void {
+    this._currentInspectedWorktreeId = undefined;
+    this._saveViewSettings({ mode: { type: 'grove' } });
+    if (this._insightDebounceTimer !== undefined) {
+      clearTimeout(this._insightDebounceTimer);
+      this._insightDebounceTimer = undefined;
+    }
+    this._diagnosticCollector?.stopInspection();
   }
 
   private async onReady(): Promise<void> {
@@ -437,14 +516,13 @@ export class ShiftspacePanel {
     };
 
     try {
-      const { details } = await this._insightRunner.analyzeWorktree(
+      const { details } = await this._insightRunner.analyzeWorktree({
         worktreeId,
         files,
-        this._currentGitRoot,
-        wt.path,
-        undefined,
-        extraSettings
-      );
+        repoRoot: this._currentGitRoot,
+        worktreeRoot: wt.path,
+        extraSettings,
+      });
 
       for (const detail of details) {
         void this._panel.webview.postMessage({ type: 'insight-detail', detail });

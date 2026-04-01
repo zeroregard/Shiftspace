@@ -86,29 +86,110 @@ type HostMessage =
   | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
   | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string };
 
+type Store = ReturnType<typeof useShiftspaceStore.getState>;
+
+function handleCoreMessage(
+  msg: HostMessage,
+  store: Store,
+  setErrorMessage: (m: string | undefined) => void
+): boolean {
+  switch (msg.type) {
+    case 'init':
+      setErrorMessage(undefined);
+      store.setWorktrees(msg.worktrees);
+      return true;
+    case 'event':
+      store.applyEvent(msg.event);
+      return true;
+    case 'error':
+      setErrorMessage(msg.message);
+      return true;
+    case 'worktree-files-updated':
+      store.updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode, msg.branchFiles);
+      return true;
+    case 'branch-list':
+      store.setBranchList(msg.worktreeId, msg.branches);
+      return true;
+    case 'fetch-loading':
+      store.setFetchLoading(msg.worktreeId, msg.loading);
+      return true;
+    case 'fetch-done':
+      store.setFetchLoading(msg.worktreeId, false);
+      store.setLastFetchAt(msg.worktreeId, msg.timestamp);
+      store.setBranchList(msg.worktreeId, msg.branches);
+      return true;
+    default:
+      return false;
+  }
+}
+
+function handleActionMessage(msg: HostMessage, store: Store): boolean {
+  switch (msg.type) {
+    case 'actions-config':
+      store.setActionConfigs(msg.actions);
+      return true;
+    case 'action-status':
+      store.setActionState(msg.worktreeId, msg.actionId, { status: msg.status, port: msg.port });
+      return true;
+    case 'actions-config-v2': {
+      const configs: ActionConfig[] = msg.actions.map((a) => ({
+        id: a.id,
+        label: a.label,
+        icon: a.icon,
+        persistent: a.type === 'service',
+        type: a.type,
+      }));
+      store.setActionConfigs(configs);
+      if (msg.pipelines) store.setPipelines(msg.pipelines);
+      store.setSelectedPackage(msg.selectedPackage);
+      return true;
+    }
+    case 'action-state-update':
+      store.setActionState(msg.worktreeId, msg.actionId, {
+        status: msg.state.status,
+        port: msg.state.port,
+        durationMs: msg.state.durationMs,
+        type: msg.state.type,
+      });
+      return true;
+    case 'action-log-chunk':
+      store.appendActionLog(msg.worktreeId, msg.actionId, msg.chunk);
+      return true;
+    case 'action-log':
+      store.setActionLog(msg.worktreeId, msg.actionId, msg.content);
+      return true;
+    case 'packages-list':
+      store.setAvailablePackages(msg.packages);
+      return true;
+    case 'icon-theme':
+      store.setIconMap(msg.payload);
+      return true;
+    case 'insight-detail':
+      store.setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
+      return true;
+    case 'diagnostics-update':
+      store.setFileDiagnostics(msg.worktreeId, msg.files);
+      return true;
+    case 'restore-view-settings':
+      if (msg.mode.type === 'inspection') store.enterInspection(msg.mode.worktreeId);
+      if (msg.selectedPackage) store.setSelectedPackage(msg.selectedPackage);
+      return true;
+    default:
+      return false;
+  }
+}
+
+function handleHostMessage(
+  msg: HostMessage,
+  store: Store,
+  setErrorMessage: (m: string | undefined) => void
+): void {
+  if (handleCoreMessage(msg, store, setErrorMessage)) return;
+  handleActionMessage(msg, store);
+}
+
 const App: React.FC = () => {
-  const {
-    applyEvent,
-    setWorktrees,
-    updateWorktreeFiles,
-    setBranchList,
-    setDiffModeLoading,
-    setFetchLoading,
-    setLastFetchAt,
-    setActionConfigs,
-    setActionState,
-    setIconMap,
-    setPipelines,
-    setSelectedPackage,
-    setAvailablePackages,
-    setActionLog,
-    appendActionLog,
-    setInsightDetail,
-    clearInsightDetails,
-    setFileDiagnostics,
-    clearFileDiagnostics,
-    enterInspection,
-  } = useShiftspaceStore();
+  const { setDiffModeLoading, clearInsightDetails, clearFileDiagnostics } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useShiftspaceStore((s) => s.mode as AppMode);
 
@@ -121,7 +202,6 @@ const App: React.FC = () => {
     if (mode.type === 'inspection') {
       vscode?.postMessage({ type: 'enter-inspection', worktreeId: mode.worktreeId });
     } else {
-      // Clear insight details and diagnostics from the previous inspection to free memory
       if (prev.type === 'inspection') {
         clearInsightDetails(prev.worktreeId);
         clearFileDiagnostics(prev.worktreeId);
@@ -132,103 +212,15 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
-      // Guard against messages from unexpected origins
-      if (e.origin && !e.origin.startsWith('vscode-webview://')) {
-        return;
-      }
-      const msg = e.data;
-
-      if (msg.type === 'init') {
-        setErrorMessage(undefined);
-        setWorktrees(msg.worktrees);
-      } else if (msg.type === 'event') {
-        applyEvent(msg.event);
-      } else if (msg.type === 'error') {
-        setErrorMessage(msg.message);
-      } else if (msg.type === 'worktree-files-updated') {
-        updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode, msg.branchFiles);
-      } else if (msg.type === 'branch-list') {
-        setBranchList(msg.worktreeId, msg.branches);
-      } else if (msg.type === 'fetch-loading') {
-        setFetchLoading(msg.worktreeId, msg.loading);
-      } else if (msg.type === 'fetch-done') {
-        setFetchLoading(msg.worktreeId, false);
-        setLastFetchAt(msg.worktreeId, msg.timestamp);
-        setBranchList(msg.worktreeId, msg.branches);
-        // Legacy action messages
-      } else if (msg.type === 'actions-config') {
-        setActionConfigs(msg.actions);
-      } else if (msg.type === 'action-status') {
-        setActionState(msg.worktreeId, msg.actionId, {
-          status: msg.status,
-          port: msg.port,
-        });
-        // New check system messages
-      } else if (msg.type === 'actions-config-v2') {
-        // Convert new format to ActionConfig for renderer compatibility
-        const configs: ActionConfig[] = msg.actions.map((a) => ({
-          id: a.id,
-          label: a.label,
-          icon: a.icon,
-          persistent: a.type === 'service',
-          type: a.type,
-        }));
-        setActionConfigs(configs);
-        if (msg.pipelines) setPipelines(msg.pipelines);
-        setSelectedPackage(msg.selectedPackage);
-      } else if (msg.type === 'action-state-update') {
-        setActionState(msg.worktreeId, msg.actionId, {
-          status: msg.state.status,
-          port: msg.state.port,
-          durationMs: msg.state.durationMs,
-          type: msg.state.type,
-        });
-      } else if (msg.type === 'action-log-chunk') {
-        appendActionLog(msg.worktreeId, msg.actionId, msg.chunk);
-      } else if (msg.type === 'action-log') {
-        setActionLog(msg.worktreeId, msg.actionId, msg.content);
-      } else if (msg.type === 'packages-list') {
-        setAvailablePackages(msg.packages);
-      } else if (msg.type === 'icon-theme') {
-        setIconMap(msg.payload);
-      } else if (msg.type === 'insight-detail') {
-        setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
-      } else if (msg.type === 'diagnostics-update') {
-        setFileDiagnostics(msg.worktreeId, msg.files);
-      } else if (msg.type === 'restore-view-settings') {
-        if (msg.mode.type === 'inspection') {
-          enterInspection(msg.mode.worktreeId);
-        }
-        if (msg.selectedPackage) {
-          setSelectedPackage(msg.selectedPackage);
-        }
-      }
+      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
+      handleHostMessage(e.data, useShiftspaceStore.getState(), setErrorMessage);
     };
 
     window.addEventListener('message', handler);
     vscode?.postMessage({ type: 'ready' });
 
     return () => window.removeEventListener('message', handler);
-  }, [
-    applyEvent,
-    setWorktrees,
-    updateWorktreeFiles,
-    setBranchList,
-    setDiffModeLoading,
-    setFetchLoading,
-    setLastFetchAt,
-    setActionConfigs,
-    setActionState,
-    setIconMap,
-    setPipelines,
-    setSelectedPackage,
-    setAvailablePackages,
-    setActionLog,
-    appendActionLog,
-    setInsightDetail,
-    setFileDiagnostics,
-    enterInspection,
-  ]);
+  }, []);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
     vscode?.postMessage({ type: 'file-click', worktreeId, filePath });

@@ -114,7 +114,7 @@ export class ActionCoordinator implements vscode.Disposable {
     }
 
     if (action.type === 'service') {
-      this.runService(worktreeId, actionId, action, resolved, wt.path);
+      this.runService({ worktreeId, actionId, action, command: resolved, cwd: wt.path });
     } else {
       await this.runCheckAction(worktreeId, actionId, resolved, wt.path);
     }
@@ -181,13 +181,14 @@ export class ActionCoordinator implements vscode.Disposable {
     }
   }
 
-  private runService(
-    worktreeId: string,
-    actionId: string,
-    action: ShiftspaceActionConfig,
-    command: string,
-    cwd: string
-  ): void {
+  private runService(opts: {
+    worktreeId: string;
+    actionId: string;
+    action: ShiftspaceActionConfig;
+    command: string;
+    cwd: string;
+  }): void {
+    const { worktreeId, actionId, command, cwd } = opts;
     const key = `${worktreeId}:${actionId}`;
 
     // If already running, do nothing

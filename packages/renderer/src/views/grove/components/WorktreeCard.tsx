@@ -9,8 +9,77 @@ import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
 import { useActions } from '../../../ui/ActionsContext';
 import { IconButton } from '../../../ui/IconButton';
 import { Input } from '../../../ui/Input';
+import { useWorktreeRename } from '../../../hooks/useWorktreeRename';
 
 const EMPTY_BRANCHES: string[] = [];
+
+// ---------------------------------------------------------------------------
+// Branch picker row — extracted to keep WorktreeCard under the line limit
+// ---------------------------------------------------------------------------
+
+interface BranchRowProps {
+  wt: WorktreeState;
+  checkoutBranches: string[];
+  isFetchingBranches: boolean;
+  lastFetchAt: number | undefined;
+}
+
+const BranchRow = React.memo(
+  ({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: BranchRowProps) => {
+    const actions = useActions();
+    return (
+      <div
+        className="flex items-center gap-1.5 min-w-0"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {!wt.isMainWorktree && (
+          <IconButton
+            icon="arrow-swap"
+            label="Swap branch with primary worktree"
+            size="sm"
+            tooltip={false}
+            onClick={(e) => {
+              e.stopPropagation();
+              actions.swapBranches(wt.id);
+            }}
+          />
+        )}
+        <BranchPicker
+          onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
+          onOpen={() => actions.requestBranchList(wt.id)}
+        >
+          <BranchPicker.Trigger>
+            <button
+              className="flex items-center gap-1 min-w-0 max-w-full text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-11"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              title={wt.branch}
+            >
+              <span className="shrink-0">
+                <Codicon name="git-branch" />
+              </span>
+              <span className="truncate">{wt.branch}</span>
+            </button>
+          </BranchPicker.Trigger>
+          <BranchPicker.Content>
+            <BranchPicker.SearchRow
+              fetch={{
+                onFetch: () => actions.fetchBranches(wt.id),
+                isFetching: isFetchingBranches,
+                lastFetchAt,
+              }}
+            />
+            <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
+          </BranchPicker.Content>
+        </BranchPicker>
+      </div>
+    );
+  }
+);
+BranchRow.displayName = 'BranchRow';
+
+// ---------------------------------------------------------------------------
 
 interface WorktreeCardProps {
   worktree: WorktreeState;
@@ -26,28 +95,20 @@ export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => 
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
   );
 
-  const [isRenaming, setIsRenaming] = React.useState(false);
-  const [renameValue, setRenameValue] = React.useState('');
-  const renameInputRef = React.useRef<HTMLInputElement>(null);
-
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
 
-  const startRename = () => {
-    setRenameValue(folderName);
-    setIsRenaming(true);
-    setTimeout(() => renameInputRef.current?.select(), 0);
-  };
-
-  const commitRename = () => {
-    const trimmed = renameValue.trim();
-    if (trimmed && trimmed !== folderName) {
-      actions.renameWorktree(wt.id, trimmed);
-    }
-    setIsRenaming(false);
-  };
+  const {
+    isRenaming,
+    renameValue,
+    renameInputRef,
+    setRenameValue,
+    startRename,
+    commitRename,
+    cancelRename,
+  } = useWorktreeRename(wt.id, folderName);
 
   return (
     <div className="group w-[32rem] flex flex-col gap-3 p-4 rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-colors">
@@ -65,7 +126,7 @@ export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => 
                 onBlur={commitRename}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') commitRename();
-                  if (e.key === 'Escape') setIsRenaming(false);
+                  if (e.key === 'Escape') cancelRename();
                 }}
               />
               <IconButton
@@ -119,52 +180,12 @@ export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => 
             </>
           )}
         </div>
-        <div
-          className="flex items-center gap-1.5 min-w-0"
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {!wt.isMainWorktree && (
-            <IconButton
-              icon="arrow-swap"
-              label="Swap branch with primary worktree"
-              size="sm"
-              tooltip={false}
-              onClick={(e) => {
-                e.stopPropagation();
-                actions.swapBranches(wt.id);
-              }}
-            />
-          )}
-          <BranchPicker
-            onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
-            onOpen={() => actions.requestBranchList(wt.id)}
-          >
-            <BranchPicker.Trigger>
-              <button
-                className="flex items-center gap-1 min-w-0 max-w-full text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-11"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                title={wt.branch}
-              >
-                <span className="shrink-0">
-                  <Codicon name="git-branch" />
-                </span>
-                <span className="truncate">{wt.branch}</span>
-              </button>
-            </BranchPicker.Trigger>
-            <BranchPicker.Content>
-              <BranchPicker.SearchRow
-                fetch={{
-                  onFetch: () => actions.fetchBranches(wt.id),
-                  isFetching: isFetchingBranches,
-                  lastFetchAt,
-                }}
-              />
-              <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
-            </BranchPicker.Content>
-          </BranchPicker>
-        </div>
+        <BranchRow
+          wt={wt}
+          checkoutBranches={checkoutBranches}
+          isFetchingBranches={isFetchingBranches}
+          lastFetchAt={lastFetchAt}
+        />
       </div>
 
       {/* Action buttons */}
