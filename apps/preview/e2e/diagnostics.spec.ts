@@ -28,13 +28,13 @@ test.describe('Diagnostics insight pills', () => {
     await enterInspection(page);
 
     // Mock data seeds diagnostics for src/app/page.tsx (1 error, 1 warning)
-    // and src/hooks/useAuth.ts (2 errors). Verify error/warning pills are rendered.
-    const errorPills = page.locator('text=❌');
-    const warningPills = page.locator('text=⚠');
+    // and src/hooks/useAuth.ts (2 errors). Verify error/warning icons are rendered.
+    const errorIcons = page.locator('.codicon-error');
+    const warningIcons = page.locator('.codicon-warning');
 
-    // We should see at least one error pill and one warning pill from mock data
-    await expect(errorPills.first()).toBeVisible();
-    await expect(warningPills.first()).toBeVisible();
+    // We should see at least one error icon and one warning icon from mock data
+    await expect(errorIcons.first()).toBeVisible();
+    await expect(warningIcons.first()).toBeVisible();
 
     await expect(page).toHaveScreenshot('inspection-diagnostic-pills.png');
   });
