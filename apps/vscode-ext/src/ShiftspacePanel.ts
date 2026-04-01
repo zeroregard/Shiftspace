@@ -192,6 +192,10 @@ export class ShiftspacePanel {
             const files = this._gitProvider?.getWorktreeFiles(message.worktreeId!) ?? [];
             this._diagnosticCollector.startInspection(message.worktreeId!, wt.path, files);
           }
+        } else if (message.type === 'recheck-insights' && message.worktreeId) {
+          this._insightRunner?.clearCache(message.worktreeId);
+          void this.runInsights(message.worktreeId);
+          this._diagnosticCollector?.recheck();
         } else if (message.type === 'exit-inspection') {
           this._currentInspectedWorktreeId = undefined;
           this._saveViewSettings({ mode: { type: 'grove' } });

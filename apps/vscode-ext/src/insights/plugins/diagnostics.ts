@@ -129,6 +129,14 @@ export class DiagnosticCollector {
   }
 
   /**
+   * Re-collect and send diagnostics for the current inspection (called on recheck).
+   */
+  recheck(): void {
+    if (!this._currentWorktreeId || !this.isEnabled()) return;
+    this.sendDiagnostics();
+  }
+
+  /**
    * Stop collecting (called on exit-inspection).
    */
   stopInspection(): void {

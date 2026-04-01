@@ -346,6 +346,19 @@ export const App: React.FC = () => {
     [setActionState]
   );
 
+  const handleRecheckInsights = useCallback(
+    (worktreeId: string) => {
+      if (worktreeId === 'wt-0') {
+        setInsightDetail('wt-0', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT0);
+        setFileDiagnostics('wt-0', MOCK_DIAGNOSTICS_WT0);
+      } else if (worktreeId === 'wt-1') {
+        setInsightDetail('wt-1', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT1);
+        setFileDiagnostics('wt-1', MOCK_DIAGNOSTICS_WT1);
+      }
+    },
+    [setInsightDetail, setFileDiagnostics]
+  );
+
   const handleReset = () => {
     for (const cancel of activeSimulations.current.values()) cancel();
     activeSimulations.current.clear();
@@ -373,6 +386,7 @@ export const App: React.FC = () => {
         onRunAction={handleRunAction}
         onStopAction={handleStopAction}
         onRunPipeline={handleRunPipeline}
+        onRecheckInsights={handleRecheckInsights}
       />
       <ControlPanel
         engine={engineRef.current}
