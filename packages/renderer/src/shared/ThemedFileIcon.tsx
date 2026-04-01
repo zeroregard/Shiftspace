@@ -1,6 +1,6 @@
 import React from 'react';
 import { useShiftspaceStore } from '../store';
-import { FileIcon } from '../icons';
+import { FileIcon } from '../ui/FileIcons';
 
 interface ThemedFileIconProps {
   /** Relative file path — used to look up the icon map. */

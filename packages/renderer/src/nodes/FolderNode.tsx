@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NodeComponentProps } from '../TreeCanvas';
-import { FolderIcon } from '../icons';
+import { FolderIcon } from '../ui/FileIcons';
 import type { FolderNodeData } from '../layout/flatten';
 import { useActions } from '../ui/ActionsContext';
 

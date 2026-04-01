@@ -8,3 +8,4 @@ export { SectionLabel } from './SectionLabel';
 export { Spinner } from './Spinner';
 export { StatusDot } from './StatusDot';
 export { ActionsProvider, useActions, type ShiftspaceActions } from './ActionsContext';
+export { FileIcon, FolderIcon, getFileIconConfig, getFolderIconColor } from './FileIcons';

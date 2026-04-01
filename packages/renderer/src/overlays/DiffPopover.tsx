@@ -185,6 +185,3 @@ export const DiffPopover = React.memo(
   }
 );
 DiffPopover.displayName = 'DiffPopover';
-
-/** @deprecated Use DiffPopover instead */
-export const DiffHoverCard = DiffPopover;

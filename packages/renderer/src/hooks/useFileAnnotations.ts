@@ -13,8 +13,8 @@ export interface FileAnnotations {
 
 /**
  * Shared hook that fetches diagnostic + insight annotation data for a file.
- * Used by FileNode, InspectionFileRow, and ListFileRow to avoid duplicating
- * the same Zustand selector pattern in three places.
+ * Used by FileNode and InspectionFileRow to avoid duplicating
+ * the same Zustand selector pattern.
  */
 export function useFileAnnotations(worktreeId: string, filePath: string): FileAnnotations {
   const findings = useShiftspaceStore(

@@ -12,8 +12,8 @@ interface AnnotationBadgesProps {
 
 /**
  * Renders error/warning/finding badge pills with tooltips.
- * Shared between InspectionFileRow and ListFileRow — the exact same
- * pattern was duplicated in both components.
+ * Shared annotation rendering for file rows — replaces duplicated
+ * badge+tooltip patterns across components.
  *
  * Returns null if there are no annotations to show.
  */
