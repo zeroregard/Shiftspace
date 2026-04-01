@@ -6,10 +6,12 @@ import { ActionCoordinator } from './actions/ActionCoordinator';
 import { getGitRoot } from './git/worktrees';
 import { IconThemeProvider } from './IconThemeProvider';
 import { InsightRunner } from './insights/runner';
-import { DiagnosticCollector } from './insights/plugins/diagnostics';
+import { DiagnosticCollector, collectDiagnostics } from './insights/plugins/diagnostics';
 // Register built-in insight plugins (side-effect import)
 import './insights/plugins/codeSmells';
-import type { DiffMode, AppMode } from '@shiftspace/renderer';
+import type { DiffMode, AppMode, WorktreeState } from '@shiftspace/renderer';
+import type { ShiftspaceMcpHttpServer } from './mcp/httpServer';
+import { McpToolHandlers } from './mcp/handlers';
 
 // ---------------------------------------------------------------------------
 // Persisted view settings — survives "Reload Window"
@@ -34,6 +36,7 @@ const DEFAULT_VIEW_SETTINGS: PersistedViewSettings = {
 
 export class ShiftspacePanel {
   private static currentPanel: ShiftspacePanel | undefined;
+  private static mcpHttpServer: ShiftspaceMcpHttpServer | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -54,6 +57,10 @@ export class ShiftspacePanel {
   private _repoSwitchTimer: ReturnType<typeof setTimeout> | undefined;
   private _editorChangeDisposable: vscode.Disposable | undefined;
   private _settingsChangeDisposable: vscode.Disposable | undefined;
+
+  static setMcpHttpServer(server: ShiftspaceMcpHttpServer): void {
+    ShiftspacePanel.mcpHttpServer = server;
+  }
 
   static toggle(context: vscode.ExtensionContext) {
     if (ShiftspacePanel.currentPanel) {
@@ -291,6 +298,9 @@ export class ShiftspacePanel {
     // Let the coordinator know about current worktrees
     this.syncWorktreesToCoordinator();
 
+    // Register MCP tool handlers now that providers are ready
+    this.registerMcpHandlers(gitRoot);
+
     // Restore persisted view mode (inspection/grove) and package selection
     this.restoreViewSettings(viewSettings);
 
@@ -441,6 +451,38 @@ export class ShiftspacePanel {
     } catch (err) {
       console.error('[Shiftspace] runInsights error:', err);
     }
+  }
+
+  private registerMcpHandlers(repoRoot: string): void {
+    const server = ShiftspacePanel.mcpHttpServer;
+    if (!server || !this._gitProvider || !this._actionCoordinator) return;
+
+    const gitProvider = this._gitProvider;
+    const coordinator = this._actionCoordinator;
+
+    const handlers = new McpToolHandlers({
+      worktreeProvider: {
+        getWorktrees(): WorktreeState[] {
+          const infos = gitProvider.getWorktrees();
+          return infos.map((info) => ({
+            id: info.id,
+            path: info.path,
+            branch: info.branch,
+            files: gitProvider.getWorktreeFiles(info.id),
+            diffMode: { type: 'working' as const },
+            defaultBranch: 'main',
+            isMainWorktree: false,
+          }));
+        },
+      },
+      configLoader: coordinator['configLoader'] as import('./actions/configLoader').ConfigLoader,
+      stateManager: coordinator['stateManager'] as import('./actions/stateManager').StateManager,
+      repoRoot,
+      getPackageName: () => (coordinator['selectedPackage'] as string) ?? '',
+      collectDiagnostics,
+    });
+
+    server.setHandlers(handlers);
   }
 
   private dispose() {

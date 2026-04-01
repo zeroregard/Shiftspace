@@ -187,8 +187,9 @@
   },
   "scripts": {
     "build:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js",
+    "build:mcp": "esbuild src/mcp/mcp-server.ts --bundle --platform=node --format=esm --outfile=dist/mcp-server.mjs",
     "build:webview": "vite build && cp src/webview/vscode-theme.css dist/webview/vscode-theme.css && mkdir -p dist/webview/codicons && cp node_modules/@vscode/codicons/dist/codicon.css dist/webview/codicons/ && cp node_modules/@vscode/codicons/dist/codicon.ttf dist/webview/codicons/",
-    "build": "bun run build:webview && bun run build:ext",
+    "build": "bun run build:webview && bun run build:ext && bun run build:mcp",
     "watch:ext": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js --watch",
     "watch:webview": "vite build --watch",
     "watch": "bun run build:webview && bun run watch:ext",
@@ -200,6 +201,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "minimatch": "^10.0.1"
   },
   "devDependencies": {
