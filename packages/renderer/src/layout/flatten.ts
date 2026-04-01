@@ -1,7 +1,7 @@
 import type { LayoutRect } from './algorithm';
 import type { LayoutNode, LayoutEdge } from '../TreeCanvas';
 import type { FileChange } from '../types';
-import { FILE_NODE_W, FILE_NODE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './config';
+import { FILE_NODE_W, FILE_NODE_BASE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './config';
 
 export interface WorktreeNodeData {
   worktree: import('../types').WorktreeState;
@@ -39,7 +39,8 @@ export function flattenRect(
   nodes: LayoutNode[],
   edges: LayoutEdge[],
   suppressEdge = false,
-  onFolderClick?: (wtId: string, folderPath: string) => void
+  onFolderClick?: (wtId: string, folderPath: string) => void,
+  getFileH?: (filePath: string) => number
 ) {
   const absX = offsetX + rect.x;
   const absY = offsetY + rect.y;
@@ -53,7 +54,7 @@ export function flattenRect(
       type: 'fileNode',
       position: { x: absX, y: absY },
       width: FILE_NODE_W,
-      height: FILE_NODE_H,
+      height: getFileH?.(file.path) ?? FILE_NODE_BASE_H,
       data,
     });
   } else {
@@ -97,7 +98,8 @@ export function flattenRect(
       nodes,
       edges,
       suppress,
-      onFolderClick
+      onFolderClick,
+      getFileH
     );
     if (isFileChild) firstFileEdgeEmitted = true;
   }

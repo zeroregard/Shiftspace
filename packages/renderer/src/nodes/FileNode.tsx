@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
-import type { FileChange, FileDiagnosticSummary } from '../types';
+import type { FileChange, FileDiagnosticSummary, InsightFinding } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { Tooltip } from '../overlays/Tooltip';
@@ -96,7 +96,6 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
   const findings = useShiftspaceStore(
     useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
   );
-  const totalFindings = findings.length;
 
   const diagnostics = useShiftspaceStore((s) =>
     s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
@@ -145,31 +144,30 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
               )}
             />
             {showDiagnostics && <DiagnosticPill diagnostics={diagnostics!} />}
-            {totalFindings > 0 && (
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-0.5">
-                    {findings.map((f) => (
-                      <span key={f.ruleId}>
-                        {f.threshold === 1
-                          ? `${f.ruleLabel}: ${f.count} found`
-                          : `${f.ruleLabel}: 1 found (${f.count} occurrences, threshold: ${f.threshold})`}
-                      </span>
-                    ))}
-                  </div>
-                }
-                delayDuration={200}
-              >
-                <span className="text-10 text-status-modified font-medium px-1 py-0.5 rounded border border-status-modified/30 bg-status-modified/10">
-                  ⚠ {totalFindings}
-                </span>
-              </Tooltip>
-            )}
           </div>
+          {findings.length > 0 && <InsightsList findings={findings} />}
         </button>
       </div>
     </DiffPopover>
   );
 });
+
+function InsightsList({ findings }: { findings: InsightFinding[] }) {
+  return (
+    <div className="mt-1 pt-1 border-border-default/40">
+      {findings.map((f) => (
+        <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-status-deleted">
+          <i
+            className="codicon codicon-debug-breakpoint-unsupported shrink-0"
+            style={{ fontSize: 16 }}
+            aria-hidden="true"
+          />
+          <span className="text-11 ml-0.5 mt-px">{f.count}</span>
+          <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 FileNode.displayName = 'FileNode';

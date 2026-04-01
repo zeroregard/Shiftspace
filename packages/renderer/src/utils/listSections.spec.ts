@@ -12,7 +12,15 @@ function makeFile(
   status: FileChange['status'] = 'modified',
   partiallyStaged?: boolean
 ): FileChange {
-  return { path, status, staged, partiallyStaged, linesAdded: 1, linesRemoved: 0, lastChangedAt: 0 };
+  return {
+    path,
+    status,
+    staged,
+    partiallyStaged,
+    linesAdded: 1,
+    linesRemoved: 0,
+    lastChangedAt: 0,
+  };
 }
 
 function makeWt(overrides: Partial<WorktreeState> = {}): WorktreeState {

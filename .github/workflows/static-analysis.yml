@@ -45,7 +45,7 @@ jobs:
           path: |
             packages/*/tsconfig.tsbuildinfo
             apps/*/tsconfig.tsbuildinfo
-          key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('**/tsconfig.json', 'bun.lock') }}
+          key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('**/tsconfig.json', 'bun.lock', '**/*.ts', '**/*.tsx') }}
           restore-keys: |
             tsbuildinfo-${{ runner.os }}-
 
