@@ -19,3 +19,5 @@ coverage/
 .gitignore
 .eslintrc*
 .prettierrc*
+.github/**
+.vscode/**
