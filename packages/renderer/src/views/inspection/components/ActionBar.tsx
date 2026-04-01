@@ -3,7 +3,6 @@ import { useShiftspaceStore } from '../../../store';
 import type { ActionConfig } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { IconButton } from '../../../ui/IconButton';
-import { Spinner } from '../../../ui/Spinner';
 
 interface ActionBarProps {
   worktreeId: string;

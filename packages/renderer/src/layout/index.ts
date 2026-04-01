@@ -31,11 +31,7 @@ export interface SingleWorktreeLayoutOptions {
 export function computeSingleWorktreeLayout(
   wt: WorktreeState,
   onFileClick?: (worktreeId: string, filePath: string) => void,
-  onRequestBranchList?: (worktreeId: string) => void,
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void,
   onFolderClick?: (worktreeId: string, folderPath: string) => void,
-  onFetchBranches?: (worktreeId: string) => void,
-  onSwapBranches?: (worktreeId: string) => void,
   options?: SingleWorktreeLayoutOptions,
   getFileFindingsCount?: (worktreeId: string, filePath: string) => number
 ): SingleWorktreeLayout {
@@ -51,8 +47,6 @@ export function computeSingleWorktreeLayout(
     getFileH
   );
 
-  // Ensure the container is wide enough to fit the header label.
-  // Estimate: ~8px per character at text-13 semibold + padding.
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
   const headerText = wt.isMainWorktree ? wt.branch : `${folderName} (${wt.branch})`;
   const headerMinW = headerText.length * 8 + CONTAINER_PAD_X * 2;
@@ -65,10 +59,6 @@ export function computeSingleWorktreeLayout(
 
   const data: WorktreeNodeData = {
     worktree: wt,
-    onRequestBranchList,
-    onCheckoutBranch,
-    onFetchBranches,
-    onSwapBranches,
     bare: options?.bare,
   };
   nodes.push({
@@ -105,26 +95,12 @@ export function computeSingleWorktreeLayout(
 export function computeFullLayout(
   wtArray: WorktreeState[],
   onFileClick?: (worktreeId: string, filePath: string) => void,
-  onRequestBranchList?: (worktreeId: string) => void,
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void,
-  onFolderClick?: (worktreeId: string, folderPath: string) => void,
-  onFetchBranches?: (worktreeId: string) => void,
-  onSwapBranches?: (worktreeId: string) => void
+  onFolderClick?: (worktreeId: string, folderPath: string) => void
 ): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const perLayouts = wtArray.map((wt) =>
-    computeSingleWorktreeLayout(
-      wt,
-      onFileClick,
-      onRequestBranchList,
-      onCheckoutBranch,
-      onFolderClick,
-      onFetchBranches,
-      onSwapBranches
-    )
+    computeSingleWorktreeLayout(wt, onFileClick, onFolderClick)
   );
 
-  // Lay worktrees out horizontally, side-by-side, top-aligned.
-  // Center the entire group around x = 0.
   const totalGroupW =
     perLayouts.reduce((sum, l) => sum + l.containerW, 0) +
     Math.max(perLayouts.length - 1, 0) * CONTAINER_GAP;

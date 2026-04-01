@@ -3,7 +3,6 @@ import { useShiftspaceStore } from '../../../store';
 import type { ActionConfig, ActionStatus } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { Codicon } from '../../../ui/Codicon';
-import { IconButton } from '../../../ui/IconButton';
 import { SectionLabel } from '../../../ui/SectionLabel';
 import { Tooltip } from '../../../overlays/Tooltip';
 

@@ -5,10 +5,6 @@ import { FILE_NODE_W, FILE_NODE_BASE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './c
 
 export interface WorktreeNodeData {
   worktree: import('../types').WorktreeState;
-  onRequestBranchList?: (worktreeId: string) => void;
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
-  onFetchBranches?: (worktreeId: string) => void;
-  onSwapBranches?: (worktreeId: string) => void;
   bare?: boolean;
   [key: string]: unknown;
 }

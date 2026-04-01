@@ -2,12 +2,13 @@ import React from 'react';
 import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange, FileDiagnosticSummary, InsightFinding } from '../types';
-import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
 import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useShallow } from 'zustand/react/shallow';
 import { useShiftspaceStore, getFileFindings } from '../store';
+import { StatusDot } from '../ui/StatusDot';
+import { Codicon } from '../ui/Codicon';
 
 export interface FileNodeData {
   file: FileChange;
@@ -78,12 +79,7 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
             >
               {fileName}
             </span>
-            <span
-              className={clsx(
-                'size-2 rounded-full inline-block shrink-0',
-                STATUS_CLASSES[file.status]
-              )}
-            />
+            <StatusDot status={file.status} />
           </div>
           {hasAnnotations && <AnnotationsList diagnostics={diagnostics} findings={findings} />}
         </button>
@@ -106,33 +102,21 @@ function AnnotationsList({
     <div className="mt-1 pt-1 border-border-default/40">
       {errors > 0 && (
         <div className="flex items-center gap-0.5 py-0.5 text-status-deleted">
-          <i
-            className="codicon codicon-error shrink-0"
-            style={{ fontSize: 16 }}
-            aria-hidden="true"
-          />
+          <Codicon name="error" size={16} />
           <span className="text-11 ml-0.5 mt-px">{errors}</span>
           <span className="text-11 truncate mt-px">{errors === 1 ? 'error' : 'errors'}</span>
         </div>
       )}
       {warnings > 0 && (
         <div className="flex items-center gap-0.5 py-0.5 text-status-modified">
-          <i
-            className="codicon codicon-warning shrink-0"
-            style={{ fontSize: 16 }}
-            aria-hidden="true"
-          />
+          <Codicon name="warning" size={16} />
           <span className="text-11 ml-0.5 mt-px">{warnings}</span>
           <span className="text-11 truncate mt-px">{warnings === 1 ? 'warning' : 'warnings'}</span>
         </div>
       )}
       {findings.map((f) => (
         <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-text-muted">
-          <i
-            className="codicon codicon-debug-breakpoint-unsupported shrink-0"
-            style={{ fontSize: 16 }}
-            aria-hidden="true"
-          />
+          <Codicon name="debug-breakpoint-unsupported" size={16} />
           <span className="text-11 ml-0.5 mt-px">{f.count}</span>
           <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
         </div>

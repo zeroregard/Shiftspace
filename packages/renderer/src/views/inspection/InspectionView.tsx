@@ -236,11 +236,7 @@ export const InspectionView = React.memo(
       const layout = computeSingleWorktreeLayout(
         wt,
         actions.fileClick,
-        actions.requestBranchList,
-        actions.checkoutBranch,
         actions.folderClick,
-        actions.fetchBranches,
-        actions.swapBranches,
         { bare: true, filesOverride: hierarchyFiles },
         (wtId, filePath) => getFileFindings(insightDetails, wtId, filePath).length
       );

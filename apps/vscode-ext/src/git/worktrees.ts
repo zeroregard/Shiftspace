@@ -308,7 +308,7 @@ export interface SwapBranchesOptions {
  */
 export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
   const { worktreeAPath, branchA, worktreeBPath, branchB, onProgress } = opts;
-  const log = onProgress ?? (() => {});
+  const progress = onProgress ?? (() => {});
 
   let stashedA = false;
   let stashedB = false;
@@ -322,7 +322,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     await cleanStaleLockFile(worktreeBPath);
 
     // ── Step 1: Stash uncommitted changes ──────────────────────────────────
-    log('Stashing changes...');
+    progress('Stashing changes...');
 
     const { stdout: statusA } = await gitReadOnly(['status', '--porcelain'], {
       cwd: worktreeAPath,
@@ -349,7 +349,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     }
 
     // ── Step 2: Create temp branch on A (frees branchA) ───────────────────
-    log('Swapping branches...');
+    progress('Swapping branches...');
     tempBranch = await findUniqueTempBranchName(worktreeAPath);
     await gitWrite(['checkout', '-b', tempBranch], {
       cwd: worktreeAPath,
@@ -380,7 +380,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     // ── Step 6: Restore stashes (cross-applied) ───────────────────────────
     // A's stash → B (B is now on branchA, where A's changes belong)
     // B's stash → A (A is now on branchB, where B's changes belong)
-    log('Restoring changes...');
+    progress('Restoring changes...');
     if (stashedA) {
       try {
         await popStashByMessage(worktreeBPath, 'shiftspace-swap-A');

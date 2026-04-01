@@ -1,35 +1,36 @@
 import React from 'react';
+import { Codicon } from '../ui/Codicon';
 
 // ---------------------------------------------------------------------------
-// UI icons — rendered as Codicons (requires codicon.css to be loaded by host)
+// UI icons — thin wrappers around Codicon for semantic naming
 // ---------------------------------------------------------------------------
 
 export function GitBranchIcon() {
-  return <i className="codicon codicon-git-branch" style={{ fontSize: 12 }} aria-hidden="true" />;
+  return <Codicon name="git-branch" />;
 }
 
 export function GitCompareIcon() {
-  return <i className="codicon codicon-git-compare" style={{ fontSize: 12 }} aria-hidden="true" />;
+  return <Codicon name="git-compare" />;
 }
 
 export function RefreshIcon() {
-  return <i className="codicon codicon-refresh" style={{ fontSize: 11 }} aria-hidden="true" />;
+  return <Codicon name="refresh" size={11} />;
 }
 
 export function SwapIcon() {
-  return <i className="codicon codicon-arrow-swap" style={{ fontSize: 12 }} aria-hidden="true" />;
+  return <Codicon name="arrow-swap" />;
 }
 
 export function TrashIcon() {
-  return <i className="codicon codicon-trash" style={{ fontSize: 12 }} aria-hidden="true" />;
+  return <Codicon name="trash" />;
 }
 
 export function PencilIcon() {
-  return <i className="codicon codicon-edit" style={{ fontSize: 12 }} aria-hidden="true" />;
+  return <Codicon name="edit" />;
 }
 
 export function CheckIcon() {
-  return <i className="codicon codicon-check" style={{ fontSize: 12 }} aria-hidden="true" />;
+  return <Codicon name="check" />;
 }
 
 // ---------------------------------------------------------------------------

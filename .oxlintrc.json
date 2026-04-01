@@ -1,8 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
   "rules": {
-    "no-unused-vars": "warn",
-    "no-console": "off",
+    "no-unused-vars": "error",
+    "no-console": "error",
     "eqeqeq": "error"
   },
   "ignorePatterns": ["dist/", "node_modules/", ".turbo/", "*.config.ts", "*.config.js"]

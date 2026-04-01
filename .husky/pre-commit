@@ -1,1 +1,2 @@
 ~/.bun/bin/bun lint-staged
+~/.bun/bin/bun typecheck

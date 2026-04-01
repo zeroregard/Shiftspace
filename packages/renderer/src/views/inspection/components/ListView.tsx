@@ -9,6 +9,9 @@ import { WorktreeHeader } from '../../../nodes/WorktreeHeader';
 import { partitionFiles } from '../../../utils/listSections';
 import { useShiftspaceStore, getFileFindings } from '../../../store';
 import { useShallow } from 'zustand/react/shallow';
+import { Badge } from '../../../ui/Badge';
+import { Codicon } from '../../../ui/Codicon';
+import { SectionLabel } from '../../../ui/SectionLabel';
 
 const STATUS_LETTER: Record<FileChange['status'], string> = {
   added: 'A',
@@ -95,9 +98,9 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
-                  ❌ {errors}
-                </span>
+                <Badge variant="error">
+                  <Codicon name="error" size={10} /> {errors}
+                </Badge>
               </Tooltip>
             )}
             {warnings > 0 && (
@@ -115,9 +118,9 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
-                  ⚠ {warnings}
-                </span>
+                <Badge variant="warning">
+                  <Codicon name="warning" size={10} /> {warnings}
+                </Badge>
               </Tooltip>
             )}
             {totalFindings > 0 && (
@@ -133,9 +136,9 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-text-muted border border-text-muted/30 bg-text-muted/10 px-1 rounded">
-                  🐛 {totalFindings}
-                </span>
+                <Badge variant="finding">
+                  <Codicon name="debug-breakpoint-unsupported" size={10} /> {totalFindings}
+                </Badge>
               </Tooltip>
             )}
           </span>
@@ -160,31 +163,17 @@ ListFileRow.displayName = 'ListFileRow';
 interface ListWorktreeBoxProps {
   worktree: WorktreeState;
   onFileClick?: (worktreeId: string, filePath: string) => void;
-  onRequestBranchList?: (worktreeId: string) => void;
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
-  onFetchBranches?: (worktreeId: string) => void;
-  onSwapBranches?: (worktreeId: string) => void;
 }
 
-function SectionLabel({ label }: { label: string }) {
+function ListSectionLabel({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 px-3 pt-2 pb-0.5">
-      <span className="text-10 font-semibold uppercase tracking-wider text-text-faint">
-        {label}
-      </span>
+      <SectionLabel>{label}</SectionLabel>
     </div>
   );
 }
 
-const ListWorktreeBox = React.memo(
-  ({
-    worktree: wt,
-    onFileClick,
-    onRequestBranchList,
-    onCheckoutBranch,
-    onFetchBranches,
-    onSwapBranches,
-  }: ListWorktreeBoxProps) => {
+const ListWorktreeBox = React.memo(({ worktree: wt, onFileClick }: ListWorktreeBoxProps) => {
     const { committed, staged, unstaged } = partitionFiles(wt);
     const isEmpty = committed.length === 0 && staged.length === 0 && unstaged.length === 0;
 
@@ -192,13 +181,7 @@ const ListWorktreeBox = React.memo(
       <div className="min-w-80 border-2 border-dashed border-border-dashed rounded-xl bg-cluster-alpha overflow-hidden">
         {/* Header */}
         <div className="px-4 py-2.5 border-b border-border-dashed">
-          <WorktreeHeader
-            worktree={wt}
-            onRequestBranchList={onRequestBranchList}
-            onCheckoutBranch={onCheckoutBranch}
-            onFetchBranches={onFetchBranches}
-            onSwapBranches={onSwapBranches}
-          />
+          <WorktreeHeader worktree={wt} />
         </div>
 
         {/* File list */}
@@ -209,7 +192,7 @@ const ListWorktreeBox = React.memo(
             <>
               {committed.length > 0 && (
                 <>
-                  <SectionLabel label="Committed" />
+                  <ListSectionLabel label="Committed" />
                   {committed.map((file) => (
                     <ListFileRow
                       key={`committed:${file.path}`}
@@ -222,7 +205,7 @@ const ListWorktreeBox = React.memo(
               )}
               {staged.length > 0 && (
                 <>
-                  <SectionLabel label="Staged" />
+                  <ListSectionLabel label="Staged" />
                   {staged.map((file) => (
                     <ListFileRow
                       key={`staged:${file.path}`}
@@ -235,7 +218,7 @@ const ListWorktreeBox = React.memo(
               )}
               {unstaged.length > 0 && (
                 <>
-                  <SectionLabel label="Unstaged" />
+                  <ListSectionLabel label="Unstaged" />
                   {unstaged.map((file) => (
                     <ListFileRow
                       key={`unstaged:${file.path}`}
@@ -259,21 +242,9 @@ ListWorktreeBox.displayName = 'ListWorktreeBox';
 interface ListViewProps {
   worktrees: WorktreeState[];
   onFileClick?: (worktreeId: string, filePath: string) => void;
-  onRequestBranchList?: (worktreeId: string) => void;
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
-  onFetchBranches?: (worktreeId: string) => void;
-  onSwapBranches?: (worktreeId: string) => void;
 }
 
-export const ListView = React.memo(
-  ({
-    worktrees,
-    onFileClick,
-    onRequestBranchList,
-    onCheckoutBranch,
-    onFetchBranches,
-    onSwapBranches,
-  }: ListViewProps) => {
+export const ListView = React.memo(({ worktrees, onFileClick }: ListViewProps) => {
     const pan = useDragPan();
     return (
       <div
@@ -292,15 +263,7 @@ export const ListView = React.memo(
           <div ref={pan.contentRef} className="p-6">
             <div className="flex flex-row gap-4 items-start">
               {worktrees.map((wt) => (
-                <ListWorktreeBox
-                  key={wt.id}
-                  worktree={wt}
-                  onFileClick={onFileClick}
-                  onRequestBranchList={onRequestBranchList}
-                  onCheckoutBranch={onCheckoutBranch}
-                  onFetchBranches={onFetchBranches}
-                  onSwapBranches={onSwapBranches}
-                />
+                <ListWorktreeBox key={wt.id} worktree={wt} onFileClick={onFileClick} />
               ))}
               {worktrees.length === 0 && (
                 <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
