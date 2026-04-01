@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../../../types';
 import { useShiftspaceStore } from '../../../store';
 import { BranchPickerPopover } from '../../../overlays/BranchPickerPopover';
-import { GitBranchIcon, SwapIcon, TrashIcon, PencilIcon } from '../../../icons';
+import { GitBranchIcon, SwapIcon, TrashIcon, PencilIcon, CheckIcon } from '../../../icons';
 import { ActionBar } from '../../inspection/components/ActionBar';
 import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
 
@@ -72,17 +72,29 @@ export const WorktreeCard = React.memo(
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5 min-w-0">
             {isRenaming ? (
-              <input
-                ref={renameInputRef}
-                className="font-semibold text-13 text-text-primary bg-transparent border border-border-dashed rounded px-1 py-0 outline-none flex-1 min-w-0"
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onBlur={commitRename}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitRename();
-                  if (e.key === 'Escape') setIsRenaming(false);
-                }}
-              />
+              <>
+                <input
+                  ref={renameInputRef}
+                  className="font-semibold text-13 text-text-primary bg-transparent border border-border-dashed rounded px-1 py-0 outline-none flex-1 min-w-0"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitRename();
+                    if (e.key === 'Escape') setIsRenaming(false);
+                  }}
+                />
+                <button
+                  className="flex items-center justify-center w-5 h-5 rounded border border-transparent text-text-muted hover:text-text-primary hover:border-border-dashed cursor-pointer bg-transparent"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    commitRename();
+                  }}
+                  title="Confirm rename"
+                >
+                  <CheckIcon />
+                </button>
+              </>
             ) : (
               <button
                 data-testid={`enter-inspection-${wt.id}`}
@@ -126,6 +138,18 @@ export const WorktreeCard = React.memo(
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
+            {!wt.isMainWorktree && onSwapBranches && (
+              <button
+                className="flex items-center justify-center w-5 h-5 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted cursor-pointer bg-transparent"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSwapBranches(wt.id);
+                }}
+                title="Swap branch with primary worktree"
+              >
+                <SwapIcon />
+              </button>
+            )}
             <BranchPickerPopover
               trigger={
                 <button
@@ -148,18 +172,6 @@ export const WorktreeCard = React.memo(
               isFetching={isFetchingBranches}
               lastFetchAt={lastFetchAt}
             />
-            {!wt.isMainWorktree && onSwapBranches && (
-              <button
-                className="flex items-center justify-center w-5 h-5 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted cursor-pointer bg-transparent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSwapBranches(wt.id);
-                }}
-                title="Swap branch with primary worktree"
-              >
-                <SwapIcon />
-              </button>
-            )}
           </div>
         </div>
 
