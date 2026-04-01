@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import type { WorktreeState, FileChange } from '@shiftspace/renderer';
+import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
 import type { ConfigLoader } from '../actions/configLoader';
 import type { StateManager } from '../actions/stateManager';
 import type { InsightRunner } from '../insights/runner';
@@ -20,6 +20,7 @@ export interface McpHandlerDeps {
   repoRoot: string;
   getPackageName: () => string;
   getSmellRules: () => Record<string, Record<string, unknown>>;
+  collectDiagnostics?: (files: FileChange[], worktreeRoot: string) => FileDiagnosticSummary[];
 }
 
 export class McpToolHandlers {
@@ -75,11 +76,20 @@ export class McpToolHandlers {
       extraSettings
     );
 
+    // Collect VSCode diagnostics (TS errors, lint warnings) for changed files
+    const diagnostics = this.deps.collectDiagnostics?.(wt.files, wt.path) ?? [];
+
     return {
       worktree: { id: wt.id, branch: wt.branch, path: wt.path },
       insights: details.map((d) => ({
         insightId: d.insightId,
         fileInsights: d.fileInsights,
+      })),
+      diagnostics: diagnostics.map((d) => ({
+        file: d.filePath,
+        errors: d.errors,
+        warnings: d.warnings,
+        details: d.details.slice(0, 20),
       })),
     };
   }

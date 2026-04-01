@@ -9,7 +9,7 @@ import { InsightRunner } from './insights/runner';
 import type { ShiftspaceMcpHttpServer } from './mcp/httpServer';
 import { McpToolHandlers } from './mcp/handlers';
 import type { WorktreeState } from '@shiftspace/renderer';
-import { DiagnosticCollector } from './insights/plugins/diagnostics';
+import { DiagnosticCollector, collectDiagnostics } from './insights/plugins/diagnostics';
 // Register built-in insight plugins (side-effect import)
 import './insights/plugins/codeSmells';
 
@@ -401,6 +401,7 @@ export class ShiftspacePanel {
         const rules = coordinator.getSmellRules();
         return { codeSmells: { smellRules: rules } };
       },
+      collectDiagnostics,
     });
 
     server.setHandlers(handlers);

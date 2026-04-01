@@ -134,6 +134,58 @@ describe('McpToolHandlers', () => {
       expect(insights).toHaveLength(1);
       expect(insights[0]['insightId']).toBe('codeSmells');
     });
+
+    it('returns empty diagnostics when collector is not provided', async () => {
+      const result = (await handlers.handleTool('get_insights', {})) as Record<string, unknown>;
+      expect(result['diagnostics']).toEqual([]);
+    });
+
+    it('returns diagnostics when collector is provided', async () => {
+      const mockDiagnostics = [
+        {
+          filePath: 'src/index.ts',
+          errors: 2,
+          warnings: 1,
+          info: 0,
+          hints: 0,
+          details: [
+            { severity: 'error' as const, message: 'Type error', source: 'ts', line: 10 },
+            { severity: 'error' as const, message: 'Missing import', source: 'ts', line: 1 },
+            { severity: 'warning' as const, message: 'Unused var', source: 'eslint', line: 5 },
+          ],
+        },
+      ];
+
+      const depsWithDiag = makeDeps();
+      depsWithDiag.collectDiagnostics = vi.fn().mockReturnValue(mockDiagnostics);
+      const h = new McpToolHandlers(depsWithDiag);
+
+      const result = (await h.handleTool('get_insights', {})) as Record<string, unknown>;
+      const diagnostics = result['diagnostics'] as Array<Record<string, unknown>>;
+
+      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics[0]).toMatchObject({
+        file: 'src/index.ts',
+        errors: 2,
+        warnings: 1,
+      });
+      expect((diagnostics[0]['details'] as unknown[]).length).toBe(3);
+    });
+
+    it('passes correct files and worktreeRoot to collector', async () => {
+      const collector = vi.fn().mockReturnValue([]);
+      const depsWithDiag = makeDeps();
+      depsWithDiag.collectDiagnostics = collector;
+      const h = new McpToolHandlers(depsWithDiag);
+
+      await h.handleTool('get_insights', {});
+
+      expect(collector).toHaveBeenCalledOnce();
+      const [files, root] = collector.mock.calls[0];
+      expect(root).toBe('/tmp');
+      expect(files).toHaveLength(2);
+      expect(files[0].path).toBe('src/index.ts');
+    });
   });
 
   describe('get_check_status', () => {
