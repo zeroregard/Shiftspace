@@ -138,7 +138,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setDiffMode: (worktreeId, diffMode) =>
     set((state) => {
-      const worktrees = new Map(state.worktrees);
+      const worktrees = new Map<string, WorktreeState>(state.worktrees);
       const wt = worktrees.get(worktreeId);
       if (wt) {
         worktrees.set(worktreeId, { ...wt, diffMode });
@@ -148,7 +148,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setDiffModeLoading: (worktreeId, loading) =>
     set((state) => {
-      const diffModeLoading = new Set(state.diffModeLoading);
+      const diffModeLoading = new Set<string>(state.diffModeLoading);
       if (loading) {
         diffModeLoading.add(worktreeId);
       } else {
@@ -159,26 +159,26 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setBranchList: (worktreeId, branches) =>
     set((state) => {
-      const branchLists = new Map(state.branchLists);
+      const branchLists = new Map<string, string[]>(state.branchLists);
       branchLists.set(worktreeId, branches);
       return { branchLists };
     }),
 
   updateWorktreeFiles: (worktreeId, files, diffMode, branchFiles) =>
     set((state) => {
-      const worktrees = new Map(state.worktrees);
+      const worktrees = new Map<string, WorktreeState>(state.worktrees);
       const wt = worktrees.get(worktreeId);
       if (wt) {
         worktrees.set(worktreeId, { ...wt, files, diffMode, branchFiles });
       }
-      const diffModeLoading = new Set(state.diffModeLoading);
+      const diffModeLoading = new Set<string>(state.diffModeLoading);
       diffModeLoading.delete(worktreeId);
       return { worktrees, diffModeLoading };
     }),
 
   setFetchLoading: (worktreeId, loading) =>
     set((state) => {
-      const fetchLoading = new Set(state.fetchLoading);
+      const fetchLoading = new Set<string>(state.fetchLoading);
       if (loading) fetchLoading.add(worktreeId);
       else fetchLoading.delete(worktreeId);
       return { fetchLoading };
@@ -186,7 +186,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setLastFetchAt: (worktreeId, timestamp) =>
     set((state) => {
-      const lastFetchAt = new Map(state.lastFetchAt);
+      const lastFetchAt = new Map<string, number>(state.lastFetchAt);
       lastFetchAt.set(worktreeId, timestamp);
       return { lastFetchAt };
     }),
@@ -197,7 +197,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setActionState: (worktreeId, actionId, state) =>
     set((s) => {
-      const actionStates = new Map(s.actionStates);
+      const actionStates = new Map<string, ActionState>(s.actionStates);
       actionStates.set(`${worktreeId}:${actionId}`, state);
       return { actionStates };
     }),
@@ -208,7 +208,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setActionLog: (worktreeId, actionId, log) =>
     set((s) => {
-      const actionLogs = new Map(s.actionLogs);
+      const actionLogs = new Map<string, string>(s.actionLogs);
       actionLogs.set(`${worktreeId}:${actionId}`, log);
       return { actionLogs };
     }),
@@ -216,7 +216,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   appendActionLog: (worktreeId, actionId, chunk) =>
     set((s) => {
       const key = `${worktreeId}:${actionId}`;
-      const actionLogs = new Map(s.actionLogs);
+      const actionLogs = new Map<string, string>(s.actionLogs);
       actionLogs.set(key, (actionLogs.get(key) ?? '') + chunk);
       return { actionLogs };
     }),
@@ -227,21 +227,21 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setInsightDetail: (worktreeId, insightId, detail) =>
     set((s) => {
-      const insightDetails = new Map(s.insightDetails);
+      const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
       insightDetails.set(`${worktreeId}:${insightId}`, detail);
       return { insightDetails };
     }),
 
   clearInsightDetails: (worktreeId) =>
     set((s) => {
-      const insightDetails = new Map(s.insightDetails);
+      const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
       const changed = deleteByPrefix(insightDetails, worktreeId);
       return changed ? { insightDetails } : {};
     }),
 
   setFileDiagnostics: (worktreeId, files) =>
     set((s) => {
-      const fileDiagnostics = new Map(s.fileDiagnostics);
+      const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
       deleteByPrefix(fileDiagnostics, worktreeId);
       for (const file of files) {
         fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
@@ -251,14 +251,14 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   clearFileDiagnostics: (worktreeId) =>
     set((s) => {
-      const fileDiagnostics = new Map(s.fileDiagnostics);
+      const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
       const changed = deleteByPrefix(fileDiagnostics, worktreeId);
       return changed ? { fileDiagnostics } : {};
     }),
 
   markAllStale: (worktreeId) =>
     set((s) => {
-      const actionStates = new Map(s.actionStates);
+      const actionStates = new Map<string, ActionState>(s.actionStates);
       let changed = false;
       for (const [key, state] of actionStates) {
         if (
