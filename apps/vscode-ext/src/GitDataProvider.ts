@@ -665,6 +665,44 @@ export class GitDataProvider implements vscode.Disposable {
     this.fileStates.clear();
   }
 
+  /**
+   * Apply persisted diff mode overrides (keyed by branch name) to the
+   * current worktrees. Called after switchRepo() and before the init
+   * message is sent to the webview so the correct diff mode is reflected
+   * on first render. Re-fetches file data for overridden worktrees.
+   */
+  applyDiffModeOverrides(overrides: Record<string, DiffMode>): void {
+    if (!overrides || Object.keys(overrides).length === 0) return;
+    for (const wt of this.worktrees) {
+      const override = overrides[wt.branch];
+      if (!override) continue;
+      // Skip if already matching (e.g. feature branch already defaults to "vs main")
+      if (
+        wt.diffMode.type === override.type &&
+        (wt.diffMode.type !== 'branch' ||
+          (override.type === 'branch' && wt.diffMode.branch === override.branch))
+      ) {
+        continue;
+      }
+      wt.diffMode = override;
+      // Re-fetch files for the new mode (fire-and-forget; init message
+      // already includes the files from the initial load, and the
+      // worktree-files-updated message will patch them once ready).
+      void this.getFilesForMode(wt).then(({ files, branchFiles }) => {
+        wt.files = files;
+        wt.branchFiles = branchFiles;
+        this.fileStates.set(wt.id, files);
+        this.postMessage({
+          type: 'worktree-files-updated',
+          worktreeId: wt.id,
+          files,
+          diffMode: wt.diffMode,
+          branchFiles,
+        });
+      });
+    }
+  }
+
   /** Returns current worktree snapshot (id, path, branch) for ActionManager consumption. */
   getWorktrees(): Array<{ id: string; path: string; branch: string }> {
     return this.worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch }));
