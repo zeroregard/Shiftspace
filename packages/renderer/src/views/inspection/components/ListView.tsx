@@ -77,64 +77,68 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
           )}
         </span>
 
-        {/* Insight pills: errors, warnings, smells */}
-        {errors > 0 && (
-          <Tooltip
-            content={
-              <div className="flex flex-col gap-0.5">
-                {diagnostics!.details
-                  .filter((d) => d.severity === 'error')
-                  .map((d, i) => (
-                    <span key={i}>
-                      L{d.line}: {d.message} ({d.source})
-                    </span>
-                  ))}
-              </div>
-            }
-            delayDuration={200}
-          >
-            <span className="text-10 font-medium shrink-0 text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
-              ❌ {errors}
-            </span>
-          </Tooltip>
-        )}
-        {warnings > 0 && (
-          <Tooltip
-            content={
-              <div className="flex flex-col gap-0.5">
-                {diagnostics!.details
-                  .filter((d) => d.severity === 'warning')
-                  .map((d, i) => (
-                    <span key={i}>
-                      L{d.line}: {d.message} ({d.source})
-                    </span>
-                  ))}
-              </div>
-            }
-            delayDuration={200}
-          >
-            <span className="text-10 font-medium shrink-0 text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
-              ⚠ {warnings}
-            </span>
-          </Tooltip>
-        )}
-        {totalFindings > 0 && (
-          <Tooltip
-            content={
-              <div className="flex flex-col gap-0.5">
-                {findings.map((f) => (
-                  <span key={f.ruleId}>
-                    {f.ruleLabel}: {f.count} found
-                  </span>
-                ))}
-              </div>
-            }
-            delayDuration={200}
-          >
-            <span className="text-10 font-medium shrink-0 text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
-              🐛 {totalFindings}
-            </span>
-          </Tooltip>
+        {/* Insight pills */}
+        {(errors > 0 || warnings > 0 || totalFindings > 0) && (
+          <span className="shrink-0 flex items-center gap-1">
+            {errors > 0 && (
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-0.5">
+                    {diagnostics!.details
+                      .filter((d) => d.severity === 'error')
+                      .map((d, i) => (
+                        <span key={i}>
+                          L{d.line}: {d.message} ({d.source})
+                        </span>
+                      ))}
+                  </div>
+                }
+                delayDuration={200}
+              >
+                <span className="text-10 font-medium text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
+                  ❌ {errors}
+                </span>
+              </Tooltip>
+            )}
+            {warnings > 0 && (
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-0.5">
+                    {diagnostics!.details
+                      .filter((d) => d.severity === 'warning')
+                      .map((d, i) => (
+                        <span key={i}>
+                          L{d.line}: {d.message} ({d.source})
+                        </span>
+                      ))}
+                  </div>
+                }
+                delayDuration={200}
+              >
+                <span className="text-10 font-medium text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
+                  ⚠ {warnings}
+                </span>
+              </Tooltip>
+            )}
+            {totalFindings > 0 && (
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-0.5">
+                    {findings.map((f) => (
+                      <span key={f.ruleId}>
+                        {f.ruleLabel}: {f.count} found
+                      </span>
+                    ))}
+                  </div>
+                }
+                delayDuration={200}
+              >
+                <span className="text-10 font-medium text-text-muted border border-text-muted/30 bg-text-muted/10 px-1 rounded">
+                  🐛 {totalFindings}
+                </span>
+              </Tooltip>
+            )}
+          </span>
         )}
 
         {/* Status letter */}

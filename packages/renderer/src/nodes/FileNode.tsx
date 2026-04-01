@@ -127,7 +127,7 @@ function AnnotationsList({
         </div>
       )}
       {findings.map((f) => (
-        <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-status-deleted">
+        <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-text-muted">
           <i
             className="codicon codicon-debug-breakpoint-unsupported shrink-0"
             style={{ fontSize: 16 }}
