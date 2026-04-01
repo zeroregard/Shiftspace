@@ -1,10 +1,7 @@
-import { execFile } from 'child_process';
-import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
-
-const execFileAsync = promisify(execFile);
+import { gitReadOnly, gitWrite } from './gitUtils';
 
 /**
  * Parse the output of `git worktree list --porcelain` into WorktreeState[].
@@ -61,7 +58,7 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
 /** Detect all worktrees for the repo rooted at `repoRoot`. */
 export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]> {
   try {
-    const { stdout } = await execFileAsync('git', ['worktree', 'list', '--porcelain'], {
+    const { stdout } = await gitReadOnly(['worktree', 'list', '--porcelain'], {
       cwd: repoRoot,
       timeout: 5000,
     });
@@ -77,7 +74,7 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
  */
 export async function getGitRoot(dirPath: string): Promise<string | null> {
   try {
-    const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], {
+    const { stdout } = await gitReadOnly(['rev-parse', '--show-toplevel'], {
       cwd: dirPath,
       timeout: 5000,
     });
@@ -98,7 +95,7 @@ export async function getGitRoot(dirPath: string): Promise<string | null> {
 export async function getDefaultBranch(gitRoot: string): Promise<string> {
   // Try 1: git symbolic-ref
   try {
-    const { stdout } = await execFileAsync('git', ['symbolic-ref', 'refs/remotes/origin/HEAD'], {
+    const { stdout } = await gitReadOnly(['symbolic-ref', 'refs/remotes/origin/HEAD'], {
       cwd: gitRoot,
       timeout: 5000,
     });
@@ -110,7 +107,7 @@ export async function getDefaultBranch(gitRoot: string): Promise<string> {
   // Try 2: check common names
   for (const candidate of ['main', 'master', 'develop']) {
     try {
-      await execFileAsync('git', ['rev-parse', '--verify', candidate], {
+      await gitReadOnly(['rev-parse', '--verify', candidate], {
         cwd: gitRoot,
         timeout: 5000,
       });
@@ -129,8 +126,7 @@ export async function getDefaultBranch(gitRoot: string): Promise<string> {
  */
 export async function listBranches(repoRoot: string): Promise<string[]> {
   try {
-    const { stdout } = await execFileAsync(
-      'git',
+    const { stdout } = await gitReadOnly(
       ['branch', '--format=%(refname:short)', '--sort=-committerdate'],
       { cwd: repoRoot, timeout: 5000 }
     );
@@ -145,12 +141,12 @@ export async function listBranches(repoRoot: string): Promise<string[]> {
  * Throws if the checkout fails (e.g. uncommitted changes, branch doesn't exist).
  */
 export async function checkoutBranch(worktreePath: string, branch: string): Promise<void> {
-  await execFileAsync('git', ['checkout', branch], { cwd: worktreePath, timeout: 10_000 });
+  await gitWrite(['checkout', branch], { cwd: worktreePath, timeout: 10_000 });
 }
 
 /** Fetch all remotes and prune stale tracking branches. */
 export async function fetchRemote(repoRoot: string): Promise<void> {
-  await execFileAsync('git', ['fetch', '--all', '--prune'], { cwd: repoRoot, timeout: 60_000 });
+  await gitWrite(['fetch', '--all', '--prune'], { cwd: repoRoot, timeout: 60_000 });
 }
 
 /**
@@ -159,7 +155,7 @@ export async function fetchRemote(repoRoot: string): Promise<void> {
  * For the main worktree it returns `/repo/.git`.
  */
 async function resolveGitDir(worktreePath: string): Promise<string> {
-  const { stdout } = await execFileAsync('git', ['rev-parse', '--git-dir'], {
+  const { stdout } = await gitReadOnly(['rev-parse', '--git-dir'], {
     cwd: worktreePath,
     timeout: 5000,
   });
@@ -196,7 +192,7 @@ export async function cleanStaleLockFile(worktreePath: string, maxAgeMs = 5000):
 export async function checkWorktreeSafety(worktreePath: string): Promise<string | null> {
   // Detached HEAD check
   try {
-    await execFileAsync('git', ['symbolic-ref', '--quiet', 'HEAD'], {
+    await gitReadOnly(['symbolic-ref', '--quiet', 'HEAD'], {
       cwd: worktreePath,
       timeout: 5000,
     });
@@ -206,7 +202,7 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
 
   // Merge in progress check
   try {
-    await execFileAsync('git', ['rev-parse', '--quiet', '--verify', 'MERGE_HEAD'], {
+    await gitReadOnly(['rev-parse', '--quiet', '--verify', 'MERGE_HEAD'], {
       cwd: worktreePath,
       timeout: 5000,
     });
@@ -217,7 +213,7 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
 
   // Rebase in progress check
   try {
-    await execFileAsync('git', ['rev-parse', '--quiet', '--verify', 'REBASE_HEAD'], {
+    await gitReadOnly(['rev-parse', '--quiet', '--verify', 'REBASE_HEAD'], {
       cwd: worktreePath,
       timeout: 5000,
     });
@@ -228,7 +224,7 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
 
   // Merge conflict check (unmerged paths)
   try {
-    const { stdout } = await execFileAsync('git', ['diff', '--name-only', '--diff-filter=U'], {
+    const { stdout } = await gitReadOnly(['diff', '--name-only', '--diff-filter=U'], {
       cwd: worktreePath,
       timeout: 5000,
     });
@@ -253,7 +249,7 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
 async function findUniqueTempBranchName(worktreePath: string): Promise<string> {
   const base = '_shiftspace_temp_swap';
   try {
-    await execFileAsync('git', ['rev-parse', '--quiet', '--verify', base], {
+    await gitReadOnly(['rev-parse', '--quiet', '--verify', base], {
       cwd: worktreePath,
       timeout: 5000,
     });
@@ -266,7 +262,7 @@ async function findUniqueTempBranchName(worktreePath: string): Promise<string> {
 
 /** Pop a stash identified by its message from the given worktree's stash list. */
 async function popStashByMessage(worktreePath: string, message: string): Promise<void> {
-  const { stdout } = await execFileAsync('git', ['stash', 'list'], {
+  const { stdout } = await gitReadOnly(['stash', 'list'], {
     cwd: worktreePath,
     timeout: 5000,
   });
@@ -274,7 +270,7 @@ async function popStashByMessage(worktreePath: string, message: string): Promise
     if (line.includes(message)) {
       const match = line.match(/^(stash@\{\d+\})/);
       if (match) {
-        await execFileAsync('git', ['stash', 'pop', match[1]!], {
+        await gitWrite(['stash', 'pop', match[1]!], {
           cwd: worktreePath,
           timeout: 30_000,
         });
@@ -327,24 +323,24 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     // ── Step 1: Stash uncommitted changes ──────────────────────────────────
     log('Stashing changes...');
 
-    const { stdout: statusA } = await execFileAsync('git', ['status', '--porcelain'], {
+    const { stdout: statusA } = await gitReadOnly(['status', '--porcelain'], {
       cwd: worktreeAPath,
       timeout: 5000,
     });
     if (statusA.trim()) {
-      await execFileAsync('git', ['stash', 'push', '-u', '-m', 'shiftspace-swap-A'], {
+      await gitWrite(['stash', 'push', '-u', '-m', 'shiftspace-swap-A'], {
         cwd: worktreeAPath,
         timeout: 30_000,
       });
       stashedA = true;
     }
 
-    const { stdout: statusB } = await execFileAsync('git', ['status', '--porcelain'], {
+    const { stdout: statusB } = await gitReadOnly(['status', '--porcelain'], {
       cwd: worktreeBPath,
       timeout: 5000,
     });
     if (statusB.trim()) {
-      await execFileAsync('git', ['stash', 'push', '-u', '-m', 'shiftspace-swap-B'], {
+      await gitWrite(['stash', 'push', '-u', '-m', 'shiftspace-swap-B'], {
         cwd: worktreeBPath,
         timeout: 30_000,
       });
@@ -354,27 +350,27 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     // ── Step 2: Create temp branch on A (frees branchA) ───────────────────
     log('Swapping branches...');
     tempBranch = await findUniqueTempBranchName(worktreeAPath);
-    await execFileAsync('git', ['checkout', '-b', tempBranch], {
+    await gitWrite(['checkout', '-b', tempBranch], {
       cwd: worktreeAPath,
       timeout: 10_000,
     });
     tempBranchCreated = true;
 
     // ── Step 3: Check out branchA on B (branchA is now free) ──────────────
-    await execFileAsync('git', ['checkout', branchA], {
+    await gitWrite(['checkout', branchA], {
       cwd: worktreeBPath,
       timeout: 10_000,
     });
     bCheckedOut = true;
 
     // ── Step 4: Check out branchB on A (branchB is now free) ──────────────
-    await execFileAsync('git', ['checkout', branchB], {
+    await gitWrite(['checkout', branchB], {
       cwd: worktreeAPath,
       timeout: 10_000,
     });
 
     // ── Step 5: Delete temp branch ────────────────────────────────────────
-    await execFileAsync('git', ['branch', '-d', tempBranch], {
+    await gitWrite(['branch', '-d', tempBranch], {
       cwd: worktreeAPath,
       timeout: 10_000,
     });
@@ -408,7 +404,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
         // B is on branchA, A is on temp branch.
         // Restore: B → branchB (freeing branchB), A → branchA, delete temp.
         try {
-          await execFileAsync('git', ['checkout', branchB], {
+          await gitWrite(['checkout', branchB], {
             cwd: worktreeBPath,
             timeout: 10_000,
           });
@@ -416,7 +412,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
           rollbackIssues.push(`restore B to ${branchB}: ${(e as Error).message}`);
         }
         try {
-          await execFileAsync('git', ['checkout', branchA], {
+          await gitWrite(['checkout', branchA], {
             cwd: worktreeAPath,
             timeout: 10_000,
           });
@@ -426,7 +422,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
       } else {
         // B is still on branchB, A is on temp branch. Restore A → branchA.
         try {
-          await execFileAsync('git', ['checkout', branchA], {
+          await gitWrite(['checkout', branchA], {
             cwd: worktreeAPath,
             timeout: 10_000,
           });
@@ -436,14 +432,14 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
       }
       // Always attempt to clean up temp branch
       try {
-        await execFileAsync('git', ['branch', '-d', tempBranch], {
+        await gitWrite(['branch', '-d', tempBranch], {
           cwd: worktreeAPath,
           timeout: 10_000,
         });
       } catch {
         // Try force-delete
         try {
-          await execFileAsync('git', ['branch', '-D', tempBranch], {
+          await gitWrite(['branch', '-D', tempBranch], {
             cwd: worktreeAPath,
             timeout: 10_000,
           });
@@ -482,7 +478,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
 export async function removeWorktree(worktreePath: string, force = false): Promise<void> {
   const args = ['worktree', 'remove', worktreePath];
   if (force) args.push('--force');
-  await execFileAsync('git', args, { cwd: worktreePath, timeout: 30_000 });
+  await gitWrite(args, { cwd: worktreePath, timeout: 30_000 });
 }
 
 /**
@@ -490,7 +486,7 @@ export async function removeWorktree(worktreePath: string, force = false): Promi
  * Uses `git worktree move <old-path> <new-path>`.
  */
 export async function moveWorktree(oldPath: string, newPath: string): Promise<void> {
-  await execFileAsync('git', ['worktree', 'move', oldPath, newPath], {
+  await gitWrite(['worktree', 'move', oldPath, newPath], {
     cwd: oldPath,
     timeout: 10_000,
   });
@@ -502,7 +498,7 @@ export async function moveWorktree(oldPath: string, newPath: string): Promise<vo
  */
 export async function checkGitAvailability(dir: string): Promise<'ok' | 'not-repo' | 'no-git'> {
   try {
-    await execFileAsync('git', ['rev-parse', '--git-dir'], {
+    await gitReadOnly(['rev-parse', '--git-dir'], {
       cwd: dir,
       timeout: 5000,
     });
