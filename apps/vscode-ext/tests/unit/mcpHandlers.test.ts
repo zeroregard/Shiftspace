@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpToolHandlers } from '../../src/mcp/handlers';
-import type { McpHandlerDeps, WorktreeProvider } from '../../src/mcp/handlers';
+import type { McpHandlerDeps } from '../../src/mcp/handlers';
 import type { WorktreeState } from '@shiftspace/renderer';
 import { StateManager } from '../../src/actions/stateManager';
 
