@@ -4,9 +4,9 @@ import type { WorktreeState } from '../types';
 import { useShiftspaceStore } from '../store';
 import { BranchPickerPopover } from '../overlays/BranchPickerPopover';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
-import { GitBranchIcon } from '../icons';
 import { useActions } from '../ui/ActionsContext';
 import { IconButton } from '../ui/IconButton';
+import { Codicon } from '../ui/Codicon';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -36,7 +36,7 @@ export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHea
     return (
       <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
         {pathPart && <span>{pathPart} </span>}
-        <GitBranchIcon />
+        <Codicon name="git-branch" />
         <span>{pathPart ? `(${wt.branch})` : wt.branch}</span>
       </div>
     );
@@ -54,7 +54,7 @@ export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHea
               onClick={(e) => e.stopPropagation()}
               title="Switch branch"
             >
-              <GitBranchIcon />
+              <Codicon name="git-branch" />
               {pathPart ? `(${wt.branch})` : wt.branch}
             </button>
           }

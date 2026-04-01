@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../../../types';
 import { useShiftspaceStore } from '../../../store';
 import { BranchPickerPopover } from '../../../overlays/BranchPickerPopover';
-import { GitBranchIcon } from '../../../icons';
+import { Codicon } from '../../../ui/Codicon';
 import { ActionBar } from '../../inspection/components/ActionBar';
 import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
 import { useActions } from '../../../ui/ActionsContext';
@@ -145,7 +145,7 @@ export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => 
                 title={wt.branch}
               >
                 <span className="shrink-0">
-                  <GitBranchIcon />
+                  <Codicon name="git-branch" />
                 </span>
                 <span className="truncate">{wt.branch}</span>
               </button>

@@ -7,8 +7,7 @@ import { Tooltip } from '../../../overlays/Tooltip';
 import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
 import { WorktreeHeader } from '../../../nodes/WorktreeHeader';
 import { partitionFiles } from '../../../utils/listSections';
-import { useShiftspaceStore, getFileFindings } from '../../../store';
-import { useShallow } from 'zustand/react/shallow';
+import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
 import { Badge } from '../../../ui/Badge';
 import { Codicon } from '../../../ui/Codicon';
 import { SectionLabel } from '../../../ui/SectionLabel';
@@ -37,16 +36,10 @@ const ListFileRow = React.memo(({ file, worktreeId, onFileClick }: ListFileRowPr
   const dirPath = parts.join('/');
   const isDeleted = file.status === 'deleted';
 
-  const diagnostics = useShiftspaceStore((s) =>
-    s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
+  const { errors, warnings, findings, totalFindings, diagnostics } = useFileAnnotations(
+    worktreeId,
+    file.path
   );
-  const errors = diagnostics?.errors ?? 0;
-  const warnings = diagnostics?.warnings ?? 0;
-
-  const findings = useShiftspaceStore(
-    useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
-  );
-  const totalFindings = findings.length;
 
   return (
     <DiffPopover file={file}>

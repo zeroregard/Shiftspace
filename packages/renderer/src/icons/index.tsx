@@ -1,37 +1,4 @@
 import React from 'react';
-import { Codicon } from '../ui/Codicon';
-
-// ---------------------------------------------------------------------------
-// UI icons — thin wrappers around Codicon for semantic naming
-// ---------------------------------------------------------------------------
-
-export function GitBranchIcon() {
-  return <Codicon name="git-branch" />;
-}
-
-export function GitCompareIcon() {
-  return <Codicon name="git-compare" />;
-}
-
-export function RefreshIcon() {
-  return <Codicon name="refresh" size={11} />;
-}
-
-export function SwapIcon() {
-  return <Codicon name="arrow-swap" />;
-}
-
-export function TrashIcon() {
-  return <Codicon name="trash" />;
-}
-
-export function PencilIcon() {
-  return <Codicon name="edit" />;
-}
-
-export function CheckIcon() {
-  return <Codicon name="check" />;
-}
 
 // ---------------------------------------------------------------------------
 // SVG base shapes

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import * as RadixTooltip from '@radix-ui/react-tooltip';
 import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
 import { useShiftspaceStore } from './store';
 import { type PanZoomConfig } from './TreeCanvas';
@@ -87,7 +88,9 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       onSetPackage={onSetPackage}
       onDetectPackages={onDetectPackages}
     >
-      <ShiftspaceContent showPackageSwitcher={!!onSetPackage} panZoomConfig={panZoomConfig} />
+      <RadixTooltip.Provider delayDuration={300}>
+        <ShiftspaceContent showPackageSwitcher={!!onSetPackage} panZoomConfig={panZoomConfig} />
+      </RadixTooltip.Provider>
     </ActionsProvider>
   );
 };

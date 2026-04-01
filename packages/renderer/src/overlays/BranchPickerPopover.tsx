@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Tooltip } from './Tooltip';
-import { RefreshIcon } from '../icons';
+import { Codicon } from '../ui/Codicon';
 
 export interface StaticOption {
   key: string;
@@ -148,7 +148,7 @@ export const BranchPickerPopover = React.memo(
                           animation: isFetching ? 'spin 1s linear infinite' : undefined,
                         }}
                       >
-                        <RefreshIcon />
+                        <Codicon name="refresh" size={11} />
                       </span>
                     )}
                   </button>

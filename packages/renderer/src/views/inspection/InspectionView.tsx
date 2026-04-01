@@ -3,13 +3,14 @@ import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import type { DiffMode, FileChange } from '../../types';
 import { useShiftspaceStore, getFileFindings } from '../../store';
+import { useFileAnnotations } from '../../hooks/useFileAnnotations';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { BranchPickerPopover } from '../../overlays/BranchPickerPopover';
 import { Tooltip } from '../../overlays/Tooltip';
 import { ThemedFileIcon } from '../../shared/ThemedFileIcon';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
-import { GitCompareIcon, GitBranchIcon } from '../../icons';
+
 import {
   partitionFiles,
   filterFilesByQuery,
@@ -51,16 +52,10 @@ const InspectionFileRow = React.memo(
     const dirPath = parts.join('/');
     const isDeleted = file.status === 'deleted';
 
-    const findings = useShiftspaceStore(
-      useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
+    const { errors, warnings, findings, totalFindings, diagnostics } = useFileAnnotations(
+      worktreeId,
+      file.path
     );
-    const totalFindings = findings.length;
-
-    const diagnostics = useShiftspaceStore((s) =>
-      s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
-    );
-    const errors = diagnostics?.errors ?? 0;
-    const warnings = diagnostics?.warnings ?? 0;
 
     return (
       <button
@@ -313,7 +308,7 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
                 className="flex items-center gap-1 text-text-primary hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold truncate"
                 title="Switch branch"
               >
-                <GitBranchIcon />
+                <Codicon name="git-branch" />
                 {wt.branch}
               </button>
             }
@@ -339,7 +334,7 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
         <BranchPickerPopover
           trigger={
             <button className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-10 whitespace-nowrap cursor-pointer bg-transparent">
-              <GitCompareIcon />
+              <Codicon name="git-compare" />
               <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
             </button>
           }

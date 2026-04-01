@@ -1,40 +1,14 @@
 import React, { useState } from 'react';
 import { useShiftspaceStore } from '../../../store';
-import type { ActionConfig, ActionStatus } from '../../../types';
+import type { ActionStatus } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { Codicon } from '../../../ui/Codicon';
 import { SectionLabel } from '../../../ui/SectionLabel';
 import { Tooltip } from '../../../overlays/Tooltip';
+import { deriveActionType, statusIcon, statusColor } from '../../../utils/actionUtils';
 
 interface CheckBarProps {
   worktreeId: string;
-}
-
-function deriveActionType(action: ActionConfig): 'check' | 'service' {
-  return action.type ?? (action.persistent ? 'service' : 'check');
-}
-
-function statusIcon(status: ActionStatus, type: 'check' | 'service'): string {
-  if (type === 'service') {
-    if (status === 'running') return 'play';
-    if (status === 'failed') return 'error';
-    return 'play';
-  }
-  if (status === 'running') return 'loading';
-  if (status === 'passed') return 'check';
-  if (status === 'failed') return 'error';
-  if (status === 'stale') return 'warning';
-  if (status === 'unconfigured') return 'circle-outline';
-  return 'circle-outline';
-}
-
-function statusColor(status: ActionStatus, type: 'check' | 'service'): string | undefined {
-  if ((type === 'service' && status === 'running') || status === 'passed') {
-    return 'var(--color-status-added)';
-  }
-  if (status === 'failed') return 'var(--color-status-deleted)';
-  if (status === 'stale') return 'var(--color-status-modified)';
-  return undefined;
 }
 
 interface CheckChipProps {

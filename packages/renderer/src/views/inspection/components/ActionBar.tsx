@@ -1,15 +1,11 @@
 import React from 'react';
 import { useShiftspaceStore } from '../../../store';
-import type { ActionConfig } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { IconButton } from '../../../ui/IconButton';
+import { deriveActionType } from '../../../utils/actionUtils';
 
 interface ActionBarProps {
   worktreeId: string;
-}
-
-function deriveActionType(action: ActionConfig): 'check' | 'service' {
-  return action.type ?? (action.persistent ? 'service' : 'check');
 }
 
 export const ActionBar: React.FC<ActionBarProps> = React.memo(({ worktreeId }) => {
