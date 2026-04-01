@@ -9,10 +9,33 @@ import { InsightRunner } from './insights/runner';
 import { DiagnosticCollector } from './insights/plugins/diagnostics';
 // Register built-in insight plugins (side-effect import)
 import './insights/plugins/codeSmells';
+import type { DiffMode, AppMode } from '@shiftspace/renderer';
+
+// ---------------------------------------------------------------------------
+// Persisted view settings — survives "Reload Window"
+// ---------------------------------------------------------------------------
+
+interface PersistedViewSettings {
+  /** App mode, using branch name instead of worktree ID for stability. */
+  mode: { type: 'grove' } | { type: 'inspection'; branch: string };
+  /** Per-branch diff mode overrides (branch name → DiffMode). */
+  diffModeOverrides: Record<string, DiffMode>;
+  /** Selected package filter. */
+  selectedPackage: string;
+}
+
+const VIEW_SETTINGS_KEY = 'shiftspace.viewSettings';
+
+const DEFAULT_VIEW_SETTINGS: PersistedViewSettings = {
+  mode: { type: 'grove' },
+  diffModeOverrides: {},
+  selectedPackage: '',
+};
 
 export class ShiftspacePanel {
   private static currentPanel: ShiftspacePanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
+  private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
   private _gitProvider: GitDataProvider | undefined;
   private _actionCoordinator: ActionCoordinator | undefined;
@@ -78,8 +101,25 @@ export class ShiftspacePanel {
     ShiftspacePanel.currentPanel = new ShiftspacePanel(panel, context);
   }
 
+  // ---------------------------------------------------------------------------
+  // View settings persistence
+  // ---------------------------------------------------------------------------
+
+  private _getViewSettings(): PersistedViewSettings {
+    return this._context.workspaceState.get<PersistedViewSettings>(
+      VIEW_SETTINGS_KEY,
+      DEFAULT_VIEW_SETTINGS
+    );
+  }
+
+  private _saveViewSettings(patch: Partial<PersistedViewSettings>): void {
+    const current = this._getViewSettings();
+    void this._context.workspaceState.update(VIEW_SETTINGS_KEY, { ...current, ...patch });
+  }
+
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
     this._panel = panel;
+    this._context = context;
     this._panel.webview.html = getWebviewHtml(this._panel.webview, context.extensionUri);
 
     this._panel.webview.onDidReceiveMessage(
@@ -100,10 +140,15 @@ export class ShiftspacePanel {
         } else if (message.type === 'file-click') {
           void this._gitProvider?.handleFileClick(message.worktreeId ?? '', message.filePath ?? '');
         } else if (message.type === 'set-diff-mode' && message.worktreeId && message.diffMode) {
-          void this._gitProvider?.handleSetDiffMode(
-            message.worktreeId,
-            message.diffMode as import('@shiftspace/renderer').DiffMode
-          );
+          const diffMode = message.diffMode as DiffMode;
+          // Persist the diff mode override keyed by branch name
+          const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
+          if (wt) {
+            const settings = this._getViewSettings();
+            settings.diffModeOverrides[wt.branch] = diffMode;
+            this._saveViewSettings({ diffModeOverrides: settings.diffModeOverrides });
+          }
+          void this._gitProvider?.handleSetDiffMode(message.worktreeId, diffMode);
         } else if (message.type === 'get-branch-list' && message.worktreeId) {
           void this._gitProvider?.handleGetBranchList(message.worktreeId);
         } else if (message.type === 'checkout-branch' && message.worktreeId && message.branch) {
@@ -130,20 +175,26 @@ export class ShiftspacePanel {
         } else if (message.type === 'get-log' && message.worktreeId && message.actionId) {
           this._actionCoordinator?.getLog(message.worktreeId, message.actionId);
         } else if (message.type === 'set-package' && message.packageName !== undefined) {
+          this._saveViewSettings({ selectedPackage: message.packageName });
           void this._actionCoordinator?.setPackage(message.packageName);
         } else if (message.type === 'detect-packages') {
           void this._actionCoordinator?.detectAndSendPackages();
         } else if (message.type === 'enter-inspection' && message.worktreeId) {
           this._currentInspectedWorktreeId = message.worktreeId;
+          // Persist inspection mode keyed by branch name
+          const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
+          if (wt) {
+            this._saveViewSettings({ mode: { type: 'inspection', branch: wt.branch } });
+          }
           void this.runInsights(message.worktreeId);
           // Start diagnostic collection for this worktree
-          const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
           if (wt && this._diagnosticCollector) {
             const files = this._gitProvider?.getWorktreeFiles(message.worktreeId!) ?? [];
             this._diagnosticCollector.startInspection(message.worktreeId!, wt.path, files);
           }
         } else if (message.type === 'exit-inspection') {
           this._currentInspectedWorktreeId = undefined;
+          this._saveViewSettings({ mode: { type: 'grove' } });
           if (this._insightDebounceTimer !== undefined) {
             clearTimeout(this._insightDebounceTimer);
             this._insightDebounceTimer = undefined;
@@ -226,14 +277,45 @@ export class ShiftspacePanel {
     this._currentGitRoot = gitRoot;
     await this._gitProvider.switchRepo(gitRoot);
 
+    // Apply persisted diff mode overrides before the webview renders
+    const viewSettings = this._getViewSettings();
+    this._gitProvider.applyDiffModeOverrides(viewSettings.diffModeOverrides);
+
     // Initialize action coordinator with the repo root
     await this._actionCoordinator.initialize(gitRoot);
 
     // Let the coordinator know about current worktrees
     this.syncWorktreesToCoordinator();
 
+    // Restore persisted view mode (inspection/grove) and package selection
+    this.restoreViewSettings(viewSettings);
+
     // Resolve and send file icons (non-blocking)
     void this.reloadIcons();
+  }
+
+  /**
+   * Send a message to the webview to restore the persisted view state
+   * (app mode and selected package) after initialization.
+   */
+  private restoreViewSettings(settings: PersistedViewSettings): void {
+    const worktrees = this._gitProvider?.getWorktrees() ?? [];
+
+    // Resolve persisted inspection mode (branch name → worktree ID)
+    let mode: AppMode = { type: 'grove' };
+    if (settings.mode.type === 'inspection') {
+      const targetBranch = settings.mode.branch;
+      const wt = worktrees.find((w) => w.branch === targetBranch);
+      if (wt) {
+        mode = { type: 'inspection', worktreeId: wt.id };
+      }
+    }
+
+    void this._panel.webview.postMessage({
+      type: 'restore-view-settings',
+      mode,
+      selectedPackage: settings.selectedPackage,
+    });
   }
 
   private async reloadIcons(): Promise<void> {
