@@ -36,4 +36,5 @@ export type {
   InsightFinding,
   FileInsight,
   InsightDetail,
+  FileDiagnosticSummary,
 } from './types';

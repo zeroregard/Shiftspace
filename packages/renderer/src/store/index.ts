@@ -12,6 +12,7 @@ import type {
   PipelineConfig,
   InsightDetail,
   InsightFinding,
+  FileDiagnosticSummary,
 } from '../types';
 
 interface ShiftspaceStore {
@@ -40,6 +41,8 @@ interface ShiftspaceStore {
   iconMap: IconMap;
   /** Insight details keyed by `${worktreeId}:${insightId}` */
   insightDetails: Map<string, InsightDetail>;
+  /** File diagnostics keyed by `${worktreeId}:${filePath}` */
+  fileDiagnostics: Map<string, FileDiagnosticSummary>;
   setLODLevel: (level: LODLevel) => void;
   enterInspection: (worktreeId: string) => void;
   exitInspection: () => void;
@@ -69,6 +72,8 @@ interface ShiftspaceStore {
   setInsightDetail: (worktreeId: string, insightId: string, detail: InsightDetail) => void;
   /** Clear all insight details for a worktree (called on exit inspection). */
   clearInsightDetails: (worktreeId: string) => void;
+  setFileDiagnostics: (worktreeId: string, files: FileDiagnosticSummary[]) => void;
+  clearFileDiagnostics: (worktreeId: string) => void;
 }
 
 /**
@@ -105,6 +110,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   availablePackages: [],
   iconMap: {},
   insightDetails: new Map(),
+  fileDiagnostics: new Map(),
 
   setLODLevel: (level) => set({ lodLevel: level }),
 
@@ -222,6 +228,28 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
         }
       }
       return changed ? { insightDetails } : {};
+    }),
+
+  setFileDiagnostics: (worktreeId, files) =>
+    set((s) => {
+      const fileDiagnostics = new Map(s.fileDiagnostics);
+      for (const file of files) {
+        fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
+      }
+      return { fileDiagnostics };
+    }),
+
+  clearFileDiagnostics: (worktreeId) =>
+    set((s) => {
+      const fileDiagnostics = new Map(s.fileDiagnostics);
+      let changed = false;
+      for (const key of fileDiagnostics.keys()) {
+        if (key.startsWith(`${worktreeId}:`)) {
+          fileDiagnostics.delete(key);
+          changed = true;
+        }
+      }
+      return changed ? { fileDiagnostics } : {};
     }),
 
   markAllStale: (worktreeId) =>

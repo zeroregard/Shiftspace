@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
-import type { FileChange, InsightFinding } from '../types';
+import type { FileChange, FileDiagnosticSummary, InsightFinding } from '../types';
 import { STATUS_CLASSES } from '../utils/statusClasses';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
@@ -37,6 +37,13 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
   const findings = useShiftspaceStore(
     useShallow((s) => getFileFindings(s.insightDetails, worktreeId, file.path))
   );
+
+  const diagnostics = useShiftspaceStore((s) =>
+    s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
+  );
+
+  const hasAnnotations =
+    (diagnostics?.errors ?? 0) > 0 || (diagnostics?.warnings ?? 0) > 0 || findings.length > 0;
 
   return (
     <DiffPopover file={file}>
@@ -78,18 +85,49 @@ export const FileNode = React.memo(({ data }: NodeComponentProps<FileNodeData>) 
               )}
             />
           </div>
-          {findings.length > 0 && <InsightsList findings={findings} />}
+          {hasAnnotations && <AnnotationsList diagnostics={diagnostics} findings={findings} />}
         </button>
       </div>
     </DiffPopover>
   );
 });
 
-function InsightsList({ findings }: { findings: InsightFinding[] }) {
+function AnnotationsList({
+  diagnostics,
+  findings,
+}: {
+  diagnostics: FileDiagnosticSummary | undefined;
+  findings: InsightFinding[];
+}) {
+  const errors = diagnostics?.errors ?? 0;
+  const warnings = diagnostics?.warnings ?? 0;
+
   return (
     <div className="mt-1 pt-1 border-border-default/40">
+      {errors > 0 && (
+        <div className="flex items-center gap-0.5 py-0.5 text-status-deleted">
+          <i
+            className="codicon codicon-error shrink-0"
+            style={{ fontSize: 16 }}
+            aria-hidden="true"
+          />
+          <span className="text-11 ml-0.5 mt-px">{errors}</span>
+          <span className="text-11 truncate mt-px">{errors === 1 ? 'error' : 'errors'}</span>
+        </div>
+      )}
+      {warnings > 0 && (
+        <div className="flex items-center gap-0.5 py-0.5 text-status-modified">
+          <i
+            className="codicon codicon-warning shrink-0"
+            style={{ fontSize: 16 }}
+            aria-hidden="true"
+          />
+          <span className="text-11 ml-0.5 mt-px">{warnings}</span>
+          <span className="text-11 truncate mt-px">{warnings === 1 ? 'warning' : 'warnings'}</span>
+        </div>
+      )}
       {findings.map((f) => (
-        <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-status-deleted">
+        <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-text-muted">
           <i
             className="codicon codicon-debug-breakpoint-unsupported shrink-0"
             style={{ fontSize: 16 }}
