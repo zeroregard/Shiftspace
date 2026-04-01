@@ -28,22 +28,9 @@ function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
   return true;
 }
 
-// TODO: remove this
 // ---------------------------------------------------------------------------
 // File row (list panel)
 // ---------------------------------------------------------------------------
-
-const STATUS_LETTER: Record<FileChange['status'], string> = {
-  added: 'A',
-  modified: 'M',
-  deleted: 'D',
-};
-
-const STATUS_COLOR_CLASS: Record<FileChange['status'], string> = {
-  added: 'text-status-added',
-  modified: 'text-status-modified',
-  deleted: 'text-status-deleted',
-};
 
 interface InspectionFileRowProps {
   file: FileChange;
@@ -103,7 +90,7 @@ const InspectionFileRow = React.memo(
           )}
         </span>
 
-        {/* Insight pills — shrink-0 wrapper prevents overflow from pushing status letter off */}
+        {/* Insight pills */}
         {(errors > 0 || warnings > 0 || totalFindings > 0) && (
           <span className="shrink-0 flex items-center gap-1">
             {errors > 0 && (
@@ -121,8 +108,13 @@ const InspectionFileRow = React.memo(
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
-                  ❌ {errors}
+                <span className="text-10 font-medium text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded flex items-center gap-0.5">
+                  <i
+                    className="codicon codicon-error"
+                    style={{ fontSize: 12 }}
+                    aria-hidden="true"
+                  />
+                  {errors}
                 </span>
               </Tooltip>
             )}
@@ -141,8 +133,13 @@ const InspectionFileRow = React.memo(
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
-                  ⚠ {warnings}
+                <span className="text-10 font-medium text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded flex items-center gap-0.5">
+                  <i
+                    className="codicon codicon-warning"
+                    style={{ fontSize: 12 }}
+                    aria-hidden="true"
+                  />
+                  {warnings}
                 </span>
               </Tooltip>
             )}
@@ -159,23 +156,18 @@ const InspectionFileRow = React.memo(
                 }
                 delayDuration={200}
               >
-                <span className="text-10 font-medium text-text-muted border border-text-muted/30 bg-text-muted/10 px-1 rounded">
-                  🐛 {totalFindings}
+                <span className="text-10 font-medium text-text-muted border border-text-muted/30 bg-text-muted/10 px-1 rounded flex items-center gap-0.5">
+                  <i
+                    className="codicon codicon-debug-breakpoint-unsupported"
+                    style={{ fontSize: 12 }}
+                    aria-hidden="true"
+                  />
+                  {totalFindings}
                 </span>
               </Tooltip>
             )}
           </span>
         )}
-
-        {/* Status letter */}
-        <span
-          className={clsx(
-            'text-11 font-mono font-semibold w-3 shrink-0',
-            STATUS_COLOR_CLASS[file.status]
-          )}
-        >
-          {STATUS_LETTER[file.status]}
-        </span>
       </button>
     );
   }
@@ -210,6 +202,7 @@ interface InspectionViewProps {
   onSwapBranches?: (worktreeId: string) => void;
   onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
   onGetLog?: (worktreeId: string, actionId: string) => void;
+  onRecheckInsights?: (worktreeId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -227,6 +220,7 @@ export const InspectionView = React.memo(
     onSwapBranches,
     onRunPipeline,
     onGetLog,
+    onRecheckInsights,
     panZoomConfig,
   }: InspectionViewProps) => {
     const exitInspection = useShiftspaceStore((s) => s.exitInspection);
@@ -294,12 +288,26 @@ export const InspectionView = React.memo(
 
     const [searchQuery, setSearchQuery] = useState('');
     const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
+    const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+
+    const handleFileRowClick = useCallback(
+      (wtId: string, filePath: string) => {
+        onFileClick?.(wtId, filePath);
+        setFocusNodeId(`file-${wtId}-${filePath}`);
+      },
+      [onFileClick]
+    );
+
+    const handleFocusComplete = useCallback(() => {
+      setFocusNodeId(null);
+    }, []);
 
     const searchRegexError = useMemo(() => !isValidRegex(searchQuery), [searchQuery]);
 
-    // Clear filter and hover when switching worktrees
+    // Clear filter, hover, and focus when switching worktrees
     useEffect(() => {
       setSearchQuery('');
+      setFocusNodeId(null);
       setHoveredFilePath(null);
     }, [worktreeId]);
 
@@ -427,6 +435,17 @@ export const InspectionView = React.memo(
             />
           </div>
 
+          {/* Re-check insights */}
+          {onRecheckInsights && (
+            <button
+              className="flex items-center gap-1.5 px-2 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-11 cursor-pointer bg-transparent transition-colors"
+              onClick={() => onRecheckInsights(worktreeId)}
+              title="Re-check insights"
+            >
+              <i className="codicon codicon-refresh" style={{ fontSize: 11 }} aria-hidden="true" />
+            </button>
+          )}
+
           {/* Diff mode dropdown */}
           <BranchPickerPopover
             trigger={
@@ -513,7 +532,7 @@ export const InspectionView = React.memo(
                           key={`committed:${file.path}`}
                           file={file}
                           worktreeId={wt.id}
-                          onFileClick={onFileClick}
+                          onFileClick={handleFileRowClick}
                           onHoverFile={setHoveredFilePath}
                         />
                       ))}
@@ -527,7 +546,7 @@ export const InspectionView = React.memo(
                           key={`staged:${file.path}`}
                           file={file}
                           worktreeId={wt.id}
-                          onFileClick={onFileClick}
+                          onFileClick={handleFileRowClick}
                           onHoverFile={setHoveredFilePath}
                         />
                       ))}
@@ -541,7 +560,7 @@ export const InspectionView = React.memo(
                           key={`unstaged:${file.path}`}
                           file={file}
                           worktreeId={wt.id}
-                          onFileClick={onFileClick}
+                          onFileClick={handleFileRowClick}
                           onHoverFile={setHoveredFilePath}
                         />
                       ))}
@@ -560,6 +579,8 @@ export const InspectionView = React.memo(
                 edges={edges}
                 nodeTypes={NODE_TYPES}
                 panZoomConfig={panZoomConfig}
+                focusNodeId={focusNodeId}
+                onFocusComplete={handleFocusComplete}
               />
             </InspectionHoverContext.Provider>
           </div>

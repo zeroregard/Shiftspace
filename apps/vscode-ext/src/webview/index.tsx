@@ -83,7 +83,8 @@ type HostMessage =
   | { type: 'packages-list'; packages: string[] }
   | { type: 'icon-theme'; payload: IconMap }
   | { type: 'insight-detail'; detail: InsightDetail }
-  | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] };
+  | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
+  | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string };
 
 const App: React.FC = () => {
   const {
@@ -106,6 +107,7 @@ const App: React.FC = () => {
     clearInsightDetails,
     setFileDiagnostics,
     clearFileDiagnostics,
+    enterInspection,
   } = useShiftspaceStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useShiftspaceStore((s) => s.mode as AppMode);
@@ -193,6 +195,13 @@ const App: React.FC = () => {
         setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
       } else if (msg.type === 'diagnostics-update') {
         setFileDiagnostics(msg.worktreeId, msg.files);
+      } else if (msg.type === 'restore-view-settings') {
+        if (msg.mode.type === 'inspection') {
+          enterInspection(msg.mode.worktreeId);
+        }
+        if (msg.selectedPackage) {
+          setSelectedPackage(msg.selectedPackage);
+        }
       }
     };
 
@@ -218,6 +227,7 @@ const App: React.FC = () => {
     appendActionLog,
     setInsightDetail,
     setFileDiagnostics,
+    enterInspection,
   ]);
 
   const handleFileClick = (worktreeId: string, filePath: string) => {
@@ -284,6 +294,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'get-log', worktreeId, actionId });
   }, []);
 
+  const handleRecheckInsights = useCallback((worktreeId: string) => {
+    vscode?.postMessage({ type: 'recheck-insights', worktreeId });
+  }, []);
+
   if (errorMessage) {
     return (
       <div
@@ -325,6 +339,7 @@ const App: React.FC = () => {
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
         onGetLog={handleGetLog}
+        onRecheckInsights={handleRecheckInsights}
         panZoomConfig={panZoomConfig}
       />
     </div>
