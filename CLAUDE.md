@@ -250,6 +250,7 @@ The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen densi
 - **Updating snapshots:** `pnpm --filter @shiftspace/preview test:e2e:update` locally, or open a PR — CI will auto-update and commit snapshots for you
 - **CI:** `e2e.yml` runs on every PR — always updates snapshots, auto-commits them back to the PR branch, and posts a before/after screenshot comparison comment
 - **Adding new tests:** Put `.spec.ts` files in `apps/preview/e2e/`. Use `toHaveScreenshot('descriptive-name.png')` for visual regression. Screenshots generated on first run become the baseline.
+- **Claude Code agent environment:** Playwright browsers cannot be installed in the remote agent environment. Write E2E tests, commit them, and let CI generate the baseline screenshots. CI will auto-update and commit snapshots back to the PR branch.
 
 ---
 

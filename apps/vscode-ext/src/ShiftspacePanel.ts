@@ -9,6 +9,7 @@ import { InsightRunner } from './insights/runner';
 import type { ShiftspaceMcpHttpServer } from './mcp/httpServer';
 import { McpToolHandlers } from './mcp/handlers';
 import type { WorktreeState } from '@shiftspace/renderer';
+import { DiagnosticCollector } from './insights/plugins/diagnostics';
 // Register built-in insight plugins (side-effect import)
 import './insights/plugins/codeSmells';
 
@@ -22,6 +23,7 @@ export class ShiftspacePanel {
 
   private _iconProvider: IconThemeProvider | undefined;
   private _insightRunner: InsightRunner | undefined;
+  private _diagnosticCollector: DiagnosticCollector | undefined;
 
   static setMcpHttpServer(server: ShiftspaceMcpHttpServer): void {
     ShiftspacePanel.mcpHttpServer = server;
@@ -142,12 +144,19 @@ export class ShiftspacePanel {
         } else if (message.type === 'enter-inspection' && message.worktreeId) {
           this._currentInspectedWorktreeId = message.worktreeId;
           void this.runInsights(message.worktreeId);
+          // Start diagnostic collection for this worktree
+          const wt = this._gitProvider?.getWorktrees().find((w) => w.id === message.worktreeId);
+          if (wt && this._diagnosticCollector) {
+            const files = this._gitProvider?.getWorktreeFiles(message.worktreeId!) ?? [];
+            this._diagnosticCollector.startInspection(message.worktreeId!, wt.path, files);
+          }
         } else if (message.type === 'exit-inspection') {
           this._currentInspectedWorktreeId = undefined;
           if (this._insightDebounceTimer !== undefined) {
             clearTimeout(this._insightDebounceTimer);
             this._insightDebounceTimer = undefined;
           }
+          this._diagnosticCollector?.stopInspection();
         }
       },
       null,
@@ -174,6 +183,8 @@ export class ShiftspacePanel {
     }
 
     this._insightRunner = new InsightRunner();
+    this._diagnosticCollector?.dispose();
+    this._diagnosticCollector = new DiagnosticCollector(postMessage);
 
     this._gitProvider = new GitDataProvider(postMessage, (worktreeId) => {
       // Called by GitDataProvider when files change → stale check states
@@ -186,6 +197,9 @@ export class ShiftspacePanel {
           this._insightRunner?.clearCache(worktreeId);
           void this.runInsights(worktreeId);
         }, 2000);
+        // Update diagnostics with new file list
+        const files = this._gitProvider?.getWorktreeFiles(worktreeId) ?? [];
+        this._diagnosticCollector?.updateFiles(files);
       }
     });
     this._actionCoordinator = new ActionCoordinator(postMessage);
@@ -415,6 +429,8 @@ export class ShiftspacePanel {
     this._iconProvider?.dispose();
     this._iconProvider = undefined;
     this._insightRunner = undefined;
+    this._diagnosticCollector?.dispose();
+    this._diagnosticCollector = undefined;
     this._panel.dispose();
     for (const d of this._disposables) d.dispose();
     this._disposables = [];

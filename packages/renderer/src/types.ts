@@ -133,6 +133,26 @@ export interface InsightDetail {
 }
 
 // ---------------------------------------------------------------------------
+// Diagnostics (populated by the VSCode extension host diagnostic collector)
+// ---------------------------------------------------------------------------
+
+/** Summary of VSCode diagnostics (compiler errors, lint warnings) for a single file. */
+export interface FileDiagnosticSummary {
+  filePath: string;
+  errors: number;
+  warnings: number;
+  info: number;
+  hints: number;
+  /** Detailed breakdown for hover tooltips (capped at 50 per file). */
+  details: Array<{
+    severity: 'error' | 'warning' | 'info' | 'hint';
+    message: string;
+    source: string; // e.g. 'ts', 'eslint', 'oxlint'
+    line: number;
+  }>;
+}
+
+// ---------------------------------------------------------------------------
 // File icon theme (populated by the VSCode extension host, not the preview app)
 // ---------------------------------------------------------------------------
 

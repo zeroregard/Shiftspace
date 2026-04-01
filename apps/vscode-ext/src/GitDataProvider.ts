@@ -16,6 +16,7 @@ import {
 import { getFileChanges, getBranchDiffFileChanges } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
 import { filterIgnoredFiles } from './git/ignoreFilter';
+import { gitQueue } from './git/gitUtils';
 
 type PostMessage = (msg: object) => void;
 type OnFileChange = (worktreeId: string) => void;
@@ -144,12 +145,11 @@ export class GitDataProvider implements vscode.Disposable {
   ): Promise<{ files: FileChange[]; branchFiles?: FileChange[] }> {
     const patterns = getIgnorePatterns();
     if (wt.diffMode.type === 'branch') {
-      const [files, branchFiles] = await Promise.all([
-        getFileChanges(wt.path).then((f) => filterIgnoredFiles(f, patterns)),
-        getBranchDiffFileChanges(wt.path, wt.diffMode.branch).then((f) =>
-          filterIgnoredFiles(f, patterns)
-        ),
-      ]);
+      // Run sequentially to avoid concurrent git processes on the same repo
+      const files = await getFileChanges(wt.path).then((f) => filterIgnoredFiles(f, patterns));
+      const branchFiles = await getBranchDiffFileChanges(wt.path, wt.diffMode.branch).then((f) =>
+        filterIgnoredFiles(f, patterns)
+      );
       return { files, branchFiles };
     }
     const files = await getFileChanges(wt.path).then((f) => filterIgnoredFiles(f, patterns));
@@ -158,9 +158,9 @@ export class GitDataProvider implements vscode.Disposable {
 
   /** Returns debounce duration based on the worktree's diff mode. */
   private getDebounceMs(_wt: WorktreeState): number {
-    // refreshWorktree always runs getFileChanges (cheap) regardless of diffMode,
-    // so a uniform 500ms debounce is fine for all modes.
-    return 500;
+    // 1 second gives the user time to finish their git operation before we
+    // issue our own read-only queries.
+    return 1000;
   }
 
   private setupFileWatcher(): void {
@@ -270,6 +270,9 @@ export class GitDataProvider implements vscode.Disposable {
       wt.id,
       setTimeout(() => {
         this.debounceTimers.delete(wt.id);
+        // Skip if a write operation is in flight — it will trigger another
+        // filesystem event when it completes, which will re-schedule us.
+        if (gitQueue.isActive()) return;
         void this.refreshWorktree(wt);
       }, this.getDebounceMs(wt))
     );
@@ -277,22 +280,25 @@ export class GitDataProvider implements vscode.Disposable {
 
   private async refreshWorktree(wt: WorktreeState): Promise<void> {
     try {
-      // Always refresh working-tree files. Branch diff only changes on explicit
-      // mode switch (handleSetDiffMode), not on filesystem events.
-      const patterns = getIgnorePatterns();
-      const newFiles = filterIgnoredFiles(await getFileChanges(wt.path), patterns);
+      const { files: newFiles, branchFiles } = await this.getFilesForMode(wt);
       const prevFiles = this.fileStates.get(wt.id) ?? [];
       const events = diffFileChanges(wt.id, prevFiles, newFiles);
 
+      // Detect branchFiles changes (e.g. after a commit)
+      const prevBranch = wt.branchFiles ?? [];
+      const newBranch = branchFiles ?? [];
+      const branchChanged = diffFileChanges(wt.id, prevBranch, newBranch).length > 0;
+
       wt.files = newFiles;
+      wt.branchFiles = branchFiles;
       this.fileStates.set(wt.id, newFiles);
 
       for (const event of events) {
         this.postMessage({ type: 'event', event });
       }
 
-      // Notify stale callback if files actually changed
-      if (events.length > 0) {
+      // Notify stale callback if working files or branch diff changed
+      if (events.length > 0 || branchChanged) {
         this.onFileChange?.(wt.id);
       }
     } catch (err) {
@@ -316,7 +322,14 @@ export class GitDataProvider implements vscode.Disposable {
    */
   private startStatusPolling(): void {
     this.statusPollingTimer = setInterval(() => {
-      void Promise.all(this.worktrees.map((wt) => this.refreshWorktree(wt)));
+      // Skip poll tick entirely while a write operation is queued/running.
+      if (gitQueue.isActive()) return;
+      // Refresh worktrees sequentially to avoid concurrent git processes.
+      void (async () => {
+        for (const wt of this.worktrees) {
+          await this.refreshWorktree(wt);
+        }
+      })();
     }, 2_000);
   }
 
@@ -384,6 +397,7 @@ export class GitDataProvider implements vscode.Disposable {
         this.fileStates.set(freshWt.id, freshWt.files);
 
         this.postMessage({ type: 'event', event: { type: 'worktree-added', worktree: freshWt } });
+        this.onFileChange?.(freshWt.id);
       }
 
       // Preserve user-set diffMode for worktrees whose branch hasn't changed.
@@ -540,23 +554,26 @@ export class GitDataProvider implements vscode.Disposable {
       return;
     }
 
+    const wtName = wt.path.split('/').pop() ?? wt.path;
     const answer = await vscode.window.showWarningMessage(
-      `Remove worktree "${wt.path.split('/').pop()}" (${wt.branch})? This will delete the directory.`,
+      `Delete worktree "${wtName}" (${wt.branch})? This will remove the worktree directory. Uncommitted changes will be lost.`,
       { modal: true },
-      'Remove',
-      'Force Remove'
+      'Delete'
     );
-    if (!answer) return;
+    if (answer !== 'Delete') return;
 
     try {
-      await removeWorktree(wt.path, answer === 'Force Remove');
+      try {
+        await removeWorktree(wt.path, false);
+      } catch {
+        // Retry with --force if normal remove fails (e.g. uncommitted changes)
+        await removeWorktree(wt.path, true);
+      }
       // Re-detect worktrees to update the UI
       await this.checkForWorktreeChanges();
     } catch (err) {
       console.error('[Shiftspace] handleRemoveWorktree error:', err);
-      void vscode.window.showErrorMessage(
-        `Failed to remove worktree: ${(err as Error).message}. Try "Force Remove" if it has local modifications.`
-      );
+      void vscode.window.showErrorMessage(`Failed to remove worktree: ${(err as Error).message}`);
     }
   }
 

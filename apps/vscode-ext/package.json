@@ -134,6 +134,12 @@
           "description": "Enable code smell detection based on rules defined in .shiftspace.json (smells array). Findings appear as ⚠ pills on file nodes in Inspection mode.",
           "scope": "resource"
         },
+        "shiftspace.insights.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show compiler errors and lint warnings from VSCode diagnostics on file nodes in Inspection mode",
+          "scope": "resource"
+        },
         "shiftspace.actions": {
           "type": "array",
           "items": {

@@ -1,10 +1,7 @@
-import { execFile } from 'child_process';
-import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { FileChange, DiffHunk, DiffLine } from '@shiftspace/renderer';
-
-const execFileAsync = promisify(execFile);
+import { gitReadOnly } from './gitUtils';
 
 interface ParsedStatus {
   status: FileChange['status'];
@@ -276,9 +273,9 @@ export async function getBranchDiffFileChanges(
   const opts = { cwd: worktreePath, timeout: 10_000 };
 
   const [nameStatusResult, numstatResult, diffResult] = await Promise.allSettled([
-    execFileAsync('git', ['diff', '--name-status', ref], opts),
-    execFileAsync('git', ['diff', '--numstat', ref], opts),
-    execFileAsync('git', ['diff', ref], opts),
+    gitReadOnly(['diff', '--name-status', ref], opts),
+    gitReadOnly(['diff', '--numstat', ref], opts),
+    gitReadOnly(['diff', ref], opts),
   ]);
 
   const nameStatusOutput =
@@ -317,11 +314,11 @@ export async function getFileChanges(worktreePath: string): Promise<FileChange[]
 
   const [statusResult, numstatResult, cachedNumstatResult, diffResult, cachedDiffResult] =
     await Promise.allSettled([
-      execFileAsync('git', ['status', '--porcelain', '-uall'], opts),
-      execFileAsync('git', ['diff', '--numstat'], opts),
-      execFileAsync('git', ['diff', '--cached', '--numstat'], opts),
-      execFileAsync('git', ['diff'], opts),
-      execFileAsync('git', ['diff', '--cached'], opts),
+      gitReadOnly(['status', '--porcelain', '-uall'], opts),
+      gitReadOnly(['diff', '--numstat'], opts),
+      gitReadOnly(['diff', '--cached', '--numstat'], opts),
+      gitReadOnly(['diff'], opts),
+      gitReadOnly(['diff', '--cached'], opts),
     ]);
 
   const statusOutput = statusResult.status === 'fulfilled' ? statusResult.value.stdout : '';

@@ -28,6 +28,7 @@ function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
   return true;
 }
 
+// TODO: remove this
 // ---------------------------------------------------------------------------
 // File row (list panel)
 // ---------------------------------------------------------------------------
@@ -63,6 +64,12 @@ const InspectionFileRow = React.memo(
     );
     const totalFindings = findings.length;
 
+    const diagnostics = useShiftspaceStore((s) =>
+      s.fileDiagnostics.get(`${worktreeId}:${file.path}`)
+    );
+    const errors = diagnostics?.errors ?? 0;
+    const warnings = diagnostics?.warnings ?? 0;
+
     return (
       <button
         className={clsx(
@@ -96,26 +103,68 @@ const InspectionFileRow = React.memo(
           )}
         </span>
 
-        {/* Smell pill */}
-        {totalFindings > 0 && (
-          <Tooltip
-            content={
-              <div className="flex flex-col gap-0.5">
-                {findings.map((f) => (
-                  <span key={f.ruleId}>
-                    {f.threshold === 1
-                      ? `${f.ruleLabel}: ${f.count} found`
-                      : `${f.ruleLabel}: 1 found (${f.count} occurrences, threshold: ${f.threshold})`}
-                  </span>
-                ))}
-              </div>
-            }
-            delayDuration={200}
-          >
-            <span className="text-10 text-status-modified font-medium shrink-0 px-1 py-0.5 rounded border border-status-modified/30 bg-status-modified/10">
-              ⚠ {totalFindings}
-            </span>
-          </Tooltip>
+        {/* Insight pills — shrink-0 wrapper prevents overflow from pushing status letter off */}
+        {(errors > 0 || warnings > 0 || totalFindings > 0) && (
+          <span className="shrink-0 flex items-center gap-1">
+            {errors > 0 && (
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-0.5">
+                    {diagnostics!.details
+                      .filter((d) => d.severity === 'error')
+                      .map((d, i) => (
+                        <span key={i}>
+                          L{d.line}: {d.message} ({d.source})
+                        </span>
+                      ))}
+                  </div>
+                }
+                delayDuration={200}
+              >
+                <span className="text-10 font-medium text-status-deleted border border-status-deleted/30 bg-status-deleted/10 px-1 rounded">
+                  ❌ {errors}
+                </span>
+              </Tooltip>
+            )}
+            {warnings > 0 && (
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-0.5">
+                    {diagnostics!.details
+                      .filter((d) => d.severity === 'warning')
+                      .map((d, i) => (
+                        <span key={i}>
+                          L{d.line}: {d.message} ({d.source})
+                        </span>
+                      ))}
+                  </div>
+                }
+                delayDuration={200}
+              >
+                <span className="text-10 font-medium text-status-modified border border-status-modified/30 bg-status-modified/10 px-1 rounded">
+                  ⚠ {warnings}
+                </span>
+              </Tooltip>
+            )}
+            {totalFindings > 0 && (
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-0.5">
+                    {findings.map((f) => (
+                      <span key={f.ruleId}>
+                        {f.ruleLabel}: {f.count} found
+                      </span>
+                    ))}
+                  </div>
+                }
+                delayDuration={200}
+              >
+                <span className="text-10 font-medium text-text-muted border border-text-muted/30 bg-text-muted/10 px-1 rounded">
+                  🐛 {totalFindings}
+                </span>
+              </Tooltip>
+            )}
+          </span>
         )}
 
         {/* Status letter */}
@@ -182,6 +231,7 @@ export const InspectionView = React.memo(
   }: InspectionViewProps) => {
     const exitInspection = useShiftspaceStore((s) => s.exitInspection);
     const wt = useShiftspaceStore((s) => s.worktrees.get(worktreeId));
+    const insightDetails = useShiftspaceStore((s) => s.insightDetails);
     const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
     const branchList = useShiftspaceStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
     const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(worktreeId));
@@ -272,12 +322,14 @@ export const InspectionView = React.memo(
         stableFolderClick,
         stableFetchBranches,
         stableSwapBranches,
-        { bare: true, filesOverride: hierarchyFiles }
+        { bare: true, filesOverride: hierarchyFiles },
+        (wtId, filePath) => getFileFindings(insightDetails, wtId, filePath).length
       );
       return { nodes: layout.nodes, edges: layout.edges };
     }, [
       wt,
       hierarchyFiles,
+      insightDetails,
       stableFileClick,
       stableRequestBranchList,
       stableCheckoutBranch,
@@ -419,9 +471,9 @@ export const InspectionView = React.memo(
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter files (regex)"
+                  placeholder="Filter files"
                   className={clsx(
-                    'w-full pl-7 pr-7 py-1.5 rounded-md text-11 font-mono bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
+                    'w-full pl-7 pr-7 py-1.5 rounded-md text-11 bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
                     searchRegexError
                       ? 'border-status-deleted'
                       : 'border-border-dashed focus:border-text-muted'

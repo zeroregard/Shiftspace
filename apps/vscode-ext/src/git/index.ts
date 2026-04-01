@@ -23,3 +23,4 @@ export {
 } from './status';
 export { diffFileChanges } from './eventDiff';
 export { filterIgnoredFiles } from './ignoreFilter';
+export { gitReadOnly, gitWrite, gitQueue, GitCommandQueue } from './gitUtils';
