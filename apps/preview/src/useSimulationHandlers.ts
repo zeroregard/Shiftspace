@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { useShiftspaceStore } from '@shiftspace/renderer';
 import type { DiffMode } from '@shiftspace/renderer';
 import type { MockEngine } from './mock/engine';
