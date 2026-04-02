@@ -4,5 +4,5 @@
     "noEmit": true
   },
   "include": ["src/webview"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["src/webview/html.ts", "node_modules", "dist"]
 }

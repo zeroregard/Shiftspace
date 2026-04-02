@@ -2,7 +2,7 @@
   "name": "shiftspace",
   "displayName": "Shiftspace",
   "description": "Visual workspace command center — spatial node graph of your git changes across worktrees",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "publisher": "shiftspace",
   "repository": {
     "type": "git",
@@ -195,7 +195,7 @@
     "watch": "bun run build:webview && bun run watch:ext",
     "package": "vsce package --no-dependencies",
     "local-install": "vsce package --no-dependencies && code --install-extension shiftspace-*.vsix",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.webview.json --noEmit",
+    "typecheck": "tsgo --noEmit && tsgo -p tsconfig.webview.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -211,6 +211,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/vscode": "^1.85.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260401.1",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^3.0.0",
     "@vscode/codicons": "^0.0.45",
