@@ -192,7 +192,13 @@ const DEFAULT_BRANCH = 'main';
 
 export class MockEngine {
   private worktrees = new Map<string, WorktreeState>();
-  private agents = new Map<string, AgentConfig & { timer?: ReturnType<typeof setTimeout> }>();
+  private agents = new Map<
+    string,
+    AgentConfig & {
+      timer?: ReturnType<typeof setTimeout>;
+      pendingTimers: Set<ReturnType<typeof setTimeout>>;
+    }
+  >();
   private handlers = new Set<EventHandler>();
   private paused = false;
   private speedMultiplier = 1;
@@ -403,19 +409,22 @@ export class MockEngine {
   }
 
   startAgent(worktreeId: string, persona: AgentPersona) {
-    const agentId = `agent-${worktreeId}`;
-    this.stopAgent(agentId);
+    this.stopAgent(worktreeId);
 
-    const wt = this.worktrees.get(worktreeId);
-    if (!wt) return;
+    if (!this.worktrees.has(worktreeId)) return;
 
     const templateKey = this.templateMap.get(worktreeId) ?? 'nextjs';
     const template = FILE_TREE_TEMPLATES[templateKey];
-    const agentConfig: AgentConfig & { timer?: ReturnType<typeof setTimeout> } = {
+    const agentId = `agent-${worktreeId}`;
+    const agentConfig: AgentConfig & {
+      timer?: ReturnType<typeof setTimeout>;
+      pendingTimers: Set<ReturnType<typeof setTimeout>>;
+    } = {
       id: agentId,
       persona,
       worktreeId,
       speed: persona === 'refactor' ? 800 : persona === 'feature' ? 1500 : 2000,
+      pendingTimers: new Set(),
     };
 
     const tick = () => {
@@ -430,16 +439,19 @@ export class MockEngine {
 
       // Occasionally stage a file
       if (Math.random() < 0.3) {
-        setTimeout(
+        const stageTimer = setTimeout(
           () => {
+            agentConfig.pendingTimers.delete(stageTimer);
             this.emit({ type: 'file-staged', worktreeId, filePath });
           },
           rand(200, 800)
         );
+        agentConfig.pendingTimers.add(stageTimer);
       }
 
-      // Occasionally simulate a dev server
-      if (Math.random() < 0.05 && !wt.process) {
+      // Occasionally simulate a dev server — read live worktree state
+      const currentWt = this.worktrees.get(worktreeId);
+      if (currentWt && Math.random() < 0.05 && !currentWt.process) {
         const port = pick([3000, 3001, 8080, 5173]);
         this.emit({ type: 'process-started', worktreeId, port, command: 'pnpm dev' });
       }
@@ -458,7 +470,11 @@ export class MockEngine {
       ? agentIdOrWorktreeId
       : `agent-${agentIdOrWorktreeId}`;
     const agent = this.agents.get(agentId);
-    if (agent?.timer) clearTimeout(agent.timer);
+    if (agent) {
+      if (agent.timer) clearTimeout(agent.timer);
+      for (const t of agent.pendingTimers) clearTimeout(t);
+      agent.pendingTimers.clear();
+    }
     this.agents.delete(agentId);
   }
 
@@ -477,6 +493,7 @@ export class MockEngine {
   reset() {
     this.agents.forEach((agent) => {
       if (agent.timer) clearTimeout(agent.timer);
+      for (const t of agent.pendingTimers) clearTimeout(t);
     });
     this.agents.clear();
     this.worktrees.forEach((wt) => {
@@ -499,6 +516,7 @@ export class MockEngine {
   destroy() {
     this.agents.forEach((agent) => {
       if (agent.timer) clearTimeout(agent.timer);
+      for (const t of agent.pendingTimers) clearTimeout(t);
     });
     this.agents.clear();
     this.handlers.clear();
