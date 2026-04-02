@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import '@vscode/codicons/dist/codicon.css';
-import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
+import { ShiftspaceRenderer, useActionStore, useInsightStore } from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
 import { MockEngine } from './mock/engine';
 import { MOCK_ACTION_CONFIGS, MOCK_PIPELINES, getMockInitialStates } from './mock/actions';
@@ -18,8 +18,8 @@ export const App: React.FC = () => {
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState(0);
 
-  const { setActionConfigs, setPipelines, setActionState, setInsightDetail, setFileDiagnostics } =
-    useShiftspaceStore();
+  const { setActionConfigs, setPipelines, setActionState } = useActionStore();
+  const { setInsightDetail, setFileDiagnostics } = useInsightStore();
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -85,13 +85,9 @@ export const App: React.FC = () => {
     };
   }, [cleanupSimulations]);
 
-  const onEvent = useCallback(
-    (handler: (event: ShiftspaceEvent) => void) => {
-      return engineRef.current!.subscribe(handler);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [resetKey]
-  );
+  const onEvent = (handler: (event: ShiftspaceEvent) => void) => {
+    return engineRef.current!.subscribe(handler);
+  };
 
   const handleReset = () => {
     cleanupSimulations();

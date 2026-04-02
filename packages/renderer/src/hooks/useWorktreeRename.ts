@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { useActions } from '../ui/ActionsContext';
 
 interface WorktreeRenameState {
@@ -21,23 +21,23 @@ export function useWorktreeRename(worktreeId: string, currentName: string): Work
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null!);
 
-  const startRename = useCallback(() => {
+  const startRename = () => {
     setRenameValue(currentName);
     setIsRenaming(true);
     setTimeout(() => renameInputRef.current?.select(), 0);
-  }, [currentName]);
+  };
 
-  const commitRename = useCallback(() => {
+  const commitRename = () => {
     const trimmed = renameValue.trim();
     if (trimmed && trimmed !== currentName) {
       actions.renameWorktree(worktreeId, trimmed);
     }
     setIsRenaming(false);
-  }, [renameValue, currentName, actions, worktreeId]);
+  };
 
-  const cancelRename = useCallback(() => {
+  const cancelRename = () => {
     setIsRenaming(false);
-  }, []);
+  };
 
   return {
     isRenaming,

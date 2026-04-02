@@ -1,5 +1,5 @@
 import React from 'react';
-import { useShiftspaceStore } from '../../../store';
+import { useActionStore } from '../../../store';
 import type { ActionConfig } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { IconButton } from '../../../ui/IconButton';
@@ -11,8 +11,8 @@ interface ActionBarProps {
 
 export const ActionBar: React.FC<ActionBarProps> = React.memo(({ worktreeId }) => {
   const actions = useActions();
-  const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
-  const pipelines = useShiftspaceStore((s) => s.pipelines);
+  const actionConfigs = useActionStore((s) => s.actionConfigs);
+  const pipelines = useActionStore((s) => s.pipelines);
 
   const checks = actionConfigs.filter((a) => deriveActionType(a) === 'check');
   const services = actionConfigs.filter((a) => deriveActionType(a) === 'service');
@@ -60,7 +60,7 @@ interface ButtonProps {
 
 const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId }) => {
   const actions = useActions();
-  const actionState = useShiftspaceStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
+  const actionState = useActionStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
   const status = actionState?.status ?? 'idle';
   const port = actionState?.port;
 

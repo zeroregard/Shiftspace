@@ -69,19 +69,13 @@ const PATCH_DIFF_OPTIONS = {
 };
 
 const DiffOverlayContent = React.memo(({ file }: { file: FileChange }) => {
-  const patch = React.useMemo(() => {
-    if (file.rawDiff) return file.rawDiff;
-    if (file.diff?.length) return hunksToUnified(file.path, file.diff, file.status);
-    return null;
-  }, [file.rawDiff, file.diff, file.path, file.status]);
+  const patch =
+    file.rawDiff ?? (file.diff?.length ? hunksToUnified(file.path, file.diff, file.status) : null);
 
-  const options = React.useMemo(
-    () => ({
-      ...PATCH_DIFF_OPTIONS,
-      language: langFromPath(file.path),
-    }),
-    [file.path]
-  );
+  const options = {
+    ...PATCH_DIFF_OPTIONS,
+    language: langFromPath(file.path),
+  };
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -125,9 +119,9 @@ export const DiffPopover = React.memo(
     const [side, setSide] = React.useState<'top' | 'right' | 'bottom' | 'left'>('bottom');
     const [width, setWidth] = React.useState(POPOVER_W);
     const triggerEl = React.useRef<Element | null>(null);
-    const triggerRef = React.useCallback((node: Element | null) => {
+    const triggerRef = (node: Element | null) => {
       triggerEl.current = node;
-    }, []);
+    };
 
     React.useEffect(() => {
       const update = () => {
@@ -139,24 +133,21 @@ export const DiffPopover = React.memo(
       };
     }, [myKey]);
 
-    const handleOpenChange = React.useCallback(
-      (nextOpen: boolean) => {
-        if (nextOpen) {
-          setActiveDiffKey(myKey);
-          if (triggerEl.current) {
-            const rect = triggerEl.current.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom - OFFSET;
-            const spaceAbove = rect.top - OFFSET;
-            setSide(spaceBelow >= spaceAbove ? 'bottom' : 'top');
-            setWidth(Math.min(POPOVER_W, window.innerWidth - COLLISION_PADDING * 2));
-          }
-        } else {
-          if (_activeDiffKey === myKey) setActiveDiffKey(null);
+    const handleOpenChange = (nextOpen: boolean) => {
+      if (nextOpen) {
+        setActiveDiffKey(myKey);
+        if (triggerEl.current) {
+          const rect = triggerEl.current.getBoundingClientRect();
+          const spaceBelow = window.innerHeight - rect.bottom - OFFSET;
+          const spaceAbove = rect.top - OFFSET;
+          setSide(spaceBelow >= spaceAbove ? 'bottom' : 'top');
+          setWidth(Math.min(POPOVER_W, window.innerWidth - COLLISION_PADDING * 2));
         }
-        setOpen(nextOpen);
-      },
-      [myKey]
-    );
+      } else {
+        if (_activeDiffKey === myKey) setActiveDiffKey(null);
+      }
+      setOpen(nextOpen);
+    };
 
     return (
       <HoverCard.Root

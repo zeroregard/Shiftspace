@@ -1,7 +1,7 @@
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../../../types';
-import { useShiftspaceStore } from '../../../store';
+import { useWorktreeStore, useInspectionStore } from '../../../store';
 import { BranchPicker } from '../../../overlays/BranchPicker';
 import { Codicon } from '../../../ui/Codicon';
 import { ActionBar } from '../../inspection/components/ActionBar';
@@ -87,11 +87,11 @@ interface WorktreeCardProps {
 
 export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => {
   const actions = useActions();
-  const enterInspection = useShiftspaceStore((s) => s.enterInspection);
-  const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
-  const isFetchingBranches = useShiftspaceStore((s) => s.fetchLoading.has(wt.id));
-  const lastFetchAt = useShiftspaceStore((s) => s.lastFetchAt.get(wt.id));
-  const occupiedBranches = useShiftspaceStore(
+  const enterInspection = useInspectionStore((s) => s.enterInspection);
+  const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
+  const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(wt.id));
+  const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
+  const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
   );
 

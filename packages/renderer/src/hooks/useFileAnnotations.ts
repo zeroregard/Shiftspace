@@ -1,5 +1,5 @@
 import { useShallow } from 'zustand/react/shallow';
-import { useShiftspaceStore, getFileFindings } from '../store';
+import { useInsightStore, getFileFindings } from '../store';
 import type { FileDiagnosticSummary, InsightFinding } from '../types';
 
 export interface FileAnnotations {
@@ -17,11 +17,11 @@ export interface FileAnnotations {
  * the same Zustand selector pattern.
  */
 export function useFileAnnotations(worktreeId: string, filePath: string): FileAnnotations {
-  const findings = useShiftspaceStore(
+  const findings = useInsightStore(
     useShallow((s) => getFileFindings(s.insightDetails, worktreeId, filePath))
   );
 
-  const diagnostics = useShiftspaceStore((s) => s.fileDiagnostics.get(`${worktreeId}:${filePath}`));
+  const diagnostics = useInsightStore((s) => s.fileDiagnostics.get(`${worktreeId}:${filePath}`));
 
   const errors = diagnostics?.errors ?? 0;
   const warnings = diagnostics?.warnings ?? 0;

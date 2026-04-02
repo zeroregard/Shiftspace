@@ -8,10 +8,11 @@ export const FILE_NODE_H = FILE_NODE_BASE_H;
 export const INSIGHT_SECTION_HEADER_H = 20;
 export const INSIGHT_ROW_H = 18;
 
-/** Compute total file node height given a findings count. */
-export function computeFileNodeHeight(findingsCount: number): number {
-  if (findingsCount === 0) return FILE_NODE_BASE_H;
-  return FILE_NODE_BASE_H + INSIGHT_SECTION_HEADER_H + findingsCount * INSIGHT_ROW_H;
+/** Compute total file node height given the number of annotation rows
+ *  (errors row + warnings row + each finding row). */
+export function computeFileNodeHeight(annotationRows: number): number {
+  if (annotationRows === 0) return FILE_NODE_BASE_H;
+  return FILE_NODE_BASE_H + INSIGHT_SECTION_HEADER_H + annotationRows * INSIGHT_ROW_H;
 }
 
 export const FOLDER_NODE_W = 140;

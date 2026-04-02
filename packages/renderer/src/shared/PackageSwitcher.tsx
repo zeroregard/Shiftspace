@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { useShiftspaceStore } from '../store';
+import { usePackageStore } from '../store';
 import { Codicon } from '../ui/Codicon';
 
 interface PackageSwitcherProps {
@@ -10,8 +10,8 @@ interface PackageSwitcherProps {
 
 export const PackageSwitcher: React.FC<PackageSwitcherProps> = React.memo(
   ({ onSetPackage, onDetectPackages }) => {
-    const selectedPackage = useShiftspaceStore((s) => s.selectedPackage);
-    const availablePackages = useShiftspaceStore((s) => s.availablePackages);
+    const selectedPackage = usePackageStore((s) => s.selectedPackage);
+    const availablePackages = usePackageStore((s) => s.availablePackages);
     const [open, setOpen] = useState(false);
     const [filter, setFilter] = useState('');
 

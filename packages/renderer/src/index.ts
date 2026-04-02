@@ -1,5 +1,12 @@
 export { ShiftspaceRenderer, type PanZoomConfig } from './ShiftspaceRenderer';
-export { useShiftspaceStore } from './store';
+export {
+  useWorktreeStore,
+  useActionStore,
+  useInsightStore,
+  getFileFindings,
+  useInspectionStore,
+  usePackageStore,
+} from './store';
 
 // Views (consumers may embed them independently)
 export { GroveView } from './views/grove';
