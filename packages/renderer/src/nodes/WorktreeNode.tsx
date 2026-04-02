@@ -1,4 +1,3 @@
-import React from 'react';
 import type { NodeComponentProps } from '../TreeCanvas';
 import type { WorktreeState } from '../types';
 import { WorktreeHeader } from './WorktreeHeader';
@@ -10,7 +9,7 @@ export interface WorktreeNodeData {
   [key: string]: unknown;
 }
 
-export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNodeData>) => {
+export function WorktreeNode({ data }: NodeComponentProps<WorktreeNodeData>) {
   const wt = data.worktree;
 
   if (data.bare) {
@@ -22,6 +21,4 @@ export const WorktreeNode = React.memo(({ data }: NodeComponentProps<WorktreeNod
       <WorktreeHeader worktree={wt} compact />
     </div>
   );
-});
-
-WorktreeNode.displayName = 'WorktreeNode';
+}

@@ -56,7 +56,7 @@ interface EdgePathProps {
   nodeMap: Map<string, LayoutNode>;
 }
 
-const EdgePath = React.memo(({ edge, nodeMap }: EdgePathProps) => {
+function EdgePath({ edge, nodeMap }: EdgePathProps) {
   const source = nodeMap.get(edge.source);
   const target = nodeMap.get(edge.target);
   if (!source || !target) return null;
@@ -74,15 +74,14 @@ const EdgePath = React.memo(({ edge, nodeMap }: EdgePathProps) => {
       strokeWidth={(edge.style?.strokeWidth as number) ?? 1}
     />
   );
-});
-EdgePath.displayName = 'EdgePath';
+}
 
 interface NodeWrapperProps {
   node: LayoutNode;
   nodeTypes: Record<string, React.ComponentType<NodeComponentProps<any>>>;
 }
 
-const NodeWrapper = React.memo(({ node, nodeTypes }: NodeWrapperProps) => {
+function NodeWrapper({ node, nodeTypes }: NodeWrapperProps) {
   const Component = nodeTypes[node.type];
   if (!Component) return null;
   return (
@@ -100,8 +99,7 @@ const NodeWrapper = React.memo(({ node, nodeTypes }: NodeWrapperProps) => {
       <Component data={node.data} />
     </div>
   );
-});
-NodeWrapper.displayName = 'NodeWrapper';
+}
 
 export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   nodes,

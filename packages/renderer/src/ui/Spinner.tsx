@@ -1,4 +1,3 @@
-import React from 'react';
 import clsx from 'clsx';
 
 interface SpinnerProps {
@@ -18,13 +17,12 @@ interface SpinnerProps {
  *   <Spinner />
  *   <Spinner icon="sync" size={14} color="var(--color-status-added)" />
  */
-export const Spinner = React.memo(
-  ({ icon = 'loading', size = 11, color, className }: SpinnerProps) => (
+export function Spinner({ icon = 'loading', size = 11, color, className }: SpinnerProps) {
+  return (
     <i
       className={clsx(`codicon codicon-${icon}`, className)}
       style={{ fontSize: size, color, animation: 'spin 1s linear infinite' }}
       aria-hidden="true"
     />
-  )
-);
-Spinner.displayName = 'Spinner';
+  );
+}

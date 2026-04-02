@@ -1,4 +1,4 @@
-import React from 'react';
+import type { MouseEvent } from 'react';
 import clsx from 'clsx';
 import { Tooltip } from '../overlays/Tooltip';
 
@@ -14,7 +14,7 @@ interface IconButtonProps {
   icon: string;
   /** Accessible label and tooltip text */
   label: string;
-  onClick?: (e: React.MouseEvent) => void;
+  onClick?: (e: MouseEvent) => void;
   size?: IconButtonSize;
   /** Show tooltip on hover (default: true) */
   tooltip?: boolean;
@@ -43,63 +43,60 @@ interface IconButtonProps {
  *   <IconButton icon="trash" label="Remove worktree" onClick={handleRemove} danger />
  *   <IconButton icon="edit" label="Rename" size="sm" ghost groupVisible />
  */
-export const IconButton = React.memo(
-  ({
-    icon,
-    label,
-    onClick,
-    size = 'md',
-    tooltip = true,
-    iconColor,
-    iconSize,
-    iconAnimation,
-    ghost = false,
-    groupVisible = false,
-    danger = false,
-    className,
-    disabled = false,
-    stopPropagation = false,
-  }: IconButtonProps) => {
-    const btn = (
-      <button
-        className={clsx(
-          'flex items-center justify-center rounded bg-transparent cursor-pointer transition-colors shrink-0',
-          SIZE_CLASSES[size],
-          ghost
-            ? 'border border-transparent text-text-muted hover:text-text-primary hover:border-border-dashed'
-            : 'border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default',
-          danger && 'hover:text-status-deleted',
-          groupVisible && 'opacity-0 group-hover:opacity-100 transition-opacity',
-          disabled && 'opacity-40 pointer-events-none',
-          className
-        )}
-        onClick={(e) => {
-          if (stopPropagation) e.stopPropagation();
-          onClick?.(e);
+export function IconButton({
+  icon,
+  label,
+  onClick,
+  size = 'md',
+  tooltip = true,
+  iconColor,
+  iconSize,
+  iconAnimation,
+  ghost = false,
+  groupVisible = false,
+  danger = false,
+  className,
+  disabled = false,
+  stopPropagation = false,
+}: IconButtonProps) {
+  const btn = (
+    <button
+      className={clsx(
+        'flex items-center justify-center rounded bg-transparent cursor-pointer transition-colors shrink-0',
+        SIZE_CLASSES[size],
+        ghost
+          ? 'border border-transparent text-text-muted hover:text-text-primary hover:border-border-dashed'
+          : 'border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default',
+        danger && 'hover:text-status-deleted',
+        groupVisible && 'opacity-0 group-hover:opacity-100 transition-opacity',
+        disabled && 'opacity-40 pointer-events-none',
+        className
+      )}
+      onClick={(e) => {
+        if (stopPropagation) e.stopPropagation();
+        onClick?.(e);
+      }}
+      onPointerDown={stopPropagation ? (e) => e.stopPropagation() : undefined}
+      aria-label={label}
+      disabled={disabled}
+    >
+      <i
+        className={`codicon codicon-${icon}`}
+        style={{
+          fontSize: iconSize ?? (size === 'sm' ? 11 : 12),
+          color: iconColor,
+          animation: iconAnimation,
         }}
-        onPointerDown={stopPropagation ? (e) => e.stopPropagation() : undefined}
-        aria-label={label}
-        disabled={disabled}
-      >
-        <i
-          className={`codicon codicon-${icon}`}
-          style={{
-            fontSize: iconSize ?? (size === 'sm' ? 11 : 12),
-            color: iconColor,
-            animation: iconAnimation,
-          }}
-          aria-hidden="true"
-        />
-      </button>
-    );
+        aria-hidden="true"
+      />
+    </button>
+  );
 
-    if (!tooltip) return btn;
+  if (!tooltip) return btn;
 
-    return (
-      <Tooltip content={label} delayDuration={300}>
-        {btn}
-      </Tooltip>
-    );
-  }
-);
-IconButton.displayName = 'IconButton';
+  return (
+    <Tooltip content={label} delayDuration={300}>
+      {btn}
+    </Tooltip>
+  );
+}

@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
 import { useWorktreeStore } from './store';
 import { useInspectionStore } from './store';
 import { type PanZoomConfig } from './TreeCanvas';
 import { GroveView } from './views/grove';
-import { InspectionView } from './views/inspection';
 import { PackageSwitcher } from './shared/PackageSwitcher';
 import { ActionsProvider, useActions } from './ui/ActionsContext';
+
+const LazyInspectionView = React.lazy(() =>
+  import('./views/inspection').then((m) => ({ default: m.InspectionView }))
+);
 
 interface Props {
   initialWorktrees?: WorktreeState[];
@@ -105,7 +108,7 @@ interface ContentProps {
   panZoomConfig?: PanZoomConfig;
 }
 
-const ShiftspaceContent = React.memo(({ showPackageSwitcher, panZoomConfig }: ContentProps) => {
+function ShiftspaceContent({ showPackageSwitcher, panZoomConfig }: ContentProps) {
   const worktrees = useWorktreeStore((s) => s.worktrees);
   const mode = useInspectionStore((s) => s.mode);
   const actions = useActions();
@@ -132,10 +135,17 @@ const ShiftspaceContent = React.memo(({ showPackageSwitcher, panZoomConfig }: Co
         {mode.type === 'grove' ? (
           <GroveView worktrees={wtArray} />
         ) : (
-          <InspectionView worktreeId={mode.worktreeId} panZoomConfig={panZoomConfig} />
+          <Suspense
+            fallback={
+              <div className="w-full h-full flex items-center justify-center text-text-faint text-13">
+                Loading…
+              </div>
+            }
+          >
+            <LazyInspectionView worktreeId={mode.worktreeId} panZoomConfig={panZoomConfig} />
+          </Suspense>
         )}
       </div>
     </div>
   );
-});
-ShiftspaceContent.displayName = 'ShiftspaceContent';
+}

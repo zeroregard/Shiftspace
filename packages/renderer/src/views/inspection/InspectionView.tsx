@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
@@ -19,7 +19,7 @@ interface InspectionViewProps {
   panZoomConfig?: PanZoomConfig;
 }
 
-export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: InspectionViewProps) => {
+export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProps) {
   const actions = useActions();
   const wt = useWorktreeStore((s) => s.worktrees.get(worktreeId));
   const insightDetails = useInsightStore((s) => s.insightDetails);
@@ -121,6 +121,4 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
       </div>
     </div>
   );
-});
-
-InspectionView.displayName = 'InspectionView';
+}

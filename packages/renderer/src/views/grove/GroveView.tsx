@@ -1,4 +1,3 @@
-import React from 'react';
 import type { WorktreeState } from '../../types';
 import { WorktreeCard } from './components/WorktreeCard';
 
@@ -6,7 +5,7 @@ interface GroveViewProps {
   worktrees: WorktreeState[];
 }
 
-export const GroveView = React.memo(({ worktrees }: GroveViewProps) => {
+export function GroveView({ worktrees }: GroveViewProps) {
   return (
     <div className="w-full h-full overflow-auto">
       <div className="p-6">
@@ -22,6 +21,4 @@ export const GroveView = React.memo(({ worktrees }: GroveViewProps) => {
       </div>
     </div>
   );
-});
-
-GroveView.displayName = 'GroveView';
+}

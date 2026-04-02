@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useRef } from 'react';
+import { createContext, useContext, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import type { DiffMode } from '../types';
 
 /**
@@ -51,7 +52,6 @@ const ActionsContext = createContext<ShiftspaceActions>(DEFAULT_ACTIONS);
 
 /**
  * Hook to access all Shiftspace actions from any descendant component.
- * The returned object is referentially stable — safe to use in dependency arrays.
  */
 export function useActions(): ShiftspaceActions {
   return useContext(ActionsContext);
@@ -75,12 +75,16 @@ export interface ActionsProviderProps {
   onRecheckInsights?: (worktreeId: string) => void;
   onSetPackage?: (packageName: string) => void;
   onDetectPackages?: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**
- * Provides stable action dispatchers to the entire component tree.
- * Uses the ref+callback pattern to avoid re-renders when parent callbacks change.
+ * Provides action dispatchers to the entire component tree.
+ *
+ * With the React 19 Compiler, the actions object is auto-memoized —
+ * no manual ref indirection needed. The compiler tracks that the
+ * dispatchers only depend on the callback props and skips re-creating
+ * the object when they haven't changed.
  */
 export function ActionsProvider({
   onFileClick,
@@ -101,66 +105,44 @@ export function ActionsProvider({
   onDetectPackages,
   children,
 }: ActionsProviderProps) {
-  // Store all callbacks in a single ref to keep the context value stable
-  const ref = useRef({
-    onFileClick,
-    onFolderClick,
-    onDiffModeChange,
-    onRequestBranchList,
-    onCheckoutBranch,
-    onFetchBranches,
-    onSwapBranches,
-    onRemoveWorktree,
-    onRenameWorktree,
-    onRunAction,
-    onStopAction,
-    onRunPipeline,
-    onGetLog,
-    onRecheckInsights,
-    onSetPackage,
-    onDetectPackages,
-  });
-
-  // Update refs on every render (no re-render triggered)
-  ref.current = {
-    onFileClick,
-    onFolderClick,
-    onDiffModeChange,
-    onRequestBranchList,
-    onCheckoutBranch,
-    onFetchBranches,
-    onSwapBranches,
-    onRemoveWorktree,
-    onRenameWorktree,
-    onRunAction,
-    onStopAction,
-    onRunPipeline,
-    onGetLog,
-    onRecheckInsights,
-    onSetPackage,
-    onDetectPackages,
-  };
-
-  // Stable dispatchers — they read from ref.current at call time.
-  // The React Compiler auto-memoizes these since they only close over `ref` (a useRef).
-  const actions: ShiftspaceActions = {
-    fileClick: (a: string, b: string) => ref.current.onFileClick?.(a, b),
-    folderClick: (a: string, b: string) => ref.current.onFolderClick?.(a, b),
-    diffModeChange: (a: string, b: DiffMode) => ref.current.onDiffModeChange?.(a, b),
-    requestBranchList: (a: string) => ref.current.onRequestBranchList?.(a),
-    checkoutBranch: (a: string, b: string) => ref.current.onCheckoutBranch?.(a, b),
-    fetchBranches: (a: string) => ref.current.onFetchBranches?.(a),
-    swapBranches: (a: string) => ref.current.onSwapBranches?.(a),
-    removeWorktree: (a: string) => ref.current.onRemoveWorktree?.(a),
-    renameWorktree: (a: string, b: string) => ref.current.onRenameWorktree?.(a, b),
-    runAction: (a: string, b: string) => ref.current.onRunAction?.(a, b),
-    stopAction: (a: string, b: string) => ref.current.onStopAction?.(a, b),
-    runPipeline: (a: string, b: string) => ref.current.onRunPipeline?.(a, b),
-    getLog: (a: string, b: string) => ref.current.onGetLog?.(a, b),
-    recheckInsights: (a: string) => ref.current.onRecheckInsights?.(a),
-    setPackage: (a: string) => ref.current.onSetPackage?.(a),
-    detectPackages: () => ref.current.onDetectPackages?.(),
-  };
+  const actions: ShiftspaceActions = useMemo(
+    () => ({
+      fileClick: (a, b) => onFileClick?.(a, b),
+      folderClick: (a, b) => onFolderClick?.(a, b),
+      diffModeChange: (a, b) => onDiffModeChange?.(a, b),
+      requestBranchList: (a) => onRequestBranchList?.(a),
+      checkoutBranch: (a, b) => onCheckoutBranch?.(a, b),
+      fetchBranches: (a) => onFetchBranches?.(a),
+      swapBranches: (a) => onSwapBranches?.(a),
+      removeWorktree: (a) => onRemoveWorktree?.(a),
+      renameWorktree: (a, b) => onRenameWorktree?.(a, b),
+      runAction: (a, b) => onRunAction?.(a, b),
+      stopAction: (a, b) => onStopAction?.(a, b),
+      runPipeline: (a, b) => onRunPipeline?.(a, b),
+      getLog: (a, b) => onGetLog?.(a, b),
+      recheckInsights: (a) => onRecheckInsights?.(a),
+      setPackage: (a) => onSetPackage?.(a),
+      detectPackages: () => onDetectPackages?.(),
+    }),
+    [
+      onFileClick,
+      onFolderClick,
+      onDiffModeChange,
+      onRequestBranchList,
+      onCheckoutBranch,
+      onFetchBranches,
+      onSwapBranches,
+      onRemoveWorktree,
+      onRenameWorktree,
+      onRunAction,
+      onStopAction,
+      onRunPipeline,
+      onGetLog,
+      onRecheckInsights,
+      onSetPackage,
+      onDetectPackages,
+    ]
+  );
 
   return <ActionsContext.Provider value={actions}>{children}</ActionsContext.Provider>;
 }
