@@ -91,6 +91,7 @@ type HostMessage =
   | { type: 'icon-theme'; payload: IconMap }
   | { type: 'insight-detail'; detail: InsightDetail }
   | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
+  | { type: 'diagnostics-remove'; worktreeId: string; filePaths: string[] }
   | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string };
 
 function handleCoreMessage(
@@ -179,6 +180,9 @@ function handleActionMessage(msg: HostMessage): boolean {
       return true;
     case 'diagnostics-update':
       useInsightStore.getState().setFileDiagnostics(msg.worktreeId, msg.files);
+      return true;
+    case 'diagnostics-remove':
+      useInsightStore.getState().removeFileDiagnostics(msg.worktreeId, msg.filePaths);
       return true;
     case 'restore-view-settings':
       if (msg.mode.type === 'inspection')

@@ -33,8 +33,6 @@ export function collectDiagnostics(
     const uri = vscode.Uri.file(absolutePath);
     const diagnostics = vscode.languages.getDiagnostics(uri);
 
-    if (diagnostics.length === 0) continue;
-
     let errors = 0;
     let warnings = 0;
     let info = 0;
@@ -121,10 +119,24 @@ export class DiagnosticCollector {
 
   /**
    * Update the file list (e.g. when files change while inspecting).
+   * Sends an explicit removal message for files that left the list so the
+   * webview can drop their stale badge entries.
    */
   updateFiles(files: FileChange[]): void {
+    const oldPaths = new Set(this._currentFiles.map((f) => f.path));
+    const newPaths = new Set(files.map((f) => f.path));
+    const removed = [...oldPaths].filter((p) => !newPaths.has(p));
+
     this._currentFiles = [...files];
     if (!this._currentWorktreeId || !this.isEnabled()) return;
+
+    if (removed.length > 0) {
+      this._postMessage({
+        type: 'diagnostics-remove',
+        worktreeId: this._currentWorktreeId,
+        filePaths: removed,
+      });
+    }
     this.sendDiagnostics();
   }
 

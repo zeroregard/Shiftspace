@@ -68,6 +68,7 @@ export class ShiftspacePanel {
   // Insight state
   private _currentInspectedWorktreeId: string | undefined;
   private _insightDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+  private _diagnosticDebounceTimer: ReturnType<typeof setTimeout> | undefined;
   /** Abort controller for the current in-flight insight run (per worktree). */
   private _insightAbortController: AbortController | undefined;
 
@@ -299,6 +300,10 @@ export class ShiftspacePanel {
       clearTimeout(this._insightDebounceTimer);
       this._insightDebounceTimer = undefined;
     }
+    if (this._diagnosticDebounceTimer !== undefined) {
+      clearTimeout(this._diagnosticDebounceTimer);
+      this._diagnosticDebounceTimer = undefined;
+    }
     this._insightAbortController?.abort();
     this._insightAbortController = undefined;
     this._diagnosticCollector?.stopInspection();
@@ -321,6 +326,10 @@ export class ShiftspacePanel {
       clearTimeout(this._insightDebounceTimer);
       this._insightDebounceTimer = undefined;
     }
+    if (this._diagnosticDebounceTimer !== undefined) {
+      clearTimeout(this._diagnosticDebounceTimer);
+      this._diagnosticDebounceTimer = undefined;
+    }
 
     this._insightRunner = new InsightRunner();
     this._diagnosticCollector?.dispose();
@@ -337,9 +346,14 @@ export class ShiftspacePanel {
           this._insightRunner?.clearCache(worktreeId);
           void this.runInsights(worktreeId);
         }, 2000);
-        // Update diagnostics with new file list
-        const files = this._gitProvider?.getWorktreeFiles(worktreeId) ?? [];
-        this._diagnosticCollector?.updateFiles(files);
+        // Debounce diagnostic re-collection so the LSP has time to re-analyze
+        if (this._diagnosticDebounceTimer !== undefined)
+          clearTimeout(this._diagnosticDebounceTimer);
+        this._diagnosticDebounceTimer = setTimeout(() => {
+          this._diagnosticDebounceTimer = undefined;
+          const files = this._gitProvider?.getWorktreeFiles(worktreeId) ?? [];
+          this._diagnosticCollector?.updateFiles(files);
+        }, 300);
       }
     });
     this._actionCoordinator = new ActionCoordinator(postMessage);
@@ -590,6 +604,10 @@ export class ShiftspacePanel {
     if (this._insightDebounceTimer !== undefined) {
       clearTimeout(this._insightDebounceTimer);
       this._insightDebounceTimer = undefined;
+    }
+    if (this._diagnosticDebounceTimer !== undefined) {
+      clearTimeout(this._diagnosticDebounceTimer);
+      this._diagnosticDebounceTimer = undefined;
     }
     this._insightAbortController?.abort();
     this._insightAbortController = undefined;
