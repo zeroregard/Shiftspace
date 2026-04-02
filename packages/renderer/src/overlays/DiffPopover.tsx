@@ -1,5 +1,6 @@
 import React from 'react';
 import * as HoverCard from '@radix-ui/react-hover-card';
+import { create } from 'zustand';
 import type { FileChange } from '../types';
 import { hunksToUnified } from '../utils/hunksToUnified';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -100,21 +101,19 @@ const OFFSET = 12;
 const COLLISION_PADDING = 8;
 const OPEN_DELAY = 300;
 
-// Module-level tracker so all DiffPopover instances share the same active state.
-// When any popover is open, subsequent ones open with 0 delay for instant switching.
-let _activeDiffKey: string | null = null;
-const _subscribers = new Set<() => void>();
-
-function setActiveDiffKey(key: string | null) {
-  if (_activeDiffKey === key) return;
-  _activeDiffKey = key;
-  _subscribers.forEach((fn) => fn());
-}
+/** Shared state so all DiffPopover instances coordinate open/delay behaviour.
+ *  When any popover is open, subsequent ones open with 0 delay for instant switching. */
+const useDiffPopoverStore = create<{
+  activeKey: string | null;
+  setActiveKey: (key: string | null) => void;
+}>((set) => ({
+  activeKey: null,
+  setActiveKey: (key) => set({ activeKey: key }),
+}));
 
 export function DiffPopover({ file, children }: { file: FileChange; children: React.ReactNode }) {
   const myKey = file.path;
   const [open, setOpen] = React.useState(false);
-  const [openDelay, setOpenDelay] = React.useState(OPEN_DELAY);
   const [side, setSide] = React.useState<'top' | 'right' | 'bottom' | 'left'>('bottom');
   const [width, setWidth] = React.useState(POPOVER_W);
   const triggerEl = React.useRef<Element | null>(null);
@@ -122,19 +121,13 @@ export function DiffPopover({ file, children }: { file: FileChange; children: Re
     triggerEl.current = node;
   };
 
-  React.useEffect(() => {
-    const update = () => {
-      setOpenDelay(_activeDiffKey !== null && _activeDiffKey !== myKey ? 0 : OPEN_DELAY);
-    };
-    _subscribers.add(update);
-    return () => {
-      _subscribers.delete(update);
-    };
-  }, [myKey]);
+  const activeKey = useDiffPopoverStore((s) => s.activeKey);
+  const setActiveKey = useDiffPopoverStore((s) => s.setActiveKey);
+  const openDelay = activeKey !== null && activeKey !== myKey ? 0 : OPEN_DELAY;
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
-      setActiveDiffKey(myKey);
+      setActiveKey(myKey);
       if (triggerEl.current) {
         const rect = triggerEl.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom - OFFSET;
@@ -143,7 +136,7 @@ export function DiffPopover({ file, children }: { file: FileChange; children: Re
         setWidth(Math.min(POPOVER_W, window.innerWidth - COLLISION_PADDING * 2));
       }
     } else {
-      if (_activeDiffKey === myKey) setActiveDiffKey(null);
+      if (activeKey === myKey) setActiveKey(null);
     }
     setOpen(nextOpen);
   };

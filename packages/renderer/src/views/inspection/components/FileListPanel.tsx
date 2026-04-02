@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
 import type { FileChange, WorktreeState } from '../../../types';
@@ -88,6 +88,85 @@ type VirtualItem =
   | { type: 'file'; file: FileChange; sectionKey: string };
 
 // ---------------------------------------------------------------------------
+// Debounced search input
+// ---------------------------------------------------------------------------
+
+const SEARCH_DEBOUNCE_MS = 150;
+
+interface SearchInputProps {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  filteredFileCount: number;
+  totalFileCount: number;
+}
+
+function SearchInput({
+  searchQuery,
+  onSearchChange,
+  filteredFileCount,
+  totalFileCount,
+}: SearchInputProps) {
+  const [localQuery, setLocalQuery] = useState(searchQuery);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Sync local state when parent resets the query (e.g. worktree switch)
+  useEffect(() => {
+    setLocalQuery(searchQuery);
+  }, [searchQuery]);
+
+  const handleChange = (value: string) => {
+    setLocalQuery(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => onSearchChange(value), SEARCH_DEBOUNCE_MS);
+  };
+
+  const handleClear = () => {
+    setLocalQuery('');
+    clearTimeout(debounceRef.current);
+    onSearchChange('');
+  };
+
+  const searchRegexError = !isValidRegex(localQuery);
+
+  return (
+    <div className="px-2 pt-2 pb-1 shrink-0">
+      <div className="relative">
+        <Codicon
+          name="search"
+          size={12}
+          className="absolute left-2 top-1/2 -translate-y-1/2 text-text-faint"
+        />
+        <input
+          type="text"
+          value={localQuery}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Filter files"
+          className={clsx(
+            'w-full pl-7 pr-7 py-1.5 rounded-md text-11 bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
+            searchRegexError
+              ? 'border-status-deleted'
+              : 'border-border-dashed focus:border-text-muted'
+          )}
+        />
+        {localQuery && (
+          <button
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0"
+            onClick={handleClear}
+          >
+            <Codicon name="close" size={12} />
+          </button>
+        )}
+      </div>
+      {localQuery && (
+        <div className="text-10 text-text-faint px-1 pt-1">
+          {filteredFileCount} / {totalFileCount} files
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // File list panel
 // ---------------------------------------------------------------------------
 
@@ -107,7 +186,6 @@ export function FileListPanel({
   onHoverFile,
 }: FileListPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const searchRegexError = !isValidRegex(searchQuery);
 
   const sections = useMemo(() => partitionFiles(wt), [wt]);
   const { committed, staged, unstaged } = sections;
@@ -163,41 +241,12 @@ export function FileListPanel({
 
   return (
     <div className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0">
-      {/* Search filter */}
-      <div className="px-2 pt-2 pb-1 shrink-0">
-        <div className="relative">
-          <Codicon
-            name="search"
-            size={12}
-            className="absolute left-2 top-1/2 -translate-y-1/2 text-text-faint"
-          />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Filter files"
-            className={clsx(
-              'w-full pl-7 pr-7 py-1.5 rounded-md text-11 bg-node-file border outline-none transition-colors text-text-primary placeholder:text-text-faint',
-              searchRegexError
-                ? 'border-status-deleted'
-                : 'border-border-dashed focus:border-text-muted'
-            )}
-          />
-          {searchQuery && (
-            <button
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0"
-              onClick={() => onSearchChange('')}
-            >
-              <Codicon name="close" size={12} />
-            </button>
-          )}
-        </div>
-        {searchQuery && (
-          <div className="text-10 text-text-faint px-1 pt-1">
-            {filteredFileCount} / {totalFileCount} files
-          </div>
-        )}
-      </div>
+      <SearchInput
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        filteredFileCount={filteredFileCount}
+        totalFileCount={totalFileCount}
+      />
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 pt-0">
         {isEmpty ? (
           <div className="text-text-faint text-11 px-3 py-2">

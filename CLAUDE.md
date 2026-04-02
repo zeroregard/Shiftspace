@@ -127,7 +127,7 @@ shiftspace/
 │       ├── components/    # Tree nodes, clusters, overlays
 │       ├── engine/        # Data model: worktrees, files, change events
 │       ├── layout/        # Tidy-tree layout logic (custom, no external library)
-│       ├── store/         # Zustand store (worktree state, zoom/LOD state)
+│       ├── store/         # Zustand store (worktree state, zoom state)
 │       └── index.ts       # Public API: <ShiftspaceRenderer data={...} />
 ├── apps/
 │   ├── preview/           # Vite + React app, deployed to Vercel
@@ -199,22 +199,13 @@ A control panel overlay (visible on the preview app, not part of the renderer) w
 
 ---
 
-## Performance: Level-of-Detail (LOD) Zoom Strategy
-
-The key to handling large repos without performance issues. The graph never renders hundreds of nodes at once — detail increases as you zoom in:
-
-- **Zoomed out (overview):** Only worktree container headers visible as labeled nodes. See all worktrees, branch names, aggregate change counts. Max ~5-10 nodes on screen.
-- **Mid zoom (directory level):** Zooming into a worktree container expands it to show folder nodes. Each folder node groups changed files by their deepest directory.
-- **Zoomed in (file level):** Zooming into a folder expands it to show individual file nodes with per-file change stats, staged/unstaged indicators, and pulse animations.
-
-The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen density. Visible DOM node count should stay well under 100 at all times.
+## Performance
 
 ### Performance guidelines:
 
 - All custom node components must be wrapped in `React.memo`.
 - Use Zustand selectors to avoid re-rendering nodes that didn't change.
 - Debounce filesystem watcher events (batch changes within a ~500ms window before re-querying git).
-- LOD transitions should animate smoothly with CSS transitions.
 - Tree layout is computed with a custom tidy-tree function (no external layout library). Each worktree is a container; folders and files are positioned as a proper CS tree within it. Leaf nodes get fixed-width slots, subtree widths accumulate bottom-up, and parent nodes center above their children to guarantee zero overlaps.
 - Per-worktree layout is cached by `WorktreeState` reference in `ShiftspaceRenderer` — a file change in one worktree skips layout recomputation for all others.
 
@@ -260,7 +251,7 @@ The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen densi
 
 - Set up monorepo with `packages/renderer` and `apps/preview`
 - Implement mock worktree engine with agent simulation
-- Build the renderer: custom `TreeCanvas` with worktree containers, tree layout, folder nodes, file nodes, LOD zoom
+- Build the renderer: custom `TreeCanvas` with worktree containers, tree layout, folder nodes, file nodes
 - Deploy to Vercel — iterate on design from phone/laptop
 - Goal: the preview looks and feels like the real thing
 
@@ -276,10 +267,9 @@ The custom `TreeCanvas` handles pan/zoom; the LOD system handles on-screen densi
 ## Open Questions
 
 1. **~~ELK vs dagre:~~** Resolved — using custom tidy-tree layout within dashed worktree containers. No external layout library needed for current requirements.
-2. **LOD zoom thresholds:** What zoom levels trigger transitions between worktree → directory → file views? Needs prototyping.
-3. **Filesystem watcher debounce tuning:** 500ms is a starting point. Too short = thrashing git commands. Too long = feels laggy.
-4. **Windows support:** Port/process detection differs on Windows. Defer to v0.2.
-5. **Naming:** Is "Shiftspace" available on the VSCode Marketplace?
+2. **Filesystem watcher debounce tuning:** 500ms is a starting point. Too short = thrashing git commands. Too long = feels laggy.
+3. **Windows support:** Port/process detection differs on Windows. Defer to v0.2.
+4. **Naming:** Is "Shiftspace" available on the VSCode Marketplace?
 
 ---
 
