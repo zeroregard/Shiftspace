@@ -20,7 +20,10 @@ interface InsightStore {
   fileDiagnostics: Map<string, FileDiagnosticSummary>;
   setInsightDetail: (worktreeId: string, insightId: string, detail: InsightDetail) => void;
   clearInsightDetails: (worktreeId: string) => void;
+  /** Merge/upsert diagnostics — only updates entries for the given files, leaves others untouched. */
   setFileDiagnostics: (worktreeId: string, files: FileDiagnosticSummary[]) => void;
+  /** Remove diagnostic entries for specific files (e.g. when files leave the worktree). */
+  removeFileDiagnostics: (worktreeId: string, filePaths: string[]) => void;
   clearFileDiagnostics: (worktreeId: string) => void;
 }
 
@@ -61,12 +64,23 @@ export const useInsightStore = create<InsightStore>((set) => ({
 
   setFileDiagnostics: (worktreeId, files) =>
     set((s) => {
+      if (files.length === 0) return {};
       const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
-      deleteByPrefix(fileDiagnostics, worktreeId);
       for (const file of files) {
         fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
       }
       return { fileDiagnostics };
+    }),
+
+  removeFileDiagnostics: (worktreeId, filePaths) =>
+    set((s) => {
+      if (filePaths.length === 0) return {};
+      const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
+      let changed = false;
+      for (const fp of filePaths) {
+        changed = fileDiagnostics.delete(`${worktreeId}:${fp}`) || changed;
+      }
+      return changed ? { fileDiagnostics } : {};
     }),
 
   clearFileDiagnostics: (worktreeId) =>
