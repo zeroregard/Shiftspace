@@ -4,57 +4,57 @@
   "private": true,
   "exports": {
     "./badge": {
-      "import": "./dist/badge.js",
-      "types": "./dist/badge.d.ts"
+      "import": "./src/badge.tsx",
+      "types": "./src/badge.tsx"
     },
     "./button": {
-      "import": "./dist/button.js",
-      "types": "./dist/button.d.ts"
+      "import": "./src/button.tsx",
+      "types": "./src/button.tsx"
     },
     "./codicon": {
-      "import": "./dist/codicon.js",
-      "types": "./dist/codicon.d.ts"
+      "import": "./src/codicon.tsx",
+      "types": "./src/codicon.tsx"
     },
     "./error-boundary": {
-      "import": "./dist/error-boundary.js",
-      "types": "./dist/error-boundary.d.ts"
+      "import": "./src/error-boundary.tsx",
+      "types": "./src/error-boundary.tsx"
     },
     "./file-icons": {
-      "import": "./dist/file-icons.js",
-      "types": "./dist/file-icons.d.ts"
+      "import": "./src/file-icons.tsx",
+      "types": "./src/file-icons.tsx"
     },
     "./icon-button": {
-      "import": "./dist/icon-button.js",
-      "types": "./dist/icon-button.d.ts"
+      "import": "./src/icon-button.tsx",
+      "types": "./src/icon-button.tsx"
     },
     "./input": {
-      "import": "./dist/input.js",
-      "types": "./dist/input.d.ts"
+      "import": "./src/input.tsx",
+      "types": "./src/input.tsx"
     },
     "./list-item": {
-      "import": "./dist/list-item.js",
-      "types": "./dist/list-item.d.ts"
+      "import": "./src/list-item.tsx",
+      "types": "./src/list-item.tsx"
     },
     "./section-label": {
-      "import": "./dist/section-label.js",
-      "types": "./dist/section-label.d.ts"
+      "import": "./src/section-label.tsx",
+      "types": "./src/section-label.tsx"
     },
     "./spinner": {
-      "import": "./dist/spinner.js",
-      "types": "./dist/spinner.d.ts"
+      "import": "./src/spinner.tsx",
+      "types": "./src/spinner.tsx"
     },
     "./status-dot": {
-      "import": "./dist/status-dot.js",
-      "types": "./dist/status-dot.d.ts"
+      "import": "./src/status-dot.tsx",
+      "types": "./src/status-dot.tsx"
     },
     "./tooltip": {
-      "import": "./dist/tooltip.js",
-      "types": "./dist/tooltip.d.ts"
+      "import": "./src/tooltip.tsx",
+      "types": "./src/tooltip.tsx"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsc --noEmit",
+    "dev": "tsc --noEmit --watch",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
