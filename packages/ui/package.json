@@ -53,9 +53,9 @@
     }
   },
   "scripts": {
-    "build": "tsc --noEmit",
-    "dev": "tsc --noEmit --watch",
-    "typecheck": "tsc --noEmit"
+    "build": "tsgo --noEmit",
+    "dev": "tsgo --noEmit --watch",
+    "typecheck": "tsgo --noEmit"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -68,6 +68,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260401.1",
     "typescript": "^5.7.2"
   }
 }
