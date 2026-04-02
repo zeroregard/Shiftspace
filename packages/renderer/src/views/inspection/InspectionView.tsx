@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
@@ -9,6 +9,7 @@ import { computeSingleWorktreeLayout } from '../../layout';
 import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
 import { useActions } from '../../ui/ActionsContext';
+import { ErrorBoundary } from '../../ui/ErrorBoundary';
 import { InspectionHeader } from './components/InspectionHeader';
 import { FileListPanel } from './components/FileListPanel';
 
@@ -55,7 +56,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
 
   const hierarchyFiles = wt ? getAllFilteredFiles(wt, searchQuery) : [];
 
-  const { nodes, edges } = (() => {
+  const { nodes, edges } = useMemo(() => {
     if (!wt)
       return {
         nodes: [] as ReturnType<typeof computeSingleWorktreeLayout>['nodes'],
@@ -71,7 +72,8 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
       }
     );
     return { nodes: layout.nodes, edges: layout.edges };
-  })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + searchQuery
+  }, [wt, searchQuery, insightDetails, fileDiagnostics]);
 
   if (!wt) {
     return (
@@ -107,16 +109,24 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
         />
 
         <div className="flex-1 min-h-0 min-w-0 relative">
-          <InspectionHoverContext.Provider value={hoverContextValue}>
-            <TreeCanvas
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={NODE_TYPES}
-              panZoomConfig={panZoomConfig}
-              focusNodeId={focusNodeId}
-              onFocusComplete={handleFocusComplete}
-            />
-          </InspectionHoverContext.Provider>
+          <ErrorBoundary
+            fallback={
+              <div className="w-full h-full flex items-center justify-center text-text-faint text-13">
+                Graph failed to render
+              </div>
+            }
+          >
+            <InspectionHoverContext.Provider value={hoverContextValue}>
+              <TreeCanvas
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={NODE_TYPES}
+                panZoomConfig={panZoomConfig}
+                focusNodeId={focusNodeId}
+                onFocusComplete={handleFocusComplete}
+              />
+            </InspectionHoverContext.Provider>
+          </ErrorBoundary>
         </div>
       </div>
     </div>

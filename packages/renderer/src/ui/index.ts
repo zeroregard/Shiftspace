@@ -1,4 +1,5 @@
 export { AnnotationBadges } from './AnnotationBadges';
+export { ErrorBoundary } from './ErrorBoundary';
 export { Badge } from './Badge';
 export { Codicon } from './Codicon';
 export { IconButton } from './IconButton';

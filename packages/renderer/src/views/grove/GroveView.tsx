@@ -1,8 +1,17 @@
 import type { WorktreeState } from '../../types';
 import { WorktreeCard } from './components/WorktreeCard';
+import { ErrorBoundary } from '../../ui/ErrorBoundary';
 
 interface GroveViewProps {
   worktrees: WorktreeState[];
+}
+
+function WorktreeCardError() {
+  return (
+    <div className="w-[32rem] flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-status-deleted/30 text-text-faint text-11">
+      Failed to render worktree
+    </div>
+  );
 }
 
 export function GroveView({ worktrees }: GroveViewProps) {
@@ -14,7 +23,9 @@ export function GroveView({ worktrees }: GroveViewProps) {
         ) : (
           <div className="flex flex-row flex-wrap gap-4 items-start">
             {worktrees.map((wt) => (
-              <WorktreeCard key={wt.id} worktree={wt} />
+              <ErrorBoundary key={wt.id} fallback={<WorktreeCardError />}>
+                <WorktreeCard worktree={wt} />
+              </ErrorBoundary>
             ))}
           </div>
         )}

@@ -2,6 +2,7 @@ import React from 'react';
 import * as HoverCard from '@radix-ui/react-hover-card';
 import type { FileChange } from '../types';
 import { hunksToUnified } from '../utils/hunksToUnified';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 const LazyPatchDiff = React.lazy(() =>
   import('@pierre/diffs/react').then((m) => ({ default: m.PatchDiff }))
@@ -166,7 +167,15 @@ export function DiffPopover({ file, children }: { file: FileChange; children: Re
           className="z-50 flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md animate-popover-open"
           style={{ width, maxHeight: POPOVER_H }}
         >
-          <DiffOverlayContent file={file} />
+          <ErrorBoundary
+            fallback={
+              <div className="px-3 py-4 text-text-faint text-11 italic text-center">
+                diff failed to load
+              </div>
+            }
+          >
+            <DiffOverlayContent file={file} />
+          </ErrorBoundary>
         </HoverCard.Content>
       </HoverCard.Portal>
     </HoverCard.Root>
