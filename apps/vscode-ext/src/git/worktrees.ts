@@ -246,6 +246,52 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
   return null;
 }
 
+/**
+ * Recover a worktree stuck on a `_shiftspace_temp_swap*` branch.
+ *
+ * This can happen if the extension crashed mid-swap before it could check out
+ * the real branch and delete the temp one. Recovery strategy:
+ *  1. `git checkout -` to return to the previously checked-out branch.
+ *  2. Force-delete the temp branch.
+ *
+ * Returns true if recovery was attempted (regardless of partial success).
+ */
+export async function recoverStuckTempBranch(worktreePath: string): Promise<boolean> {
+  let currentBranch: string;
+  try {
+    const { stdout } = await gitReadOnly(['symbolic-ref', '--short', 'HEAD'], {
+      cwd: worktreePath,
+      timeout: 5000,
+    });
+    currentBranch = stdout.trim();
+  } catch {
+    return false;
+  }
+
+  if (!currentBranch.startsWith('_shiftspace_temp_swap')) {
+    return false;
+  }
+
+  log.warn(
+    `recoverStuckTempBranch: ${worktreePath} is on temp branch "${currentBranch}" — recovering`
+  );
+
+  try {
+    await gitWrite(['checkout', '-'], { cwd: worktreePath, timeout: 10_000 });
+  } catch (e) {
+    log.error('recoverStuckTempBranch: checkout - failed:', e);
+    // Continue to attempt temp branch deletion even if checkout failed
+  }
+
+  try {
+    await gitWrite(['branch', '-D', currentBranch], { cwd: worktreePath, timeout: 10_000 });
+  } catch (e) {
+    log.error('recoverStuckTempBranch: branch -D failed:', e);
+  }
+
+  return true;
+}
+
 /** Find a unique temp branch name, avoiding collisions. */
 async function findUniqueTempBranchName(worktreePath: string): Promise<string> {
   const base = '_shiftspace_temp_swap';

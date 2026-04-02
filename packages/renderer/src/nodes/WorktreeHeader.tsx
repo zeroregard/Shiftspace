@@ -6,6 +6,7 @@ import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 import { useActions } from '../ui/ActionsContext';
 import { IconButton } from '../ui/IconButton';
 import { Codicon } from '../ui/Codicon';
+import { Spinner } from '../ui/Spinner';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -20,6 +21,7 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
   const isSingle = useWorktreeStore((s) => s.worktrees.size <= 1);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
   const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(wt.id));
+  const isSwapping = useWorktreeStore((s) => s.swapLoading.has(wt.id));
   const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
   const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
@@ -35,8 +37,17 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
     return (
       <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
         {pathPart && <span>{pathPart} </span>}
-        <Codicon name="git-branch" />
-        <span>{pathPart ? `(${wt.branch})` : wt.branch}</span>
+        {isSwapping ? (
+          <>
+            <Spinner size={13} />
+            <span className="text-text-faint">Swapping…</span>
+          </>
+        ) : (
+          <>
+            <Codicon name="git-branch" />
+            <span>{pathPart ? `(${wt.branch})` : wt.branch}</span>
+          </>
+        )}
       </div>
     );
   }
@@ -45,32 +56,39 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
     <div className="flex flex-col gap-1">
       <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
         {pathPart && <span>{pathPart} </span>}
-        <BranchPicker
-          onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
-          onOpen={() => actions.requestBranchList(wt.id)}
-        >
-          <BranchPicker.Trigger>
-            <button
-              className="flex items-center gap-1 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-              title="Switch branch"
-            >
-              <Codicon name="git-branch" />
-              {pathPart ? `(${wt.branch})` : wt.branch}
-            </button>
-          </BranchPicker.Trigger>
-          <BranchPicker.Content>
-            <BranchPicker.SearchRow
-              fetch={{
-                onFetch: () => actions.fetchBranches(wt.id),
-                isFetching: isFetchingBranches,
-                lastFetchAt,
-              }}
-            />
-            <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
-          </BranchPicker.Content>
-        </BranchPicker>
+        {isSwapping ? (
+          <>
+            <Spinner size={13} />
+            <span className="text-text-faint">Swapping…</span>
+          </>
+        ) : (
+          <BranchPicker
+            onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
+            onOpen={() => actions.requestBranchList(wt.id)}
+          >
+            <BranchPicker.Trigger>
+              <button
+                className="flex items-center gap-1 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                title="Switch branch"
+              >
+                <Codicon name="git-branch" />
+                {pathPart ? `(${wt.branch})` : wt.branch}
+              </button>
+            </BranchPicker.Trigger>
+            <BranchPicker.Content>
+              <BranchPicker.SearchRow
+                fetch={{
+                  onFetch: () => actions.fetchBranches(wt.id),
+                  isFetching: isFetchingBranches,
+                  lastFetchAt,
+                }}
+              />
+              <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
+            </BranchPicker.Content>
+          </BranchPicker>
+        )}
       </div>
       <div className="flex gap-1 mt-1">
         <div className="flex items-center justify-between w-full">

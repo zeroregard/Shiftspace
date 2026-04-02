@@ -7,6 +7,7 @@ interface WorktreeStore {
   branchLists: Map<string, string[]>;
   diffModeLoading: Set<string>;
   fetchLoading: Set<string>;
+  swapLoading: Set<string>;
   lastFetchAt: Map<string, number>;
   iconMap: IconMap;
   applyEvent: (event: ShiftspaceEvent) => void;
@@ -21,6 +22,7 @@ interface WorktreeStore {
     branchFiles?: FileChange[]
   ) => void;
   setFetchLoading: (worktreeId: string, loading: boolean) => void;
+  setSwapLoading: (worktreeId: string, loading: boolean) => void;
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
   setIconMap: (map: IconMap) => void;
 }
@@ -30,6 +32,7 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
   branchLists: new Map(),
   diffModeLoading: new Set(),
   fetchLoading: new Set(),
+  swapLoading: new Set(),
   lastFetchAt: new Map(),
   iconMap: {},
 
@@ -86,6 +89,17 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
       if (loading) fetchLoading.add(worktreeId);
       else fetchLoading.delete(worktreeId);
       return { fetchLoading };
+    }),
+
+  setSwapLoading: (worktreeId, loading) =>
+    set((state) => {
+      const has = state.swapLoading.has(worktreeId);
+      if (loading && has) return state;
+      if (!loading && !has) return state;
+      const swapLoading = new Set(state.swapLoading);
+      if (loading) swapLoading.add(worktreeId);
+      else swapLoading.delete(worktreeId);
+      return { swapLoading };
     }),
 
   setLastFetchAt: (worktreeId, timestamp) =>

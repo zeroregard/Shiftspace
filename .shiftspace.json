@@ -82,6 +82,12 @@
       "label": "LLM Comment",
       "pattern": "// ---------------------------------------------------------------------------",
       "threshold": "1"
+    },
+    {
+      "id": "legacy",
+      "label": "Legacy",
+      "pattern": "Legacy",
+      "threshold": "1"
     }
   ]
 }

@@ -13,6 +13,7 @@ import {
   swapBranches,
   removeWorktree,
   moveWorktree,
+  recoverStuckTempBranch,
 } from './git/worktrees';
 import { getFileChanges, getBranchDiffFileChanges } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
@@ -98,6 +99,14 @@ export class GitDataProvider implements vscode.Disposable {
 
     this.defaultBranch = await getDefaultBranch(this.currentRoot);
     this.worktrees = await detectWorktrees(this.currentRoot);
+
+    // Recover any worktrees left on a temp swap branch from a previous crash
+    const recoveryResults = await Promise.all(
+      this.worktrees.map((wt) => recoverStuckTempBranch(wt.path))
+    );
+    if (recoveryResults.some(Boolean)) {
+      this.worktrees = await detectWorktrees(this.currentRoot);
+    }
 
     // Set initial diff modes: feature branches diff against default branch,
     // worktrees on the default branch show working changes.
@@ -527,6 +536,10 @@ export class GitDataProvider implements vscode.Disposable {
     );
     if (answer !== 'Yes') return;
 
+    // Signal loading state to both worktrees before starting
+    this.postMessage({ type: 'swap-loading', worktreeId: linkedWt.id, loading: true });
+    this.postMessage({ type: 'swap-loading', worktreeId: mainWt.id, loading: true });
+
     // Execute swap with progress notification
     await vscode.window.withProgress(
       {
@@ -550,6 +563,9 @@ export class GitDataProvider implements vscode.Disposable {
           void vscode.window.showErrorMessage(
             `Branch swap failed: ${(err as Error).message}. Check git stash list for any stashed changes.`
           );
+        } finally {
+          this.postMessage({ type: 'swap-loading', worktreeId: linkedWt.id, loading: false });
+          this.postMessage({ type: 'swap-loading', worktreeId: mainWt.id, loading: false });
         }
       }
     );

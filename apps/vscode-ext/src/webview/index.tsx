@@ -52,6 +52,7 @@ type HostMessage =
   | { type: 'branch-list'; worktreeId: string; branches: string[] }
   | { type: 'fetch-loading'; worktreeId: string; loading: boolean }
   | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] }
+  | { type: 'swap-loading'; worktreeId: string; loading: boolean }
   // Legacy action messages (kept for backward compat)
   | { type: 'actions-config'; actions: ActionConfig[] }
   | {
@@ -123,6 +124,9 @@ function handleCoreMessage(
       wt.setFetchLoading(msg.worktreeId, false);
       wt.setLastFetchAt(msg.worktreeId, msg.timestamp);
       wt.setBranchList(msg.worktreeId, msg.branches);
+      return true;
+    case 'swap-loading':
+      wt.setSwapLoading(msg.worktreeId, msg.loading);
       return true;
     default:
       return false;
