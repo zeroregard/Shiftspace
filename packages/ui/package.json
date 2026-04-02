@@ -1,0 +1,73 @@
+{
+  "name": "@shiftspace/ui",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./badge": {
+      "import": "./dist/badge.js",
+      "types": "./dist/badge.d.ts"
+    },
+    "./button": {
+      "import": "./dist/button.js",
+      "types": "./dist/button.d.ts"
+    },
+    "./codicon": {
+      "import": "./dist/codicon.js",
+      "types": "./dist/codicon.d.ts"
+    },
+    "./error-boundary": {
+      "import": "./dist/error-boundary.js",
+      "types": "./dist/error-boundary.d.ts"
+    },
+    "./file-icons": {
+      "import": "./dist/file-icons.js",
+      "types": "./dist/file-icons.d.ts"
+    },
+    "./icon-button": {
+      "import": "./dist/icon-button.js",
+      "types": "./dist/icon-button.d.ts"
+    },
+    "./input": {
+      "import": "./dist/input.js",
+      "types": "./dist/input.d.ts"
+    },
+    "./list-item": {
+      "import": "./dist/list-item.js",
+      "types": "./dist/list-item.d.ts"
+    },
+    "./section-label": {
+      "import": "./dist/section-label.js",
+      "types": "./dist/section-label.d.ts"
+    },
+    "./spinner": {
+      "import": "./dist/spinner.js",
+      "types": "./dist/spinner.d.ts"
+    },
+    "./status-dot": {
+      "import": "./dist/status-dot.js",
+      "types": "./dist/status-dot.d.ts"
+    },
+    "./tooltip": {
+      "import": "./dist/tooltip.js",
+      "types": "./dist/tooltip.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "clsx": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

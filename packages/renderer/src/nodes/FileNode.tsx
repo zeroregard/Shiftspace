@@ -6,8 +6,8 @@ import { DiffPopover } from '../overlays/DiffPopover';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
 import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useFileAnnotations } from '../hooks/useFileAnnotations';
-import { StatusDot } from '../ui/StatusDot';
-import { Codicon } from '../ui/Codicon';
+import { StatusDot } from '@shiftspace/ui/status-dot';
+import { Codicon } from '@shiftspace/ui/codicon';
 
 export interface FileNodeData {
   file: FileChange;

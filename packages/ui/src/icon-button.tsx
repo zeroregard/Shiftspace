@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react';
 import clsx from 'clsx';
-import { Tooltip } from '@shiftspace/ui/tooltip';
+import { Tooltip } from './tooltip';
 
 type IconButtonSize = 'sm' | 'md';
 

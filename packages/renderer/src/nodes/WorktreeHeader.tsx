@@ -4,9 +4,9 @@ import { useWorktreeStore } from '../store';
 import { BranchPicker } from '../overlays/BranchPicker';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 import { useActions } from '../ui/ActionsContext';
-import { IconButton } from '../ui/IconButton';
-import { Codicon } from '../ui/Codicon';
-import { Spinner } from '../ui/Spinner';
+import { IconButton } from '@shiftspace/ui/icon-button';
+import { Codicon } from '@shiftspace/ui/codicon';
+import { Spinner } from '@shiftspace/ui/spinner';
 
 const EMPTY_BRANCHES: string[] = [];
 

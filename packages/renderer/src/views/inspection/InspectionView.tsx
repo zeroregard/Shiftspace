@@ -11,7 +11,7 @@ import { computeSingleWorktreeLayout } from '../../layout';
 import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
 import { useActions } from '../../ui/ActionsContext';
-import { ErrorBoundary } from '../../ui/ErrorBoundary';
+import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { InspectionHeader } from './components/InspectionHeader';
 import { FileListPanel } from './components/FileListPanel';
 

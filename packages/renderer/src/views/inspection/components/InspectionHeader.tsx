@@ -1,8 +1,8 @@
 import type { DiffMode, WorktreeState } from '../../../types';
 import { useInspectionStore } from '../../../store';
 import { BranchPicker } from '../../../overlays/BranchPicker';
-import { Codicon } from '../../../ui/Codicon';
-import { IconButton } from '../../../ui/IconButton';
+import { Codicon } from '@shiftspace/ui/codicon';
+import { IconButton } from '@shiftspace/ui/icon-button';
 import { useActions } from '../../../ui/ActionsContext';
 
 function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
