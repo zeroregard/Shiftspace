@@ -18,8 +18,8 @@
  */
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { Tooltip } from './Tooltip';
-import { Codicon } from '../ui/Codicon';
+import { Tooltip } from '@shiftspace/ui/tooltip';
+import { Codicon } from '@shiftspace/ui/codicon';
 
 // ---------------------------------------------------------------------------
 // Context — shared state between compound sub-components

@@ -1,5 +1,5 @@
 import type { NodeComponentProps } from '../TreeCanvas';
-import { FolderIcon } from '../ui/FileIcons';
+import { FolderIcon } from '@shiftspace/ui/file-icons';
 import type { FolderNodeData } from '../layout/flatten';
 import { useActions } from '../ui/ActionsContext';
 

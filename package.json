@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "dev": "bun run --filter '*' dev",
-    "build": "bun run --filter @shiftspace/renderer build && bun run --filter '*' build",
-    "typecheck": "bun run --filter @shiftspace/renderer build && bun run --filter '*' typecheck",
+    "build": "bun run --filter @shiftspace/ui build && bun run --filter @shiftspace/renderer build && bun run --filter '*' build",
+    "typecheck": "bun run --filter @shiftspace/ui build && bun run --filter @shiftspace/renderer build && bun run --filter '*' typecheck",
     "lint:check": "oxlint --deny-warnings .",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",

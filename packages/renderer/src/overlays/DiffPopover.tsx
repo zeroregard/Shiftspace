@@ -3,7 +3,7 @@ import * as HoverCard from '@radix-ui/react-hover-card';
 import { create } from 'zustand';
 import type { FileChange } from '../types';
 import { hunksToUnified } from '../utils/hunksToUnified';
-import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 
 const LazyPatchDiff = React.lazy(() =>
   import('@pierre/diffs/react').then((m) => ({ default: m.PatchDiff }))

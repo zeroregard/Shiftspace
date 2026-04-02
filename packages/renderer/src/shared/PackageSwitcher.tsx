@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { usePackageStore } from '../store';
-import { Codicon } from '../ui/Codicon';
+import { Codicon } from '@shiftspace/ui/codicon';
 
 interface PackageSwitcherProps {
   onSetPackage?: (packageName: string) => void;

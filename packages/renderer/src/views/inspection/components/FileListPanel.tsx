@@ -5,8 +5,8 @@ import type { FileChange, WorktreeState } from '../../../types';
 import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
 import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
 import { AnnotationBadges } from '../../../ui/AnnotationBadges';
-import { Codicon } from '../../../ui/Codicon';
-import { SectionLabel as SectionLabelPrimitive } from '../../../ui/SectionLabel';
+import { Codicon } from '@shiftspace/ui/codicon';
+import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-label';
 import { partitionFiles, filterFilesByQuery, isValidRegex } from '../../../utils/listSections';
 
 // ---------------------------------------------------------------------------

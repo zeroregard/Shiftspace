@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "../../../packages/renderer/src/**/*.tsx";
+@source "../../../packages/ui/src/**/*.tsx";
 
 /*
  * Theme tokens — Preview app defaults (dark palette)

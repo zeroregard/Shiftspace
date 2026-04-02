@@ -2,9 +2,9 @@ import { useState, type MouseEvent } from 'react';
 import { useActionStore } from '../../../store';
 import type { ActionConfig, ActionStatus } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
-import { Codicon } from '../../../ui/Codicon';
-import { SectionLabel } from '../../../ui/SectionLabel';
-import { Tooltip } from '../../../overlays/Tooltip';
+import { Codicon } from '@shiftspace/ui/codicon';
+import { SectionLabel } from '@shiftspace/ui/section-label';
+import { Tooltip } from '@shiftspace/ui/tooltip';
 import { deriveActionType, statusIcon, statusColor } from '../../../utils/actionUtils';
 import { storeKey } from '../../../utils/storeKeys';
 

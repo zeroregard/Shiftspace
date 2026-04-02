@@ -1,6 +1,6 @@
 import type { WorktreeState } from '../../types';
 import { WorktreeCard } from './components/WorktreeCard';
-import { ErrorBoundary } from '../../ui/ErrorBoundary';
+import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 
 interface GroveViewProps {
   worktrees: WorktreeState[];

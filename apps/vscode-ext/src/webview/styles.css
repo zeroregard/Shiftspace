@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "../../../../packages/renderer/src/**/*.tsx";
+@source "../../../../packages/ui/src/**/*.tsx";
 
 @theme {
   --color-canvas:          #0d0d1a;

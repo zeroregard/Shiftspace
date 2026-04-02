@@ -1,6 +1,6 @@
 import React from 'react';
 import { useWorktreeStore } from '../store';
-import { FileIcon } from '../ui/FileIcons';
+import { FileIcon } from '@shiftspace/ui/file-icons';
 
 interface ThemedFileIconProps {
   /** Relative file path — used to look up the icon map. */

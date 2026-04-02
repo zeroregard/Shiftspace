@@ -1,6 +1,6 @@
-import { Tooltip } from '../overlays/Tooltip';
-import { Badge } from './Badge';
-import { Codicon } from './Codicon';
+import { Tooltip } from '@shiftspace/ui/tooltip';
+import { Badge } from '@shiftspace/ui/badge';
+import { Codicon } from '@shiftspace/ui/codicon';
 import type { FileAnnotations } from '../hooks/useFileAnnotations';
 
 interface AnnotationBadgesProps {
