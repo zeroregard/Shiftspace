@@ -2,6 +2,7 @@ import type { FileChange } from '@shiftspace/renderer';
 import type { InsightSummary, InsightDetail } from './types';
 import { insightRegistry } from './registry';
 import { isInsightEnabled, getInsightSettings } from './settingsLoader';
+import { log } from '../logger';
 
 interface CacheEntry {
   files: FileChange[];
@@ -20,14 +21,16 @@ export class InsightRunner {
    *
    * Plugins run in parallel; a failure in one does not abort others.
    */
-  async analyzeWorktree(
-    worktreeId: string,
-    files: FileChange[],
-    repoRoot: string,
-    worktreeRoot: string,
-    signal?: AbortSignal,
-    extraSettings?: Record<string, Record<string, unknown>>
-  ): Promise<{ summaries: InsightSummary[]; details: InsightDetail[] }> {
+  async analyzeWorktree(opts: {
+    worktreeId: string;
+    files: FileChange[];
+    repoRoot: string;
+    worktreeRoot: string;
+    signal?: AbortSignal;
+    extraSettings?: Record<string, Record<string, unknown>>;
+  }): Promise<{ summaries: InsightSummary[]; details: InsightDetail[] }> {
+    const { worktreeId, files, repoRoot, worktreeRoot, signal, extraSettings } = opts;
+
     const cached = this.cache.get(worktreeId);
     if (cached && cached.files === files) {
       return { summaries: cached.summaries, details: cached.details };
@@ -42,13 +45,13 @@ export class InsightRunner {
         const extra = extraSettings?.[plugin.id] ?? {};
         const merged = { ...settings, ...extra };
 
-        const { summary, detail } = await plugin.analyze(
+        const { summary, detail } = await plugin.analyze({
           files,
           repoRoot,
           worktreeRoot,
-          merged,
-          signal
-        );
+          settings: merged,
+          signal,
+        });
 
         // Fill in worktreeId (plugins leave it blank)
         summary.worktreeId = worktreeId;
@@ -66,7 +69,7 @@ export class InsightRunner {
         summaries.push(result.value.summary);
         details.push(result.value.detail);
       } else {
-        console.error('[Shiftspace] Insight plugin error:', result.reason);
+        log.error('Insight plugin error:', result.reason);
       }
     }
 

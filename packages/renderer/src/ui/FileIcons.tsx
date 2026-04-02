@@ -1,38 +1,6 @@
 import React from 'react';
 
 // ---------------------------------------------------------------------------
-// UI icons — rendered as Codicons (requires codicon.css to be loaded by host)
-// ---------------------------------------------------------------------------
-
-export function GitBranchIcon() {
-  return <i className="codicon codicon-git-branch" style={{ fontSize: 12 }} aria-hidden="true" />;
-}
-
-export function GitCompareIcon() {
-  return <i className="codicon codicon-git-compare" style={{ fontSize: 12 }} aria-hidden="true" />;
-}
-
-export function RefreshIcon() {
-  return <i className="codicon codicon-refresh" style={{ fontSize: 11 }} aria-hidden="true" />;
-}
-
-export function SwapIcon() {
-  return <i className="codicon codicon-arrow-swap" style={{ fontSize: 12 }} aria-hidden="true" />;
-}
-
-export function TrashIcon() {
-  return <i className="codicon codicon-trash" style={{ fontSize: 12 }} aria-hidden="true" />;
-}
-
-export function PencilIcon() {
-  return <i className="codicon codicon-edit" style={{ fontSize: 12 }} aria-hidden="true" />;
-}
-
-export function CheckIcon() {
-  return <i className="codicon codicon-check" style={{ fontSize: 12 }} aria-hidden="true" />;
-}
-
-// ---------------------------------------------------------------------------
 // SVG base shapes
 // ---------------------------------------------------------------------------
 

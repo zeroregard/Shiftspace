@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { log } from '../logger';
 
 const MCP_SERVER_PATH = path.join(os.homedir(), '.shiftspace', 'mcp-server.mjs');
 
@@ -22,7 +23,7 @@ export async function installMcpServerBinary(extensionPath: string): Promise<voi
   try {
     await fs.promises.copyFile(source, MCP_SERVER_PATH);
   } catch (err) {
-    console.warn('[Shiftspace] Failed to install MCP server binary:', err);
+    log.warn('Failed to install MCP server binary:', err);
   }
 }
 

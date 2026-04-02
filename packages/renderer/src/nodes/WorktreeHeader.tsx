@@ -2,109 +2,98 @@ import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../types';
 import { useShiftspaceStore } from '../store';
-import { BranchPickerPopover } from '../overlays/BranchPickerPopover';
+import { BranchPicker } from '../overlays/BranchPicker';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
-import { GitBranchIcon, SwapIcon } from '../icons';
+import { useActions } from '../ui/ActionsContext';
+import { IconButton } from '../ui/IconButton';
+import { Codicon } from '../ui/Codicon';
 
 const EMPTY_BRANCHES: string[] = [];
 
 export interface WorktreeHeaderProps {
   worktree: WorktreeState;
-  onRequestBranchList?: (worktreeId: string) => void;
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
-  onFetchBranches?: (worktreeId: string) => void;
-  onSwapBranches?: (worktreeId: string) => void;
   /** When true, hides branch picker and stats — used in the tree canvas nodes */
   compact?: boolean;
 }
 
-export const WorktreeHeader = React.memo(
-  ({
-    worktree: wt,
-    onRequestBranchList,
-    onCheckoutBranch,
-    onFetchBranches,
-    onSwapBranches,
-    compact,
-  }: WorktreeHeaderProps) => {
-    const isSingle = useShiftspaceStore((s) => s.worktrees.size <= 1);
-    const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
-    const isFetchingBranches = useShiftspaceStore((s) => s.fetchLoading.has(wt.id));
-    const lastFetchAt = useShiftspaceStore((s) => s.lastFetchAt.get(wt.id));
-    const occupiedBranches = useShiftspaceStore(
-      useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
-    );
+export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHeaderProps) => {
+  const actions = useActions();
+  const isSingle = useShiftspaceStore((s) => s.worktrees.size <= 1);
+  const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
+  const isFetchingBranches = useShiftspaceStore((s) => s.fetchLoading.has(wt.id));
+  const lastFetchAt = useShiftspaceStore((s) => s.lastFetchAt.get(wt.id));
+  const occupiedBranches = useShiftspaceStore(
+    useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
+  );
 
-    const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
-    const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
-    const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
-    // Show folder prefix only for linked (non-main) worktrees when multiple are visible
-    const pathPart = !isSingle && !wt.isMainWorktree ? folderName : null;
-    const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
+  const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
+  const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
+  const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
+  const pathPart = !isSingle && !wt.isMainWorktree ? folderName : null;
+  const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
 
-    if (compact) {
-      return (
-        <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
-          {pathPart && <span>{pathPart} </span>}
-          <GitBranchIcon />
-          <span>{pathPart ? `(${wt.branch})` : wt.branch}</span>
-        </div>
-      );
-    }
-
+  if (compact) {
     return (
-      <div className="flex flex-col gap-1">
-        <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
-          {pathPart && <span>{pathPart} </span>}
-          <BranchPickerPopover
-            trigger={
-              <button
-                className="flex items-center gap-1 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                title="Switch branch"
-              >
-                <GitBranchIcon />
-                {pathPart ? `(${wt.branch})` : wt.branch}
-              </button>
-            }
-            branches={checkoutBranches}
-            selectedBranch={wt.branch}
-            onSelectBranch={(branch) => onCheckoutBranch?.(wt.id, branch)}
-            onOpen={() => onRequestBranchList?.(wt.id)}
-            onFetch={onFetchBranches ? () => onFetchBranches!(wt.id) : undefined}
-            isFetching={isFetchingBranches}
-            lastFetchAt={lastFetchAt}
-          />
-        </div>
-        <div className="flex gap-1 mt-1">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-1 shrink-0">
-              {/* Swap button — only for linked (non-main) worktrees */}
-              {!wt.isMainWorktree && onSwapBranches && (
-                <button
-                  className="flex items-center justify-center w-6 h-6 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted cursor-pointer bg-transparent"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSwapBranches(wt.id);
-                  }}
-                  title="Swap branch with primary worktree"
-                >
-                  <SwapIcon />
-                </button>
-              )}
-            </div>
-            <div className="ml-2 text-11 text-text-muted">
-              {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
-              <span className="text-status-added">+{totalAdded}</span>{' '}
-              <span className="text-status-deleted">-{totalRemoved}</span>
-            </div>
-          </div>
-        </div>
+      <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
+        {pathPart && <span>{pathPart} </span>}
+        <Codicon name="git-branch" />
+        <span>{pathPart ? `(${wt.branch})` : wt.branch}</span>
       </div>
     );
   }
-);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="font-semibold text-text-primary text-13 whitespace-nowrap flex items-center gap-1">
+        {pathPart && <span>{pathPart} </span>}
+        <BranchPicker
+          onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
+          onOpen={() => actions.requestBranchList(wt.id)}
+        >
+          <BranchPicker.Trigger>
+            <button
+              className="flex items-center gap-1 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              title="Switch branch"
+            >
+              <Codicon name="git-branch" />
+              {pathPart ? `(${wt.branch})` : wt.branch}
+            </button>
+          </BranchPicker.Trigger>
+          <BranchPicker.Content>
+            <BranchPicker.SearchRow
+              fetch={{
+                onFetch: () => actions.fetchBranches(wt.id),
+                isFetching: isFetchingBranches,
+                lastFetchAt,
+              }}
+            />
+            <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
+          </BranchPicker.Content>
+        </BranchPicker>
+      </div>
+      <div className="flex gap-1 mt-1">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-1 shrink-0">
+            {!wt.isMainWorktree && (
+              <IconButton
+                icon="arrow-swap"
+                label="Swap branch with primary worktree"
+                stopPropagation
+                onClick={() => actions.swapBranches(wt.id)}
+              />
+            )}
+          </div>
+          <div className="ml-2 text-11 text-text-muted">
+            {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
+            <span className="text-status-added">+{totalAdded}</span>{' '}
+            <span className="text-status-deleted">-{totalRemoved}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 WorktreeHeader.displayName = 'WorktreeHeader';

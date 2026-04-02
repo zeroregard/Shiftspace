@@ -5,10 +5,6 @@ import { FILE_NODE_W, FILE_NODE_BASE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './c
 
 export interface WorktreeNodeData {
   worktree: import('../types').WorktreeState;
-  onRequestBranchList?: (worktreeId: string) => void;
-  onCheckoutBranch?: (worktreeId: string, branch: string) => void;
-  onFetchBranches?: (worktreeId: string) => void;
-  onSwapBranches?: (worktreeId: string) => void;
   bare?: boolean;
   [key: string]: unknown;
 }
@@ -17,38 +13,38 @@ export interface FolderNodeData {
   name: string;
   folderPath: string;
   worktreeId: string;
-  onFolderClick?: (worktreeId: string, folderPath: string) => void;
   [key: string]: unknown;
 }
 
 export interface FileNodeData {
   file: FileChange;
-  onFileClick?: (worktreeId: string, filePath: string) => void;
   worktreeId: string;
   [key: string]: unknown;
 }
 
-export function flattenRect(
-  rect: LayoutRect,
-  parentId: string | null,
-  isRootChild: boolean,
-  offsetX: number,
-  offsetY: number,
-  wtId: string,
-  onFileClick: ((wtId: string, filePath: string) => void) | undefined,
-  nodes: LayoutNode[],
-  edges: LayoutEdge[],
-  suppressEdge = false,
-  onFolderClick?: (wtId: string, folderPath: string) => void,
-  getFileH?: (filePath: string) => number
-) {
+interface FlattenOpts {
+  rect: LayoutRect;
+  parentId: string | null;
+  isRootChild: boolean;
+  offsetX: number;
+  offsetY: number;
+  wtId: string;
+  nodes: LayoutNode[];
+  edges: LayoutEdge[];
+  suppressEdge?: boolean;
+  getFileH?: (filePath: string) => number;
+}
+
+export function flattenRect(opts: FlattenOpts) {
+  const { rect, parentId, isRootChild, offsetX, offsetY, wtId, nodes, edges, getFileH } = opts;
+  const suppressEdge = opts.suppressEdge ?? false;
   const absX = offsetX + rect.x;
   const absY = offsetY + rect.y;
   const isFile = rect.node.kind === 'file';
   const file = rect.node.file;
 
   if (isFile && file) {
-    const data: FileNodeData = { file, worktreeId: wtId, onFileClick };
+    const data: FileNodeData = { file, worktreeId: wtId };
     nodes.push({
       id: rect.node.id,
       type: 'fileNode',
@@ -62,7 +58,6 @@ export function flattenRect(
       name: rect.node.name,
       folderPath: rect.node.path ?? rect.node.name,
       worktreeId: wtId,
-      onFolderClick,
     };
     nodes.push({
       id: rect.node.id,
@@ -87,20 +82,18 @@ export function flattenRect(
   for (const child of rect.children) {
     const isFileChild = child.node.kind === 'file';
     const suppress = isFileChild && firstFileEdgeEmitted;
-    flattenRect(
-      child,
-      rect.node.id,
-      false,
+    flattenRect({
+      rect: child,
+      parentId: rect.node.id,
+      isRootChild: false,
       offsetX,
       offsetY,
       wtId,
-      onFileClick,
       nodes,
       edges,
-      suppress,
-      onFolderClick,
-      getFileH
-    );
+      suppressEdge: suppress,
+      getFileH,
+    });
     if (isFileChild) firstFileEdgeEmitted = true;
   }
 }

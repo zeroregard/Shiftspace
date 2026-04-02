@@ -17,6 +17,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import type { IconMap } from '@shiftspace/renderer';
+import { log } from './logger';
 
 // ---------------------------------------------------------------------------
 // Internal types mirroring the VSCode icon-theme JSON schema
@@ -83,23 +84,23 @@ export class IconThemeProvider implements vscode.Disposable {
 
     try {
       const themeId = vscode.workspace.getConfiguration('workbench').get<string>('iconTheme');
-      console.log('[Shiftspace] IconTheme load(): themeId =', themeId);
+      log.debug('IconTheme load(): themeId =', themeId);
 
       if (!themeId) {
-        console.log('[Shiftspace] IconTheme load(): no iconTheme configured, aborting');
+        log.debug('IconTheme load(): no iconTheme configured, aborting');
         return false;
       }
 
       const entry = this._findThemeExtension(themeId);
       if (!entry) {
-        console.log('[Shiftspace] IconTheme load(): no extension found for themeId =', themeId);
+        log.debug('IconTheme load(): no extension found for themeId =', themeId);
         return false;
       }
 
       const { extensionPath, themePath } = entry;
       const absoluteThemePath = path.join(extensionPath, themePath);
       this._themeDir = path.dirname(absoluteThemePath);
-      console.log('[Shiftspace] IconTheme load(): absoluteThemePath =', absoluteThemePath);
+      log.debug('IconTheme load(): absoluteThemePath =', absoluteThemePath);
 
       const raw = await vscode.workspace.fs.readFile(vscode.Uri.file(absoluteThemePath));
       this._themeJson = JSON.parse(Buffer.from(raw).toString('utf-8')) as IconThemeJson;
@@ -107,8 +108,8 @@ export class IconThemeProvider implements vscode.Disposable {
       const defCount = Object.keys(this._themeJson.iconDefinitions ?? {}).length;
       const fileExtCount = Object.keys(this._themeJson.fileExtensions ?? {}).length;
       const langIdCount = Object.keys(this._themeJson.languageIds ?? {}).length;
-      console.log(
-        '[Shiftspace] IconTheme load(): parsed OK |',
+      log.debug(
+        'IconTheme load(): parsed OK |',
         'iconDefinitions:',
         defCount,
         '| fileExtensions:',
@@ -127,7 +128,7 @@ export class IconThemeProvider implements vscode.Disposable {
 
       return true;
     } catch (err) {
-      console.error('[Shiftspace] IconTheme load(): error loading theme:', err);
+      log.error('IconTheme load(): error loading theme:', err);
       return false;
     }
   }
@@ -145,20 +146,10 @@ export class IconThemeProvider implements vscode.Disposable {
           const raw = await vscode.workspace.fs.readFile(vscode.Uri.file(fontPath));
           const b64 = Buffer.from(raw).toString('base64');
           this._fontCache.set(font.id, { b64, format: src.format });
-          console.log(
-            '[Shiftspace] IconTheme _loadFonts(): loaded font',
-            font.id,
-            'from',
-            fontPath
-          );
+          log.debug('IconTheme _loadFonts(): loaded font', font.id, 'from', fontPath);
           break; // Use first available src format
         } catch (err) {
-          console.warn(
-            '[Shiftspace] IconTheme _loadFonts(): failed to load font',
-            font.id,
-            src.path,
-            err
-          );
+          log.warn('IconTheme _loadFonts(): failed to load font', font.id, src.path, err);
         }
       }
     }
@@ -189,13 +180,13 @@ export class IconThemeProvider implements vscode.Disposable {
         }
       }
     }
-    console.log(
-      '[Shiftspace] IconTheme _buildExtToLangIdMap(): mapped',
+    log.debug(
+      'IconTheme _buildExtToLangIdMap(): mapped',
       this._extToLangId.size,
       'extensions to language IDs'
     );
-    console.log(
-      '[Shiftspace] IconTheme _buildExtToLangIdMap(): ts =',
+    log.debug(
+      'IconTheme _buildExtToLangIdMap(): ts =',
       this._extToLangId.get('ts'),
       '| tsx =',
       this._extToLangId.get('tsx')
@@ -217,12 +208,7 @@ export class IconThemeProvider implements vscode.Disposable {
 
       const match = themes.find((t) => t.id === themeId);
       if (match) {
-        console.log(
-          '[Shiftspace] IconTheme _findThemeExtension(): found in',
-          ext.id,
-          '| themePath:',
-          match.path
-        );
+        log.debug('IconTheme _findThemeExtension(): found in', ext.id, '| themePath:', match.path);
         return { extensionPath: ext.extensionPath, themePath: match.path };
       }
     }
@@ -254,8 +240,8 @@ export class IconThemeProvider implements vscode.Disposable {
       }
     }
 
-    console.log(
-      '[Shiftspace] IconTheme resolveForFiles(): resolved',
+    log.debug(
+      'IconTheme resolveForFiles(): resolved',
       Object.keys(result).length,
       '/',
       filePaths.length,
@@ -334,7 +320,7 @@ export class IconThemeProvider implements vscode.Disposable {
         this._svgCache.set(iconId, dataUri);
         return dataUri;
       } catch (err) {
-        console.error('[Shiftspace] IconTheme: failed to read SVG for', iconId, '| error:', err);
+        log.error('IconTheme: failed to read SVG for', iconId, '| error:', err);
         this._svgCache.set(iconId, '');
         return null;
       }
@@ -346,12 +332,7 @@ export class IconThemeProvider implements vscode.Disposable {
       const fontData = fontId ? this._fontCache.get(fontId) : undefined;
 
       if (!fontData) {
-        console.warn(
-          '[Shiftspace] IconTheme: no font loaded for glyph icon',
-          iconId,
-          '| fontId:',
-          fontId
-        );
+        log.warn('IconTheme: no font loaded for glyph icon', iconId, '| fontId:', fontId);
         this._svgCache.set(iconId, '');
         return null;
       }

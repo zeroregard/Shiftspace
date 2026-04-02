@@ -21,7 +21,8 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,tsx,json,md}": "prettier --write"
+    "*.{ts,tsx,json,md}": "prettier --write",
+    "*.{ts,tsx}": "oxlint --deny-warnings"
   },
   "devDependencies": {
     "husky": "^9.0.0",

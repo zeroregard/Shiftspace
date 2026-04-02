@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import * as RadixTooltip from '@radix-ui/react-tooltip';
 import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
 import { useShiftspaceStore } from './store';
 import { type PanZoomConfig } from './TreeCanvas';
 import { GroveView } from './views/grove';
 import { InspectionView } from './views/inspection';
 import { PackageSwitcher } from './shared/PackageSwitcher';
+import { ActionsProvider, useActions } from './ui/ActionsContext';
 
 interface Props {
   initialWorktrees?: WorktreeState[];
@@ -56,13 +58,9 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onRecheckInsights,
   panZoomConfig,
 }) => {
-  const { worktrees, setWorktrees, applyEvent } = useShiftspaceStore();
-  const mode = useShiftspaceStore((s) => s.mode);
+  const { setWorktrees, applyEvent } = useShiftspaceStore();
 
   useEffect(() => {
-    // Only seed the store when initialWorktrees was explicitly provided (preview app).
-    // In the VSCode webview, the store is managed via message events — skipping this
-    // prevents a remount (e.g. after an error→init sequence) from wiping fresh data.
     if (initialWorktrees.length > 0) setWorktrees(initialWorktrees);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -71,105 +69,46 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     return onEvent(applyEvent);
   }, [onEvent, applyEvent]);
 
-  // Stable callback refs
-  const fileClickRef = useRef(onFileClick);
-  fileClickRef.current = onFileClick;
-  const stableFileClick = useCallback(
-    (wtId: string, filePath: string) => fileClickRef.current?.(wtId, filePath),
-    []
+  return (
+    <ActionsProvider
+      onFileClick={onFileClick}
+      onFolderClick={onFolderClick}
+      onDiffModeChange={onDiffModeChange}
+      onRequestBranchList={onRequestBranchList}
+      onCheckoutBranch={onCheckoutBranch}
+      onFetchBranches={onFetchBranches}
+      onSwapBranches={onSwapBranches}
+      onRemoveWorktree={onRemoveWorktree}
+      onRenameWorktree={onRenameWorktree}
+      onRunAction={onRunAction}
+      onStopAction={onStopAction}
+      onRunPipeline={onRunPipeline}
+      onGetLog={onGetLog}
+      onRecheckInsights={onRecheckInsights}
+      onSetPackage={onSetPackage}
+      onDetectPackages={onDetectPackages}
+    >
+      <RadixTooltip.Provider delayDuration={300}>
+        <ShiftspaceContent showPackageSwitcher={!!onSetPackage} panZoomConfig={panZoomConfig} />
+      </RadixTooltip.Provider>
+    </ActionsProvider>
   );
+};
 
-  const diffModeChangeRef = useRef(onDiffModeChange);
-  diffModeChangeRef.current = onDiffModeChange;
-  const stableDiffModeChange = useCallback(
-    (wtId: string, diffMode: DiffMode) => diffModeChangeRef.current?.(wtId, diffMode),
-    []
-  );
+// ---------------------------------------------------------------------------
+// Inner content — consumes actions from context, no prop drilling
+// ---------------------------------------------------------------------------
 
-  const requestBranchListRef = useRef(onRequestBranchList);
-  requestBranchListRef.current = onRequestBranchList;
-  const stableRequestBranchList = useCallback(
-    (wtId: string) => requestBranchListRef.current?.(wtId),
-    []
-  );
+interface ContentProps {
+  showPackageSwitcher: boolean;
+  panZoomConfig?: PanZoomConfig;
+}
 
-  const checkoutBranchRef = useRef(onCheckoutBranch);
-  checkoutBranchRef.current = onCheckoutBranch;
-  const stableCheckoutBranch = useCallback(
-    (wtId: string, branch: string) => checkoutBranchRef.current?.(wtId, branch),
-    []
-  );
+const ShiftspaceContent = React.memo(({ showPackageSwitcher, panZoomConfig }: ContentProps) => {
+  const worktrees = useShiftspaceStore((s) => s.worktrees);
+  const mode = useShiftspaceStore((s) => s.mode);
+  const actions = useActions();
 
-  const folderClickRef = useRef(onFolderClick);
-  folderClickRef.current = onFolderClick;
-  const stableFolderClick = useCallback(
-    (wtId: string, folderPath: string) => folderClickRef.current?.(wtId, folderPath),
-    []
-  );
-
-  const fetchBranchesRef = useRef(onFetchBranches);
-  fetchBranchesRef.current = onFetchBranches;
-  const stableFetchBranches = useCallback((wtId: string) => fetchBranchesRef.current?.(wtId), []);
-
-  const runActionRef = useRef(onRunAction);
-  runActionRef.current = onRunAction;
-  const stableRunAction = useCallback(
-    (wtId: string, actionId: string) => runActionRef.current?.(wtId, actionId),
-    []
-  );
-
-  const stopActionRef = useRef(onStopAction);
-  stopActionRef.current = onStopAction;
-  const stableStopAction = useCallback(
-    (wtId: string, actionId: string) => stopActionRef.current?.(wtId, actionId),
-    []
-  );
-
-  const swapBranchesRef = useRef(onSwapBranches);
-  swapBranchesRef.current = onSwapBranches;
-  const stableSwapBranches = useCallback((wtId: string) => swapBranchesRef.current?.(wtId), []);
-
-  const removeWorktreeRef = useRef(onRemoveWorktree);
-  removeWorktreeRef.current = onRemoveWorktree;
-  const stableRemoveWorktree = useCallback((wtId: string) => removeWorktreeRef.current?.(wtId), []);
-
-  const renameWorktreeRef = useRef(onRenameWorktree);
-  renameWorktreeRef.current = onRenameWorktree;
-  const stableRenameWorktree = useCallback(
-    (wtId: string, newName: string) => renameWorktreeRef.current?.(wtId, newName),
-    []
-  );
-
-  const runPipelineRef = useRef(onRunPipeline);
-  runPipelineRef.current = onRunPipeline;
-  const stableRunPipeline = useCallback(
-    (wtId: string, pipelineId: string) => runPipelineRef.current?.(wtId, pipelineId),
-    []
-  );
-
-  const setPackageRef = useRef(onSetPackage);
-  setPackageRef.current = onSetPackage;
-  const stableSetPackage = useCallback((pkg: string) => setPackageRef.current?.(pkg), []);
-
-  const detectPackagesRef = useRef(onDetectPackages);
-  detectPackagesRef.current = onDetectPackages;
-  const stableDetectPackages = useCallback(() => detectPackagesRef.current?.(), []);
-
-  const getLogRef = useRef(onGetLog);
-  getLogRef.current = onGetLog;
-  const stableGetLog = useCallback(
-    (wtId: string, actionId: string) => getLogRef.current?.(wtId, actionId),
-    []
-  );
-
-  const recheckInsightsRef = useRef(onRecheckInsights);
-  recheckInsightsRef.current = onRecheckInsights;
-  const stableRecheckInsights = useCallback(
-    (wtId: string) => recheckInsightsRef.current?.(wtId),
-    []
-  );
-
-  // Sorted worktree array (main first, then by worktree directory name)
   const wtArray = useMemo(
     () =>
       Array.from(worktrees.values()).sort((a, b) => {
@@ -184,49 +123,22 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   return (
     <div className="w-full h-full bg-canvas flex flex-col relative">
-      {/* Global toolbar — only shown when package switching is wired up (VSCode extension) */}
-      {onSetPackage && (
+      {showPackageSwitcher && (
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
           <PackageSwitcher
-            onSetPackage={stableSetPackage}
-            onDetectPackages={stableDetectPackages}
+            onSetPackage={actions.setPackage}
+            onDetectPackages={actions.detectPackages}
           />
         </div>
       )}
-      {/* Main content */}
       <div className="flex-1 min-h-0">
         {mode.type === 'grove' ? (
-          <GroveView
-            worktrees={wtArray}
-            onRequestBranchList={stableRequestBranchList}
-            onFetchBranches={stableFetchBranches}
-            onCheckoutBranch={stableCheckoutBranch}
-            onRunAction={stableRunAction}
-            onStopAction={stableStopAction}
-            onRunPipeline={stableRunPipeline}
-            onSwapBranches={stableSwapBranches}
-            onRemoveWorktree={stableRemoveWorktree}
-            onRenameWorktree={stableRenameWorktree}
-          />
+          <GroveView worktrees={wtArray} />
         ) : (
-          <InspectionView
-            worktreeId={mode.worktreeId}
-            onFileClick={stableFileClick}
-            onDiffModeChange={stableDiffModeChange}
-            onRequestBranchList={stableRequestBranchList}
-            onCheckoutBranch={stableCheckoutBranch}
-            onFolderClick={stableFolderClick}
-            onFetchBranches={stableFetchBranches}
-            onRunAction={stableRunAction}
-            onStopAction={stableStopAction}
-            onSwapBranches={stableSwapBranches}
-            onRunPipeline={stableRunPipeline}
-            onGetLog={stableGetLog}
-            onRecheckInsights={stableRecheckInsights}
-            panZoomConfig={panZoomConfig}
-          />
+          <InspectionView worktreeId={mode.worktreeId} panZoomConfig={panZoomConfig} />
         )}
       </div>
     </div>
   );
-};
+});
+ShiftspaceContent.displayName = 'ShiftspaceContent';

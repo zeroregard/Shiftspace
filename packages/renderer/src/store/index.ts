@@ -14,6 +14,19 @@ import type {
   InsightFinding,
   FileDiagnosticSummary,
 } from '../types';
+import { applyEventReducer } from './applyEvent';
+
+/** Helper: delete all entries in a Map whose key starts with `${prefix}:`. */
+function deleteByPrefix<V>(map: Map<string, V>, prefix: string): boolean {
+  let changed = false;
+  for (const key of map.keys()) {
+    if (key.startsWith(`${prefix}:`)) {
+      map.delete(key);
+      changed = true;
+    }
+  }
+  return changed;
+}
 
 interface ShiftspaceStore {
   worktrees: Map<string, WorktreeState>;
@@ -125,7 +138,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setDiffMode: (worktreeId, diffMode) =>
     set((state) => {
-      const worktrees = new Map(state.worktrees);
+      const worktrees = new Map<string, WorktreeState>(state.worktrees);
       const wt = worktrees.get(worktreeId);
       if (wt) {
         worktrees.set(worktreeId, { ...wt, diffMode });
@@ -135,7 +148,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setDiffModeLoading: (worktreeId, loading) =>
     set((state) => {
-      const diffModeLoading = new Set(state.diffModeLoading);
+      const diffModeLoading = new Set<string>(state.diffModeLoading);
       if (loading) {
         diffModeLoading.add(worktreeId);
       } else {
@@ -146,26 +159,26 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setBranchList: (worktreeId, branches) =>
     set((state) => {
-      const branchLists = new Map(state.branchLists);
+      const branchLists = new Map<string, string[]>(state.branchLists);
       branchLists.set(worktreeId, branches);
       return { branchLists };
     }),
 
   updateWorktreeFiles: (worktreeId, files, diffMode, branchFiles) =>
     set((state) => {
-      const worktrees = new Map(state.worktrees);
+      const worktrees = new Map<string, WorktreeState>(state.worktrees);
       const wt = worktrees.get(worktreeId);
       if (wt) {
         worktrees.set(worktreeId, { ...wt, files, diffMode, branchFiles });
       }
-      const diffModeLoading = new Set(state.diffModeLoading);
+      const diffModeLoading = new Set<string>(state.diffModeLoading);
       diffModeLoading.delete(worktreeId);
       return { worktrees, diffModeLoading };
     }),
 
   setFetchLoading: (worktreeId, loading) =>
     set((state) => {
-      const fetchLoading = new Set(state.fetchLoading);
+      const fetchLoading = new Set<string>(state.fetchLoading);
       if (loading) fetchLoading.add(worktreeId);
       else fetchLoading.delete(worktreeId);
       return { fetchLoading };
@@ -173,16 +186,18 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setLastFetchAt: (worktreeId, timestamp) =>
     set((state) => {
-      const lastFetchAt = new Map(state.lastFetchAt);
+      const lastFetchAt = new Map<string, number>(state.lastFetchAt);
       lastFetchAt.set(worktreeId, timestamp);
       return { lastFetchAt };
     }),
+
+  applyEvent: (event) => set((state) => ({ worktrees: applyEventReducer(state.worktrees, event) })),
 
   setActionConfigs: (configs) => set({ actionConfigs: configs }),
 
   setActionState: (worktreeId, actionId, state) =>
     set((s) => {
-      const actionStates = new Map(s.actionStates);
+      const actionStates = new Map<string, ActionState>(s.actionStates);
       actionStates.set(`${worktreeId}:${actionId}`, state);
       return { actionStates };
     }),
@@ -193,7 +208,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setActionLog: (worktreeId, actionId, log) =>
     set((s) => {
-      const actionLogs = new Map(s.actionLogs);
+      const actionLogs = new Map<string, string>(s.actionLogs);
       actionLogs.set(`${worktreeId}:${actionId}`, log);
       return { actionLogs };
     }),
@@ -201,7 +216,7 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
   appendActionLog: (worktreeId, actionId, chunk) =>
     set((s) => {
       const key = `${worktreeId}:${actionId}`;
-      const actionLogs = new Map(s.actionLogs);
+      const actionLogs = new Map<string, string>(s.actionLogs);
       actionLogs.set(key, (actionLogs.get(key) ?? '') + chunk);
       return { actionLogs };
     }),
@@ -212,33 +227,22 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   setInsightDetail: (worktreeId, insightId, detail) =>
     set((s) => {
-      const insightDetails = new Map(s.insightDetails);
+      const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
       insightDetails.set(`${worktreeId}:${insightId}`, detail);
       return { insightDetails };
     }),
 
   clearInsightDetails: (worktreeId) =>
     set((s) => {
-      const insightDetails = new Map(s.insightDetails);
-      let changed = false;
-      for (const key of insightDetails.keys()) {
-        if (key.startsWith(`${worktreeId}:`)) {
-          insightDetails.delete(key);
-          changed = true;
-        }
-      }
+      const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
+      const changed = deleteByPrefix(insightDetails, worktreeId);
       return changed ? { insightDetails } : {};
     }),
 
   setFileDiagnostics: (worktreeId, files) =>
     set((s) => {
-      const fileDiagnostics = new Map(s.fileDiagnostics);
-      // Remove all existing entries for this worktree to prune stale diagnostics
-      for (const key of fileDiagnostics.keys()) {
-        if (key.startsWith(`${worktreeId}:`)) {
-          fileDiagnostics.delete(key);
-        }
-      }
+      const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
+      deleteByPrefix(fileDiagnostics, worktreeId);
       for (const file of files) {
         fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
       }
@@ -247,20 +251,14 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
 
   clearFileDiagnostics: (worktreeId) =>
     set((s) => {
-      const fileDiagnostics = new Map(s.fileDiagnostics);
-      let changed = false;
-      for (const key of fileDiagnostics.keys()) {
-        if (key.startsWith(`${worktreeId}:`)) {
-          fileDiagnostics.delete(key);
-          changed = true;
-        }
-      }
+      const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
+      const changed = deleteByPrefix(fileDiagnostics, worktreeId);
       return changed ? { fileDiagnostics } : {};
     }),
 
   markAllStale: (worktreeId) =>
     set((s) => {
-      const actionStates = new Map(s.actionStates);
+      const actionStates = new Map<string, ActionState>(s.actionStates);
       let changed = false;
       for (const [key, state] of actionStates) {
         if (
@@ -272,67 +270,5 @@ export const useShiftspaceStore = create<ShiftspaceStore>((set) => ({
         }
       }
       return changed ? { actionStates } : {};
-    }),
-
-  applyEvent: (event) =>
-    set((state) => {
-      const worktrees = new Map(state.worktrees);
-
-      switch (event.type) {
-        case 'worktree-added': {
-          worktrees.set(event.worktree.id, event.worktree);
-          break;
-        }
-        case 'worktree-removed': {
-          worktrees.delete(event.worktreeId);
-          break;
-        }
-        case 'file-changed': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const files = wt.files.filter((f) => f.path !== event.file.path);
-            worktrees.set(event.worktreeId, { ...wt, files: [...files, event.file] });
-          }
-          break;
-        }
-        case 'file-removed': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const files = wt.files.filter((f) => f.path !== event.filePath);
-            worktrees.set(event.worktreeId, { ...wt, files });
-          }
-          break;
-        }
-        case 'file-staged': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const files = wt.files.map((f) =>
-              f.path === event.filePath ? { ...f, staged: true } : f
-            );
-            worktrees.set(event.worktreeId, { ...wt, files });
-          }
-          break;
-        }
-        case 'process-started': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            worktrees.set(event.worktreeId, {
-              ...wt,
-              process: { port: event.port, command: event.command },
-            });
-          }
-          break;
-        }
-        case 'process-stopped': {
-          const wt = worktrees.get(event.worktreeId);
-          if (wt) {
-            const { process: _removed, ...rest } = wt;
-            worktrees.set(event.worktreeId, rest);
-          }
-          break;
-        }
-      }
-
-      return { worktrees };
     }),
 }));

@@ -27,7 +27,7 @@ function makePlugin(id: string, _enabled = true): InsightPlugin & { analyzed: nu
     icon: 'bug',
     defaultSettings: {},
     analyzed: 0,
-    async analyze(_files: FileChange[], _repoRoot: string, _worktreeRoot: string) {
+    async analyze(_ctx: import('../../src/insights/types').AnalyzeContext) {
       plugin.analyzed++;
       return {
         summary: {
@@ -138,13 +138,12 @@ describe('InsightRunner', () => {
     }));
 
     const files = [makeFile('src/app.ts')];
-    const { summaries, details } = await runner.analyzeWorktree(
-      'wt1',
+    const { summaries, details } = await runner.analyzeWorktree({
+      worktreeId: 'wt1',
       files,
-      '/repo',
-      '/repo',
-      undefined
-    );
+      repoRoot: '/repo',
+      worktreeRoot: '/repo',
+    });
 
     expect(summaries).toHaveLength(1);
     expect(details).toHaveLength(1);
@@ -186,8 +185,18 @@ describe('InsightRunner', () => {
     insightRegistry.getAll = () => [plugin];
 
     const files = [makeFile('src/a.ts')];
-    await runner.analyzeWorktree('wt1', files, '/repo', '/repo');
-    await runner.analyzeWorktree('wt1', files, '/repo', '/repo');
+    await runner.analyzeWorktree({
+      worktreeId: 'wt1',
+      files,
+      repoRoot: '/repo',
+      worktreeRoot: '/repo',
+    });
+    await runner.analyzeWorktree({
+      worktreeId: 'wt1',
+      files,
+      repoRoot: '/repo',
+      worktreeRoot: '/repo',
+    });
 
     // Plugin should only be called once due to caching
     expect(plugin.analyzed).toBe(1);
@@ -204,9 +213,19 @@ describe('InsightRunner', () => {
     insightRegistry.getAll = () => [plugin];
 
     const files = [makeFile('src/b.ts')];
-    await runner.analyzeWorktree('wt1', files, '/repo', '/repo');
+    await runner.analyzeWorktree({
+      worktreeId: 'wt1',
+      files,
+      repoRoot: '/repo',
+      worktreeRoot: '/repo',
+    });
     runner.clearCache('wt1');
-    await runner.analyzeWorktree('wt1', files, '/repo', '/repo');
+    await runner.analyzeWorktree({
+      worktreeId: 'wt1',
+      files,
+      repoRoot: '/repo',
+      worktreeRoot: '/repo',
+    });
 
     expect(plugin.analyzed).toBe(2);
 
@@ -224,7 +243,7 @@ describe('InsightRunner', () => {
       label: 'Bad',
       icon: 'error',
       defaultSettings: {},
-      async analyze() {
+      async analyze(_ctx: import('../../src/insights/types').AnalyzeContext) {
         throw new Error('Plugin exploded');
       },
     };
@@ -232,7 +251,12 @@ describe('InsightRunner', () => {
     insightRegistry.getAll = () => [badPlugin, goodPlugin];
 
     const files = [makeFile('src/c.ts')];
-    const { summaries, details } = await runner.analyzeWorktree('wt1', files, '/repo', '/repo');
+    const { summaries, details } = await runner.analyzeWorktree({
+      worktreeId: 'wt1',
+      files,
+      repoRoot: '/repo',
+      worktreeRoot: '/repo',
+    });
 
     // Only the good plugin result survives
     expect(summaries).toHaveLength(1);
@@ -251,12 +275,12 @@ describe('InsightRunner', () => {
     insightRegistry.getAll = () => [plugin];
 
     const files = [makeFile('src/d.ts')];
-    const { summaries, details } = await runner.analyzeWorktree(
-      'my-worktree-id',
+    const { summaries, details } = await runner.analyzeWorktree({
+      worktreeId: 'my-worktree-id',
       files,
-      '/repo',
-      '/repo'
-    );
+      repoRoot: '/repo',
+      worktreeRoot: '/repo',
+    });
 
     expect(summaries[0]!.worktreeId).toBe('my-worktree-id');
     expect(details[0]!.worktreeId).toBe('my-worktree-id');

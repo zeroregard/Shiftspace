@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
 import { gitReadOnly, gitWrite } from './gitUtils';
+import { log } from '../logger';
 
 /**
  * Parse the output of `git worktree list --porcelain` into WorktreeState[].
@@ -281,6 +282,80 @@ async function popStashByMessage(worktreePath: string, message: string): Promise
   // Stash not found — nothing to pop
 }
 
+/** Attempt to roll back a failed swap. Returns a note string for the error message. */
+async function rollbackSwap(ctx: {
+  worktreeAPath: string;
+  worktreeBPath: string;
+  branchA: string;
+  branchB: string;
+  tempBranch: string;
+  tempBranchCreated: boolean;
+  bCheckedOut: boolean;
+  stashedA: boolean;
+  stashedB: boolean;
+}): Promise<string> {
+  const rollbackIssues: string[] = [];
+
+  if (ctx.tempBranchCreated) {
+    await rollbackBranches(ctx, rollbackIssues);
+    await deleteTempBranch(ctx.worktreeAPath, ctx.tempBranch, rollbackIssues);
+  }
+
+  // Pop stashes back to their original worktrees
+  if (ctx.stashedA) {
+    try {
+      await popStashByMessage(ctx.worktreeAPath, 'shiftspace-swap-A');
+    } catch {
+      // Stash is preserved in the list — user can recover manually
+    }
+  }
+  if (ctx.stashedB) {
+    try {
+      await popStashByMessage(ctx.worktreeBPath, 'shiftspace-swap-B');
+    } catch {
+      // Stash is preserved in the list
+    }
+  }
+
+  return rollbackIssues.length > 0 ? ` Rollback issues: ${rollbackIssues.join('; ')}` : '';
+}
+
+async function rollbackBranches(
+  ctx: {
+    worktreeAPath: string;
+    worktreeBPath: string;
+    branchA: string;
+    branchB: string;
+    bCheckedOut: boolean;
+  },
+  issues: string[]
+): Promise<void> {
+  if (ctx.bCheckedOut) {
+    try {
+      await gitWrite(['checkout', ctx.branchB], { cwd: ctx.worktreeBPath, timeout: 10_000 });
+    } catch (e) {
+      issues.push(`restore B to ${ctx.branchB}: ${(e as Error).message}`);
+    }
+  }
+  try {
+    await gitWrite(['checkout', ctx.branchA], { cwd: ctx.worktreeAPath, timeout: 10_000 });
+  } catch (e) {
+    issues.push(`restore A to ${ctx.branchA}: ${(e as Error).message}`);
+  }
+}
+
+async function deleteTempBranch(cwd: string, tempBranch: string, issues: string[]): Promise<void> {
+  try {
+    await gitWrite(['branch', '-d', tempBranch], { cwd, timeout: 10_000 });
+  } catch {
+    try {
+      await gitWrite(['branch', '-D', tempBranch], { cwd, timeout: 10_000 });
+    } catch (e2) {
+      issues.push(`delete temp branch: ${(e2 as Error).message}`);
+    }
+  }
+}
+
 export interface SwapBranchesOptions {
   /** Path to the linked worktree (the source of the swap). */
   worktreeAPath: string;
@@ -307,7 +382,7 @@ export interface SwapBranchesOptions {
  */
 export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
   const { worktreeAPath, branchA, worktreeBPath, branchB, onProgress } = opts;
-  const log = onProgress ?? (() => {});
+  const progress = onProgress ?? (() => {});
 
   let stashedA = false;
   let stashedB = false;
@@ -321,7 +396,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     await cleanStaleLockFile(worktreeBPath);
 
     // ── Step 1: Stash uncommitted changes ──────────────────────────────────
-    log('Stashing changes...');
+    progress('Stashing changes...');
 
     const { stdout: statusA } = await gitReadOnly(['status', '--porcelain'], {
       cwd: worktreeAPath,
@@ -348,7 +423,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     }
 
     // ── Step 2: Create temp branch on A (frees branchA) ───────────────────
-    log('Swapping branches...');
+    progress('Swapping branches...');
     tempBranch = await findUniqueTempBranchName(worktreeAPath);
     await gitWrite(['checkout', '-b', tempBranch], {
       cwd: worktreeAPath,
@@ -379,12 +454,12 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     // ── Step 6: Restore stashes (cross-applied) ───────────────────────────
     // A's stash → B (B is now on branchA, where A's changes belong)
     // B's stash → A (A is now on branchB, where B's changes belong)
-    log('Restoring changes...');
+    progress('Restoring changes...');
     if (stashedA) {
       try {
         await popStashByMessage(worktreeBPath, 'shiftspace-swap-A');
       } catch (err) {
-        console.error('[Shiftspace] swapBranches: failed to pop stash A on B:', err);
+        log.error('swapBranches: failed to pop stash A on B:', err);
         // Non-fatal: stash is preserved in the stash list
       }
     }
@@ -392,81 +467,21 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
       try {
         await popStashByMessage(worktreeAPath, 'shiftspace-swap-B');
       } catch (err) {
-        console.error('[Shiftspace] swapBranches: failed to pop stash B on A:', err);
+        log.error('swapBranches: failed to pop stash B on A:', err);
       }
     }
   } catch (err) {
-    // ── Rollback ──────────────────────────────────────────────────────────
-    const rollbackIssues: string[] = [];
-
-    if (tempBranchCreated) {
-      if (bCheckedOut) {
-        // B is on branchA, A is on temp branch.
-        // Restore: B → branchB (freeing branchB), A → branchA, delete temp.
-        try {
-          await gitWrite(['checkout', branchB], {
-            cwd: worktreeBPath,
-            timeout: 10_000,
-          });
-        } catch (e) {
-          rollbackIssues.push(`restore B to ${branchB}: ${(e as Error).message}`);
-        }
-        try {
-          await gitWrite(['checkout', branchA], {
-            cwd: worktreeAPath,
-            timeout: 10_000,
-          });
-        } catch (e) {
-          rollbackIssues.push(`restore A to ${branchA}: ${(e as Error).message}`);
-        }
-      } else {
-        // B is still on branchB, A is on temp branch. Restore A → branchA.
-        try {
-          await gitWrite(['checkout', branchA], {
-            cwd: worktreeAPath,
-            timeout: 10_000,
-          });
-        } catch (e) {
-          rollbackIssues.push(`restore A to ${branchA}: ${(e as Error).message}`);
-        }
-      }
-      // Always attempt to clean up temp branch
-      try {
-        await gitWrite(['branch', '-d', tempBranch], {
-          cwd: worktreeAPath,
-          timeout: 10_000,
-        });
-      } catch {
-        // Try force-delete
-        try {
-          await gitWrite(['branch', '-D', tempBranch], {
-            cwd: worktreeAPath,
-            timeout: 10_000,
-          });
-        } catch (e2) {
-          rollbackIssues.push(`delete temp branch: ${(e2 as Error).message}`);
-        }
-      }
-    }
-
-    // Pop stashes back to their original worktrees
-    if (stashedA) {
-      try {
-        await popStashByMessage(worktreeAPath, 'shiftspace-swap-A');
-      } catch {
-        // Stash is preserved in the list — user can recover manually
-      }
-    }
-    if (stashedB) {
-      try {
-        await popStashByMessage(worktreeBPath, 'shiftspace-swap-B');
-      } catch {
-        // Stash is preserved in the list
-      }
-    }
-
-    const rollbackNote =
-      rollbackIssues.length > 0 ? ` Rollback issues: ${rollbackIssues.join('; ')}` : '';
+    const rollbackNote = await rollbackSwap({
+      worktreeAPath,
+      worktreeBPath,
+      branchA,
+      branchB,
+      tempBranch,
+      tempBranchCreated,
+      bCheckedOut,
+      stashedA,
+      stashedB,
+    });
     throw new Error(`${(err as Error).message}${rollbackNote}`);
   }
 }

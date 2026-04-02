@@ -9,12 +9,31 @@ export { InspectionView } from './views/inspection';
 export { WorktreeNode, FolderNode, FileNode } from './nodes';
 
 // Overlays
-export { DiffPopover, DiffHoverCard } from './overlays/DiffPopover';
-export { BranchPickerPopover } from './overlays/BranchPickerPopover';
+export { DiffPopover } from './overlays/DiffPopover';
+export { BranchPicker, type StaticOption } from './overlays/BranchPicker';
 
 // Shared primitives
 export { ThemedFileIcon } from './shared/ThemedFileIcon';
 export { PackageSwitcher } from './shared/PackageSwitcher';
+
+// Design system
+export {
+  AnnotationBadges,
+  Badge,
+  Codicon,
+  IconButton,
+  Input,
+  ListItem,
+  SectionLabel,
+  Spinner,
+  StatusDot,
+  ActionsProvider,
+  useActions,
+  type ShiftspaceActions,
+} from './ui';
+
+// Hooks
+export { useFileAnnotations, type FileAnnotations } from './hooks/useFileAnnotations';
 
 // All types
 export type {

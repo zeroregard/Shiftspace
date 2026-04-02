@@ -200,7 +200,13 @@ export class MockEngine {
   constructor() {
     // Initialize with first two preset worktrees
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {
-      this.addWorktree(`wt-${i}`, preset.branch, preset.path, preset.template, i === 0);
+      this.addWorktree({
+        id: `wt-${i}`,
+        branch: preset.branch,
+        path: preset.path,
+        template: preset.template,
+        isMainWorktree: i === 0,
+      });
     });
   }
 
@@ -219,13 +225,14 @@ export class MockEngine {
 
   private templateMap = new Map<string, TemplateKey>();
 
-  addWorktree(
-    id: string,
-    branch: string,
-    path: string,
-    template: TemplateKey,
-    isMainWorktree = false
-  ) {
+  addWorktree(opts: {
+    id: string;
+    branch: string;
+    path: string;
+    template: TemplateKey;
+    isMainWorktree?: boolean;
+  }) {
+    const { id, branch, path, template, isMainWorktree = false } = opts;
     const isDefault = branch === DEFAULT_BRANCH;
     const diffMode: DiffMode = isDefault
       ? { type: 'working' }
@@ -251,7 +258,7 @@ export class MockEngine {
   addPresetWorktree(presetIndex: number) {
     const preset = WORKTREE_PRESETS[presetIndex % WORKTREE_PRESETS.length];
     const id = `wt-${Date.now()}`;
-    this.addWorktree(id, preset.branch, preset.path, preset.template);
+    this.addWorktree({ id, branch: preset.branch, path: preset.path, template: preset.template });
     return id;
   }
 
@@ -479,7 +486,13 @@ export class MockEngine {
 
     // Re-initialize
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {
-      this.addWorktree(`wt-${i}`, preset.branch, preset.path, preset.template, i === 0);
+      this.addWorktree({
+        id: `wt-${i}`,
+        branch: preset.branch,
+        path: preset.path,
+        template: preset.template,
+        isMainWorktree: i === 0,
+      });
     });
   }
 

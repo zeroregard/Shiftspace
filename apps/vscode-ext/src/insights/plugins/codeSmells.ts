@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { InsightPlugin, InsightFinding, FileInsight } from '../types';
+import type { InsightPlugin, InsightFinding, FileInsight, AnalyzeContext } from '../types';
 import { insightRegistry } from '../registry';
 import type { SmellRule } from '../../actions/types';
 
@@ -18,7 +18,8 @@ const codeSmellsPlugin: InsightPlugin = {
   icon: 'bug',
   defaultSettings: {},
 
-  async analyze(files, _repoRoot, worktreeRoot, settings, signal) {
+  async analyze(ctx: AnalyzeContext) {
+    const { files, worktreeRoot, settings, signal } = ctx;
     const rules = (settings['smellRules'] as SmellRule[] | undefined) ?? [];
 
     const empty = {

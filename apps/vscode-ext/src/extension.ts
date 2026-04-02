@@ -3,10 +3,13 @@ import { ShiftspacePanel } from './ShiftspacePanel';
 import { runDetectActionsCommand } from './actions/detect';
 import { ShiftspaceMcpHttpServer } from './mcp/httpServer';
 import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/autoConfig';
+import { initLogger, log } from './logger';
 
 const mcpHttpServer = new ShiftspaceMcpHttpServer();
 
 export function activate(context: vscode.ExtensionContext) {
+  initLogger(context);
+
   // Restore any Shiftspace tabs that were open before a window reload.
   // Must be registered synchronously at activation time.
   ShiftspacePanel.registerSerializer(context);
@@ -59,7 +62,7 @@ async function startMcpServer(context: vscode.ExtensionContext): Promise<void> {
     await installMcpServerBinary(context.extensionPath);
     void promptMcpConfiguration();
   } catch (err) {
-    console.error('[Shiftspace] Failed to start MCP HTTP server:', err);
+    log.error('Failed to start MCP HTTP server:', err);
   }
 }
 

@@ -1,6 +1,7 @@
 import type { CheckResult, ShiftspaceActionConfig, PipelineConfig } from './types';
 import type { RunOptions } from './runner';
 import { runCheck } from './runner';
+import { log } from '../logger';
 
 export interface PipelineResult {
   steps: CheckResult[];
@@ -34,7 +35,7 @@ export async function runPipeline(
 
     const action = actions.get(stepId);
     if (!action) {
-      console.warn(`[Shiftspace] Pipeline step "${stepId}" not found in actions`);
+      log.warn(`Pipeline step "${stepId}" not found in actions`);
       continue;
     }
 

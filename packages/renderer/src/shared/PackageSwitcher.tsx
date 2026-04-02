@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
+import * as Popover from '@radix-ui/react-popover';
 import { useShiftspaceStore } from '../store';
+import { Codicon } from '../ui/Codicon';
 
 interface PackageSwitcherProps {
   onSetPackage?: (packageName: string) => void;
@@ -12,18 +14,6 @@ export const PackageSwitcher: React.FC<PackageSwitcherProps> = React.memo(
     const availablePackages = useShiftspaceStore((s) => s.availablePackages);
     const [open, setOpen] = useState(false);
     const [filter, setFilter] = useState('');
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-      if (!open) return;
-      const handler = (e: MouseEvent) => {
-        if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-          setOpen(false);
-        }
-      };
-      document.addEventListener('mousedown', handler);
-      return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
 
     const filtered = availablePackages.filter((p) =>
       p.toLowerCase().includes(filter.toLowerCase())
@@ -36,24 +26,33 @@ export const PackageSwitcher: React.FC<PackageSwitcherProps> = React.memo(
     };
 
     return (
-      <div className="relative" ref={containerRef}>
-        <button
-          className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default text-10 whitespace-nowrap cursor-pointer bg-transparent transition-colors"
-          onClick={() => {
-            if (!open && availablePackages.length === 0) {
-              onDetectPackages?.();
-            }
-            setOpen((v) => !v);
-          }}
-          aria-label="Select package"
-        >
-          <i className="codicon codicon-package" style={{ fontSize: 11 }} aria-hidden="true" />
-          <span>{selectedPackage || 'All packages'}</span>
-          <i className="codicon codicon-chevron-down" style={{ fontSize: 9 }} aria-hidden="true" />
-        </button>
+      <Popover.Root
+        open={open}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen);
+          if (isOpen && availablePackages.length === 0) {
+            onDetectPackages?.();
+          }
+          if (!isOpen) setFilter('');
+        }}
+      >
+        <Popover.Trigger asChild>
+          <button
+            className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default text-10 whitespace-nowrap cursor-pointer bg-transparent transition-colors"
+            aria-label="Select package"
+          >
+            <Codicon name="package" size={11} />
+            <span>{selectedPackage || 'All packages'}</span>
+            <Codicon name="chevron-down" size={9} />
+          </button>
+        </Popover.Trigger>
 
-        {open && (
-          <div className="absolute top-full mt-1 left-0 z-50 min-w-[160px] max-w-[240px] bg-node-file border border-border-dashed rounded-lg shadow-lg overflow-hidden">
+        <Popover.Portal>
+          <Popover.Content
+            className="z-50 min-w-[160px] max-w-[240px] bg-node-file border border-border-dashed rounded-lg shadow-lg overflow-hidden animate-popover-open"
+            sideOffset={4}
+            align="start"
+          >
             <div className="p-1.5 border-b border-border-dashed">
               <input
                 className="w-full bg-transparent text-text-primary text-11 outline-none placeholder:text-text-faint px-1"
@@ -64,7 +63,6 @@ export const PackageSwitcher: React.FC<PackageSwitcherProps> = React.memo(
               />
             </div>
             <div className="max-h-48 overflow-y-auto py-1">
-              {/* All option */}
               <button
                 className="w-full text-left px-2 py-1 text-11 text-text-muted hover:bg-node-file-pulse cursor-pointer bg-transparent border-none"
                 onClick={() => handleSelect('')}
@@ -92,9 +90,9 @@ export const PackageSwitcher: React.FC<PackageSwitcherProps> = React.memo(
                 </button>
               ))}
             </div>
-          </div>
-        )}
-      </div>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
     );
   }
 );

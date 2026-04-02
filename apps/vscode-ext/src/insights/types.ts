@@ -10,17 +10,19 @@ export interface InsightSummary {
   severity: 'none' | 'low' | 'medium' | 'high';
 }
 
+export interface AnalyzeContext {
+  files: FileChange[];
+  repoRoot: string;
+  worktreeRoot: string;
+  settings: Record<string, unknown>;
+  signal?: AbortSignal;
+}
+
 export interface InsightPlugin {
   id: string;
   label: string;
   icon: string;
   defaultSettings: Record<string, unknown>;
 
-  analyze(
-    files: FileChange[],
-    repoRoot: string,
-    worktreeRoot: string,
-    settings: Record<string, unknown>,
-    signal?: AbortSignal
-  ): Promise<{ summary: InsightSummary; detail: InsightDetail }>;
+  analyze(ctx: AnalyzeContext): Promise<{ summary: InsightSummary; detail: InsightDetail }>;
 }
