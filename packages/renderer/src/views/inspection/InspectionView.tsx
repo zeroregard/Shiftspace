@@ -130,11 +130,18 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
 
         <div className="flex-1 min-h-0 min-w-0 relative">
           <ErrorBoundary
-            fallback={
-              <div className="w-full h-full flex items-center justify-center text-text-faint text-13">
-                Graph failed to render
+            resetKey={wt}
+            fallback={(retry) => (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-text-faint text-13">
+                <span>Graph failed to render</span>
+                <button
+                  onClick={retry}
+                  className="px-2 py-1 text-11 rounded border border-border-default hover:bg-node-file cursor-pointer"
+                >
+                  Retry
+                </button>
               </div>
-            }
+            )}
           >
             <InspectionHoverContext.Provider value={hoverContextValue}>
               <TreeCanvas
