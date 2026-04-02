@@ -45,11 +45,13 @@ export const useActionStore = create<ActionStore>((set) => ({
   appendActionLog: (worktreeId, actionId, chunk) =>
     set((s) => {
       const key = `${worktreeId}:${actionId}`;
-      const actionLogs = new Map<string, string>(s.actionLogs);
-      let combined = (actionLogs.get(key) ?? '') + chunk;
+      const prev = s.actionLogs.get(key) ?? '';
+      let combined = prev + chunk;
       if (combined.length > MAX_LOG_CHARS) {
         combined = combined.slice(combined.length - MAX_LOG_CHARS);
       }
+      if (combined === prev) return {};
+      const actionLogs = new Map(s.actionLogs);
       actionLogs.set(key, combined);
       return { actionLogs };
     }),
