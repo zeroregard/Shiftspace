@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -39,6 +41,14 @@ jobs:
           restore-keys: |
             node-modules-${{ runner.os }}-
 
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-static-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-static-
+
       - name: Restore typecheck cache
         uses: actions/cache@v4
         with:
@@ -59,4 +69,9 @@ jobs:
         run: bun lint:check
 
       - name: Typecheck
-        run: bun typecheck
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npx nx run-many -t typecheck
+          else
+            npx nx affected -t typecheck --base=origin/${{ github.event.pull_request.base.ref }}
+          fi
