@@ -29,13 +29,13 @@ export interface SingleWorktreeLayoutOptions {
 export function computeSingleWorktreeLayout(
   wt: WorktreeState,
   options?: SingleWorktreeLayoutOptions,
-  getFileFindingsCount?: (worktreeId: string, filePath: string) => number
+  getFileAnnotationRows?: (worktreeId: string, filePath: string) => number
 ): SingleWorktreeLayout {
   const files = options?.filesOverride ?? wt.files;
   const treeChildren = buildTree(wt.id, files);
   const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
-  const getFileH = getFileFindingsCount
-    ? (path: string) => computeFileNodeHeight(getFileFindingsCount(wt.id, path))
+  const getFileH = getFileAnnotationRows
+    ? (path: string) => computeFileNodeHeight(getFileAnnotationRows(wt.id, path))
     : undefined;
   const { layouts, totalW, totalH } = layoutWorktreeContents(
     treeChildren,

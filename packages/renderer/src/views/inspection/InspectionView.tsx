@@ -23,6 +23,7 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
   const actions = useActions();
   const wt = useWorktreeStore((s) => s.worktrees.get(worktreeId));
   const insightDetails = useInsightStore((s) => s.insightDetails);
+  const fileDiagnostics = useInsightStore((s) => s.fileDiagnostics);
   const actionConfigs = useActionStore((s) => s.actionConfigs);
   const branchList = useWorktreeStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
   const isLoading = useWorktreeStore((s) => s.diffModeLoading.has(worktreeId));
@@ -63,7 +64,11 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
     const layout = computeSingleWorktreeLayout(
       wt,
       { bare: true, filesOverride: hierarchyFiles },
-      (wtId, filePath) => getFileFindings(insightDetails, wtId, filePath).length
+      (wtId, filePath) => {
+        const findings = getFileFindings(insightDetails, wtId, filePath);
+        const diag = fileDiagnostics.get(`${wtId}:${filePath}`);
+        return findings.length + (diag?.errors ? 1 : 0) + (diag?.warnings ? 1 : 0);
+      }
     );
     return { nodes: layout.nodes, edges: layout.edges };
   })();
