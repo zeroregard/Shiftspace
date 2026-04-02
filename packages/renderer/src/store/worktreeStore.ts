@@ -39,15 +39,19 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
 
   setDiffMode: (worktreeId, diffMode) =>
     set((state) => {
-      const worktrees = new Map<string, WorktreeState>(state.worktrees);
-      const wt = worktrees.get(worktreeId);
-      if (wt) worktrees.set(worktreeId, { ...wt, diffMode });
+      const wt = state.worktrees.get(worktreeId);
+      if (!wt) return state;
+      const worktrees = new Map(state.worktrees);
+      worktrees.set(worktreeId, { ...wt, diffMode });
       return { worktrees };
     }),
 
   setDiffModeLoading: (worktreeId, loading) =>
     set((state) => {
-      const diffModeLoading = new Set<string>(state.diffModeLoading);
+      const has = state.diffModeLoading.has(worktreeId);
+      if (loading && has) return state;
+      if (!loading && !has) return state;
+      const diffModeLoading = new Set(state.diffModeLoading);
       if (loading) diffModeLoading.add(worktreeId);
       else diffModeLoading.delete(worktreeId);
       return { diffModeLoading };
@@ -55,24 +59,30 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
 
   setBranchList: (worktreeId, branches) =>
     set((state) => {
-      const branchLists = new Map<string, string[]>(state.branchLists);
+      const branchLists = new Map(state.branchLists);
       branchLists.set(worktreeId, branches);
       return { branchLists };
     }),
 
   updateWorktreeFiles: (worktreeId, files, diffMode, branchFiles) =>
     set((state) => {
-      const worktrees = new Map<string, WorktreeState>(state.worktrees);
-      const wt = worktrees.get(worktreeId);
-      if (wt) worktrees.set(worktreeId, { ...wt, files, diffMode, branchFiles });
-      const diffModeLoading = new Set<string>(state.diffModeLoading);
+      const wt = state.worktrees.get(worktreeId);
+      if (!wt) return state;
+      const worktrees = new Map(state.worktrees);
+      worktrees.set(worktreeId, { ...wt, files, diffMode, branchFiles });
+      const hadLoading = state.diffModeLoading.has(worktreeId);
+      if (!hadLoading) return { worktrees };
+      const diffModeLoading = new Set(state.diffModeLoading);
       diffModeLoading.delete(worktreeId);
       return { worktrees, diffModeLoading };
     }),
 
   setFetchLoading: (worktreeId, loading) =>
     set((state) => {
-      const fetchLoading = new Set<string>(state.fetchLoading);
+      const has = state.fetchLoading.has(worktreeId);
+      if (loading && has) return state;
+      if (!loading && !has) return state;
+      const fetchLoading = new Set(state.fetchLoading);
       if (loading) fetchLoading.add(worktreeId);
       else fetchLoading.delete(worktreeId);
       return { fetchLoading };
@@ -80,7 +90,7 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
 
   setLastFetchAt: (worktreeId, timestamp) =>
     set((state) => {
-      const lastFetchAt = new Map<string, number>(state.lastFetchAt);
+      const lastFetchAt = new Map(state.lastFetchAt);
       lastFetchAt.set(worktreeId, timestamp);
       return { lastFetchAt };
     }),
