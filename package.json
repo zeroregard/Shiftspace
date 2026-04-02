@@ -25,6 +25,7 @@
     "*.{ts,tsx}": "oxlint --deny-warnings"
   },
   "devDependencies": {
+    "@typescript/native-preview": "^7.0.0-dev.20260401.1",
     "husky": "^9.0.0",
     "lint-staged": "^16.4.0",
     "oxlint": "^0.16.6",
