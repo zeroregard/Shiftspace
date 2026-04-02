@@ -8,14 +8,10 @@ import { NODE_TYPES } from '../../nodes';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
 import { getAllFilteredFiles } from '../../utils/listSections';
 import { computeSingleWorktreeLayout } from '../../layout';
-import { filterCheckoutableBranches } from '../../utils/worktreeUtils';
 import { CheckBar } from './components/CheckBar';
 import { useActions } from '../../ui/ActionsContext';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
-import { InspectionHeader } from './components/InspectionHeader';
 import { FileListPanel } from './components/FileListPanel';
-
-const EMPTY_BRANCHES: string[] = [];
 
 /**
  * Returns a stable Map reference that only changes when the entries
@@ -78,13 +74,6 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   const stableFindingsIndex = useStableMapRef(findingsIndex);
   const stableFileDiagnostics = useStableMapRef(fileDiagnostics);
   const actionConfigs = useActionStore((s) => s.actionConfigs);
-  const branchList = useWorktreeStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
-  const isLoading = useWorktreeStore((s) => s.diffModeLoading.has(worktreeId));
-  const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(worktreeId));
-  const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(worktreeId));
-  const occupiedBranches = useWorktreeStore(
-    useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
-  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
@@ -139,20 +128,10 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
     );
   }
 
-  const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const hoverContextValue = { hoveredFilePath };
 
   return (
     <div className="w-full h-full flex flex-col bg-canvas">
-      <InspectionHeader
-        wt={wt}
-        branchList={branchList}
-        checkoutBranches={checkoutBranches}
-        isLoading={isLoading}
-        isFetchingBranches={isFetchingBranches}
-        lastFetchAt={lastFetchAt}
-      />
-
       {actionConfigs.length > 0 && <CheckBar worktreeId={worktreeId} />}
 
       <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">

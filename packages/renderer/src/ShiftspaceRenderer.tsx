@@ -6,8 +6,8 @@ import { useWorktreeStore } from './store';
 import { useInspectionStore } from './store';
 import { type PanZoomConfig } from './TreeCanvas';
 import { GroveView } from './views/grove';
-import { PackageSwitcher } from './shared/PackageSwitcher';
-import { ActionsProvider, useActions } from './ui/ActionsContext';
+import { UnifiedHeader } from './shared/UnifiedHeader';
+import { ActionsProvider } from './ui/ActionsContext';
 
 const LazyInspectionView = React.lazy(() =>
   import('./views/inspection').then((m) => ({ default: m.InspectionView }))
@@ -114,7 +114,6 @@ function ShiftspaceContent({ showPackageSwitcher, panZoomConfig }: ContentProps)
   // worktree is actually added, removed, or replaced (not on every event).
   const worktrees = useWorktreeStore(useShallow((s) => s.worktrees));
   const mode = useInspectionStore((s) => s.mode);
-  const actions = useActions();
 
   const wtArray = Array.from(worktrees.values()).sort((a, b) => {
     if (a.isMainWorktree && !b.isMainWorktree) return -1;
@@ -126,14 +125,7 @@ function ShiftspaceContent({ showPackageSwitcher, panZoomConfig }: ContentProps)
 
   return (
     <div className="w-full h-full bg-canvas flex flex-col relative">
-      {showPackageSwitcher && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
-          <PackageSwitcher
-            onSetPackage={actions.setPackage}
-            onDetectPackages={actions.detectPackages}
-          />
-        </div>
-      )}
+      <UnifiedHeader showPackageSwitcher={showPackageSwitcher} />
       <div className="flex-1 min-h-0">
         {mode.type === 'grove' ? (
           <GroveView worktrees={wtArray} />
