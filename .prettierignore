@@ -1,4 +1,5 @@
 node_modules/
 dist/
 .vercel/
+.nx/
 bun.lock
