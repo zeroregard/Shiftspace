@@ -1,0 +1,74 @@
+{
+  "name": "@shiftspace/ui",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./badge": {
+      "import": "./src/badge.tsx",
+      "types": "./src/badge.tsx"
+    },
+    "./button": {
+      "import": "./src/button.tsx",
+      "types": "./src/button.tsx"
+    },
+    "./codicon": {
+      "import": "./src/codicon.tsx",
+      "types": "./src/codicon.tsx"
+    },
+    "./error-boundary": {
+      "import": "./src/error-boundary.tsx",
+      "types": "./src/error-boundary.tsx"
+    },
+    "./file-icons": {
+      "import": "./src/file-icons.tsx",
+      "types": "./src/file-icons.tsx"
+    },
+    "./icon-button": {
+      "import": "./src/icon-button.tsx",
+      "types": "./src/icon-button.tsx"
+    },
+    "./input": {
+      "import": "./src/input.tsx",
+      "types": "./src/input.tsx"
+    },
+    "./list-item": {
+      "import": "./src/list-item.tsx",
+      "types": "./src/list-item.tsx"
+    },
+    "./section-label": {
+      "import": "./src/section-label.tsx",
+      "types": "./src/section-label.tsx"
+    },
+    "./spinner": {
+      "import": "./src/spinner.tsx",
+      "types": "./src/spinner.tsx"
+    },
+    "./status-dot": {
+      "import": "./src/status-dot.tsx",
+      "types": "./src/status-dot.tsx"
+    },
+    "./tooltip": {
+      "import": "./src/tooltip.tsx",
+      "types": "./src/tooltip.tsx"
+    }
+  },
+  "scripts": {
+    "build": "tsgo --noEmit",
+    "dev": "tsgo --noEmit --watch",
+    "typecheck": "tsgo --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "clsx": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260401.1",
+    "typescript": "^5.7.2"
+  }
+}
