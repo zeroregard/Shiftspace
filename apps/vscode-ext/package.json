@@ -2,7 +2,7 @@
   "name": "shiftspace",
   "displayName": "Shiftspace",
   "description": "Visual workspace command center — spatial node graph of your git changes across worktrees",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "publisher": "shiftspace",
   "repository": {
     "type": "git",
