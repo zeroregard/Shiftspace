@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import clsx from 'clsx';
 
 interface ListItemProps {
@@ -7,7 +7,7 @@ interface ListItemProps {
   onMouseLeave?: () => void;
   selected?: boolean;
   active?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -20,16 +20,16 @@ interface ListItemProps {
  *     <FileIcon /> <span>index.ts</span>
  *   </ListItem>
  */
-export const ListItem = React.memo(
-  ({
-    onClick,
-    onMouseEnter,
-    onMouseLeave,
-    selected,
-    active,
-    children,
-    className,
-  }: ListItemProps) => (
+export function ListItem({
+  onClick,
+  onMouseEnter,
+  onMouseLeave,
+  selected,
+  active,
+  children,
+  className,
+}: ListItemProps) {
+  return (
     <button
       className={clsx(
         'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
@@ -44,6 +44,5 @@ export const ListItem = React.memo(
     >
       {children}
     </button>
-  )
-);
-ListItem.displayName = 'ListItem';
+  );
+}

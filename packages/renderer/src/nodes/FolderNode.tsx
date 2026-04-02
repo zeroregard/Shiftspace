@@ -1,10 +1,9 @@
-import React from 'react';
 import type { NodeComponentProps } from '../TreeCanvas';
 import { FolderIcon } from '../ui/FileIcons';
 import type { FolderNodeData } from '../layout/flatten';
 import { useActions } from '../ui/ActionsContext';
 
-export const FolderNode = React.memo(({ data }: NodeComponentProps<FolderNodeData>) => {
+export function FolderNode({ data }: NodeComponentProps<FolderNodeData>) {
   const actions = useActions();
 
   return (
@@ -20,6 +19,4 @@ export const FolderNode = React.memo(({ data }: NodeComponentProps<FolderNodeDat
       </span>
     </div>
   );
-});
-
-FolderNode.displayName = 'FolderNode';
+}

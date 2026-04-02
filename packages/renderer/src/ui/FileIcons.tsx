@@ -240,19 +240,17 @@ export interface FileIconProps {
   size?: number;
 }
 
-export const FileIcon: React.FC<FileIconProps> = React.memo(({ filename, size = 14 }) => {
+export function FileIcon({ filename, size = 14 }: FileIconProps) {
   const { color, abbrev } = getFileIconConfig(filename);
   return <FileIconSvg color={color} abbrev={abbrev} size={size} />;
-});
-FileIcon.displayName = 'FileIcon';
+}
 
 export interface FolderIconProps {
   name: string;
   size?: number;
 }
 
-export const FolderIcon: React.FC<FolderIconProps> = React.memo(({ name, size = 14 }) => {
+export function FolderIcon({ name, size = 14 }: FolderIconProps) {
   const color = getFolderIconColor(name);
   return <FolderIconSvg color={color} size={size} />;
-});
-FolderIcon.displayName = 'FolderIcon';
+}

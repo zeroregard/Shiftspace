@@ -1,4 +1,4 @@
-import React from 'react';
+import type { MouseEvent } from 'react';
 import { useActionStore } from '../../../store';
 import type { ActionConfig } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
@@ -9,7 +9,7 @@ interface ActionBarProps {
   worktreeId: string;
 }
 
-export const ActionBar: React.FC<ActionBarProps> = React.memo(({ worktreeId }) => {
+export function ActionBar({ worktreeId }: ActionBarProps) {
   const actions = useActions();
   const actionConfigs = useActionStore((s) => s.actionConfigs);
   const pipelines = useActionStore((s) => s.pipelines);
@@ -50,15 +50,14 @@ export const ActionBar: React.FC<ActionBarProps> = React.memo(({ worktreeId }) =
       )}
     </div>
   );
-});
-ActionBar.displayName = 'ActionBar';
+}
 
 interface ButtonProps {
   action: ActionConfig;
   worktreeId: string;
 }
 
-const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId }) => {
+function ActionButton({ action, worktreeId }: ButtonProps) {
   const actions = useActions();
   const actionState = useActionStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
   const status = actionState?.status ?? 'idle';
@@ -69,7 +68,7 @@ const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId }) 
   const isPassed = status === 'passed';
   const isOneShot = !action.persistent;
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: MouseEvent) => {
     e.stopPropagation();
     if (isRunning && action.persistent) {
       actions.stopAction(worktreeId, action.id);
@@ -105,5 +104,4 @@ const ActionButton: React.FC<ButtonProps> = React.memo(({ action, worktreeId }) 
       stopPropagation
     />
   );
-});
-ActionButton.displayName = 'ActionButton';
+}

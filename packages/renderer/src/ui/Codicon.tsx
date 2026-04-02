@@ -1,4 +1,3 @@
-import React from 'react';
 import clsx from 'clsx';
 
 interface CodiconProps {
@@ -20,13 +19,12 @@ interface CodiconProps {
  *   <Codicon name="git-branch" />
  *   <Codicon name="error" size={16} color="var(--color-status-deleted)" />
  */
-export const Codicon = React.memo(
-  ({ name, size = 12, color, animation, className }: CodiconProps) => (
+export function Codicon({ name, size = 12, color, animation, className }: CodiconProps) {
+  return (
     <i
       className={clsx(`codicon codicon-${name}`, className)}
       style={{ fontSize: size, color, animation }}
       aria-hidden="true"
     />
-  )
-);
-Codicon.displayName = 'Codicon';
+  );
+}

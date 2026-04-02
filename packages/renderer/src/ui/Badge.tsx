@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import clsx from 'clsx';
 
 type BadgeVariant = 'error' | 'warning' | 'finding' | 'info' | 'success';
@@ -13,7 +13,7 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
 
 interface BadgeProps {
   variant: BadgeVariant;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -24,15 +24,16 @@ interface BadgeProps {
  *   <Badge variant="error">3 errors</Badge>
  *   <Badge variant="warning"><WarningIcon /> 2</Badge>
  */
-export const Badge = React.memo(({ variant, children, className }: BadgeProps) => (
-  <span
-    className={clsx(
-      'inline-flex items-center gap-0.5 text-10 font-medium border px-1 rounded leading-tight',
-      VARIANT_CLASSES[variant],
-      className
-    )}
-  >
-    {children}
-  </span>
-));
-Badge.displayName = 'Badge';
+export function Badge({ variant, children, className }: BadgeProps) {
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center gap-0.5 text-10 font-medium border px-1 rounded leading-tight',
+        VARIANT_CLASSES[variant],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}

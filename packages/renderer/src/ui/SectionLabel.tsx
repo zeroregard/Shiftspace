@@ -1,8 +1,8 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import clsx from 'clsx';
 
 interface SectionLabelProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -12,11 +12,12 @@ interface SectionLabelProps {
  * Usage:
  *   <SectionLabel>Staged changes</SectionLabel>
  */
-export const SectionLabel = React.memo(({ children, className }: SectionLabelProps) => (
-  <span
-    className={clsx('text-10 font-semibold uppercase tracking-wider text-text-faint', className)}
-  >
-    {children}
-  </span>
-));
-SectionLabel.displayName = 'SectionLabel';
+export function SectionLabel({ children, className }: SectionLabelProps) {
+  return (
+    <span
+      className={clsx('text-10 font-semibold uppercase tracking-wider text-text-faint', className)}
+    >
+      {children}
+    </span>
+  );
+}

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../types';
 import { useWorktreeStore } from '../store';
@@ -16,7 +15,7 @@ export interface WorktreeHeaderProps {
   compact?: boolean;
 }
 
-export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHeaderProps) => {
+export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
   const actions = useActions();
   const isSingle = useWorktreeStore((s) => s.worktrees.size <= 1);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
@@ -94,6 +93,4 @@ export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHea
       </div>
     </div>
   );
-});
-
-WorktreeHeader.displayName = 'WorktreeHeader';
+}

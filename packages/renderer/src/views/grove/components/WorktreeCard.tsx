@@ -1,4 +1,3 @@
-import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../../../types';
 import { useWorktreeStore, useInspectionStore } from '../../../store';
@@ -24,60 +23,57 @@ interface BranchRowProps {
   lastFetchAt: number | undefined;
 }
 
-const BranchRow = React.memo(
-  ({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: BranchRowProps) => {
-    const actions = useActions();
-    return (
-      <div
-        className="flex items-center gap-1.5 min-w-0"
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
+function BranchRow({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: BranchRowProps) {
+  const actions = useActions();
+  return (
+    <div
+      className="flex items-center gap-1.5 min-w-0"
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      {!wt.isMainWorktree && (
+        <IconButton
+          icon="arrow-swap"
+          label="Swap branch with primary worktree"
+          size="sm"
+          tooltip={false}
+          onClick={(e) => {
+            e.stopPropagation();
+            actions.swapBranches(wt.id);
+          }}
+        />
+      )}
+      <BranchPicker
+        onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
+        onOpen={() => actions.requestBranchList(wt.id)}
       >
-        {!wt.isMainWorktree && (
-          <IconButton
-            icon="arrow-swap"
-            label="Swap branch with primary worktree"
-            size="sm"
-            tooltip={false}
-            onClick={(e) => {
-              e.stopPropagation();
-              actions.swapBranches(wt.id);
+        <BranchPicker.Trigger>
+          <button
+            className="flex items-center gap-1 min-w-0 max-w-full text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-11"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            title={wt.branch}
+          >
+            <span className="shrink-0">
+              <Codicon name="git-branch" />
+            </span>
+            <span className="truncate">{wt.branch}</span>
+          </button>
+        </BranchPicker.Trigger>
+        <BranchPicker.Content>
+          <BranchPicker.SearchRow
+            fetch={{
+              onFetch: () => actions.fetchBranches(wt.id),
+              isFetching: isFetchingBranches,
+              lastFetchAt,
             }}
           />
-        )}
-        <BranchPicker
-          onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
-          onOpen={() => actions.requestBranchList(wt.id)}
-        >
-          <BranchPicker.Trigger>
-            <button
-              className="flex items-center gap-1 min-w-0 max-w-full text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-11"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-              title={wt.branch}
-            >
-              <span className="shrink-0">
-                <Codicon name="git-branch" />
-              </span>
-              <span className="truncate">{wt.branch}</span>
-            </button>
-          </BranchPicker.Trigger>
-          <BranchPicker.Content>
-            <BranchPicker.SearchRow
-              fetch={{
-                onFetch: () => actions.fetchBranches(wt.id),
-                isFetching: isFetchingBranches,
-                lastFetchAt,
-              }}
-            />
-            <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
-          </BranchPicker.Content>
-        </BranchPicker>
-      </div>
-    );
-  }
-);
-BranchRow.displayName = 'BranchRow';
+          <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
+        </BranchPicker.Content>
+      </BranchPicker>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 
@@ -85,7 +81,7 @@ interface WorktreeCardProps {
   worktree: WorktreeState;
 }
 
-export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => {
+export function WorktreeCard({ worktree: wt }: WorktreeCardProps) {
   const actions = useActions();
   const enterInspection = useInspectionStore((s) => s.enterInspection);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
@@ -209,6 +205,4 @@ export const WorktreeCard = React.memo(({ worktree: wt }: WorktreeCardProps) => 
       </div>
     </div>
   );
-});
-
-WorktreeCard.displayName = 'WorktreeCard';
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { useActionStore } from '../../../store';
 import type { ActionConfig, ActionStatus } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
@@ -18,58 +18,55 @@ interface CheckChipProps {
   onToggleExpand: () => void;
 }
 
-const CheckChip: React.FC<CheckChipProps> = React.memo(
-  ({ action, worktreeId, expanded, onToggleExpand }) => {
-    const actions = useActions();
-    const state = useActionStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
-    const type = deriveActionType(action);
-    const status: ActionStatus = state?.status ?? (type === 'service' ? 'stopped' : 'idle');
-    const isRunning = status === 'running';
-    const handleClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (status === 'unconfigured') return;
-      if (isRunning && type === 'service') actions.stopAction(worktreeId, action.id);
-      else if (!isRunning) actions.runAction(worktreeId, action.id);
-    };
+function CheckChip({ action, worktreeId, expanded, onToggleExpand }: CheckChipProps) {
+  const actions = useActions();
+  const state = useActionStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
+  const type = deriveActionType(action);
+  const status: ActionStatus = state?.status ?? (type === 'service' ? 'stopped' : 'idle');
+  const isRunning = status === 'running';
+  const handleClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    if (status === 'unconfigured') return;
+    if (isRunning && type === 'service') actions.stopAction(worktreeId, action.id);
+    else if (!isRunning) actions.runAction(worktreeId, action.id);
+  };
 
-    const color = statusColor(status, type);
-    const icon = statusIcon(status, type);
+  const color = statusColor(status, type);
+  const icon = statusIcon(status, type);
 
-    return (
-      <div
-        className="flex items-center gap-0.5 px-1.5 py-1 rounded border cursor-pointer transition-colors"
-        style={{
-          borderColor: expanded ? 'var(--color-border-default)' : 'var(--color-border-dashed)',
-          backgroundColor: expanded ? 'var(--color-node-file)' : undefined,
+  return (
+    <div
+      className="flex items-center gap-0.5 px-1.5 py-1 rounded border cursor-pointer transition-colors"
+      style={{
+        borderColor: expanded ? 'var(--color-border-default)' : 'var(--color-border-dashed)',
+        backgroundColor: expanded ? 'var(--color-node-file)' : undefined,
+      }}
+      onClick={handleClick}
+    >
+      <Codicon
+        name={icon}
+        size={11}
+        color={color}
+        animation={isRunning && type === 'check' ? 'spin 1s linear infinite' : undefined}
+      />
+      <span className="text-10 text-text-muted ml-0.5">{action.label}</span>
+
+      {/* Expand/collapse log caret */}
+      <button
+        className="ml-0.5 text-text-faint hover:text-text-muted cursor-pointer bg-transparent border-none p-0"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleExpand();
         }}
-        onClick={handleClick}
+        aria-label={expanded ? 'Collapse log' : 'Expand log'}
       >
-        <Codicon
-          name={icon}
-          size={11}
-          color={color}
-          animation={isRunning && type === 'check' ? 'spin 1s linear infinite' : undefined}
-        />
-        <span className="text-10 text-text-muted ml-0.5">{action.label}</span>
+        <Codicon name={expanded ? 'chevron-up' : 'chevron-down'} size={9} />
+      </button>
+    </div>
+  );
+}
 
-        {/* Expand/collapse log caret */}
-        <button
-          className="ml-0.5 text-text-faint hover:text-text-muted cursor-pointer bg-transparent border-none p-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand();
-          }}
-          aria-label={expanded ? 'Collapse log' : 'Expand log'}
-        >
-          <Codicon name={expanded ? 'chevron-up' : 'chevron-down'} size={9} />
-        </button>
-      </div>
-    );
-  }
-);
-CheckChip.displayName = 'CheckChip';
-
-export const CheckBar: React.FC<CheckBarProps> = React.memo(({ worktreeId }) => {
+export function CheckBar({ worktreeId }: CheckBarProps) {
   const actions = useActions();
   const actionConfigs = useActionStore((s) => s.actionConfigs);
   const actionLogs = useActionStore((s) => s.actionLogs);
@@ -165,5 +162,4 @@ export const CheckBar: React.FC<CheckBarProps> = React.memo(({ worktreeId }) => 
       )}
     </div>
   );
-});
-CheckBar.displayName = 'CheckBar';
+}

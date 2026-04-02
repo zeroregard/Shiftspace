@@ -1,13 +1,13 @@
-import React from 'react';
+import type { InputHTMLAttributes, Ref } from 'react';
 import clsx from 'clsx';
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   /** Visual size variant */
   variant?: 'default' | 'ghost';
   /** Full-width (default: true) */
   fullWidth?: boolean;
   /** Ref forwarding */
-  inputRef?: React.Ref<HTMLInputElement>;
+  inputRef?: Ref<HTMLInputElement>;
 }
 
 /**
@@ -17,8 +17,14 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
  *   <Input placeholder="Search files..." value={q} onChange={e => setQ(e.target.value)} />
  *   <Input variant="ghost" className="font-semibold text-13" />
  */
-export const Input = React.memo(
-  ({ variant = 'default', fullWidth = true, inputRef, className, ...props }: InputProps) => (
+export function Input({
+  variant = 'default',
+  fullWidth = true,
+  inputRef,
+  className,
+  ...props
+}: InputProps) {
+  return (
     <input
       ref={inputRef}
       className={clsx(
@@ -30,6 +36,5 @@ export const Input = React.memo(
       )}
       {...props}
     />
-  )
-);
-Input.displayName = 'Input';
+  );
+}

@@ -10,6 +10,7 @@
     "no-console": "error",
     "eqeqeq": "error",
 
+    "react/react-in-jsx-scope": "off",
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "warn",
     "react/jsx-key": "warn",
