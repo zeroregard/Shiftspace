@@ -72,6 +72,8 @@ export class ShiftspacePanel {
   /** Abort controller for the current in-flight insight run (per worktree). */
   private _insightAbortController: AbortController | undefined;
 
+  private _iconDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+
   // Workspace-switching state
   private _gitRootCache = new Map<string, string>(); // dir → gitRoot
   private _currentGitRoot: string | undefined;
@@ -330,6 +332,10 @@ export class ShiftspacePanel {
       clearTimeout(this._diagnosticDebounceTimer);
       this._diagnosticDebounceTimer = undefined;
     }
+    if (this._iconDebounceTimer !== undefined) {
+      clearTimeout(this._iconDebounceTimer);
+      this._iconDebounceTimer = undefined;
+    }
 
     this._insightRunner = new InsightRunner();
     this._diagnosticCollector?.dispose();
@@ -338,6 +344,12 @@ export class ShiftspacePanel {
     this._gitProvider = new GitDataProvider(postMessage, (worktreeId) => {
       // Called by GitDataProvider when files change → stale check states
       this._actionCoordinator?.markAllStale(worktreeId);
+      // Debounce icon resolution for new/changed files
+      if (this._iconDebounceTimer !== undefined) clearTimeout(this._iconDebounceTimer);
+      this._iconDebounceTimer = setTimeout(() => {
+        this._iconDebounceTimer = undefined;
+        void this.updateIcons();
+      }, 1000);
       // If currently inspecting this worktree, debounce insight re-analysis
       if (this._currentInspectedWorktreeId === worktreeId) {
         if (this._insightDebounceTimer !== undefined) clearTimeout(this._insightDebounceTimer);
@@ -436,6 +448,17 @@ export class ShiftspacePanel {
     if (!this._iconProvider || !this._gitProvider) return;
     const loaded = await this._iconProvider.load();
     if (!loaded) return;
+    const filePaths = this._gitProvider.getAllFilePaths();
+    const iconMap = await this._iconProvider.resolveForFiles(filePaths);
+    await this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
+  }
+
+  /**
+   * Resolve icons for the current file set without re-loading the theme.
+   * Called when files change so new files get themed icons immediately.
+   */
+  private async updateIcons(): Promise<void> {
+    if (!this._iconProvider?.isLoaded || !this._gitProvider) return;
     const filePaths = this._gitProvider.getAllFilePaths();
     const iconMap = await this._iconProvider.resolveForFiles(filePaths);
     await this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
@@ -608,6 +631,10 @@ export class ShiftspacePanel {
     if (this._diagnosticDebounceTimer !== undefined) {
       clearTimeout(this._diagnosticDebounceTimer);
       this._diagnosticDebounceTimer = undefined;
+    }
+    if (this._iconDebounceTimer !== undefined) {
+      clearTimeout(this._iconDebounceTimer);
+      this._iconDebounceTimer = undefined;
     }
     this._insightAbortController?.abort();
     this._insightAbortController = undefined;

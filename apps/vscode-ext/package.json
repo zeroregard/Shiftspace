@@ -16,10 +16,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished",
-    "onCommand:shiftspace.toggle",
-    "onCommand:shiftspace.openTab",
-    "onCommand:shiftspace.detectActions"
+    "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "icon": "media/icon.png",
@@ -194,7 +191,7 @@
     "watch:webview": "vite build --watch",
     "watch": "bun run build:webview && bun run watch:ext",
     "package": "vsce package --no-dependencies",
-    "local-install": "vsce package --no-dependencies && code --install-extension shiftspace-*.vsix",
+    "local-install": "rm -f shiftspace-*.vsix && vsce package --no-dependencies && code --install-extension shiftspace-*.vsix",
     "typecheck": "tsgo --noEmit && tsgo -p tsconfig.webview.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

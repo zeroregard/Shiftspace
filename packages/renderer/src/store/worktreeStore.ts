@@ -2,6 +2,34 @@ import { create } from 'zustand';
 import type { WorktreeState, ShiftspaceEvent, DiffMode, FileChange, IconMap } from '../types';
 import { applyEventReducer } from './applyEvent';
 
+/**
+ * Reverse index built from the icon map so that new files can resolve an
+ * icon by filename or extension in O(1) without scanning the full map.
+ */
+interface IconIndex {
+  /** Exact filename → dark data URI (e.g. "package.json" → "data:...") */
+  byName: Map<string, string>;
+  /** Extension (with dot) → dark data URI (e.g. ".ts" → "data:...") */
+  byExt: Map<string, string>;
+}
+
+function buildIconIndex(iconMap: IconMap): IconIndex {
+  const byName = new Map<string, string>();
+  const byExt = new Map<string, string>();
+  for (const [filePath, entry] of Object.entries(iconMap)) {
+    const dark = entry.dark;
+    if (!dark) continue;
+    const name = filePath.split('/').pop() ?? filePath;
+    if (!byName.has(name)) byName.set(name, dark);
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot !== -1) {
+      const ext = name.slice(lastDot);
+      if (!byExt.has(ext)) byExt.set(ext, dark);
+    }
+  }
+  return { byName, byExt };
+}
+
 interface WorktreeStore {
   worktrees: Map<string, WorktreeState>;
   branchLists: Map<string, string[]>;
@@ -10,6 +38,7 @@ interface WorktreeStore {
   swapLoading: Set<string>;
   lastFetchAt: Map<string, number>;
   iconMap: IconMap;
+  iconIndex: IconIndex;
   applyEvent: (event: ShiftspaceEvent) => void;
   setWorktrees: (worktrees: WorktreeState[]) => void;
   setDiffMode: (worktreeId: string, diffMode: DiffMode) => void;
@@ -35,6 +64,7 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
   swapLoading: new Set(),
   lastFetchAt: new Map(),
   iconMap: {},
+  iconIndex: { byName: new Map(), byExt: new Map() },
 
   applyEvent: (event) => set((state) => ({ worktrees: applyEventReducer(state.worktrees, event) })),
 
@@ -109,5 +139,18 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
       return { lastFetchAt };
     }),
 
-  setIconMap: (map) => set({ iconMap: map }),
+  setIconMap: (map) =>
+    set((state) => {
+      // Merge new entries into the existing map; skip update if nothing changed.
+      const merged = { ...state.iconMap };
+      let changed = false;
+      for (const [key, value] of Object.entries(map)) {
+        if (merged[key]?.dark !== value.dark || merged[key]?.light !== value.light) {
+          merged[key] = value;
+          changed = true;
+        }
+      }
+      if (!changed) return state;
+      return { iconMap: merged, iconIndex: buildIconIndex(merged) };
+    }),
 }));

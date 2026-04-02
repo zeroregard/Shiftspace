@@ -59,6 +59,11 @@ export class IconThemeProvider implements vscode.Disposable {
   private _themeJson: IconThemeJson | null = null;
   private _themeDir: string | null = null;
 
+  /** Whether the theme has been loaded and is ready to resolve icons. */
+  get isLoaded(): boolean {
+    return this._themeJson !== null;
+  }
+
   /** iconId → base64 data URI (or '' if the icon couldn't be resolved) */
   private _svgCache = new Map<string, string>();
 
