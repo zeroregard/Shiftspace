@@ -18,7 +18,7 @@ export interface FileAnnotations {
  */
 export function useFileAnnotations(worktreeId: string, filePath: string): FileAnnotations {
   const findings = useInsightStore(
-    useShallow((s) => getFileFindings(s.insightDetails, worktreeId, filePath))
+    useShallow((s) => getFileFindings(s.findingsIndex, worktreeId, filePath))
   );
 
   const diagnostics = useInsightStore((s) => s.fileDiagnostics.get(`${worktreeId}:${filePath}`));

@@ -9,7 +9,11 @@ function makeDiag(filePath: string, errors = 1, warnings = 0): FileDiagnosticSum
 describe('insightStore – fileDiagnostics', () => {
   beforeEach(() => {
     // Reset to initial state
-    useInsightStore.setState({ fileDiagnostics: new Map(), insightDetails: new Map() });
+    useInsightStore.setState({
+      fileDiagnostics: new Map(),
+      insightDetails: new Map(),
+      findingsIndex: new Map(),
+    });
   });
 
   it('setFileDiagnostics merges without deleting existing entries', () => {

@@ -1,7 +1,7 @@
 import { useState, useDeferredValue, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
-import type { InsightDetail, FileDiagnosticSummary } from '../../types';
+import type { InsightFinding, FileDiagnosticSummary } from '../../types';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
@@ -27,10 +27,10 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   // Select only entries for this worktree so insight updates for *other*
   // worktrees don't trigger layout recomputation.  useShallow compares Map
   // entries by reference — if the values haven't changed, no re-render.
-  const insightDetails = useInsightStore(
+  const findingsIndex = useInsightStore(
     useShallow((s) => {
-      const filtered = new Map<string, InsightDetail>();
-      for (const [key, val] of s.insightDetails) {
+      const filtered = new Map<string, InsightFinding[]>();
+      for (const [key, val] of s.findingsIndex) {
         if (key.startsWith(`${worktreeId}:`)) filtered.set(key, val);
       }
       return filtered;
@@ -90,14 +90,14 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
       wt,
       { bare: true, filesOverride: hierarchyFiles },
       (wtId, filePath) => {
-        const findings = getFileFindings(insightDetails, wtId, filePath);
+        const findings = getFileFindings(findingsIndex, wtId, filePath);
         const diag = fileDiagnostics.get(`${wtId}:${filePath}`);
         return findings.length + (diag?.errors ? 1 : 0) + (diag?.warnings ? 1 : 0);
       }
     );
     return { nodes: layout.nodes, edges: layout.edges };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + deferredSearchQuery
-  }, [wt, deferredSearchQuery, insightDetails, fileDiagnostics]);
+  }, [wt, deferredSearchQuery, findingsIndex, fileDiagnostics]);
 
   if (!wt) {
     return (
