@@ -6,12 +6,11 @@ import { DiffPopover } from '../overlays/DiffPopover';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
 import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useFileAnnotations } from '../hooks/useFileAnnotations';
-import { StatusDot } from '@shiftspace/ui/status-dot';
+import { useActions } from '../ui/ActionsContext';
 import { Codicon } from '@shiftspace/ui/codicon';
 
 export interface FileNodeData {
   file: FileChange;
-  onFileClick?: (worktreeId: string, filePath: string) => void;
   worktreeId: string;
   [key: string]: unknown;
 }
@@ -27,8 +26,10 @@ function getChangeTint(file: FileChange): string {
 }
 
 export const FileNode = React.memo(function FileNode({ data }: NodeComponentProps<FileNodeData>) {
-  const { file, onFileClick, worktreeId } = data;
+  const { file, worktreeId } = data;
+  const { fileClick } = useActions();
   const { hoveredFilePath } = useInspectionHover();
+  const [isNodeHovered, setIsNodeHovered] = React.useState(false);
   const fileName = file.path.split('/').pop() ?? file.path;
   const isPulsing = Date.now() - file.lastChangedAt < 3000;
   const isDeleted = file.status === 'deleted';
@@ -37,10 +38,10 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
   const { errors, warnings, findings, hasAnnotations } = useFileAnnotations(worktreeId, file.path);
 
   return (
-    <DiffPopover file={file}>
+    <DiffPopover file={file} worktreeId={worktreeId}>
       <div
         className={clsx(
-          'w-full h-full border border-border-default rounded-md text-text-secondary transition-[background,opacity,border-color] duration-300',
+          'group w-full h-full border border-border-default rounded-md text-text-secondary transition-[background,opacity,border-color] duration-300',
           isHovered
             ? 'bg-node-file-pulse border-border-staged'
             : isPulsing
@@ -48,14 +49,16 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
               : 'bg-node-file'
         )}
         style={{ background: isHovered ? undefined : getChangeTint(file) }}
+        onMouseEnter={() => setIsNodeHovered(true)}
+        onMouseLeave={() => setIsNodeHovered(false)}
       >
         <button
           className={clsx(
             'w-full h-full px-2 py-1.5 text-left transition-[background] duration-300',
-            onFileClick ? 'cursor-pointer' : 'cursor-default',
+            'cursor-pointer',
             isPulsing ? 'bg-pulse-overlay' : 'bg-transparent'
           )}
-          onClick={() => onFileClick?.(worktreeId, file.path)}
+          onClick={() => fileClick(worktreeId, file.path)}
         >
           <div className="flex items-center gap-1">
             <span className="shrink-0 flex items-center">
@@ -63,13 +66,21 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
             </span>
             <span
               className={clsx(
-                'text-11 overflow-hidden text-ellipsis whitespace-nowrap',
+                'text-11 overflow-hidden text-ellipsis whitespace-nowrap flex-1',
                 isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
               )}
             >
               {fileName}
             </span>
-            <StatusDot status={file.status} />
+
+            <span
+              className={clsx(
+                'shrink-0 text-text-muted ml-auto transition-all duration-300 opacity-0',
+                isNodeHovered && 'opacity-100'
+              )}
+            >
+              <Codicon name="arrow-up" size={12} />
+            </span>
           </div>
           {hasAnnotations && (
             <div className="mt-1 pt-1 border-border-default/40">

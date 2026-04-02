@@ -372,11 +372,17 @@ export async function getFileChanges(worktreePath: string): Promise<FileChange[]
         const staged = stagedDiffs.get(fc.path) ?? [];
         fc.diff = [...unstaged, ...staged];
 
-        // Combine raw diff sections
-        const rawParts = [unstagedRaw.get(fc.path), stagedRaw.get(fc.path)].filter(Boolean);
-        if (rawParts.length > 0) {
-          fc.rawDiff = rawParts.join('\n');
+        // Only use rawDiff when there's a single source; joining both creates a
+        // patch with 2 file diffs which PatchDiff rejects. When both exist, the
+        // combined fc.diff hunks will be converted by hunksToUnified instead.
+        const unstagedSection = unstagedRaw.get(fc.path);
+        const stagedSection = stagedRaw.get(fc.path);
+        if (unstagedSection && !stagedSection) {
+          fc.rawDiff = unstagedSection;
+        } else if (stagedSection && !unstagedSection) {
+          fc.rawDiff = stagedSection;
         }
+        // When both exist, rawDiff stays undefined → renderer falls back to hunksToUnified
       }
     })
   );
