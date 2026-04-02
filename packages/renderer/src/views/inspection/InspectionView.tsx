@@ -1,7 +1,8 @@
-import { useState, useDeferredValue, useEffect, useMemo } from 'react';
+import { useState, useDeferredValue, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
 import type { InsightFinding, FileDiagnosticSummary } from '../../types';
+import { storeKey, storeKeyPrefix } from '../../utils/storeKeys';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
@@ -15,6 +16,29 @@ import { InspectionHeader } from './components/InspectionHeader';
 import { FileListPanel } from './components/FileListPanel';
 
 const EMPTY_BRANCHES: string[] = [];
+
+/**
+ * Returns a stable Map reference that only changes when the entries
+ * actually differ (by size + value identity).  Prevents downstream
+ * useMemo from recomputing when useShallow returns a structurally
+ * identical but referentially new Map.
+ */
+function useStableMapRef<K, V>(next: Map<K, V>): Map<K, V> {
+  const ref = useRef(next);
+  const prev = ref.current;
+  if (prev === next) return prev;
+  if (prev.size !== next.size) {
+    ref.current = next;
+    return next;
+  }
+  for (const [key, val] of next) {
+    if (prev.get(key) !== val) {
+      ref.current = next;
+      return next;
+    }
+  }
+  return prev;
+}
 
 interface InspectionViewProps {
   worktreeId: string;
@@ -30,8 +54,9 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   const findingsIndex = useInsightStore(
     useShallow((s) => {
       const filtered = new Map<string, InsightFinding[]>();
+      const pfx = storeKeyPrefix(worktreeId);
       for (const [key, val] of s.findingsIndex) {
-        if (key.startsWith(`${worktreeId}:`)) filtered.set(key, val);
+        if (key.startsWith(pfx)) filtered.set(key, val);
       }
       return filtered;
     })
@@ -39,12 +64,19 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   const fileDiagnostics = useInsightStore(
     useShallow((s) => {
       const filtered = new Map<string, FileDiagnosticSummary>();
+      const pfx = storeKeyPrefix(worktreeId);
       for (const [key, val] of s.fileDiagnostics) {
-        if (key.startsWith(`${worktreeId}:`)) filtered.set(key, val);
+        if (key.startsWith(pfx)) filtered.set(key, val);
       }
       return filtered;
     })
   );
+
+  // Stabilize references: only update the layout-facing values when the
+  // filtered Maps actually differ (by entry count + value identity).
+  // This prevents layout recomputation when unrelated worktrees change.
+  const stableFindingsIndex = useStableMapRef(findingsIndex);
+  const stableFileDiagnostics = useStableMapRef(fileDiagnostics);
   const actionConfigs = useActionStore((s) => s.actionConfigs);
   const branchList = useWorktreeStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
   const isLoading = useWorktreeStore((s) => s.diffModeLoading.has(worktreeId));
@@ -90,14 +122,14 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
       wt,
       { bare: true, filesOverride: hierarchyFiles },
       (wtId, filePath) => {
-        const findings = getFileFindings(findingsIndex, wtId, filePath);
-        const diag = fileDiagnostics.get(`${wtId}:${filePath}`);
+        const findings = getFileFindings(stableFindingsIndex, wtId, filePath);
+        const diag = stableFileDiagnostics.get(storeKey(wtId, filePath));
         return findings.length + (diag?.errors ? 1 : 0) + (diag?.warnings ? 1 : 0);
       }
     );
     return { nodes: layout.nodes, edges: layout.edges };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + deferredSearchQuery
-  }, [wt, deferredSearchQuery, findingsIndex, fileDiagnostics]);
+  }, [wt, deferredSearchQuery, stableFindingsIndex, stableFileDiagnostics]);
 
   if (!wt) {
     return (

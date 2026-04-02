@@ -22,10 +22,13 @@ export function buildTree(wtId: string, files: FileChange[]): TreeNode[] {
   const root: TrieNode = { segment: '', children: new Map(), files: [] };
 
   for (const file of files) {
+    if (!file.path) continue; // skip malformed entries
     const parts = file.path.split('/');
     const fileName = parts.pop()!;
+    if (!fileName) continue; // skip trailing-slash paths
     let cur = root;
     for (const part of parts) {
+      if (!part) continue; // skip empty segments (e.g. double slashes)
       let child = cur.children.get(part);
       if (!child) {
         child = { segment: part, children: new Map(), files: [] };

@@ -6,6 +6,7 @@ import { Codicon } from '../../../ui/Codicon';
 import { SectionLabel } from '../../../ui/SectionLabel';
 import { Tooltip } from '../../../overlays/Tooltip';
 import { deriveActionType, statusIcon, statusColor } from '../../../utils/actionUtils';
+import { storeKey } from '../../../utils/storeKeys';
 
 interface CheckBarProps {
   worktreeId: string;
@@ -20,7 +21,7 @@ interface CheckChipProps {
 
 function CheckChip({ action, worktreeId, expanded, onToggleExpand }: CheckChipProps) {
   const actions = useActions();
-  const state = useActionStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
+  const state = useActionStore((s) => s.actionStates.get(storeKey(worktreeId, action.id)));
   const type = deriveActionType(action);
   const status: ActionStatus = state?.status ?? (type === 'service' ? 'stopped' : 'idle');
   const isRunning = status === 'running';
@@ -75,7 +76,7 @@ export function CheckBar({ worktreeId }: CheckBarProps) {
   // Only subscribe to the single expanded log entry — avoids re-rendering on
   // every appendActionLog call for other actions.
   const logContent = useActionStore((s) =>
-    expandedActionId ? (s.actionLogs.get(`${worktreeId}:${expandedActionId}`) ?? '') : ''
+    expandedActionId ? (s.actionLogs.get(storeKey(worktreeId, expandedActionId)) ?? '') : ''
   );
 
   const checks = actionConfigs.filter((a) => deriveActionType(a) === 'check');
