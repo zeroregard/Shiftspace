@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import clsx from 'clsx';
 import type { FileChange, WorktreeState } from '../../../types';
 import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
@@ -95,11 +96,21 @@ export function FileListPanel({
 }: FileListPanelProps) {
   const searchRegexError = !isValidRegex(searchQuery);
 
-  const { committed, staged, unstaged } = partitionFiles(wt);
+  const sections = useMemo(() => partitionFiles(wt), [wt]);
+  const { committed, staged, unstaged } = sections;
 
-  const filteredCommitted = filterFilesByQuery(committed, searchQuery);
-  const filteredStaged = filterFilesByQuery(staged, searchQuery);
-  const filteredUnstaged = filterFilesByQuery(unstaged, searchQuery);
+  const filteredCommitted = useMemo(
+    () => filterFilesByQuery(committed, searchQuery),
+    [committed, searchQuery]
+  );
+  const filteredStaged = useMemo(
+    () => filterFilesByQuery(staged, searchQuery),
+    [staged, searchQuery]
+  );
+  const filteredUnstaged = useMemo(
+    () => filterFilesByQuery(unstaged, searchQuery),
+    [unstaged, searchQuery]
+  );
   const totalFileCount = committed.length + staged.length + unstaged.length;
   const filteredFileCount =
     filteredCommitted.length + filteredStaged.length + filteredUnstaged.length;
