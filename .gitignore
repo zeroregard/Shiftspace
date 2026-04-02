@@ -11,3 +11,10 @@ coverage/
 # playwright
 playwright-report/
 test-results/
+
+
+.nx/cache
+.nx/workspace-data
+.nx/polygraph
+.claude/worktrees
+.claude/settings.local.json
