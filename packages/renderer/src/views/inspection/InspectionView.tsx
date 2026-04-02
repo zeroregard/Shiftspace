@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useDeferredValue, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
 import type { InsightDetail, FileDiagnosticSummary } from '../../types';
@@ -58,6 +58,10 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
 
+  // Defer the search query so that typing is instant but the expensive
+  // layout recomputation (tree build + flatten) is batched by React.
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
   const handleFileRowClick = (wtId: string, filePath: string) => {
     actions.fileClick(wtId, filePath);
     setFocusNodeId(`file-${wtId}-${filePath}`);
@@ -74,7 +78,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
     setHoveredFilePath(null);
   }, [worktreeId]);
 
-  const hierarchyFiles = wt ? getAllFilteredFiles(wt, searchQuery) : [];
+  const hierarchyFiles = wt ? getAllFilteredFiles(wt, deferredSearchQuery) : [];
 
   const { nodes, edges } = useMemo(() => {
     if (!wt)
@@ -92,8 +96,8 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
       }
     );
     return { nodes: layout.nodes, edges: layout.edges };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + searchQuery
-  }, [wt, searchQuery, insightDetails, fileDiagnostics]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + deferredSearchQuery
+  }, [wt, deferredSearchQuery, insightDetails, fileDiagnostics]);
 
   if (!wt) {
     return (
