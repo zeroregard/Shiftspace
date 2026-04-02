@@ -68,6 +68,8 @@ export class ShiftspacePanel {
   // Insight state
   private _currentInspectedWorktreeId: string | undefined;
   private _insightDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Abort controller for the current in-flight insight run (per worktree). */
+  private _insightAbortController: AbortController | undefined;
 
   // Workspace-switching state
   private _gitRootCache = new Map<string, string>(); // dir → gitRoot
@@ -297,6 +299,8 @@ export class ShiftspacePanel {
       clearTimeout(this._insightDebounceTimer);
       this._insightDebounceTimer = undefined;
     }
+    this._insightAbortController?.abort();
+    this._insightAbortController = undefined;
     this._diagnosticCollector?.stopInspection();
   }
 
@@ -311,6 +315,8 @@ export class ShiftspacePanel {
     this._iconProvider?.dispose();
     this._settingsChangeDisposable?.dispose();
     this._currentInspectedWorktreeId = undefined;
+    this._insightAbortController?.abort();
+    this._insightAbortController = undefined;
     if (this._insightDebounceTimer !== undefined) {
       clearTimeout(this._insightDebounceTimer);
       this._insightDebounceTimer = undefined;
@@ -508,6 +514,11 @@ export class ShiftspacePanel {
     const wt = worktrees.find((w) => w.id === worktreeId);
     if (!wt) return;
 
+    // Cancel any in-flight insight run so stale results never overwrite fresh ones
+    this._insightAbortController?.abort();
+    const controller = new AbortController();
+    this._insightAbortController = controller;
+
     const files = this._gitProvider.getWorktreeFiles(worktreeId);
     const smellRules = this._actionCoordinator?.getSmellRules() ?? [];
 
@@ -521,13 +532,18 @@ export class ShiftspacePanel {
         files,
         repoRoot: this._currentGitRoot,
         worktreeRoot: wt.path,
+        signal: controller.signal,
         extraSettings,
       });
+
+      // If this run was aborted while awaiting, discard the results
+      if (controller.signal.aborted) return;
 
       for (const detail of details) {
         void this._panel.webview.postMessage({ type: 'insight-detail', detail });
       }
     } catch (err) {
+      if (controller.signal.aborted) return; // expected cancellation
       log.error('runInsights error:', err);
     }
   }
@@ -575,6 +591,8 @@ export class ShiftspacePanel {
       clearTimeout(this._insightDebounceTimer);
       this._insightDebounceTimer = undefined;
     }
+    this._insightAbortController?.abort();
+    this._insightAbortController = undefined;
     this._editorChangeDisposable?.dispose();
     this._editorChangeDisposable = undefined;
     this._settingsChangeDisposable?.dispose();

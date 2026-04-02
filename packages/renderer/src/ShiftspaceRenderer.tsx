@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
 import { useWorktreeStore } from './store';
@@ -109,7 +110,9 @@ interface ContentProps {
 }
 
 function ShiftspaceContent({ showPackageSwitcher, panZoomConfig }: ContentProps) {
-  const worktrees = useWorktreeStore((s) => s.worktrees);
+  // useShallow compares Map entries by reference — only re-renders when a
+  // worktree is actually added, removed, or replaced (not on every event).
+  const worktrees = useWorktreeStore(useShallow((s) => s.worktrees));
   const mode = useInspectionStore((s) => s.mode);
   const actions = useActions();
 
