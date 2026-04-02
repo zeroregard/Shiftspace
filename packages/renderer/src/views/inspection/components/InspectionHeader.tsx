@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DiffMode, WorktreeState } from '../../../types';
-import { useShiftspaceStore } from '../../../store';
+import { useInspectionStore } from '../../../store';
 import { BranchPicker } from '../../../overlays/BranchPicker';
 import { Codicon } from '../../../ui/Codicon';
 import { IconButton } from '../../../ui/IconButton';
@@ -31,7 +31,7 @@ export const InspectionHeader = React.memo(
     lastFetchAt,
   }: InspectionHeaderProps) => {
     const actions = useActions();
-    const exitInspection = useShiftspaceStore((s) => s.exitInspection);
+    const exitInspection = useInspectionStore((s) => s.exitInspection);
 
     const diffMode: DiffMode = wt.diffMode ?? { type: 'working' };
     const defaultBranch = wt.defaultBranch ?? 'main';

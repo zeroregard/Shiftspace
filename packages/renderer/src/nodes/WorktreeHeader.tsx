@@ -1,7 +1,7 @@
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../types';
-import { useShiftspaceStore } from '../store';
+import { useWorktreeStore } from '../store';
 import { BranchPicker } from '../overlays/BranchPicker';
 import { filterCheckoutableBranches } from '../utils/worktreeUtils';
 import { useActions } from '../ui/ActionsContext';
@@ -18,11 +18,11 @@ export interface WorktreeHeaderProps {
 
 export const WorktreeHeader = React.memo(({ worktree: wt, compact }: WorktreeHeaderProps) => {
   const actions = useActions();
-  const isSingle = useShiftspaceStore((s) => s.worktrees.size <= 1);
-  const branchList = useShiftspaceStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
-  const isFetchingBranches = useShiftspaceStore((s) => s.fetchLoading.has(wt.id));
-  const lastFetchAt = useShiftspaceStore((s) => s.lastFetchAt.get(wt.id));
-  const occupiedBranches = useShiftspaceStore(
+  const isSingle = useWorktreeStore((s) => s.worktrees.size <= 1);
+  const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
+  const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(wt.id));
+  const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
+  const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
   );
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useShiftspaceStore } from '../store';
+import { useWorktreeStore } from '../store';
 import { FileIcon } from '../ui/FileIcons';
 
 interface ThemedFileIconProps {
@@ -14,7 +14,7 @@ interface ThemedFileIconProps {
  * sends an icon-theme message), falling back to the built-in FileIcon SVG.
  */
 export const ThemedFileIcon = React.memo(({ filePath, size }: ThemedFileIconProps) => {
-  const iconSrc = useShiftspaceStore((s) => s.iconMap[filePath]?.dark);
+  const iconSrc = useWorktreeStore((s) => s.iconMap[filePath]?.dark);
   const fileName = filePath.split('/').pop() ?? filePath;
 
   if (iconSrc) {

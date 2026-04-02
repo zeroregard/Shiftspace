@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useShiftspaceStore } from '@shiftspace/renderer';
+import { useWorktreeStore, useActionStore, useInsightStore } from '@shiftspace/renderer';
 import type { DiffMode } from '@shiftspace/renderer';
 import type { MockEngine } from './mock/engine';
 import { MOCK_BRANCHES } from './mock/engine';
@@ -19,14 +19,9 @@ import {
 export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | null>) {
   const activeSimulations = useRef<Map<string, () => void>>(new Map());
 
-  const {
-    updateWorktreeFiles,
-    setDiffModeLoading,
-    setBranchList,
-    setActionState,
-    setInsightDetail,
-    setFileDiagnostics,
-  } = useShiftspaceStore();
+  const { updateWorktreeFiles, setDiffModeLoading, setBranchList } = useWorktreeStore();
+  const { setActionState } = useActionStore();
+  const { setInsightDetail, setFileDiagnostics } = useInsightStore();
 
   const handleDiffModeChange = (worktreeId: string, diffMode: DiffMode) => {
     setDiffModeLoading(worktreeId, true);

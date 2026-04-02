@@ -195,45 +195,45 @@ describe('partitionFiles — branch mode', () => {
 
 describe('store applyEvent — branch mode guard', () => {
   // Import the store fresh for each test to avoid cross-test pollution
-  let useShiftspaceStore: typeof import('../store/index').useShiftspaceStore;
+  let useWorktreeStore: typeof import('../store/index').useWorktreeStore;
 
   beforeEach(async () => {
     // Re-import to get a clean module (vitest resets modules if configured, otherwise
     // we reset the store state manually via setState)
     const mod = await import('../store/index');
-    useShiftspaceStore = mod.useShiftspaceStore;
+    useWorktreeStore = mod.useWorktreeStore;
     // Reset store to initial state
-    useShiftspaceStore.setState({
+    useWorktreeStore.setState({
       worktrees: new Map(),
     });
   });
 
   function seedWorktree(diffMode: WorktreeState['diffMode'], files: FileChange[] = []) {
     const wt: WorktreeState = makeWt({ diffMode, files });
-    useShiftspaceStore.getState().setWorktrees([wt]);
+    useWorktreeStore.getState().setWorktrees([wt]);
     return wt;
   }
 
   it('applies file-changed in working mode', () => {
     seedWorktree({ type: 'working' });
-    useShiftspaceStore.getState().applyEvent({
+    useWorktreeStore.getState().applyEvent({
       type: 'file-changed',
       worktreeId: 'wt-test',
       file: makeFile('new.ts', false),
     });
-    const wt = useShiftspaceStore.getState().worktrees.get('wt-test')!;
+    const wt = useWorktreeStore.getState().worktrees.get('wt-test')!;
     expect(wt.files).toHaveLength(1);
     expect(wt.files[0].path).toBe('new.ts');
   });
 
   it('applies file-changed in branch mode (working-tree changes are always tracked)', () => {
     seedWorktree({ type: 'branch', branch: 'main' });
-    useShiftspaceStore.getState().applyEvent({
+    useWorktreeStore.getState().applyEvent({
       type: 'file-changed',
       worktreeId: 'wt-test',
       file: makeFile('new.ts', false),
     });
-    const wt = useShiftspaceStore.getState().worktrees.get('wt-test')!;
+    const wt = useWorktreeStore.getState().worktrees.get('wt-test')!;
     expect(wt.files).toHaveLength(1);
     expect(wt.files[0].path).toBe('new.ts');
   });
@@ -243,7 +243,7 @@ describe('store applyEvent — branch mode guard', () => {
 
     const workingFiles = [makeFile('staged.ts', true), makeFile('unstaged.ts', false)];
     const branchFiles = [makeFile('committed.ts', false)];
-    useShiftspaceStore
+    useWorktreeStore
       .getState()
       .updateWorktreeFiles(
         'wt-test',
@@ -252,7 +252,7 @@ describe('store applyEvent — branch mode guard', () => {
         branchFiles
       );
 
-    const wt = useShiftspaceStore.getState().worktrees.get('wt-test')!;
+    const wt = useWorktreeStore.getState().worktrees.get('wt-test')!;
     expect(wt.diffMode).toEqual({ type: 'branch', branch: 'main' });
     expect(wt.files.map((f) => f.path)).not.toContain('agent.ts');
   });
@@ -262,7 +262,7 @@ describe('store applyEvent — branch mode guard', () => {
 
     const workingFiles = [makeFile('staged.ts', true), makeFile('unstaged.ts', false)];
     const branchFiles = [makeFile('committed.ts', false)];
-    useShiftspaceStore
+    useWorktreeStore
       .getState()
       .updateWorktreeFiles(
         'wt-test',
@@ -271,7 +271,7 @@ describe('store applyEvent — branch mode guard', () => {
         branchFiles
       );
 
-    const wt = useShiftspaceStore.getState().worktrees.get('wt-test')!;
+    const wt = useWorktreeStore.getState().worktrees.get('wt-test')!;
     const { committed, staged, unstaged } = partitionFiles(wt);
     expect(committed.map((f) => f.path)).toEqual(['committed.ts']);
     expect(staged.map((f) => f.path)).toEqual(['staged.ts']);

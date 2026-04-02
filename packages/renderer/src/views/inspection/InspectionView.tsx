@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useShiftspaceStore, getFileFindings } from '../../store';
+import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
@@ -21,14 +21,14 @@ interface InspectionViewProps {
 
 export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: InspectionViewProps) => {
   const actions = useActions();
-  const wt = useShiftspaceStore((s) => s.worktrees.get(worktreeId));
-  const insightDetails = useShiftspaceStore((s) => s.insightDetails);
-  const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
-  const branchList = useShiftspaceStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
-  const isLoading = useShiftspaceStore((s) => s.diffModeLoading.has(worktreeId));
-  const isFetchingBranches = useShiftspaceStore((s) => s.fetchLoading.has(worktreeId));
-  const lastFetchAt = useShiftspaceStore((s) => s.lastFetchAt.get(worktreeId));
-  const occupiedBranches = useShiftspaceStore(
+  const wt = useWorktreeStore((s) => s.worktrees.get(worktreeId));
+  const insightDetails = useInsightStore((s) => s.insightDetails);
+  const actionConfigs = useActionStore((s) => s.actionConfigs);
+  const branchList = useWorktreeStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
+  const isLoading = useWorktreeStore((s) => s.diffModeLoading.has(worktreeId));
+  const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(worktreeId));
+  const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(worktreeId));
+  const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
   );
 

@@ -296,17 +296,17 @@ describe('IconThemeProvider.resolveForFiles()', () => {
 describe('Preview app isolation', () => {
   it('renderer store starts with empty iconMap', async () => {
     // Importing the renderer store directly (no vscode involved)
-    const { useShiftspaceStore } = await import('../../../../packages/renderer/src/store/index');
-    const state = useShiftspaceStore.getState();
+    const { useWorktreeStore } = await import('../../../../packages/renderer/src/store/index');
+    const state = useWorktreeStore.getState();
     expect(state.iconMap).toEqual({});
   });
 
   it('setIconMap replaces the entire map', async () => {
-    const { useShiftspaceStore } = await import('../../../../packages/renderer/src/store/index');
-    const { setIconMap } = useShiftspaceStore.getState();
+    const { useWorktreeStore } = await import('../../../../packages/renderer/src/store/index');
+    const { setIconMap } = useWorktreeStore.getState();
 
     setIconMap({ 'src/app.ts': { dark: 'data:image/svg+xml;base64,abc' } });
-    expect(useShiftspaceStore.getState().iconMap['src/app.ts']?.dark).toBe(
+    expect(useWorktreeStore.getState().iconMap['src/app.ts']?.dark).toBe(
       'data:image/svg+xml;base64,abc'
     );
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useShiftspaceStore } from '../../../store';
+import { useActionStore } from '../../../store';
 import type { ActionConfig, ActionStatus } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { Codicon } from '../../../ui/Codicon';
@@ -21,7 +21,7 @@ interface CheckChipProps {
 const CheckChip: React.FC<CheckChipProps> = React.memo(
   ({ action, worktreeId, expanded, onToggleExpand }) => {
     const actions = useActions();
-    const state = useShiftspaceStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
+    const state = useActionStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
     const type = deriveActionType(action);
     const status: ActionStatus = state?.status ?? (type === 'service' ? 'stopped' : 'idle');
     const isRunning = status === 'running';
@@ -71,9 +71,9 @@ CheckChip.displayName = 'CheckChip';
 
 export const CheckBar: React.FC<CheckBarProps> = React.memo(({ worktreeId }) => {
   const actions = useActions();
-  const actionConfigs = useShiftspaceStore((s) => s.actionConfigs);
-  const actionLogs = useShiftspaceStore((s) => s.actionLogs);
-  const pipelines = useShiftspaceStore((s) => s.pipelines);
+  const actionConfigs = useActionStore((s) => s.actionConfigs);
+  const actionLogs = useActionStore((s) => s.actionLogs);
+  const pipelines = useActionStore((s) => s.pipelines);
   const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
 
   const checks = actionConfigs.filter((a) => deriveActionType(a) === 'check');

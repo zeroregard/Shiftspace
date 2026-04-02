@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
+import {
+  ShiftspaceRenderer,
+  useWorktreeStore,
+  useActionStore,
+  useInsightStore,
+  useInspectionStore,
+  usePackageStore,
+} from '@shiftspace/renderer';
 import type {
   WorktreeState,
   ShiftspaceEvent,
@@ -86,50 +93,51 @@ type HostMessage =
   | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
   | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string };
 
-type Store = ReturnType<typeof useShiftspaceStore.getState>;
-
 function handleCoreMessage(
   msg: HostMessage,
-  store: Store,
   setErrorMessage: (m: string | undefined) => void
 ): boolean {
+  const wt = useWorktreeStore.getState();
   switch (msg.type) {
     case 'init':
       setErrorMessage(undefined);
-      store.setWorktrees(msg.worktrees);
+      wt.setWorktrees(msg.worktrees);
       return true;
     case 'event':
-      store.applyEvent(msg.event);
+      wt.applyEvent(msg.event);
       return true;
     case 'error':
       setErrorMessage(msg.message);
       return true;
     case 'worktree-files-updated':
-      store.updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode, msg.branchFiles);
+      wt.updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode, msg.branchFiles);
       return true;
     case 'branch-list':
-      store.setBranchList(msg.worktreeId, msg.branches);
+      wt.setBranchList(msg.worktreeId, msg.branches);
       return true;
     case 'fetch-loading':
-      store.setFetchLoading(msg.worktreeId, msg.loading);
+      wt.setFetchLoading(msg.worktreeId, msg.loading);
       return true;
     case 'fetch-done':
-      store.setFetchLoading(msg.worktreeId, false);
-      store.setLastFetchAt(msg.worktreeId, msg.timestamp);
-      store.setBranchList(msg.worktreeId, msg.branches);
+      wt.setFetchLoading(msg.worktreeId, false);
+      wt.setLastFetchAt(msg.worktreeId, msg.timestamp);
+      wt.setBranchList(msg.worktreeId, msg.branches);
       return true;
     default:
       return false;
   }
 }
 
-function handleActionMessage(msg: HostMessage, store: Store): boolean {
+function handleActionMessage(msg: HostMessage): boolean {
   switch (msg.type) {
     case 'actions-config':
-      store.setActionConfigs(msg.actions);
+      useActionStore.getState().setActionConfigs(msg.actions);
       return true;
     case 'action-status':
-      store.setActionState(msg.worktreeId, msg.actionId, { status: msg.status, port: msg.port });
+      useActionStore.getState().setActionState(msg.worktreeId, msg.actionId, {
+        status: msg.status,
+        port: msg.port,
+      });
       return true;
     case 'actions-config-v2': {
       const configs: ActionConfig[] = msg.actions.map((a) => ({
@@ -139,13 +147,13 @@ function handleActionMessage(msg: HostMessage, store: Store): boolean {
         persistent: a.type === 'service',
         type: a.type,
       }));
-      store.setActionConfigs(configs);
-      if (msg.pipelines) store.setPipelines(msg.pipelines);
-      store.setSelectedPackage(msg.selectedPackage);
+      useActionStore.getState().setActionConfigs(configs);
+      if (msg.pipelines) useActionStore.getState().setPipelines(msg.pipelines);
+      usePackageStore.getState().setSelectedPackage(msg.selectedPackage);
       return true;
     }
     case 'action-state-update':
-      store.setActionState(msg.worktreeId, msg.actionId, {
+      useActionStore.getState().setActionState(msg.worktreeId, msg.actionId, {
         status: msg.state.status,
         port: msg.state.port,
         durationMs: msg.state.durationMs,
@@ -153,26 +161,29 @@ function handleActionMessage(msg: HostMessage, store: Store): boolean {
       });
       return true;
     case 'action-log-chunk':
-      store.appendActionLog(msg.worktreeId, msg.actionId, msg.chunk);
+      useActionStore.getState().appendActionLog(msg.worktreeId, msg.actionId, msg.chunk);
       return true;
     case 'action-log':
-      store.setActionLog(msg.worktreeId, msg.actionId, msg.content);
+      useActionStore.getState().setActionLog(msg.worktreeId, msg.actionId, msg.content);
       return true;
     case 'packages-list':
-      store.setAvailablePackages(msg.packages);
+      usePackageStore.getState().setAvailablePackages(msg.packages);
       return true;
     case 'icon-theme':
-      store.setIconMap(msg.payload);
+      useWorktreeStore.getState().setIconMap(msg.payload);
       return true;
     case 'insight-detail':
-      store.setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
+      useInsightStore
+        .getState()
+        .setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
       return true;
     case 'diagnostics-update':
-      store.setFileDiagnostics(msg.worktreeId, msg.files);
+      useInsightStore.getState().setFileDiagnostics(msg.worktreeId, msg.files);
       return true;
     case 'restore-view-settings':
-      if (msg.mode.type === 'inspection') store.enterInspection(msg.mode.worktreeId);
-      if (msg.selectedPackage) store.setSelectedPackage(msg.selectedPackage);
+      if (msg.mode.type === 'inspection')
+        useInspectionStore.getState().enterInspection(msg.mode.worktreeId);
+      if (msg.selectedPackage) usePackageStore.getState().setSelectedPackage(msg.selectedPackage);
       return true;
     default:
       return false;
@@ -181,17 +192,17 @@ function handleActionMessage(msg: HostMessage, store: Store): boolean {
 
 function handleHostMessage(
   msg: HostMessage,
-  store: Store,
   setErrorMessage: (m: string | undefined) => void
 ): void {
-  if (handleCoreMessage(msg, store, setErrorMessage)) return;
-  handleActionMessage(msg, store);
+  if (handleCoreMessage(msg, setErrorMessage)) return;
+  handleActionMessage(msg);
 }
 
 const App: React.FC = () => {
-  const { setDiffModeLoading, clearInsightDetails, clearFileDiagnostics } = useShiftspaceStore();
+  const { setDiffModeLoading } = useWorktreeStore();
+  const { clearInsightDetails, clearFileDiagnostics } = useInsightStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
-  const mode = useShiftspaceStore((s) => s.mode as AppMode);
+  const mode = useInspectionStore((s) => s.mode as AppMode);
 
   // Notify the extension host when the mode changes (informational).
   const prevModeRef = React.useRef<AppMode>(mode);
@@ -213,7 +224,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
       if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
-      handleHostMessage(e.data, useShiftspaceStore.getState(), setErrorMessage);
+      handleHostMessage(e.data, setErrorMessage);
     };
 
     window.addEventListener('message', handler);

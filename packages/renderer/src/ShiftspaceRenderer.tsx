@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
-import { useShiftspaceStore } from './store';
+import { useWorktreeStore } from './store';
+import { useInspectionStore } from './store';
 import { type PanZoomConfig } from './TreeCanvas';
 import { GroveView } from './views/grove';
 import { InspectionView } from './views/inspection';
@@ -58,7 +59,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onRecheckInsights,
   panZoomConfig,
 }) => {
-  const { setWorktrees, applyEvent } = useShiftspaceStore();
+  const { setWorktrees, applyEvent } = useWorktreeStore();
 
   useEffect(() => {
     if (initialWorktrees.length > 0) setWorktrees(initialWorktrees);
@@ -105,8 +106,8 @@ interface ContentProps {
 }
 
 const ShiftspaceContent = React.memo(({ showPackageSwitcher, panZoomConfig }: ContentProps) => {
-  const worktrees = useShiftspaceStore((s) => s.worktrees);
-  const mode = useShiftspaceStore((s) => s.mode);
+  const worktrees = useWorktreeStore((s) => s.worktrees);
+  const mode = useInspectionStore((s) => s.mode);
   const actions = useActions();
 
   const wtArray = Array.from(worktrees.values()).sort((a, b) => {
