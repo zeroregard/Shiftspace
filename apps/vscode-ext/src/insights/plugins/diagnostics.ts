@@ -113,7 +113,7 @@ export class DiagnosticCollector {
   startInspection(worktreeId: string, worktreeRoot: string, files: FileChange[]): void {
     this._currentWorktreeId = worktreeId;
     this._currentWorktreeRoot = worktreeRoot;
-    this._currentFiles = files;
+    this._currentFiles = [...files];
 
     if (!this.isEnabled()) return;
     this.sendDiagnostics();
@@ -123,7 +123,7 @@ export class DiagnosticCollector {
    * Update the file list (e.g. when files change while inspecting).
    */
   updateFiles(files: FileChange[]): void {
-    this._currentFiles = files;
+    this._currentFiles = [...files];
     if (!this._currentWorktreeId || !this.isEnabled()) return;
     this.sendDiagnostics();
   }

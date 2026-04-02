@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
+import type { InsightDetail, FileDiagnosticSummary } from '../../types';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
@@ -23,8 +24,27 @@ interface InspectionViewProps {
 export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProps) {
   const actions = useActions();
   const wt = useWorktreeStore((s) => s.worktrees.get(worktreeId));
-  const insightDetails = useInsightStore((s) => s.insightDetails);
-  const fileDiagnostics = useInsightStore((s) => s.fileDiagnostics);
+  // Select only entries for this worktree so insight updates for *other*
+  // worktrees don't trigger layout recomputation.  useShallow compares Map
+  // entries by reference — if the values haven't changed, no re-render.
+  const insightDetails = useInsightStore(
+    useShallow((s) => {
+      const filtered = new Map<string, InsightDetail>();
+      for (const [key, val] of s.insightDetails) {
+        if (key.startsWith(`${worktreeId}:`)) filtered.set(key, val);
+      }
+      return filtered;
+    })
+  );
+  const fileDiagnostics = useInsightStore(
+    useShallow((s) => {
+      const filtered = new Map<string, FileDiagnosticSummary>();
+      for (const [key, val] of s.fileDiagnostics) {
+        if (key.startsWith(`${worktreeId}:`)) filtered.set(key, val);
+      }
+      return filtered;
+    })
+  );
   const actionConfigs = useActionStore((s) => s.actionConfigs);
   const branchList = useWorktreeStore((s) => s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES);
   const isLoading = useWorktreeStore((s) => s.diffModeLoading.has(worktreeId));

@@ -6,6 +6,8 @@ import { log } from '../logger';
 
 interface CacheEntry {
   files: FileChange[];
+  /** Stringified extraSettings for cache invalidation when rules change. */
+  extraSettingsKey: string;
   summaries: InsightSummary[];
   details: InsightDetail[];
 }
@@ -31,8 +33,9 @@ export class InsightRunner {
   }): Promise<{ summaries: InsightSummary[]; details: InsightDetail[] }> {
     const { worktreeId, files, repoRoot, worktreeRoot, signal, extraSettings } = opts;
 
+    const extraSettingsKey = extraSettings ? JSON.stringify(extraSettings) : '';
     const cached = this.cache.get(worktreeId);
-    if (cached && cached.files === files) {
+    if (cached && cached.files === files && cached.extraSettingsKey === extraSettingsKey) {
       return { summaries: cached.summaries, details: cached.details };
     }
 
@@ -61,6 +64,11 @@ export class InsightRunner {
       })
     );
 
+    // If aborted while plugins were running, return empty — don't cache partial results
+    if (signal?.aborted) {
+      return { summaries: [], details: [] };
+    }
+
     const summaries: InsightSummary[] = [];
     const details: InsightDetail[] = [];
 
@@ -73,7 +81,7 @@ export class InsightRunner {
       }
     }
 
-    this.cache.set(worktreeId, { files, summaries, details });
+    this.cache.set(worktreeId, { files, extraSettingsKey, summaries, details });
     return { summaries, details };
   }
 
