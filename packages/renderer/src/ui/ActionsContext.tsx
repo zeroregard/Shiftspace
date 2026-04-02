@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useRef } from 'react';
 import type { DiffMode } from '../types';
 
 /**
@@ -141,56 +141,26 @@ export function ActionsProvider({
     onDetectPackages,
   };
 
-  // Build stable dispatchers once — they read from ref.current at call time
-  const fileClick = useCallback((a: string, b: string) => ref.current.onFileClick?.(a, b), []);
-  const folderClick = useCallback((a: string, b: string) => ref.current.onFolderClick?.(a, b), []);
-  const diffModeChange = useCallback(
-    (a: string, b: DiffMode) => ref.current.onDiffModeChange?.(a, b),
-    []
-  );
-  const requestBranchList = useCallback((a: string) => ref.current.onRequestBranchList?.(a), []);
-  const checkoutBranch = useCallback(
-    (a: string, b: string) => ref.current.onCheckoutBranch?.(a, b),
-    []
-  );
-  const fetchBranches = useCallback((a: string) => ref.current.onFetchBranches?.(a), []);
-  const swapBranches = useCallback((a: string) => ref.current.onSwapBranches?.(a), []);
-  const removeWorktree = useCallback((a: string) => ref.current.onRemoveWorktree?.(a), []);
-  const renameWorktree = useCallback(
-    (a: string, b: string) => ref.current.onRenameWorktree?.(a, b),
-    []
-  );
-  const runAction = useCallback((a: string, b: string) => ref.current.onRunAction?.(a, b), []);
-  const stopAction = useCallback((a: string, b: string) => ref.current.onStopAction?.(a, b), []);
-  const runPipeline = useCallback((a: string, b: string) => ref.current.onRunPipeline?.(a, b), []);
-  const getLog = useCallback((a: string, b: string) => ref.current.onGetLog?.(a, b), []);
-  const recheckInsights = useCallback((a: string) => ref.current.onRecheckInsights?.(a), []);
-  const setPackage = useCallback((a: string) => ref.current.onSetPackage?.(a), []);
-  const detectPackages = useCallback(() => ref.current.onDetectPackages?.(), []);
-
-  const actions = useMemo<ShiftspaceActions>(
-    () => ({
-      fileClick,
-      folderClick,
-      diffModeChange,
-      requestBranchList,
-      checkoutBranch,
-      fetchBranches,
-      swapBranches,
-      removeWorktree,
-      renameWorktree,
-      runAction,
-      stopAction,
-      runPipeline,
-      getLog,
-      recheckInsights,
-      setPackage,
-      detectPackages,
-    }),
-    // All callbacks are stable (empty deps) — this memo fires once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  // Stable dispatchers — they read from ref.current at call time.
+  // The React Compiler auto-memoizes these since they only close over `ref` (a useRef).
+  const actions: ShiftspaceActions = {
+    fileClick: (a: string, b: string) => ref.current.onFileClick?.(a, b),
+    folderClick: (a: string, b: string) => ref.current.onFolderClick?.(a, b),
+    diffModeChange: (a: string, b: DiffMode) => ref.current.onDiffModeChange?.(a, b),
+    requestBranchList: (a: string) => ref.current.onRequestBranchList?.(a),
+    checkoutBranch: (a: string, b: string) => ref.current.onCheckoutBranch?.(a, b),
+    fetchBranches: (a: string) => ref.current.onFetchBranches?.(a),
+    swapBranches: (a: string) => ref.current.onSwapBranches?.(a),
+    removeWorktree: (a: string) => ref.current.onRemoveWorktree?.(a),
+    renameWorktree: (a: string, b: string) => ref.current.onRenameWorktree?.(a, b),
+    runAction: (a: string, b: string) => ref.current.onRunAction?.(a, b),
+    stopAction: (a: string, b: string) => ref.current.onStopAction?.(a, b),
+    runPipeline: (a: string, b: string) => ref.current.onRunPipeline?.(a, b),
+    getLog: (a: string, b: string) => ref.current.onGetLog?.(a, b),
+    recheckInsights: (a: string) => ref.current.onRecheckInsights?.(a),
+    setPackage: (a: string) => ref.current.onSetPackage?.(a),
+    detectPackages: () => ref.current.onDetectPackages?.(),
+  };
 
   return <ActionsContext.Provider value={actions}>{children}</ActionsContext.Provider>;
 }

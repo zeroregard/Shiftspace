@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { usePanZoom } from './hooks/usePanZoom';
 
 export interface LayoutNode {
@@ -123,7 +123,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
     handleTransitionEnd,
   } = usePanZoom({ nodes, panZoomConfig, focusNodeId, onFocusComplete });
 
-  const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
   const { x, y, zoom } = transform;
   const dotOpacity = Math.min(1, Math.max(0.05, zoom * 0.7));

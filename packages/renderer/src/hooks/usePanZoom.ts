@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { PanZoomConfig } from '../TreeCanvas';
 import type { LayoutNode } from '../TreeCanvas';
 import { useCanvasGestures } from './useCanvasGestures';
@@ -145,13 +145,13 @@ export function usePanZoom({
     setTransform(fitViewToNodes(nodesRef.current, w, h));
   }
 
-  const handleTransitionEnd = useCallback(() => {
+  const handleTransitionEnd = () => {
     setIsFitting(false);
     if (isFocusingRef.current) {
       isFocusingRef.current = false;
       onFocusCompleteRef.current?.();
     }
-  }, []);
+  };
 
   return {
     containerRef,

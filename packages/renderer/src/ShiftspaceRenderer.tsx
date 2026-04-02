@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
 import { useShiftspaceStore } from './store';
@@ -109,17 +109,13 @@ const ShiftspaceContent = React.memo(({ showPackageSwitcher, panZoomConfig }: Co
   const mode = useShiftspaceStore((s) => s.mode);
   const actions = useActions();
 
-  const wtArray = useMemo(
-    () =>
-      Array.from(worktrees.values()).sort((a, b) => {
-        if (a.isMainWorktree && !b.isMainWorktree) return -1;
-        if (!a.isMainWorktree && b.isMainWorktree) return 1;
-        const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
-        const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
-        return nameA.localeCompare(nameB);
-      }),
-    [worktrees]
-  );
+  const wtArray = Array.from(worktrees.values()).sort((a, b) => {
+    if (a.isMainWorktree && !b.isMainWorktree) return -1;
+    if (!a.isMainWorktree && b.isMainWorktree) return 1;
+    const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
+    const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
 
   return (
     <div className="w-full h-full bg-canvas flex flex-col relative">

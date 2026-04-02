@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useShiftspaceStore, getFileFindings } from '../../store';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
@@ -36,17 +36,14 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
   const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
 
-  const handleFileRowClick = useCallback(
-    (wtId: string, filePath: string) => {
-      actions.fileClick(wtId, filePath);
-      setFocusNodeId(`file-${wtId}-${filePath}`);
-    },
-    [actions]
-  );
+  const handleFileRowClick = (wtId: string, filePath: string) => {
+    actions.fileClick(wtId, filePath);
+    setFocusNodeId(`file-${wtId}-${filePath}`);
+  };
 
-  const handleFocusComplete = useCallback(() => {
+  const handleFocusComplete = () => {
     setFocusNodeId(null);
-  }, []);
+  };
 
   // Clear filter, hover, and focus when switching worktrees
   useEffect(() => {
@@ -55,20 +52,21 @@ export const InspectionView = React.memo(({ worktreeId, panZoomConfig }: Inspect
     setHoveredFilePath(null);
   }, [worktreeId]);
 
-  const hierarchyFiles = useMemo(
-    () => (wt ? getAllFilteredFiles(wt, searchQuery) : []),
-    [wt, searchQuery]
-  );
+  const hierarchyFiles = wt ? getAllFilteredFiles(wt, searchQuery) : [];
 
-  const { nodes, edges } = useMemo(() => {
-    if (!wt) return { nodes: [], edges: [] };
+  const { nodes, edges } = (() => {
+    if (!wt)
+      return {
+        nodes: [] as ReturnType<typeof computeSingleWorktreeLayout>['nodes'],
+        edges: [] as ReturnType<typeof computeSingleWorktreeLayout>['edges'],
+      };
     const layout = computeSingleWorktreeLayout(
       wt,
       { bare: true, filesOverride: hierarchyFiles },
       (wtId, filePath) => getFileFindings(insightDetails, wtId, filePath).length
     );
     return { nodes: layout.nodes, edges: layout.edges };
-  }, [wt, hierarchyFiles, insightDetails]);
+  })();
 
   if (!wt) {
     return (

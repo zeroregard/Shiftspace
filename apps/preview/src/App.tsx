@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import '@vscode/codicons/dist/codicon.css';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
@@ -85,13 +85,9 @@ export const App: React.FC = () => {
     };
   }, [cleanupSimulations]);
 
-  const onEvent = useCallback(
-    (handler: (event: ShiftspaceEvent) => void) => {
-      return engineRef.current!.subscribe(handler);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [resetKey]
-  );
+  const onEvent = (handler: (event: ShiftspaceEvent) => void) => {
+    return engineRef.current!.subscribe(handler);
+  };
 
   const handleReset = () => {
     cleanupSimulations();

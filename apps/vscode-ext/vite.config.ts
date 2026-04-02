@@ -4,7 +4,14 @@ import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
+  plugins: [
+    tailwindcss(),
+    react({
+      babel: {
+        plugins: ['babel-plugin-react-compiler'],
+      },
+    }),
+  ],
   // Webview runs in a sandboxed browser iframe — no Node globals.
   // Replace process.env.NODE_ENV at bundle time so React and other
   // libraries that guard on it don't crash with "process is not defined".

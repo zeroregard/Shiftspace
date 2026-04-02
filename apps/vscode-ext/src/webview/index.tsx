@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ShiftspaceRenderer, useShiftspaceStore } from '@shiftspace/renderer';
 import type {
@@ -226,69 +226,66 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'file-click', worktreeId, filePath });
   };
 
-  const handleDiffModeChange = useCallback(
-    (worktreeId: string, diffMode: DiffMode) => {
-      setDiffModeLoading(worktreeId, true);
-      vscode?.postMessage({ type: 'set-diff-mode', worktreeId, diffMode });
-    },
-    [setDiffModeLoading]
-  );
+  const handleDiffModeChange = (worktreeId: string, diffMode: DiffMode) => {
+    setDiffModeLoading(worktreeId, true);
+    vscode?.postMessage({ type: 'set-diff-mode', worktreeId, diffMode });
+  };
 
-  const handleRequestBranchList = useCallback((worktreeId: string) => {
+  const handleRequestBranchList = (worktreeId: string) => {
     vscode?.postMessage({ type: 'get-branch-list', worktreeId });
-  }, []);
+  };
 
-  const handleCheckoutBranch = useCallback((worktreeId: string, branch: string) => {
+  const handleCheckoutBranch = (worktreeId: string, branch: string) => {
     vscode?.postMessage({ type: 'checkout-branch', worktreeId, branch });
-  }, []);
+  };
 
-  const handleFolderClick = useCallback((worktreeId: string, folderPath: string) => {
+  const handleFolderClick = (worktreeId: string, folderPath: string) => {
     vscode?.postMessage({ type: 'folder-click', worktreeId, folderPath });
-  }, []);
+  };
 
-  const handleFetchBranches = useCallback((worktreeId: string) => {
+  const handleFetchBranches = (worktreeId: string) => {
     vscode?.postMessage({ type: 'fetch-branches', worktreeId });
-  }, []);
+  };
 
-  const handleRunAction = useCallback((worktreeId: string, actionId: string) => {
+  const handleRunAction = (worktreeId: string, actionId: string) => {
     vscode?.postMessage({ type: 'run-action', worktreeId, actionId });
-  }, []);
+  };
 
-  const handleStopAction = useCallback((worktreeId: string, actionId: string) => {
+  const handleStopAction = (worktreeId: string, actionId: string) => {
     vscode?.postMessage({ type: 'stop-action', worktreeId, actionId });
-  }, []);
+  };
 
-  const handleSwapBranches = useCallback((worktreeId: string) => {
+  const handleSwapBranches = (worktreeId: string) => {
     vscode?.postMessage({ type: 'swap-branches', worktreeId });
-  }, []);
+  };
 
-  const handleRemoveWorktree = useCallback((worktreeId: string) => {
+  const handleRemoveWorktree = (worktreeId: string) => {
     vscode?.postMessage({ type: 'remove-worktree', worktreeId });
-  }, []);
+  };
 
-  const handleRenameWorktree = useCallback((worktreeId: string, newName: string) => {
+  const handleRenameWorktree = (worktreeId: string, newName: string) => {
     vscode?.postMessage({ type: 'rename-worktree', worktreeId, newName });
-  }, []);
+  };
 
-  const handleRunPipeline = useCallback((worktreeId: string, pipelineId: string) => {
+  const handleRunPipeline = (worktreeId: string, pipelineId: string) => {
     vscode?.postMessage({ type: 'run-pipeline', worktreeId, pipelineId });
-  }, []);
+  };
 
-  const handleSetPackage = useCallback((packageName: string) => {
+  const handleSetPackage = (packageName: string) => {
     vscode?.postMessage({ type: 'set-package', packageName });
-  }, []);
+  };
 
-  const handleDetectPackages = useCallback(() => {
+  const handleDetectPackages = () => {
     vscode?.postMessage({ type: 'detect-packages' });
-  }, []);
+  };
 
-  const handleGetLog = useCallback((worktreeId: string, actionId: string) => {
+  const handleGetLog = (worktreeId: string, actionId: string) => {
     vscode?.postMessage({ type: 'get-log', worktreeId, actionId });
-  }, []);
+  };
 
-  const handleRecheckInsights = useCallback((worktreeId: string) => {
+  const handleRecheckInsights = (worktreeId: string) => {
     vscode?.postMessage({ type: 'recheck-insights', worktreeId });
-  }, []);
+  };
 
   if (errorMessage) {
     return (
