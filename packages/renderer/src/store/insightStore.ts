@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import type { InsightDetail, InsightFinding, FileDiagnosticSummary } from '../types';
+import { storeKey, storeKeyPrefix } from '../utils/storeKeys';
 
-/** Delete all entries in a Map whose key starts with `${prefix}:`. */
-function deleteByPrefix<V>(map: Map<string, V>, prefix: string): boolean {
+/** Delete all entries in a Map whose key starts with the worktree prefix. */
+function deleteByPrefix<V>(map: Map<string, V>, worktreeId: string): boolean {
+  const prefix = storeKeyPrefix(worktreeId);
   let changed = false;
   for (const key of map.keys()) {
-    if (key.startsWith(`${prefix}:`)) {
+    if (key.startsWith(prefix)) {
       map.delete(key);
       changed = true;
     }
@@ -19,12 +21,28 @@ function deleteByPrefix<V>(map: Map<string, V>, prefix: string): boolean {
  */
 type FindingsIndex = Map<string, InsightFinding[]>;
 
-function rebuildFindingsIndex(details: Map<string, InsightDetail>): FindingsIndex {
-  const index: FindingsIndex = new Map();
+/**
+ * Incrementally rebuild findings index for a single worktree.
+ * Removes all entries for the given worktree prefix, then re-indexes
+ * only insights belonging to that worktree. O(k) where k = entries
+ * for the affected worktree, instead of O(n*m) for the full index.
+ */
+function rebuildFindingsIndexForWorktree(
+  prev: FindingsIndex,
+  details: Map<string, InsightDetail>,
+  worktreeId: string
+): FindingsIndex {
+  const index: FindingsIndex = new Map(prev);
+  const prefix = storeKeyPrefix(worktreeId);
+  // Remove stale entries for this worktree
+  for (const key of index.keys()) {
+    if (key.startsWith(prefix)) index.delete(key);
+  }
+  // Re-index only this worktree's insights
   for (const [key, detail] of details) {
-    const worktreeId = key.split(':')[0];
+    if (!key.startsWith(prefix)) continue;
     for (const fi of detail.fileInsights) {
-      const indexKey = `${worktreeId}:${fi.filePath}`;
+      const indexKey = storeKey(worktreeId, fi.filePath);
       const existing = index.get(indexKey);
       if (existing) {
         existing.push(...fi.findings);
@@ -62,7 +80,7 @@ export function getFileFindings(
   worktreeId: string,
   filePath: string
 ): InsightFinding[] {
-  return findingsIndex.get(`${worktreeId}:${filePath}`) ?? EMPTY_FINDINGS;
+  return findingsIndex.get(storeKey(worktreeId, filePath)) ?? EMPTY_FINDINGS;
 }
 
 export const useInsightStore = create<InsightStore>((set) => ({
@@ -73,8 +91,11 @@ export const useInsightStore = create<InsightStore>((set) => ({
   setInsightDetail: (worktreeId, insightId, detail) =>
     set((s) => {
       const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
-      insightDetails.set(`${worktreeId}:${insightId}`, detail);
-      return { insightDetails, findingsIndex: rebuildFindingsIndex(insightDetails) };
+      insightDetails.set(storeKey(worktreeId, insightId), detail);
+      return {
+        insightDetails,
+        findingsIndex: rebuildFindingsIndexForWorktree(s.findingsIndex, insightDetails, worktreeId),
+      };
     }),
 
   clearInsightDetails: (worktreeId) =>
@@ -82,7 +103,10 @@ export const useInsightStore = create<InsightStore>((set) => ({
       const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
       const changed = deleteByPrefix(insightDetails, worktreeId);
       if (!changed) return {};
-      return { insightDetails, findingsIndex: rebuildFindingsIndex(insightDetails) };
+      return {
+        insightDetails,
+        findingsIndex: rebuildFindingsIndexForWorktree(s.findingsIndex, insightDetails, worktreeId),
+      };
     }),
 
   setFileDiagnostics: (worktreeId, files) =>
@@ -90,7 +114,7 @@ export const useInsightStore = create<InsightStore>((set) => ({
       if (files.length === 0) return {};
       const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
       for (const file of files) {
-        fileDiagnostics.set(`${worktreeId}:${file.filePath}`, file);
+        fileDiagnostics.set(storeKey(worktreeId, file.filePath), file);
       }
       return { fileDiagnostics };
     }),
@@ -101,7 +125,7 @@ export const useInsightStore = create<InsightStore>((set) => ({
       const fileDiagnostics = new Map<string, FileDiagnosticSummary>(s.fileDiagnostics);
       let changed = false;
       for (const fp of filePaths) {
-        changed = fileDiagnostics.delete(`${worktreeId}:${fp}`) || changed;
+        changed = fileDiagnostics.delete(storeKey(worktreeId, fp)) || changed;
       }
       return changed ? { fileDiagnostics } : {};
     }),

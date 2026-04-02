@@ -4,6 +4,7 @@ import type { ActionConfig } from '../../../types';
 import { useActions } from '../../../ui/ActionsContext';
 import { IconButton } from '../../../ui/IconButton';
 import { deriveActionType } from '../../../utils/actionUtils';
+import { storeKey } from '../../../utils/storeKeys';
 
 interface ActionBarProps {
   worktreeId: string;
@@ -59,7 +60,7 @@ interface ButtonProps {
 
 function ActionButton({ action, worktreeId }: ButtonProps) {
   const actions = useActions();
-  const actionState = useActionStore((s) => s.actionStates.get(`${worktreeId}:${action.id}`));
+  const actionState = useActionStore((s) => s.actionStates.get(storeKey(worktreeId, action.id)));
   const status = actionState?.status ?? 'idle';
   const port = actionState?.port;
 

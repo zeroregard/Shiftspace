@@ -1,6 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useInsightStore, getFileFindings } from '../store';
 import type { FileDiagnosticSummary, InsightFinding } from '../types';
+import { storeKey } from '../utils/storeKeys';
 
 export interface FileAnnotations {
   errors: number;
@@ -21,7 +22,7 @@ export function useFileAnnotations(worktreeId: string, filePath: string): FileAn
     useShallow((s) => getFileFindings(s.findingsIndex, worktreeId, filePath))
   );
 
-  const diagnostics = useInsightStore((s) => s.fileDiagnostics.get(`${worktreeId}:${filePath}`));
+  const diagnostics = useInsightStore((s) => s.fileDiagnostics.get(storeKey(worktreeId, filePath)));
 
   const errors = diagnostics?.errors ?? 0;
   const warnings = diagnostics?.warnings ?? 0;

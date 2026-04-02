@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useInsightStore } from './insightStore';
 import type { FileDiagnosticSummary } from '../types';
+import { storeKey } from '../utils/storeKeys';
 
 function makeDiag(filePath: string, errors = 1, warnings = 0): FileDiagnosticSummary {
   return { filePath, errors, warnings, info: 0, hints: 0, details: [] };
@@ -24,9 +25,9 @@ describe('insightStore – fileDiagnostics', () => {
     setFileDiagnostics('w1', [makeDiag('a.ts', 10)]);
 
     const diags = useInsightStore.getState().fileDiagnostics;
-    expect(diags.get('w1:a.ts')?.errors).toBe(10);
-    expect(diags.get('w1:b.ts')?.errors).toBe(2);
-    expect(diags.get('w1:c.ts')?.errors).toBe(3);
+    expect(diags.get(storeKey('w1', 'a.ts'))?.errors).toBe(10);
+    expect(diags.get(storeKey('w1', 'b.ts'))?.errors).toBe(2);
+    expect(diags.get(storeKey('w1', 'c.ts'))?.errors).toBe(3);
   });
 
   it('setFileDiagnostics overwrites entries for included files', () => {
@@ -35,7 +36,7 @@ describe('insightStore – fileDiagnostics', () => {
     setFileDiagnostics('w1', [makeDiag('a.ts', 3)]);
     setFileDiagnostics('w1', [makeDiag('a.ts', 0)]);
 
-    expect(useInsightStore.getState().fileDiagnostics.get('w1:a.ts')?.errors).toBe(0);
+    expect(useInsightStore.getState().fileDiagnostics.get(storeKey('w1', 'a.ts'))?.errors).toBe(0);
   });
 
   it('setFileDiagnostics with empty array is a no-op', () => {
@@ -58,9 +59,9 @@ describe('insightStore – fileDiagnostics', () => {
     removeFileDiagnostics('w1', ['b.ts']);
 
     const diags = useInsightStore.getState().fileDiagnostics;
-    expect(diags.has('w1:a.ts')).toBe(true);
-    expect(diags.has('w1:b.ts')).toBe(false);
-    expect(diags.has('w1:c.ts')).toBe(true);
+    expect(diags.has(storeKey('w1', 'a.ts'))).toBe(true);
+    expect(diags.has(storeKey('w1', 'b.ts'))).toBe(false);
+    expect(diags.has(storeKey('w1', 'c.ts'))).toBe(true);
   });
 
   it('removeFileDiagnostics with empty array is a no-op', () => {
@@ -84,9 +85,9 @@ describe('insightStore – fileDiagnostics', () => {
     clearFileDiagnostics('w1');
 
     const diags = useInsightStore.getState().fileDiagnostics;
-    expect(diags.has('w1:a.ts')).toBe(false);
-    expect(diags.has('w1:b.ts')).toBe(false);
-    expect(diags.has('w2:c.ts')).toBe(true);
+    expect(diags.has(storeKey('w1', 'a.ts'))).toBe(false);
+    expect(diags.has(storeKey('w1', 'b.ts'))).toBe(false);
+    expect(diags.has(storeKey('w2', 'c.ts'))).toBe(true);
   });
 
   it('different worktrees are independent', () => {
@@ -98,7 +99,7 @@ describe('insightStore – fileDiagnostics', () => {
     setFileDiagnostics('w1', [makeDiag('a.ts', 99)]);
 
     const diags = useInsightStore.getState().fileDiagnostics;
-    expect(diags.get('w1:a.ts')?.errors).toBe(99);
-    expect(diags.get('w2:a.ts')?.errors).toBe(5);
+    expect(diags.get(storeKey('w1', 'a.ts'))?.errors).toBe(99);
+    expect(diags.get(storeKey('w2', 'a.ts'))?.errors).toBe(5);
   });
 });

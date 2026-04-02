@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
 import type { FileChange, WorktreeState } from '../../../types';
 import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
@@ -76,6 +77,17 @@ function FileSectionLabel({ label }: { label: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Virtual list item types
+// ---------------------------------------------------------------------------
+
+const SECTION_LABEL_HEIGHT = 28;
+const FILE_ROW_HEIGHT = 32;
+
+type VirtualItem =
+  | { type: 'label'; label: string }
+  | { type: 'file'; file: FileChange; sectionKey: string };
+
+// ---------------------------------------------------------------------------
 // File list panel
 // ---------------------------------------------------------------------------
 
@@ -94,6 +106,7 @@ export function FileListPanel({
   onFileClick,
   onHoverFile,
 }: FileListPanelProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const searchRegexError = !isValidRegex(searchQuery);
 
   const sections = useMemo(() => partitionFiles(wt), [wt]);
@@ -115,6 +128,38 @@ export function FileListPanel({
   const filteredFileCount =
     filteredCommitted.length + filteredStaged.length + filteredUnstaged.length;
   const isEmpty = filteredFileCount === 0;
+
+  // Build a flat list of items for the virtualizer
+  const items = useMemo(() => {
+    const result: VirtualItem[] = [];
+    if (filteredCommitted.length > 0) {
+      result.push({ type: 'label', label: 'Committed' });
+      for (const file of filteredCommitted) {
+        result.push({ type: 'file', file, sectionKey: 'committed' });
+      }
+    }
+    if (filteredStaged.length > 0) {
+      result.push({ type: 'label', label: 'Staged' });
+      for (const file of filteredStaged) {
+        result.push({ type: 'file', file, sectionKey: 'staged' });
+      }
+    }
+    if (filteredUnstaged.length > 0) {
+      result.push({ type: 'label', label: 'Unstaged' });
+      for (const file of filteredUnstaged) {
+        result.push({ type: 'file', file, sectionKey: 'unstaged' });
+      }
+    }
+    return result;
+  }, [filteredCommitted, filteredStaged, filteredUnstaged]);
+
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) =>
+      items[index].type === 'label' ? SECTION_LABEL_HEIGHT : FILE_ROW_HEIGHT,
+    overscan: 10,
+  });
 
   return (
     <div className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0">
@@ -153,56 +198,47 @@ export function FileListPanel({
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-2 pt-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 pt-0">
         {isEmpty ? (
           <div className="text-text-faint text-11 px-3 py-2">
             {searchQuery ? 'No matching files' : 'No changes'}
           </div>
         ) : (
-          <>
-            {filteredCommitted.length > 0 && (
-              <>
-                <FileSectionLabel label="Committed" />
-                {filteredCommitted.map((file) => (
-                  <InspectionFileRow
-                    key={`committed:${file.path}`}
-                    file={file}
-                    worktreeId={wt.id}
-                    onFileClick={onFileClick}
-                    onHoverFile={onHoverFile}
-                  />
-                ))}
-              </>
-            )}
-            {filteredStaged.length > 0 && (
-              <>
-                <FileSectionLabel label="Staged" />
-                {filteredStaged.map((file) => (
-                  <InspectionFileRow
-                    key={`staged:${file.path}`}
-                    file={file}
-                    worktreeId={wt.id}
-                    onFileClick={onFileClick}
-                    onHoverFile={onHoverFile}
-                  />
-                ))}
-              </>
-            )}
-            {filteredUnstaged.length > 0 && (
-              <>
-                <FileSectionLabel label="Unstaged" />
-                {filteredUnstaged.map((file) => (
-                  <InspectionFileRow
-                    key={`unstaged:${file.path}`}
-                    file={file}
-                    worktreeId={wt.id}
-                    onFileClick={onFileClick}
-                    onHoverFile={onHoverFile}
-                  />
-                ))}
-              </>
-            )}
-          </>
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const item = items[virtualRow.index];
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  {item.type === 'label' ? (
+                    <FileSectionLabel label={item.label} />
+                  ) : (
+                    <InspectionFileRow
+                      file={item.file}
+                      worktreeId={wt.id}
+                      onFileClick={onFileClick}
+                      onHoverFile={onHoverFile}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
