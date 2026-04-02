@@ -11,10 +11,16 @@ interface Transform {
 
 function fitViewToNodes(nodes: LayoutNode[], w: number, h: number): Transform {
   if (nodes.length === 0) return { x: 0, y: 0, zoom: 1 };
-  const minX = Math.min(...nodes.map((n) => n.position.x));
-  const minY = Math.min(...nodes.map((n) => n.position.y));
-  const maxX = Math.max(...nodes.map((n) => n.position.x + n.width));
-  const maxY = Math.max(...nodes.map((n) => n.position.y + n.height));
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const n of nodes) {
+    minX = Math.min(minX, n.position.x);
+    minY = Math.min(minY, n.position.y);
+    maxX = Math.max(maxX, n.position.x + n.width);
+    maxY = Math.max(maxY, n.position.y + n.height);
+  }
   const PADDING = 40;
   const zoom = Math.min((w - PADDING * 2) / (maxX - minX), (h - PADDING * 2) / (maxY - minY), 1);
   return {

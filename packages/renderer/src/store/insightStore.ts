@@ -13,9 +13,34 @@ function deleteByPrefix<V>(map: Map<string, V>, prefix: string): boolean {
   return changed;
 }
 
+/**
+ * Derived index: `${worktreeId}:${filePath}` → InsightFinding[].
+ * Rebuilt from insightDetails on every write so lookups are O(1).
+ */
+type FindingsIndex = Map<string, InsightFinding[]>;
+
+function rebuildFindingsIndex(details: Map<string, InsightDetail>): FindingsIndex {
+  const index: FindingsIndex = new Map();
+  for (const [key, detail] of details) {
+    const worktreeId = key.split(':')[0];
+    for (const fi of detail.fileInsights) {
+      const indexKey = `${worktreeId}:${fi.filePath}`;
+      const existing = index.get(indexKey);
+      if (existing) {
+        existing.push(...fi.findings);
+      } else {
+        index.set(indexKey, [...fi.findings]);
+      }
+    }
+  }
+  return index;
+}
+
 interface InsightStore {
   /** Keyed by `${worktreeId}:${insightId}` */
   insightDetails: Map<string, InsightDetail>;
+  /** Keyed by `${worktreeId}:${filePath}` — derived index for O(1) lookups. */
+  findingsIndex: FindingsIndex;
   /** Keyed by `${worktreeId}:${filePath}` */
   fileDiagnostics: Map<string, FileDiagnosticSummary>;
   setInsightDetail: (worktreeId: string, insightId: string, detail: InsightDetail) => void;
@@ -27,39 +52,37 @@ interface InsightStore {
   clearFileDiagnostics: (worktreeId: string) => void;
 }
 
+const EMPTY_FINDINGS: InsightFinding[] = [];
+
 /**
- * Collect all InsightFindings for a file across all loaded insight plugins.
+ * Look up InsightFindings for a file. O(1) via the derived index.
  */
 export function getFileFindings(
-  details: Map<string, InsightDetail>,
+  findingsIndex: FindingsIndex,
   worktreeId: string,
   filePath: string
 ): InsightFinding[] {
-  const findings: InsightFinding[] = [];
-  for (const [key, detail] of details) {
-    if (!key.startsWith(`${worktreeId}:`)) continue;
-    const fi = detail.fileInsights.find((f) => f.filePath === filePath);
-    if (fi) findings.push(...fi.findings);
-  }
-  return findings;
+  return findingsIndex.get(`${worktreeId}:${filePath}`) ?? EMPTY_FINDINGS;
 }
 
 export const useInsightStore = create<InsightStore>((set) => ({
   insightDetails: new Map(),
+  findingsIndex: new Map(),
   fileDiagnostics: new Map(),
 
   setInsightDetail: (worktreeId, insightId, detail) =>
     set((s) => {
       const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
       insightDetails.set(`${worktreeId}:${insightId}`, detail);
-      return { insightDetails };
+      return { insightDetails, findingsIndex: rebuildFindingsIndex(insightDetails) };
     }),
 
   clearInsightDetails: (worktreeId) =>
     set((s) => {
       const insightDetails = new Map<string, InsightDetail>(s.insightDetails);
       const changed = deleteByPrefix(insightDetails, worktreeId);
-      return changed ? { insightDetails } : {};
+      if (!changed) return {};
+      return { insightDetails, findingsIndex: rebuildFindingsIndex(insightDetails) };
     }),
 
   setFileDiagnostics: (worktreeId, files) =>

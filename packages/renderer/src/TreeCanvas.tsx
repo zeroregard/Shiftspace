@@ -56,7 +56,7 @@ interface EdgePathProps {
   nodeMap: Map<string, LayoutNode>;
 }
 
-function EdgePath({ edge, nodeMap }: EdgePathProps) {
+const EdgePath = React.memo(function EdgePath({ edge, nodeMap }: EdgePathProps) {
   const source = nodeMap.get(edge.source);
   const target = nodeMap.get(edge.target);
   if (!source || !target) return null;
@@ -74,14 +74,14 @@ function EdgePath({ edge, nodeMap }: EdgePathProps) {
       strokeWidth={(edge.style?.strokeWidth as number) ?? 1}
     />
   );
-}
+});
 
 interface NodeWrapperProps {
   node: LayoutNode;
   nodeTypes: Record<string, React.ComponentType<NodeComponentProps<any>>>;
 }
 
-function NodeWrapper({ node, nodeTypes }: NodeWrapperProps) {
+const NodeWrapper = React.memo(function NodeWrapper({ node, nodeTypes }: NodeWrapperProps) {
   const Component = nodeTypes[node.type];
   if (!Component) return null;
   return (
@@ -99,7 +99,7 @@ function NodeWrapper({ node, nodeTypes }: NodeWrapperProps) {
       <Component data={node.data} />
     </div>
   );
-}
+});
 
 export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   nodes,
@@ -122,6 +122,19 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   } = usePanZoom({ nodes, panZoomConfig, focusNodeId, onFocusComplete });
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+
+  const svgBounds = useMemo(() => {
+    let w = 0;
+    let h = 0;
+    for (const n of nodes) {
+      w = Math.max(w, n.position.x + n.width);
+      h = Math.max(h, n.position.y + n.height);
+    }
+    return { w, h };
+  }, [nodes]);
+
+  const worktreeNodes = useMemo(() => nodes.filter((n) => n.type === 'worktreeNode'), [nodes]);
+  const contentNodes = useMemo(() => nodes.filter((n) => n.type !== 'worktreeNode'), [nodes]);
 
   const { x, y, zoom } = transform;
   const dotOpacity = Math.min(1, Math.max(0.05, zoom * 0.7));
@@ -154,29 +167,25 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
         }}
         onTransitionEnd={handleTransitionEnd}
       >
-        {nodes
-          .filter((n) => n.type === 'worktreeNode')
-          .map((node) => (
-            <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
-          ))}
+        {worktreeNodes.map((node) => (
+          <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
+        ))}
         <svg
           style={{
             position: 'absolute',
             overflow: 'visible',
             pointerEvents: 'none',
-            width: Math.max(...nodes.map((n) => n.position.x + n.width), 0),
-            height: Math.max(...nodes.map((n) => n.position.y + n.height), 0),
+            width: svgBounds.w,
+            height: svgBounds.h,
           }}
         >
           {edges.map((edge) => (
             <EdgePath key={edge.id} edge={edge} nodeMap={nodeMap} />
           ))}
         </svg>
-        {nodes
-          .filter((n) => n.type !== 'worktreeNode')
-          .map((node) => (
-            <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
-          ))}
+        {contentNodes.map((node) => (
+          <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
+        ))}
       </div>
       <button
         style={{

@@ -1,3 +1,4 @@
+import React from 'react';
 import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
 import type { FileChange } from '../types';
@@ -25,7 +26,7 @@ function getChangeTint(file: FileChange): string {
   return 'rgba(224, 196, 78, 0.10)';
 }
 
-export function FileNode({ data }: NodeComponentProps<FileNodeData>) {
+export const FileNode = React.memo(function FileNode({ data }: NodeComponentProps<FileNodeData>) {
   const { file, onFileClick, worktreeId } = data;
   const { hoveredFilePath } = useInspectionHover();
   const fileName = file.path.split('/').pop() ?? file.path;
@@ -103,4 +104,4 @@ export function FileNode({ data }: NodeComponentProps<FileNodeData>) {
       </div>
     </DiffPopover>
   );
-}
+});

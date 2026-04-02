@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useDeferredValue, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
-import type { InsightDetail, FileDiagnosticSummary } from '../../types';
+import type { InsightFinding, FileDiagnosticSummary } from '../../types';
 import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
 import { NODE_TYPES } from '../../nodes';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
@@ -27,10 +27,10 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   // Select only entries for this worktree so insight updates for *other*
   // worktrees don't trigger layout recomputation.  useShallow compares Map
   // entries by reference — if the values haven't changed, no re-render.
-  const insightDetails = useInsightStore(
+  const findingsIndex = useInsightStore(
     useShallow((s) => {
-      const filtered = new Map<string, InsightDetail>();
-      for (const [key, val] of s.insightDetails) {
+      const filtered = new Map<string, InsightFinding[]>();
+      for (const [key, val] of s.findingsIndex) {
         if (key.startsWith(`${worktreeId}:`)) filtered.set(key, val);
       }
       return filtered;
@@ -58,6 +58,10 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
 
+  // Defer the search query so that typing is instant but the expensive
+  // layout recomputation (tree build + flatten) is batched by React.
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
   const handleFileRowClick = (wtId: string, filePath: string) => {
     actions.fileClick(wtId, filePath);
     setFocusNodeId(`file-${wtId}-${filePath}`);
@@ -74,7 +78,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
     setHoveredFilePath(null);
   }, [worktreeId]);
 
-  const hierarchyFiles = wt ? getAllFilteredFiles(wt, searchQuery) : [];
+  const hierarchyFiles = wt ? getAllFilteredFiles(wt, deferredSearchQuery) : [];
 
   const { nodes, edges } = useMemo(() => {
     if (!wt)
@@ -86,14 +90,14 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
       wt,
       { bare: true, filesOverride: hierarchyFiles },
       (wtId, filePath) => {
-        const findings = getFileFindings(insightDetails, wtId, filePath);
+        const findings = getFileFindings(findingsIndex, wtId, filePath);
         const diag = fileDiagnostics.get(`${wtId}:${filePath}`);
         return findings.length + (diag?.errors ? 1 : 0) + (diag?.warnings ? 1 : 0);
       }
     );
     return { nodes: layout.nodes, edges: layout.edges };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + searchQuery
-  }, [wt, searchQuery, insightDetails, fileDiagnostics]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + deferredSearchQuery
+  }, [wt, deferredSearchQuery, findingsIndex, fileDiagnostics]);
 
   if (!wt) {
     return (
@@ -130,11 +134,18 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
 
         <div className="flex-1 min-h-0 min-w-0 relative">
           <ErrorBoundary
-            fallback={
-              <div className="w-full h-full flex items-center justify-center text-text-faint text-13">
-                Graph failed to render
+            resetKey={wt}
+            fallback={(retry) => (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-text-faint text-13">
+                <span>Graph failed to render</span>
+                <button
+                  onClick={retry}
+                  className="px-2 py-1 text-11 rounded border border-border-default hover:bg-node-file cursor-pointer"
+                >
+                  Retry
+                </button>
               </div>
-            }
+            )}
           >
             <InspectionHoverContext.Provider value={hoverContextValue}>
               <TreeCanvas

@@ -168,6 +168,7 @@ export function DiffPopover({ file, children }: { file: FileChange; children: Re
           style={{ width, maxHeight: POPOVER_H }}
         >
           <ErrorBoundary
+            resetKey={file}
             fallback={
               <div className="px-3 py-4 text-text-faint text-11 italic text-center">
                 diff failed to load
