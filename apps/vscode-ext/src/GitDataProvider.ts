@@ -57,6 +57,8 @@ export class GitDataProvider implements vscode.Disposable {
   private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private worktreePollingTimer: ReturnType<typeof setInterval> | undefined;
   private statusPollingTimer: ReturnType<typeof setInterval> | undefined;
+  /** True while a status poll cycle is in progress — prevents overlapping polls. */
+  private statusPollingInFlight = false;
   private disposables: vscode.Disposable[] = [];
   private currentRoot: string | undefined;
   private defaultBranch = 'main';
@@ -325,10 +327,18 @@ export class GitDataProvider implements vscode.Disposable {
     this.statusPollingTimer = setInterval(() => {
       // Skip poll tick entirely while a write operation is queued/running.
       if (gitQueue.isActive()) return;
+      // Skip if the previous poll cycle hasn't finished yet — prevents
+      // overlapping git processes when refreshes take longer than 2 seconds.
+      if (this.statusPollingInFlight) return;
+      this.statusPollingInFlight = true;
       // Refresh worktrees sequentially to avoid concurrent git processes.
       void (async () => {
-        for (const wt of this.worktrees) {
-          await this.refreshWorktree(wt);
+        try {
+          for (const wt of this.worktrees) {
+            await this.refreshWorktree(wt);
+          }
+        } finally {
+          this.statusPollingInFlight = false;
         }
       })();
     }, 2_000);

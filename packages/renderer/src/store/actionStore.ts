@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import type { ActionConfig, ActionState, PipelineConfig } from '../types';
 
+/** Match the extension-side LogStore cap to prevent unbounded growth in the webview. */
+const MAX_LOG_CHARS = 1_000_000;
+
 interface ActionStore {
   actionConfigs: ActionConfig[];
   /** Key: `${worktreeId}:${actionId}` */
@@ -43,7 +46,11 @@ export const useActionStore = create<ActionStore>((set) => ({
     set((s) => {
       const key = `${worktreeId}:${actionId}`;
       const actionLogs = new Map<string, string>(s.actionLogs);
-      actionLogs.set(key, (actionLogs.get(key) ?? '') + chunk);
+      let combined = (actionLogs.get(key) ?? '') + chunk;
+      if (combined.length > MAX_LOG_CHARS) {
+        combined = combined.slice(combined.length - MAX_LOG_CHARS);
+      }
+      actionLogs.set(key, combined);
       return { actionLogs };
     }),
 

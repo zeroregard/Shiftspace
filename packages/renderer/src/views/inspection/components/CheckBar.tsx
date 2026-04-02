@@ -69,9 +69,14 @@ function CheckChip({ action, worktreeId, expanded, onToggleExpand }: CheckChipPr
 export function CheckBar({ worktreeId }: CheckBarProps) {
   const actions = useActions();
   const actionConfigs = useActionStore((s) => s.actionConfigs);
-  const actionLogs = useActionStore((s) => s.actionLogs);
   const pipelines = useActionStore((s) => s.pipelines);
   const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
+
+  // Only subscribe to the single expanded log entry — avoids re-rendering on
+  // every appendActionLog call for other actions.
+  const logContent = useActionStore((s) =>
+    expandedActionId ? (s.actionLogs.get(`${worktreeId}:${expandedActionId}`) ?? '') : ''
+  );
 
   const checks = actionConfigs.filter((a) => deriveActionType(a) === 'check');
   const services = actionConfigs.filter((a) => deriveActionType(a) === 'service');
@@ -89,10 +94,6 @@ export function CheckBar({ worktreeId }: CheckBarProps) {
       actions.getLog(worktreeId, actionId);
     }
   };
-
-  const logContent = expandedActionId
-    ? (actionLogs.get(`${worktreeId}:${expandedActionId}`) ?? '')
-    : '';
 
   return (
     <div className="flex flex-col border-b border-border-dashed shrink-0">
