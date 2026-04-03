@@ -56,6 +56,14 @@ jobs:
           restore-keys: |
             node-modules-${{ runner.os }}-
 
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-release-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-release-
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -73,7 +81,7 @@ jobs:
           echo "Bumped ${CURRENT} → ${NEW}"
 
       - name: Build
-        run: bun run build
+        run: npx nx run-many -t build
 
       - name: Package extension
         run: |

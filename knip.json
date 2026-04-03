@@ -7,7 +7,7 @@
     },
     "packages/renderer": {
       "project": ["src/**/*.{ts,tsx}"],
-      "ignoreDependencies": ["vite"]
+      "ignoreDependencies": []
     },
     "apps/preview": {
       "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts"],
