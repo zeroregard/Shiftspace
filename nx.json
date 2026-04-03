@@ -8,6 +8,38 @@
       "!{projectRoot}/**/*.spec.ts",
       "!{projectRoot}/**/*.test.ts",
       "!{projectRoot}/e2e/**/*"
+    ],
+    "e2eShared": [
+      "{workspaceRoot}/apps/preview/playwright.config.ts",
+      "{workspaceRoot}/apps/preview/index.html",
+      "{workspaceRoot}/apps/preview/vite.config.ts",
+      "{workspaceRoot}/apps/preview/src/App.tsx",
+      "{workspaceRoot}/apps/preview/src/main.tsx",
+      "{workspaceRoot}/apps/preview/src/styles.css",
+      "sharedGlobals"
+    ],
+    "rendererCore": [
+      "{workspaceRoot}/packages/renderer/src/types.ts",
+      "{workspaceRoot}/packages/renderer/src/index.ts",
+      "{workspaceRoot}/packages/renderer/src/ShiftspaceRenderer.tsx",
+      "{workspaceRoot}/packages/renderer/src/store/**/*",
+      "{workspaceRoot}/packages/renderer/src/shared/**/*",
+      "{workspaceRoot}/packages/ui/src/**/*"
+    ],
+    "rendererGrove": [
+      "{workspaceRoot}/packages/renderer/src/TreeCanvas.tsx",
+      "{workspaceRoot}/packages/renderer/src/views/grove/**/*",
+      "{workspaceRoot}/packages/renderer/src/nodes/**/*",
+      "{workspaceRoot}/packages/renderer/src/layout/**/*",
+      "{workspaceRoot}/packages/renderer/src/hooks/usePanZoom.ts",
+      "{workspaceRoot}/packages/renderer/src/hooks/useCanvasGestures.ts",
+      "{workspaceRoot}/packages/renderer/src/overlays/**/*"
+    ],
+    "rendererInspection": [
+      "{workspaceRoot}/packages/renderer/src/views/inspection/**/*",
+      "{workspaceRoot}/packages/renderer/src/utils/listSections.ts",
+      "{workspaceRoot}/packages/renderer/src/hooks/useFileAnnotations.ts",
+      "{workspaceRoot}/packages/renderer/src/ui/**/*"
     ]
   },
   "targetDefaults": {

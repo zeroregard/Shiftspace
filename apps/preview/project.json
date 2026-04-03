@@ -7,12 +7,12 @@
       "cache": true,
       "inputs": [
         "{projectRoot}/e2e/controls.spec.ts",
-        "{projectRoot}/src/**/*",
-        "{projectRoot}/playwright.config.ts",
-        "{projectRoot}/index.html",
-        "{projectRoot}/vite.config.ts",
-        "^production",
-        "sharedGlobals"
+        "{projectRoot}/src/controls/**/*",
+        "{projectRoot}/src/mock/**/*",
+        "{projectRoot}/src/useSimulationHandlers.ts",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove"
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/controls.spec.ts"]
     },
@@ -22,12 +22,11 @@
       "cache": true,
       "inputs": [
         "{projectRoot}/e2e/diagnostics.spec.ts",
-        "{projectRoot}/src/**/*",
-        "{projectRoot}/playwright.config.ts",
-        "{projectRoot}/index.html",
-        "{projectRoot}/vite.config.ts",
-        "^production",
-        "sharedGlobals"
+        "{projectRoot}/src/mockData.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererInspection"
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/diagnostics.spec.ts"]
     },
@@ -38,11 +37,10 @@
       "inputs": [
         "{projectRoot}/e2e/graph.spec.ts",
         "{projectRoot}/src/**/*",
-        "{projectRoot}/playwright.config.ts",
-        "{projectRoot}/index.html",
-        "{projectRoot}/vite.config.ts",
-        "^production",
-        "sharedGlobals"
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove",
+        "rendererInspection"
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/graph.spec.ts"]
     },
@@ -52,12 +50,11 @@
       "cache": true,
       "inputs": [
         "{projectRoot}/e2e/inspector-file-categories.spec.ts",
-        "{projectRoot}/src/**/*",
-        "{projectRoot}/playwright.config.ts",
-        "{projectRoot}/index.html",
-        "{projectRoot}/vite.config.ts",
-        "^production",
-        "sharedGlobals"
+        "{projectRoot}/src/mockData.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererInspection"
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/inspector-file-categories.spec.ts"]
     },
@@ -67,12 +64,10 @@
       "cache": true,
       "inputs": [
         "{projectRoot}/e2e/search-filter.spec.ts",
-        "{projectRoot}/src/**/*",
-        "{projectRoot}/playwright.config.ts",
-        "{projectRoot}/index.html",
-        "{projectRoot}/vite.config.ts",
-        "^production",
-        "sharedGlobals"
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererInspection"
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/search-filter.spec.ts"]
     },
