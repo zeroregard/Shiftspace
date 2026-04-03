@@ -13,14 +13,14 @@ import {
   computeFileNodeHeight,
 } from './config';
 
-export interface SingleWorktreeLayout {
+interface SingleWorktreeLayout {
   nodes: LayoutNode[];
   edges: LayoutEdge[];
   containerW: number;
   containerH: number;
 }
 
-export interface SingleWorktreeLayoutOptions {
+interface SingleWorktreeLayoutOptions {
   bare?: boolean;
   filesOverride?: import('../types').FileChange[];
 }

@@ -75,3 +75,6 @@ jobs:
           else
             npx nx affected -t typecheck --base=origin/${{ github.event.pull_request.base.ref }}
           fi
+
+      - name: Dead code check
+        run: bun deadcode

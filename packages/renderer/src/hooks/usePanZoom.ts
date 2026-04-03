@@ -30,7 +30,7 @@ function fitViewToNodes(nodes: LayoutNode[], w: number, h: number): Transform {
   };
 }
 
-export interface UsePanZoomResult {
+interface UsePanZoomResult {
   containerRef: React.RefObject<HTMLDivElement>;
   transform: Transform;
   isFitting: boolean;

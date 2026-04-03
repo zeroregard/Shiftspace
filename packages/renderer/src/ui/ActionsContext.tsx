@@ -58,7 +58,7 @@ export function useActions(): ShiftspaceActions {
 }
 
 /** Raw callback props accepted by the provider (matches ShiftspaceRenderer's existing API). */
-export interface ActionsProviderProps {
+interface ActionsProviderProps {
   onFileClick?: (worktreeId: string, filePath: string) => void;
   onFolderClick?: (worktreeId: string, folderPath: string) => void;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;

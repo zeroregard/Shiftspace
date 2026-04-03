@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as os from 'os';
 import type { McpToolHandlers } from './handlers';
 
-export interface McpLock {
+interface McpLock {
   port: number;
   token: string;
   pid: number;

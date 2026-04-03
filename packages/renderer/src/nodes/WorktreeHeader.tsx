@@ -10,7 +10,7 @@ import { Spinner } from '@shiftspace/ui/spinner';
 
 const EMPTY_BRANCHES: string[] = [];
 
-export interface WorktreeHeaderProps {
+interface WorktreeHeaderProps {
   worktree: WorktreeState;
   /** When true, hides branch picker and stats — used in the tree canvas nodes */
   compact?: boolean;

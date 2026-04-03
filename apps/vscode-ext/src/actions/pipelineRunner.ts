@@ -3,13 +3,13 @@ import type { RunOptions } from './runner';
 import { runCheck } from './runner';
 import { log } from '../logger';
 
-export interface PipelineResult {
+interface PipelineResult {
   steps: CheckResult[];
   passed: boolean;
   aborted: boolean;
 }
 
-export interface PipelineRunOptions {
+interface PipelineRunOptions {
   cwd: string;
   signal?: AbortSignal;
   onStepStart?: (actionId: string) => void;
