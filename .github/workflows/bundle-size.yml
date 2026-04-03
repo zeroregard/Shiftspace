@@ -23,6 +23,11 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Restore node_modules cache
         uses: actions/cache@v4
         with:
@@ -43,6 +48,11 @@ jobs:
       - name: Measure PR sizes
         run: bun run scripts/bundle-sizes.ts --json > /tmp/pr-sizes.json
 
+      # Save the bundle-sizes script before switching branches,
+      # since the base branch may not have it yet.
+      - name: Save measurement script
+        run: cp scripts/bundle-sizes.ts /tmp/bundle-sizes.ts
+
       - name: Checkout base branch
         uses: actions/checkout@v4
         with:
@@ -56,7 +66,7 @@ jobs:
         run: bun run build
 
       - name: Measure base sizes
-        run: bun run scripts/bundle-sizes.ts --json > /tmp/base-sizes.json
+        run: bun run /tmp/bundle-sizes.ts --json > /tmp/base-sizes.json
 
       - name: Checkout PR again (for comparison script)
         uses: actions/checkout@v4

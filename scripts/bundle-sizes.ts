@@ -10,9 +10,9 @@
 
 import { gzipSync } from 'node:zlib';
 import { statSync, readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 
-const ROOT = resolve(import.meta.dirname, '..');
+const ROOT = process.cwd();
 
 const print = (s: string) => process.stdout.write(`${s}\n`);
 const printErr = (s: string) => process.stderr.write(`${s}\n`);
