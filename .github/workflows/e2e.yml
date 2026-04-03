@@ -51,29 +51,103 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-e2e-
 
-      - name: Check which e2e specs are affected
+      - name: Determine affected e2e specs
         id: affected
         run: |
-          # Check if any e2e target is affected using the per-spec targets
-          AFFECTED=$(npx nx show projects --affected \
-            -t e2e:controls e2e:diagnostics e2e:graph e2e:inspector-file-categories e2e:search-filter \
-            --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
-          if echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
-            echo "run_e2e=true" >> $GITHUB_OUTPUT
-          else
-            echo "run_e2e=false" >> $GITHUB_OUTPUT
+          # Get files changed in this PR compared to the base branch.
+          # This mirrors the named-input groups defined in nx.json and
+          # apps/preview/project.json so we only run specs whose inputs
+          # actually changed.
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)
+
+          has_changes() { echo "$CHANGED" | grep -qE "$1"; }
+
+          # --- named input groups (keep in sync with nx.json) ---
+          E2E_SHARED=false
+          has_changes '^apps/preview/(playwright\.config\.ts|index\.html|vite\.config\.ts|src/(App\.tsx|main\.tsx|styles\.css))' && E2E_SHARED=true
+          has_changes '^tsconfig\.base\.json' && E2E_SHARED=true
+
+          CORE=false
+          has_changes '^packages/renderer/src/(types\.ts|index\.ts|ShiftspaceRenderer\.tsx)' && CORE=true
+          has_changes '^packages/renderer/src/(store|shared)/' && CORE=true
+          has_changes '^packages/ui/src/' && CORE=true
+
+          GROVE=false
+          has_changes '^packages/renderer/src/(TreeCanvas\.tsx)' && GROVE=true
+          has_changes '^packages/renderer/src/(views/grove|nodes|layout|overlays)/' && GROVE=true
+          has_changes '^packages/renderer/src/hooks/(usePanZoom|useCanvasGestures)\.ts' && GROVE=true
+
+          INSPECTION=false
+          has_changes '^packages/renderer/src/views/inspection/' && INSPECTION=true
+          has_changes '^packages/renderer/src/utils/listSections\.ts' && INSPECTION=true
+          has_changes '^packages/renderer/src/hooks/useFileAnnotations\.ts' && INSPECTION=true
+          has_changes '^packages/renderer/src/ui/' && INSPECTION=true
+
+          # --- per-spec preview source groups ---
+          CONTROLS_SRC=false
+          has_changes '^apps/preview/src/(controls|mock)/' && CONTROLS_SRC=true
+          has_changes '^apps/preview/src/useSimulationHandlers\.ts' && CONTROLS_SRC=true
+
+          DIAG_SRC=false
+          has_changes '^apps/preview/src/(mockData\.ts)' && DIAG_SRC=true
+          has_changes '^apps/preview/src/mock/' && DIAG_SRC=true
+
+          GRAPH_SRC=false
+          has_changes '^apps/preview/src/' && GRAPH_SRC=true
+
+          INSPECTOR_SRC=false
+          has_changes '^apps/preview/src/(mockData\.ts)' && INSPECTOR_SRC=true
+          has_changes '^apps/preview/src/mock/' && INSPECTOR_SRC=true
+
+          SEARCH_SRC=false
+          has_changes '^apps/preview/src/mock/' && SEARCH_SRC=true
+
+          # --- map to spec files ---
+          SPECS=""
+          add_spec() { SPECS="${SPECS} e2e/$1.spec.ts"; }
+
+          # e2e:controls = spec + controls src + e2eShared + rendererCore + rendererGrove
+          if has_changes '^apps/preview/e2e/controls\.spec\.ts' \
+             || $E2E_SHARED || $CORE || $GROVE || $CONTROLS_SRC; then
+            add_spec controls
           fi
 
-          # Build list of affected spec files for targeted Playwright run
-          SPECS=""
-          for target in controls diagnostics graph inspector-file-categories search-filter; do
-            TARGET_AFFECTED=$(npx nx show projects --affected -t "e2e:${target}" \
-              --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
-            if echo "$TARGET_AFFECTED" | grep -q "@shiftspace/preview"; then
-              SPECS="${SPECS} e2e/${target}.spec.ts"
-            fi
-          done
-          echo "specs=${SPECS}" >> $GITHUB_OUTPUT
+          # e2e:diagnostics = spec + diag src + e2eShared + rendererCore + rendererInspection
+          if has_changes '^apps/preview/e2e/diagnostics\.spec\.ts' \
+             || $E2E_SHARED || $CORE || $INSPECTION || $DIAG_SRC; then
+            add_spec diagnostics
+          fi
+
+          # e2e:graph = spec + all preview src + e2eShared + rendererCore + rendererGrove + rendererInspection
+          if has_changes '^apps/preview/e2e/graph\.spec\.ts' \
+             || $E2E_SHARED || $CORE || $GROVE || $INSPECTION || $GRAPH_SRC; then
+            add_spec graph
+          fi
+
+          # e2e:inspector-file-categories = spec + inspector src + e2eShared + rendererCore + rendererInspection
+          if has_changes '^apps/preview/e2e/inspector-file-categories\.spec\.ts' \
+             || $E2E_SHARED || $CORE || $INSPECTION || $INSPECTOR_SRC; then
+            add_spec inspector-file-categories
+          fi
+
+          # e2e:search-filter = spec + search src + e2eShared + rendererCore + rendererInspection
+          if has_changes '^apps/preview/e2e/search-filter\.spec\.ts' \
+             || $E2E_SHARED || $CORE || $INSPECTION || $SEARCH_SRC; then
+            add_spec search-filter
+          fi
+
+          # Deduplicate
+          SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
+
+          if [ -n "$SPECS" ]; then
+            echo "run_e2e=true" >> $GITHUB_OUTPUT
+            echo "specs=${SPECS}" >> $GITHUB_OUTPUT
+            echo "Affected specs: ${SPECS}"
+          else
+            echo "run_e2e=false" >> $GITHUB_OUTPUT
+            echo "specs=" >> $GITHUB_OUTPUT
+            echo "No e2e specs affected"
+          fi
 
       - name: Restore Playwright browsers cache
         if: steps.affected.outputs.run_e2e == 'true'
