@@ -2,7 +2,7 @@ import type { NodeComponentProps } from '../TreeCanvas';
 import type { WorktreeState } from '../types';
 import { WorktreeHeader } from './WorktreeHeader';
 
-export interface WorktreeNodeData {
+interface WorktreeNodeData {
   worktree: WorktreeState;
   /** When true, skip container border, background, header, and diff dropdown. */
   bare?: boolean;

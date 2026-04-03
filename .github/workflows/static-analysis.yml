@@ -60,3 +60,6 @@ jobs:
 
       - name: Typecheck
         run: bun typecheck
+
+      - name: Dead code check
+        run: bun deadcode

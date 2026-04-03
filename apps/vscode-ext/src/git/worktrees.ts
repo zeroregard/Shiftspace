@@ -168,7 +168,7 @@ async function resolveGitDir(worktreePath: string): Promise<string> {
  * A lock file is considered stale if it's older than `maxAgeMs` (default 5s).
  * Returns true if a stale lock was cleaned up.
  */
-export async function cleanStaleLockFile(worktreePath: string, maxAgeMs = 5000): Promise<boolean> {
+async function cleanStaleLockFile(worktreePath: string, maxAgeMs = 5000): Promise<boolean> {
   try {
     const gitDir = await resolveGitDir(worktreePath);
     const lockFile = path.join(gitDir, 'index.lock');
@@ -402,7 +402,7 @@ async function deleteTempBranch(cwd: string, tempBranch: string, issues: string[
   }
 }
 
-export interface SwapBranchesOptions {
+interface SwapBranchesOptions {
   /** Path to the linked worktree (the source of the swap). */
   worktreeAPath: string;
   /** Branch currently checked out in worktreeA. */

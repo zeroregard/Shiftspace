@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    "packages/ui": {
+      "entry": ["src/*.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/renderer": {
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["vite"]
+    },
+    "apps/preview": {
+      "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts"],
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "apps/vscode-ext": {
+      "entry": ["src/webview/index.tsx"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@types/vscode", "@vscode/codicons", "tailwindcss"]
+    }
+  },
+  "ignore": ["**/*.d.ts"],
+  "ignoreDependencies": ["@typescript/native-preview", "lint-staged"],
+  "ignoreBinaries": ["code"],
+  "tags": ["+@public"]
+}

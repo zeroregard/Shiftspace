@@ -1,6 +1,6 @@
 import type { FileChange, WorktreeState } from '../types';
 
-export interface FileSections {
+interface FileSections {
   committed: FileChange[];
   staged: FileChange[];
   unstaged: FileChange[];

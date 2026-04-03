@@ -16,7 +16,7 @@ export interface FolderNodeData {
   [key: string]: unknown;
 }
 
-export interface FileNodeData {
+interface FileNodeData {
   file: FileChange;
   worktreeId: string;
   [key: string]: unknown;
