@@ -1,0 +1,72 @@
+name: Bundle Size
+
+on:
+  pull_request:
+
+concurrency:
+  group: bundle-size-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle-size:
+    name: 📦 Bundle Size
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build PR branch
+        run: bun run build
+
+      - name: Measure PR sizes
+        run: bun run scripts/bundle-sizes.ts --json > /tmp/pr-sizes.json
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          clean: false
+
+      - name: Install base dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build base branch
+        run: bun run build
+
+      - name: Measure base sizes
+        run: bun run scripts/bundle-sizes.ts --json > /tmp/base-sizes.json
+
+      - name: Checkout PR again (for comparison script)
+        uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Generate comparison comment
+        run: bun run scripts/bundle-sizes.ts --compare /tmp/base-sizes.json /tmp/pr-sizes.json > /tmp/comment.md
+
+      - name: Post or update PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: /tmp/comment.md

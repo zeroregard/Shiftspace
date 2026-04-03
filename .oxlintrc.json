@@ -36,5 +36,5 @@
     "unicorn/consistent-function-scoping": "off",
     "preserve-caught-error": "off"
   },
-  "ignorePatterns": ["dist/", "node_modules/", ".turbo/", "*.config.ts", "*.config.js"]
+  "ignorePatterns": ["dist/", "node_modules/", ".turbo/", "*.config.ts", "*.config.js", "scripts/"]
 }

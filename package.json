@@ -17,6 +17,9 @@
     "test": "bun run --filter '*' test",
     "test:coverage": "bun run --filter '*' test:coverage",
     "preview": "bun run --filter @shiftspace/preview dev",
+    "analyze": "ANALYZE=1 bun run build",
+    "analyze:preview": "ANALYZE=1 bun run --filter @shiftspace/preview build",
+    "bundle-sizes": "bun run scripts/bundle-sizes.ts",
     "install-ext": "bun run build && bun run --filter shiftspace local-install",
     "prepare": "husky"
   },
@@ -30,6 +33,7 @@
     "lint-staged": "^16.4.0",
     "oxlint": "^0.16.6",
     "prettier": "^3.4.2",
+    "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "^5.7.2"
   }
 }
