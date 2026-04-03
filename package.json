@@ -7,20 +7,20 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
-    "build": "bun run --filter @shiftspace/ui build && bun run --filter @shiftspace/renderer build && bun run --filter '*' build",
-    "typecheck": "bun run --filter @shiftspace/ui build && bun run --filter @shiftspace/renderer build && bun run --filter '*' typecheck",
+    "dev": "nx run-many -t dev",
+    "build": "nx run-many -t build",
+    "typecheck": "nx run-many -t typecheck",
     "lint:check": "oxlint --deny-warnings .",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt:write": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
-    "test": "bun run --filter '*' test",
-    "test:coverage": "bun run --filter '*' test:coverage",
-    "preview": "bun run --filter @shiftspace/preview dev",
-    "analyze": "ANALYZE=1 bun run build",
-    "analyze:preview": "ANALYZE=1 bun run --filter @shiftspace/preview build",
+    "test": "nx run-many -t test",
+    "test:coverage": "nx run-many -t test:coverage",
+    "preview": "nx run @shiftspace/preview:dev",
+    "analyze": "ANALYZE=1 nx run-many -t build",
+    "analyze:preview": "ANALYZE=1 nx run @shiftspace/preview:build",
     "bundle-sizes": "bun run scripts/bundle-sizes.ts",
-    "install-ext": "bun run build && bun run --filter shiftspace local-install",
+    "install-ext": "nx run-many -t build && bun run --filter shiftspace local-install",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -34,6 +34,7 @@
     "oxlint": "^0.16.6",
     "prettier": "^3.4.2",
     "rollup-plugin-visualizer": "^7.0.1",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "nx": "22.6.4"
   }
 }
