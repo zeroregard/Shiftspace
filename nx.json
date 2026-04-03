@@ -31,8 +31,7 @@
       "cache": true
     },
     "test:e2e": {
-      "inputs": ["default", "sharedGlobals"],
-      "cache": true
+      "cache": false
     }
   },
   "defaultBase": "main"

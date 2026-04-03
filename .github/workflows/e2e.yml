@@ -51,15 +51,29 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-e2e-
 
-      - name: Check if e2e is affected
+      - name: Check which e2e specs are affected
         id: affected
         run: |
-          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
+          # Check if any e2e target is affected using the per-spec targets
+          AFFECTED=$(npx nx show projects --affected \
+            -t e2e:controls e2e:diagnostics e2e:graph e2e:inspector-file-categories e2e:search-filter \
+            --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
           if echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
             echo "run_e2e=true" >> $GITHUB_OUTPUT
           else
             echo "run_e2e=false" >> $GITHUB_OUTPUT
           fi
+
+          # Build list of affected spec files for targeted Playwright run
+          SPECS=""
+          for target in controls diagnostics graph inspector-file-categories search-filter; do
+            TARGET_AFFECTED=$(npx nx show projects --affected -t "e2e:${target}" \
+              --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
+            if echo "$TARGET_AFFECTED" | grep -q "@shiftspace/preview"; then
+              SPECS="${SPECS} e2e/${target}.spec.ts"
+            fi
+          done
+          echo "specs=${SPECS}" >> $GITHUB_OUTPUT
 
       - name: Restore Playwright browsers cache
         if: steps.affected.outputs.run_e2e == 'true'
@@ -96,11 +110,13 @@ jobs:
           echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
           echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Run Playwright with --update-snapshots
+      - name: Run affected Playwright specs with --update-snapshots
         id: playwright
         if: steps.check-tests.outputs.exist == 'true'
         continue-on-error: true
-        run: bun run --filter @shiftspace/preview test:e2e:update
+        run: |
+          cd apps/preview
+          npx playwright test --update-snapshots ${{ steps.affected.outputs.specs }}
 
       - name: Detect screenshot changes
         id: detect
