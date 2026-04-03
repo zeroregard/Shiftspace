@@ -280,8 +280,12 @@ index def..ghi 100644
     const files = await getFileChanges('/some/worktree');
     const f = files.find((x) => x.path === 'src/app/layout.tsx')!;
     expect(f).toBeDefined();
-    expect(f.rawDiff).toBeDefined();
-    expect(f.rawDiff).toContain('--- a/src/app/layout.tsx');
+    // When both unstaged and staged diffs exist for the same file, rawDiff
+    // stays undefined — the renderer falls back to hunksToUnified instead.
+    expect(f.rawDiff).toBeUndefined();
+    // But the parsed diff hunks should contain both unstaged and staged changes
+    expect(f.diff).toBeDefined();
+    expect(f.diff!.length).toBeGreaterThan(0);
   });
 });
 

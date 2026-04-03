@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "sharedGlobals": ["{workspaceRoot}/tsconfig.base.json"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/*.spec.ts",
+      "!{projectRoot}/**/*.test.ts",
+      "!{projectRoot}/e2e/**/*"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["production", "sharedGlobals"],
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["default", "sharedGlobals"],
+      "cache": true
+    },
+    "test": {
+      "inputs": ["default", "sharedGlobals"],
+      "cache": true
+    },
+    "test:coverage": {
+      "inputs": ["default", "sharedGlobals"],
+      "cache": true
+    },
+    "test:e2e": {
+      "inputs": ["default", "sharedGlobals"],
+      "cache": true
+    }
+  },
+  "defaultBase": "main"
+}

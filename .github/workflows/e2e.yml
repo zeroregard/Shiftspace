@@ -24,24 +24,12 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Check for src changes
-        id: src-changes
-        run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD \
-              -- 'apps/preview/src/**' 'packages/renderer/src/**' | grep -q .; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Setup Bun
-        if: steps.src-changes.outputs.changed == 'true'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
       - name: Restore node_modules cache
-        if: steps.src-changes.outputs.changed == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -53,11 +41,28 @@ jobs:
             node-modules-${{ runner.os }}-
 
       - name: Install dependencies
-        if: steps.src-changes.outputs.changed == 'true'
         run: bun install --frozen-lockfile
 
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-e2e-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-e2e-
+
+      - name: Check if e2e is affected
+        id: affected
+        run: |
+          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
+          if echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
+            echo "run_e2e=true" >> $GITHUB_OUTPUT
+          else
+            echo "run_e2e=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Restore Playwright browsers cache
-        if: steps.src-changes.outputs.changed == 'true'
+        if: steps.affected.outputs.run_e2e == 'true'
         id: playwright-cache
         uses: actions/cache@v4
         with:
@@ -65,16 +70,16 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('apps/preview/package.json') }}
 
       - name: Install Playwright system deps
-        if: steps.src-changes.outputs.changed == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.affected.outputs.run_e2e == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: bun run --filter @shiftspace/preview playwright:install-deps
 
       - name: Install Playwright browsers
-        if: steps.src-changes.outputs.changed == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.affected.outputs.run_e2e == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: bun run --filter @shiftspace/preview playwright:install
 
       - name: Check for e2e tests
         id: check-tests
-        if: steps.src-changes.outputs.changed == 'true'
+        if: steps.affected.outputs.run_e2e == 'true'
         run: |
           if find apps/preview/e2e -name '*.spec.ts' 2>/dev/null | grep -q .; then
             echo "exist=true" >> "$GITHUB_OUTPUT"
@@ -285,7 +290,7 @@ jobs:
           fi
 
       - name: Post "no e2e tests" comment
-        if: steps.src-changes.outputs.changed == 'true' && steps.check-tests.outputs.exist == 'false'
+        if: steps.affected.outputs.run_e2e == 'true' && steps.check-tests.outputs.exist == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
