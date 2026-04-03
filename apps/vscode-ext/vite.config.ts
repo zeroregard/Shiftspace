@@ -1,9 +1,15 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 
-export default defineConfig({
+async function analyzePlugins(): Promise<PluginOption[]> {
+  if (!process.env.ANALYZE) return [];
+  const { visualizer } = await import('rollup-plugin-visualizer');
+  return [visualizer({ open: true, filename: 'dist/webview/bundle-stats.html' })];
+}
+
+export default defineConfig(async () => ({
   plugins: [
     tailwindcss(),
     react({
@@ -11,6 +17,7 @@ export default defineConfig({
         plugins: ['babel-plugin-react-compiler'],
       },
     }),
+    ...(await analyzePlugins()),
   ],
   // Webview runs in a sandboxed browser iframe — no Node globals.
   // Replace process.env.NODE_ENV at bundle time so React and other
@@ -33,4 +40,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

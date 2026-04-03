@@ -8,6 +8,10 @@ coverage/
 # build
 *.vsix
 
+# bundle analysis artifacts
+dist/meta-*.json
+dist/**/bundle-stats.html
+
 # playwright
 playwright-report/
 test-results/
