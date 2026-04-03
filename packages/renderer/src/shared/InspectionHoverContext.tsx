@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-export interface InspectionHoverValue {
+interface InspectionHoverValue {
   hoveredFilePath: string | null;
 }
 

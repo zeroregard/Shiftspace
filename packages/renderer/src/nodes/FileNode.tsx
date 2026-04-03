@@ -9,7 +9,7 @@ import { useFileAnnotations } from '../hooks/useFileAnnotations';
 import { useActions } from '../ui/ActionsContext';
 import { Codicon } from '@shiftspace/ui/codicon';
 
-export interface FileNodeData {
+interface FileNodeData {
   file: FileChange;
   worktreeId: string;
   [key: string]: unknown;

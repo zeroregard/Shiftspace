@@ -7,7 +7,7 @@ const execFileAsync = promisify(execFile);
  * Serializes write git operations so they never run concurrently against the
  * same repo. All `gitWrite` calls are enqueued here.
  */
-export class GitCommandQueue {
+class GitCommandQueue {
   private queue: Array<() => Promise<unknown>> = [];
   private running = false;
 

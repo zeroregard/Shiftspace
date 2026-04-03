@@ -102,7 +102,7 @@ export function layoutFolder(
 }
 
 /** Shift all x positions in a subtree by dx (recursive). */
-export function shiftSubtreeX(rect: LayoutRect, dx: number) {
+function shiftSubtreeX(rect: LayoutRect, dx: number) {
   rect.x += dx;
   for (const child of rect.children) {
     shiftSubtreeX(child, dx);
