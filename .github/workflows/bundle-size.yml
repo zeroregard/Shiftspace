@@ -73,10 +73,23 @@ jobs:
         with:
           clean: false
 
-      - name: Generate comparison comment
-        run: bun run scripts/bundle-sizes.ts --compare /tmp/base-sizes.json /tmp/pr-sizes.json > /tmp/comment.md
+      - name: Generate comparison
+        id: compare
+        run: |
+          if bun run scripts/bundle-sizes.ts --compare /tmp/base-sizes.json /tmp/pr-sizes.json > /tmp/comment.md; then
+            echo "has_warning=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_warning=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Post or update PR comment
+        if: steps.compare.outputs.has_warning == 'true'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           path: /tmp/comment.md
+
+      - name: Delete comment if sizes are fine
+        if: steps.compare.outputs.has_warning == 'false'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          delete: true
