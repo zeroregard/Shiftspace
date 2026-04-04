@@ -275,7 +275,7 @@ test.describe('Problems filter in Inspection view', () => {
       const row = fileRows.nth(i);
       const hasError = await row.locator('.codicon-error').count();
       const hasWarning = await row.locator('.codicon-warning').count();
-      const hasFinding = await row.locator('.codicon-debug-breakpoint-unsupported').count();
+      const hasFinding = await row.locator('[data-icon="smell"]').count();
       expect(hasError + hasWarning + hasFinding).toBeGreaterThan(0);
     }
   });
