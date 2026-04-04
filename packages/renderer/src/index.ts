@@ -1,30 +1,46 @@
 export { ShiftspaceRenderer, type PanZoomConfig } from './ShiftspaceRenderer';
+
+// Re-export everything from sub-packages for backwards compatibility
 export {
+  // Types
+  type WorktreeState,
+  type FileChange,
+  type ShiftspaceEvent,
+  type LODLevel,
+  type DiffLine,
+  type DiffHunk,
+  type DiffMode,
+  type ActionConfig,
+  type ActionState,
+  type ActionStatus,
+  type AppMode,
+  type IconEntry,
+  type IconMap,
+  type PipelineConfig,
+  type LogEntry,
+  type InsightFinding,
+  type FileInsight,
+  type InsightDetail,
+  type FileDiagnosticSummary,
+  // Store
   useWorktreeStore,
   useActionStore,
   useInsightStore,
   getFileFindings,
   useInspectionStore,
   usePackageStore,
-} from './store';
-
-// Views (consumers may embed them independently)
-export { GroveView } from './views/grove';
-export { InspectionView } from './views/inspection';
-
-// Canvas nodes (needed by TreeCanvas NODE_TYPES map consumers)
-export { WorktreeNode, FolderNode, FileNode } from './nodes';
-
-// Overlays
-export { DiffPopover } from './overlays/DiffPopover';
-export { BranchPicker, type StaticOption } from './overlays/BranchPicker';
-
-// Shared primitives
-export { ThemedFileIcon } from './shared/ThemedFileIcon';
-export { PackageSwitcher } from './shared/PackageSwitcher';
-
-// Design system
-export {
+  // Canvas
+  TreeCanvas,
+  // Nodes
+  WorktreeNode,
+  FolderNode,
+  FileNode,
+  NODE_TYPES,
+  // Shared
+  UnifiedHeader,
+  ThemedFileIcon,
+  PackageSwitcher,
+  // UI
   AnnotationBadges,
   Badge,
   Codicon,
@@ -37,30 +53,14 @@ export {
   ActionsProvider,
   useActions,
   type ShiftspaceActions,
-} from './ui';
+  // Hooks
+  useFileAnnotations,
+  type FileAnnotations,
+  // Overlays
+  DiffPopover,
+  BranchPicker,
+  type StaticOption,
+} from '@shiftspace/renderer-core';
 
-// Hooks
-export { useFileAnnotations, type FileAnnotations } from './hooks/useFileAnnotations';
-
-// All types
-export type {
-  WorktreeState,
-  FileChange,
-  ShiftspaceEvent,
-  LODLevel,
-  DiffLine,
-  DiffHunk,
-  DiffMode,
-  ActionConfig,
-  ActionState,
-  ActionStatus,
-  AppMode,
-  IconEntry,
-  IconMap,
-  PipelineConfig,
-  LogEntry,
-  InsightFinding,
-  FileInsight,
-  InsightDetail,
-  FileDiagnosticSummary,
-} from './types';
+export { GroveView } from '@shiftspace/renderer-grove';
+export { InspectionView } from '@shiftspace/renderer-inspection';

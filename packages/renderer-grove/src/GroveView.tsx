@@ -1,4 +1,4 @@
-import type { WorktreeState } from '../../types';
+import type { WorktreeState } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/WorktreeCard';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 

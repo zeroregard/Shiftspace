@@ -1,14 +1,17 @@
 import { useShallow } from 'zustand/react/shallow';
-import type { WorktreeState } from '../../../types';
-import { useWorktreeStore, useInspectionStore } from '../../../store';
-import { BranchPicker } from '../../../overlays/BranchPicker';
+import type { WorktreeState } from '@shiftspace/renderer-core';
+import {
+  useWorktreeStore,
+  useInspectionStore,
+  BranchPicker,
+  ActionBar,
+  filterCheckoutableBranches,
+  useActions,
+  useWorktreeRename,
+} from '@shiftspace/renderer-core';
 import { Codicon } from '@shiftspace/ui/codicon';
-import { ActionBar } from '../../inspection/components/ActionBar';
-import { filterCheckoutableBranches } from '../../../utils/worktreeUtils';
-import { useActions } from '../../../ui/ActionsContext';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Input } from '@shiftspace/ui/input';
-import { useWorktreeRename } from '../../../hooks/useWorktreeRename';
 
 const EMPTY_BRANCHES: string[] = [];
 

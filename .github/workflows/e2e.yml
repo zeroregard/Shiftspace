@@ -54,85 +54,63 @@ jobs:
       - name: Determine affected e2e specs
         id: affected
         run: |
-          # Get files changed in this PR compared to the base branch.
-          # This mirrors the named-input groups defined in nx.json and
-          # apps/preview/project.json so we only run specs whose inputs
-          # actually changed.
+          # Maps package directories to e2e specs (mirrors nx.json named inputs).
+          # Now that renderer is split into renderer-core / renderer-grove /
+          # renderer-inspection, the patterns are simple package-level checks.
           CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)
 
           has_changes() { echo "$CHANGED" | grep -qE "$1"; }
 
-          # --- named input groups (keep in sync with nx.json) ---
+          # --- package-level groups ---
           E2E_SHARED=false
           has_changes '^apps/preview/(playwright\.config\.ts|index\.html|vite\.config\.ts|src/(App\.tsx|main\.tsx|styles\.css))' && E2E_SHARED=true
           has_changes '^tsconfig\.base\.json' && E2E_SHARED=true
 
           CORE=false
-          has_changes '^packages/renderer/src/(types\.ts|index\.ts|ShiftspaceRenderer\.tsx)' && CORE=true
-          has_changes '^packages/renderer/src/(store|shared)/' && CORE=true
-          has_changes '^packages/ui/src/' && CORE=true
+          has_changes '^packages/(renderer-core|renderer|ui)/src/' && CORE=true
 
           GROVE=false
-          has_changes '^packages/renderer/src/(TreeCanvas\.tsx)' && GROVE=true
-          has_changes '^packages/renderer/src/(views/grove|nodes|layout|overlays)/' && GROVE=true
-          has_changes '^packages/renderer/src/hooks/(usePanZoom|useCanvasGestures)\.ts' && GROVE=true
+          has_changes '^packages/renderer-grove/src/' && GROVE=true
 
           INSPECTION=false
-          has_changes '^packages/renderer/src/views/inspection/' && INSPECTION=true
-          has_changes '^packages/renderer/src/utils/listSections\.ts' && INSPECTION=true
-          has_changes '^packages/renderer/src/hooks/useFileAnnotations\.ts' && INSPECTION=true
-          has_changes '^packages/renderer/src/ui/' && INSPECTION=true
-
-          # --- per-spec preview source groups ---
-          CONTROLS_SRC=false
-          has_changes '^apps/preview/src/(controls|mock)/' && CONTROLS_SRC=true
-          has_changes '^apps/preview/src/useSimulationHandlers\.ts' && CONTROLS_SRC=true
-
-          DIAG_SRC=false
-          has_changes '^apps/preview/src/(mockData\.ts)' && DIAG_SRC=true
-          has_changes '^apps/preview/src/mock/' && DIAG_SRC=true
-
-          GRAPH_SRC=false
-          has_changes '^apps/preview/src/' && GRAPH_SRC=true
-
-          INSPECTOR_SRC=false
-          has_changes '^apps/preview/src/(mockData\.ts)' && INSPECTOR_SRC=true
-          has_changes '^apps/preview/src/mock/' && INSPECTOR_SRC=true
-
-          SEARCH_SRC=false
-          has_changes '^apps/preview/src/mock/' && SEARCH_SRC=true
+          has_changes '^packages/renderer-inspection/src/' && INSPECTION=true
 
           # --- map to spec files ---
           SPECS=""
           add_spec() { SPECS="${SPECS} e2e/$1.spec.ts"; }
 
-          # e2e:controls = spec + controls src + e2eShared + rendererCore + rendererGrove
+          # controls: core + grove + preview controls/mock
           if has_changes '^apps/preview/e2e/controls\.spec\.ts' \
-             || $E2E_SHARED || $CORE || $GROVE || $CONTROLS_SRC; then
+             || has_changes '^apps/preview/src/(controls|mock)/|^apps/preview/src/useSimulationHandlers\.ts' \
+             || $E2E_SHARED || $CORE || $GROVE; then
             add_spec controls
           fi
 
-          # e2e:diagnostics = spec + diag src + e2eShared + rendererCore + rendererInspection
+          # diagnostics: core + inspection + preview mock/mockData
           if has_changes '^apps/preview/e2e/diagnostics\.spec\.ts' \
-             || $E2E_SHARED || $CORE || $INSPECTION || $DIAG_SRC; then
+             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
             add_spec diagnostics
           fi
 
-          # e2e:graph = spec + all preview src + e2eShared + rendererCore + rendererGrove + rendererInspection
+          # graph: core + grove + inspection + all preview src
           if has_changes '^apps/preview/e2e/graph\.spec\.ts' \
-             || $E2E_SHARED || $CORE || $GROVE || $INSPECTION || $GRAPH_SRC; then
+             || has_changes '^apps/preview/src/' \
+             || $E2E_SHARED || $CORE || $GROVE || $INSPECTION; then
             add_spec graph
           fi
 
-          # e2e:inspector-file-categories = spec + inspector src + e2eShared + rendererCore + rendererInspection
+          # inspector-file-categories: core + inspection + preview mock/mockData
           if has_changes '^apps/preview/e2e/inspector-file-categories\.spec\.ts' \
-             || $E2E_SHARED || $CORE || $INSPECTION || $INSPECTOR_SRC; then
+             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
             add_spec inspector-file-categories
           fi
 
-          # e2e:search-filter = spec + search src + e2eShared + rendererCore + rendererInspection
+          # search-filter: core + inspection + preview mock
           if has_changes '^apps/preview/e2e/search-filter\.spec\.ts' \
-             || $E2E_SHARED || $CORE || $INSPECTION || $SEARCH_SRC; then
+             || has_changes '^apps/preview/src/mock/' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
             add_spec search-filter
           fi
 

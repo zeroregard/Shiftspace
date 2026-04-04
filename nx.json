@@ -19,28 +19,12 @@
       "sharedGlobals"
     ],
     "rendererCore": [
-      "{workspaceRoot}/packages/renderer/src/types.ts",
-      "{workspaceRoot}/packages/renderer/src/index.ts",
-      "{workspaceRoot}/packages/renderer/src/ShiftspaceRenderer.tsx",
-      "{workspaceRoot}/packages/renderer/src/store/**/*",
-      "{workspaceRoot}/packages/renderer/src/shared/**/*",
+      "{workspaceRoot}/packages/renderer-core/src/**/*",
+      "{workspaceRoot}/packages/renderer/src/**/*",
       "{workspaceRoot}/packages/ui/src/**/*"
     ],
-    "rendererGrove": [
-      "{workspaceRoot}/packages/renderer/src/TreeCanvas.tsx",
-      "{workspaceRoot}/packages/renderer/src/views/grove/**/*",
-      "{workspaceRoot}/packages/renderer/src/nodes/**/*",
-      "{workspaceRoot}/packages/renderer/src/layout/**/*",
-      "{workspaceRoot}/packages/renderer/src/hooks/usePanZoom.ts",
-      "{workspaceRoot}/packages/renderer/src/hooks/useCanvasGestures.ts",
-      "{workspaceRoot}/packages/renderer/src/overlays/**/*"
-    ],
-    "rendererInspection": [
-      "{workspaceRoot}/packages/renderer/src/views/inspection/**/*",
-      "{workspaceRoot}/packages/renderer/src/utils/listSections.ts",
-      "{workspaceRoot}/packages/renderer/src/hooks/useFileAnnotations.ts",
-      "{workspaceRoot}/packages/renderer/src/ui/**/*"
-    ]
+    "rendererGrove": ["{workspaceRoot}/packages/renderer-grove/src/**/*"],
+    "rendererInspection": ["{workspaceRoot}/packages/renderer-inspection/src/**/*"]
   },
   "targetDefaults": {
     "build": {
