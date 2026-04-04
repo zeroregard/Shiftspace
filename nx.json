@@ -8,7 +8,23 @@
       "!{projectRoot}/**/*.spec.ts",
       "!{projectRoot}/**/*.test.ts",
       "!{projectRoot}/e2e/**/*"
-    ]
+    ],
+    "e2eShared": [
+      "{workspaceRoot}/apps/preview/playwright.config.ts",
+      "{workspaceRoot}/apps/preview/index.html",
+      "{workspaceRoot}/apps/preview/vite.config.ts",
+      "{workspaceRoot}/apps/preview/src/App.tsx",
+      "{workspaceRoot}/apps/preview/src/main.tsx",
+      "{workspaceRoot}/apps/preview/src/styles.css",
+      "sharedGlobals"
+    ],
+    "rendererCore": [
+      "{workspaceRoot}/packages/renderer-core/src/**/*",
+      "{workspaceRoot}/packages/renderer/src/**/*",
+      "{workspaceRoot}/packages/ui/src/**/*"
+    ],
+    "rendererGrove": ["{workspaceRoot}/packages/renderer-grove/src/**/*"],
+    "rendererInspection": ["{workspaceRoot}/packages/renderer-inspection/src/**/*"]
   },
   "targetDefaults": {
     "build": {
@@ -31,8 +47,7 @@
       "cache": true
     },
     "test:e2e": {
-      "inputs": ["default", "sharedGlobals"],
-      "cache": true
+      "cache": false
     }
   },
   "defaultBase": "main",

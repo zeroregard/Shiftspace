@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
-import type { FileChange, WorktreeState } from '../../../types';
-import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
-import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
-import { AnnotationBadges } from '../../../ui/AnnotationBadges';
-import { DiffPopover } from '../../../overlays/DiffPopover';
+import type { FileChange, WorktreeState } from '@shiftspace/renderer-core';
+import {
+  useFileAnnotations,
+  ThemedFileIcon,
+  AnnotationBadges,
+  DiffPopover,
+  partitionFiles,
+  filterFilesByQuery,
+  isValidRegex,
+} from '@shiftspace/renderer-core';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-label';
-import { partitionFiles, filterFilesByQuery, isValidRegex } from '../../../utils/listSections';
 
 // ---------------------------------------------------------------------------
 // File row

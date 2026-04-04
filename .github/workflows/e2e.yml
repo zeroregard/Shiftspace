@@ -51,14 +51,80 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-e2e-
 
-      - name: Check if e2e is affected
+      - name: Determine affected e2e specs
         id: affected
         run: |
-          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
-          if echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
+          # Maps package directories to e2e specs (mirrors nx.json named inputs).
+          # Now that renderer is split into renderer-core / renderer-grove /
+          # renderer-inspection, the patterns are simple package-level checks.
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)
+
+          has_changes() { echo "$CHANGED" | grep -qE "$1"; }
+
+          # --- package-level groups ---
+          E2E_SHARED=false
+          has_changes '^apps/preview/(playwright\.config\.ts|index\.html|vite\.config\.ts|src/(App\.tsx|main\.tsx|styles\.css))' && E2E_SHARED=true
+          has_changes '^tsconfig\.base\.json' && E2E_SHARED=true
+
+          CORE=false
+          has_changes '^packages/(renderer-core|renderer|ui)/src/' && CORE=true
+
+          GROVE=false
+          has_changes '^packages/renderer-grove/src/' && GROVE=true
+
+          INSPECTION=false
+          has_changes '^packages/renderer-inspection/src/' && INSPECTION=true
+
+          # --- map to spec files ---
+          SPECS=""
+          add_spec() { SPECS="${SPECS} e2e/$1.spec.ts"; }
+
+          # controls: core + grove + preview controls/mock
+          if has_changes '^apps/preview/e2e/controls\.spec\.ts' \
+             || has_changes '^apps/preview/src/(controls|mock)/|^apps/preview/src/useSimulationHandlers\.ts' \
+             || $E2E_SHARED || $CORE || $GROVE; then
+            add_spec controls
+          fi
+
+          # diagnostics: core + inspection + preview mock/mockData
+          if has_changes '^apps/preview/e2e/diagnostics\.spec\.ts' \
+             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
+            add_spec diagnostics
+          fi
+
+          # graph: core + grove + inspection + all preview src
+          if has_changes '^apps/preview/e2e/graph\.spec\.ts' \
+             || has_changes '^apps/preview/src/' \
+             || $E2E_SHARED || $CORE || $GROVE || $INSPECTION; then
+            add_spec graph
+          fi
+
+          # inspector-file-categories: core + inspection + preview mock/mockData
+          if has_changes '^apps/preview/e2e/inspector-file-categories\.spec\.ts' \
+             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
+            add_spec inspector-file-categories
+          fi
+
+          # search-filter: core + inspection + preview mock
+          if has_changes '^apps/preview/e2e/search-filter\.spec\.ts' \
+             || has_changes '^apps/preview/src/mock/' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
+            add_spec search-filter
+          fi
+
+          # Deduplicate
+          SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
+
+          if [ -n "$SPECS" ]; then
             echo "run_e2e=true" >> $GITHUB_OUTPUT
+            echo "specs=${SPECS}" >> $GITHUB_OUTPUT
+            echo "Affected specs: ${SPECS}"
           else
             echo "run_e2e=false" >> $GITHUB_OUTPUT
+            echo "specs=" >> $GITHUB_OUTPUT
+            echo "No e2e specs affected"
           fi
 
       - name: Restore Playwright browsers cache
@@ -96,11 +162,13 @@ jobs:
           echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
           echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Run Playwright with --update-snapshots
+      - name: Run affected Playwright specs with --update-snapshots
         id: playwright
         if: steps.check-tests.outputs.exist == 'true'
         continue-on-error: true
-        run: bun run --filter @shiftspace/preview test:e2e:update
+        run: |
+          cd apps/preview
+          npx playwright test ${{ steps.affected.outputs.specs }} --update-snapshots
 
       - name: Detect screenshot changes
         id: detect

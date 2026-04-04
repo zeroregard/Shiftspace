@@ -1,10 +1,10 @@
 import type { MouseEvent } from 'react';
-import { useActionStore } from '../../../store';
-import type { ActionConfig } from '../../../types';
-import { useActions } from '../../../ui/ActionsContext';
+import { useActionStore } from '../store';
+import type { ActionConfig } from '../types';
+import { useActions } from '../ui/ActionsContext';
 import { IconButton } from '@shiftspace/ui/icon-button';
-import { deriveActionType } from '../../../utils/actionUtils';
-import { storeKey } from '../../../utils/storeKeys';
+import { deriveActionType } from '../utils/actionUtils';
+import { storeKey } from '../utils/storeKeys';
 
 interface ActionBarProps {
   worktreeId: string;

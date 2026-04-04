@@ -4,11 +4,21 @@ import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 import pkg from './package.json';
 
-// Externalize all declared dependencies, peerDependencies, and their sub-paths
+// Sub-packages are bundled into the umbrella (not externalized) so that
+// consumers like the vscode-ext get self-contained .d.ts declarations
+// without needing to resolve source-level sub-packages.
+const bundledDeps = [
+  '@shiftspace/renderer-core',
+  '@shiftspace/renderer-grove',
+  '@shiftspace/renderer-inspection',
+];
+
+// Externalize everything except the sub-packages
 const external = [
   ...Object.keys(pkg.dependencies ?? {}),
   ...Object.keys(pkg.peerDependencies ?? {}),
-];
+].filter((d) => !bundledDeps.includes(d));
+
 const externalRE = new RegExp(
   `^(${external.map((d) => d.replace('/', '\\/')).join('|')})(\\/.+)?$`
 );

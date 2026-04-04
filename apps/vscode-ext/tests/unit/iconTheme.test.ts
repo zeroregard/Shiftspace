@@ -296,13 +296,13 @@ describe('IconThemeProvider.resolveForFiles()', () => {
 describe('Preview app isolation', () => {
   it('renderer store starts with empty iconMap', async () => {
     // Importing the renderer store directly (no vscode involved)
-    const { useWorktreeStore } = await import('../../../../packages/renderer/src/store/index');
+    const { useWorktreeStore } = await import('../../../../packages/renderer-core/src/store/index');
     const state = useWorktreeStore.getState();
     expect(state.iconMap).toEqual({});
   });
 
   it('setIconMap replaces the entire map', async () => {
-    const { useWorktreeStore } = await import('../../../../packages/renderer/src/store/index');
+    const { useWorktreeStore } = await import('../../../../packages/renderer-core/src/store/index');
     const { setIconMap } = useWorktreeStore.getState();
 
     setIconMap({ 'src/app.ts': { dark: 'data:image/svg+xml;base64,abc' } });

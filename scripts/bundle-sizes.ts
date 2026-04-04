@@ -96,10 +96,12 @@ function printMarkdown(entries: BundleEntry[]) {
   }
 }
 
-function printComparison(baseEntries: BundleEntry[], prEntries: BundleEntry[]) {
+function printComparison(baseEntries: BundleEntry[], prEntries: BundleEntry[]): boolean {
   const baseMap = new Map(baseEntries.map((e) => [e.name, e]));
   const prMap = new Map(prEntries.map((e) => [e.name, e]));
   const allNames = [...new Set([...baseMap.keys(), ...prMap.keys()])];
+
+  let hasWarning = false;
 
   print('## 📦 Bundle Sizes\n');
   print('| Bundle | Base (gz) | PR (gz) | Diff | |');
@@ -111,16 +113,19 @@ function printComparison(baseEntries: BundleEntry[], prEntries: BundleEntry[]) {
 
     if (!base && pr) {
       print(`| ${name} | — | ${formatBytes(pr.gzip)} | new | 🆕 |`);
+      hasWarning = true;
       continue;
     }
     if (base && !pr) {
       print(`| ${name} | ${formatBytes(base.gzip)} | — | removed | 🗑️ |`);
+      hasWarning = true;
       continue;
     }
     if (base && pr) {
       const diff = pr.gzip - base.gzip;
       const pct = base.gzip > 0 ? (diff / base.gzip) * 100 : 0;
       const icon = pct > 5 ? '⚠️' : pct < -5 ? '🎉' : '✅';
+      if (pct > 5) hasWarning = true;
       print(
         `| ${name} | ${formatBytes(base.gzip)} | ${formatBytes(pr.gzip)} | ${formatDiff(base.gzip, pr.gzip)} | ${icon} |`
       );
@@ -128,6 +133,7 @@ function printComparison(baseEntries: BundleEntry[], prEntries: BundleEntry[]) {
   }
 
   print('\n*Sizes are gzipped. ⚠️ = increase > 5%*');
+  return hasWarning;
 }
 
 // --- Main ---
@@ -137,8 +143,9 @@ const args = process.argv.slice(2);
 if (args[0] === '--compare' && args[1] && args[2]) {
   const baseData: BundleEntry[] = JSON.parse(readFileSync(args[1], 'utf-8'));
   const prData: BundleEntry[] = JSON.parse(readFileSync(args[2], 'utf-8'));
-  printComparison(baseData, prData);
-  process.exit(0);
+  const hasWarning = printComparison(baseData, prData);
+  // Exit code 0 = all good, 1 = size increase > 5% (used by CI to decide whether to comment)
+  process.exit(hasWarning ? 1 : 0);
 }
 
 const entries = BUNDLES.map(measure).filter((e): e is BundleEntry => e !== null);
