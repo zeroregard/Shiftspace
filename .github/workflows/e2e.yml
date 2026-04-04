@@ -154,7 +154,7 @@ jobs:
 
       - name: Build PR comment
         id: build-comment
-        if: steps.check-tests.outputs.exist == 'true'
+        if: always()
         env:
           REPO: ${{ github.repository }}
           OLD_SHA: ${{ steps.baseline.outputs.sha }}
@@ -162,6 +162,14 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           SCREENSHOTS_DIR="apps/preview/e2e/__screenshots__"
+
+          # Fallback: compute SHAs if not available from earlier steps
+          if [ -z "$OLD_SHA" ]; then
+            OLD_SHA=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }} 2>/dev/null || echo "")
+          fi
+          if [ -z "$NEW_SHA" ]; then
+            NEW_SHA=$(git rev-parse HEAD)
+          fi
 
           echo "Comparing OLD_SHA=${OLD_SHA} → NEW_SHA=${NEW_SHA}"
 
@@ -274,7 +282,7 @@ jobs:
 
       - name: Find existing PR comment
         id: find-comment
-        if: steps.check-tests.outputs.exist == 'true'
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -284,7 +292,7 @@ jobs:
           echo "comment_id=${COMMENT_ID:-}" >> "$GITHUB_OUTPUT"
 
       - name: Post or update PR comment
-        if: steps.check-tests.outputs.exist == 'true'
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
