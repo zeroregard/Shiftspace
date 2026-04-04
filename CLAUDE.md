@@ -121,17 +121,33 @@ The renderer is built and tested outside of VSCode first, as a standalone web ap
 ```
 shiftspace/
 ├── packages/
-│   ├── renderer/          # The core React graph renderer (shared)
-│   │   ├── src/
-│   │   │   ├── nodes/     # WorktreeNode, FolderNode, FileNode components
-│   │   │   ├── views/     # TreeCanvas, Inspector, overlays
-│   │   │   ├── ui/        # Shared renderer UI (search, badges)
-│   │   │   ├── layout/    # Tidy-tree layout logic (custom, no external library)
-│   │   │   ├── store/     # Zustand stores (worktree, action, insight, inspection, package)
-│   │   │   └── types.ts   # Shared data interfaces (WorktreeState, FileChange, etc.)
-│   │   └── index.ts       # Public API: <ShiftspaceRenderer data={...} />
+│   ├── renderer-core/     # Engine: types, stores, canvas, nodes, layout, overlays, hooks, utils
+│   │   └── src/
+│   │       ├── nodes/     # WorktreeNode, FolderNode, FileNode components
+│   │       ├── layout/    # Tidy-tree layout logic (custom, no external library)
+│   │       ├── store/     # Zustand stores (worktree, action, insight, inspection, package)
+│   │       ├── shared/    # UnifiedHeader, ThemedFileIcon, PackageSwitcher
+│   │       ├── hooks/     # useFileAnnotations, usePanZoom, useCanvasGestures, useWorktreeRename
+│   │       ├── overlays/  # DiffPopover, BranchPicker
+│   │       ├── ui/        # ActionsContext, AnnotationBadges, DiagnosticTooltipContent
+│   │       ├── utils/     # listSections, storeKeys, actionUtils, worktreeUtils, diffLineLookup
+│   │       ├── components/# ActionBar (shared between grove and inspection views)
+│   │       ├── TreeCanvas.tsx
+│   │       └── types.ts   # Shared data interfaces (WorktreeState, FileChange, etc.)
+│   ├── renderer-grove/    # Thin view: grove/tree visualization (2 files)
+│   │   └── src/
+│   │       ├── GroveView.tsx
+│   │       └── components/WorktreeCard.tsx
+│   ├── renderer-inspection/ # Thin view: file list / inspection (2 files)
+│   │   └── src/
+│   │       ├── InspectionView.tsx
+│   │       └── components/FileListPanel.tsx
+│   ├── renderer/          # Umbrella: ShiftspaceRenderer + backwards-compat re-exports
+│   │   └── src/
+│   │       ├── ShiftspaceRenderer.tsx  # Top-level coordinator (imports grove + inspection)
+│   │       └── index.ts               # Re-exports from all sub-packages
 │   └── ui/                # Shared UI component library (badge, button, codicon, tooltip, etc.)
-│       └── src/            # Source-exported via package.json, no build step
+│       └── src/           # Source-exported via package.json, no build step
 ├── apps/
 │   ├── preview/           # Vite + React app, deployed to Vercel
 │   │   ├── src/           # App shell, mock data, simulation handlers
@@ -147,13 +163,37 @@ shiftspace/
 └── package.json           # Workspace root (pnpm workspaces + Nx orchestration)
 ```
 
-**Key architectural boundary:** `packages/renderer` accepts a data interface (worktrees, files, change events) and renders them. It has zero knowledge of where the data comes from — mock engine or real git.
+### Renderer package architecture
+
+The renderer is split into 4 packages to enable granular E2E test targeting:
+
+```
+ui
+ ↑
+renderer-core          # Engine (types, stores, canvas, nodes, layout, all shared code)
+ ↑          ↑
+grove    inspection    # Thin view layers (2 files each, no cross-dependencies)
+ ↑          ↑
+ renderer (umbrella)   # ShiftspaceRenderer coordinator + re-exports
+```
+
+**Why the split:** Nx's affected detection works at the package level. With separate grove and inspection packages, a change to `GroveView.tsx` only triggers grove-related E2E tests (controls, graph), while a change to `FileListPanel.tsx` only triggers inspection-related tests (diagnostics, inspector, search-filter). Core changes trigger all tests.
+
+**Key rules:**
+
+- `renderer-grove` and `renderer-inspection` must **never** depend on each other — only on `renderer-core`
+- Shared components used by both views (e.g., `ActionBar`) belong in `renderer-core`
+- The umbrella `renderer` is the only package that imports from both grove and inspection
+- `renderer-core` and the thin view packages are **source-level** (no build step) — consumers' bundlers compile them directly
+- The umbrella `renderer` has a Vite build that produces `dist/` for the vscode-ext's node16 typecheck
+
+**Tailwind CSS:** Both `apps/preview/src/styles.css` and `apps/vscode-ext/src/webview/styles.css` must include `@source` directives for all four renderer packages. If you add a new renderer sub-package, add its `@source` path to both stylesheets.
 
 ---
 
 ## Data Interface (shared contract)
 
-Canonical source: `packages/renderer/src/types.ts`
+Canonical source: `packages/renderer-core/src/types.ts`
 
 ```typescript
 interface WorktreeState {
@@ -265,9 +305,28 @@ A control panel overlay (visible on the preview app, not part of the renderer) w
   - Run tests: `bun run --filter @shiftspace/preview test:e2e`
   - Interactive UI mode: `bun run --filter @shiftspace/preview test:e2e:ui`
 - **Updating snapshots:** `bun run --filter @shiftspace/preview test:e2e:update` locally, or open a PR — CI will auto-update and commit snapshots for you
-- **CI:** `e2e.yml` runs on every PR — always updates snapshots, auto-commits them back to the PR branch, and posts a before/after screenshot comparison comment
+- **CI:** `e2e.yml` runs on every PR — determines which specs are affected by the PR's changes, runs only those specs with `--update-snapshots`, auto-commits updated screenshots, and posts a before/after comparison comment
 - **Adding new tests:** Put `.spec.ts` files in `apps/preview/e2e/`. Use `toHaveScreenshot('descriptive-name.png')` for visual regression. Screenshots generated on first run become the baseline.
 - **Claude Code agent environment:** Playwright browsers cannot be installed in the remote agent environment. Write E2E tests, commit them, and let CI generate the baseline screenshots. CI will auto-update and commit snapshots back to the PR branch.
+
+### Per-spec E2E targeting
+
+Each E2E spec has a corresponding Nx target in `apps/preview/project.json` with fine-grained `inputs` that map to specific renderer sub-packages. CI uses `git diff` to determine which packages changed and only runs the affected specs:
+
+| Spec                                | Depends on                | Triggered by                                           |
+| ----------------------------------- | ------------------------- | ------------------------------------------------------ |
+| `controls.spec.ts`                  | core + grove              | GroveView, WorktreeCard, layout, nodes, controls, mock |
+| `graph.spec.ts`                     | core + grove + inspection | Everything (integration test)                          |
+| `diagnostics.spec.ts`               | core + inspection         | InspectionView, FileListPanel, annotations, mockData   |
+| `inspector-file-categories.spec.ts` | core + inspection         | FileListPanel, listSections, mockData                  |
+| `search-filter.spec.ts`             | core + inspection         | FileListPanel, listSections, mock                      |
+
+**Adding a new E2E spec:**
+
+1. Create the `.spec.ts` file in `apps/preview/e2e/`
+2. Add a corresponding `e2e:<name>` target in `apps/preview/project.json` with appropriate `inputs` (choose from `rendererCore`, `rendererGrove`, `rendererInspection` named inputs)
+3. Add the target to `test:e2e.dependsOn` in the same file
+4. Add the spec to the CI affected detection in `.github/workflows/e2e.yml`
 
 ---
 
