@@ -36,7 +36,7 @@ export function AnnotationBadges({ annotations, iconSize = 12 }: AnnotationBadge
                 ))}
             </div>
           }
-          delayDuration={200}
+          delayDuration={0}
         >
           <Badge variant="error">
             <Codicon name="error" size={iconSize} />
@@ -57,7 +57,7 @@ export function AnnotationBadges({ annotations, iconSize = 12 }: AnnotationBadge
                 ))}
             </div>
           }
-          delayDuration={200}
+          delayDuration={0}
         >
           <Badge variant="warning">
             <Codicon name="warning" size={iconSize} />
@@ -76,7 +76,7 @@ export function AnnotationBadges({ annotations, iconSize = 12 }: AnnotationBadge
               ))}
             </div>
           }
-          delayDuration={200}
+          delayDuration={0}
         >
           <Badge variant="finding">
             <Codicon name="debug-breakpoint-unsupported" size={iconSize} />

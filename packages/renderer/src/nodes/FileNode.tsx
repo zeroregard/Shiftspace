@@ -8,6 +8,7 @@ import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useFileAnnotations } from '../hooks/useFileAnnotations';
 import { useActions } from '../ui/ActionsContext';
 import { Codicon } from '@shiftspace/ui/codicon';
+import { Tooltip } from '@shiftspace/ui/tooltip';
 
 interface FileNodeData {
   file: FileChange;
@@ -35,7 +36,10 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
   const isDeleted = file.status === 'deleted';
   const isHovered = hoveredFilePath === file.path;
 
-  const { errors, warnings, findings, hasAnnotations } = useFileAnnotations(worktreeId, file.path);
+  const { errors, warnings, findings, hasAnnotations, diagnostics } = useFileAnnotations(
+    worktreeId,
+    file.path
+  );
 
   return (
     <DiffPopover file={file} worktreeId={worktreeId}>
@@ -85,29 +89,69 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
           {hasAnnotations && (
             <div className="mt-1 pt-1 border-border-default/40">
               {errors > 0 && (
-                <div className="flex items-center gap-0.5 py-0.5 text-status-deleted">
-                  <Codicon name="error" size={16} />
-                  <span className="text-11 ml-0.5 mt-px">{errors}</span>
-                  <span className="text-11 truncate mt-px">
-                    {errors === 1 ? 'error' : 'errors'}
-                  </span>
-                </div>
+                <Tooltip
+                  content={
+                    <div className="flex flex-col gap-0.5">
+                      {diagnostics!.details
+                        .filter((d) => d.severity === 'error')
+                        .map((d) => (
+                          <span key={`${d.line}:${d.source}`}>
+                            L{d.line}: {d.message} ({d.source})
+                          </span>
+                        ))}
+                    </div>
+                  }
+                  delayDuration={0}
+                >
+                  <div className="flex items-center gap-0.5 py-0.5 text-status-deleted">
+                    <Codicon name="error" size={16} />
+                    <span className="text-11 ml-0.5 mt-px">{errors}</span>
+                    <span className="text-11 truncate mt-px">
+                      {errors === 1 ? 'error' : 'errors'}
+                    </span>
+                  </div>
+                </Tooltip>
               )}
               {warnings > 0 && (
-                <div className="flex items-center gap-0.5 py-0.5 text-status-modified">
-                  <Codicon name="warning" size={16} />
-                  <span className="text-11 ml-0.5 mt-px">{warnings}</span>
-                  <span className="text-11 truncate mt-px">
-                    {warnings === 1 ? 'warning' : 'warnings'}
-                  </span>
-                </div>
+                <Tooltip
+                  content={
+                    <div className="flex flex-col gap-0.5">
+                      {diagnostics!.details
+                        .filter((d) => d.severity === 'warning')
+                        .map((d) => (
+                          <span key={`${d.line}:${d.source}`}>
+                            L{d.line}: {d.message} ({d.source})
+                          </span>
+                        ))}
+                    </div>
+                  }
+                  delayDuration={0}
+                >
+                  <div className="flex items-center gap-0.5 py-0.5 text-status-modified">
+                    <Codicon name="warning" size={16} />
+                    <span className="text-11 ml-0.5 mt-px">{warnings}</span>
+                    <span className="text-11 truncate mt-px">
+                      {warnings === 1 ? 'warning' : 'warnings'}
+                    </span>
+                  </div>
+                </Tooltip>
               )}
               {findings.map((f) => (
-                <div key={f.ruleId} className="flex items-center gap-0.5 py-0.5 text-text-muted">
-                  <Codicon name="debug-breakpoint-unsupported" size={16} />
-                  <span className="text-11 ml-0.5 mt-px">{f.count}</span>
-                  <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
-                </div>
+                <Tooltip
+                  key={f.ruleId}
+                  content={
+                    <span>
+                      {f.ruleLabel}: {f.count} found (threshold: {f.threshold})
+                    </span>
+                  }
+                  delayDuration={0}
+                >
+                  <div className="flex items-center gap-0.5 py-0.5 text-text-muted">
+                    <Codicon name="debug-breakpoint-unsupported" size={16} />
+                    <span className="text-11 ml-0.5 mt-px">{f.count}</span>
+                    <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
+                  </div>
+                </Tooltip>
               ))}
             </div>
           )}

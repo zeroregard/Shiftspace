@@ -93,7 +93,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       onSetPackage={onSetPackage}
       onDetectPackages={onDetectPackages}
     >
-      <RadixTooltip.Provider delayDuration={300}>
+      <RadixTooltip.Provider delayDuration={0} skipDelayDuration={0}>
         <ShiftspaceContent showPackageSwitcher={!!onSetPackage} panZoomConfig={panZoomConfig} />
       </RadixTooltip.Provider>
     </ActionsProvider>
