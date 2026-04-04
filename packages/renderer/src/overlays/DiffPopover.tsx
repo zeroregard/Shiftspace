@@ -1,13 +1,11 @@
 import React from 'react';
-import * as HoverCard from '@radix-ui/react-hover-card';
+import ReactDOM from 'react-dom';
 import { create } from 'zustand';
+import { PatchDiff } from '@pierre/diffs/react';
 import type { FileChange } from '../types';
 import { hunksToUnified } from '../utils/hunksToUnified';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
-
-const LazyPatchDiff = React.lazy(() =>
-  import('@pierre/diffs/react').then((m) => ({ default: m.PatchDiff }))
-);
+import { useActions } from '../ui/ActionsContext';
 
 function langFromPath(filePath: string): string {
   const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
@@ -56,10 +54,6 @@ function EmptyDiff() {
   return <div className="px-3 py-2 text-text-faint text-11 italic">no diff available</div>;
 }
 
-function DiffLoading() {
-  return <div className="px-3 py-4 text-text-faint text-11 italic text-center">loading diff…</div>;
-}
-
 const PATCH_DIFF_OPTIONS = {
   diffStyle: 'unified' as const,
   diffIndicators: 'classic' as const,
@@ -68,6 +62,7 @@ const PATCH_DIFF_OPTIONS = {
   overflow: 'scroll' as const,
   themeType: 'dark' as const,
   theme: 'dark-plus',
+  fontSize: 11,
 };
 
 function DiffOverlayContent({ file }: { file: FileChange }) {
@@ -83,13 +78,7 @@ function DiffOverlayContent({ file }: { file: FileChange }) {
     <div className="flex flex-col flex-1 min-h-0">
       <DiffHeader file={file} />
       <div className="flex-1 min-h-0 overflow-auto">
-        {patch ? (
-          <React.Suspense fallback={<DiffLoading />}>
-            <LazyPatchDiff patch={patch} options={options} />
-          </React.Suspense>
-        ) : (
-          <EmptyDiff />
-        )}
+        {patch ? <PatchDiff patch={patch} options={options} /> : <EmptyDiff />}
       </div>
     </div>
   );
@@ -97,81 +86,140 @@ function DiffOverlayContent({ file }: { file: FileChange }) {
 
 const POPOVER_W = 720;
 const POPOVER_H = 420;
-const OFFSET = 12;
-const COLLISION_PADDING = 8;
-const OPEN_DELAY = 300;
+const PADDING = 8;
 
-/** Shared state so all DiffPopover instances coordinate open/delay behaviour.
- *  When any popover is open, subsequent ones open with 0 delay for instant switching. */
-const useDiffPopoverStore = create<{
+/** Global popover state: Shift held, cursor position, and which file is active. */
+const useDiffPopoverState = create<{
+  shiftHeld: boolean;
+  setShiftHeld: (v: boolean) => void;
+  cursorX: number;
+  cursorY: number;
+  setCursor: (x: number, y: number) => void;
   activeKey: string | null;
   setActiveKey: (key: string | null) => void;
 }>((set) => ({
+  shiftHeld: false,
+  setShiftHeld: (v) => set({ shiftHeld: v }),
+  cursorX: 0,
+  cursorY: 0,
+  setCursor: (x, y) => set({ cursorX: x, cursorY: y }),
   activeKey: null,
   setActiveKey: (key) => set({ activeKey: key }),
 }));
 
-export function DiffPopover({ file, children }: { file: FileChange; children: React.ReactNode }) {
+// One global listener set — registered lazily on first mount.
+let listenersAttached = false;
+function ensureGlobalListeners() {
+  if (listenersAttached) return;
+  listenersAttached = true;
+  const { setShiftHeld, setCursor } = useDiffPopoverState.getState();
+  // mousemove: tracks cursor position AND shift state (works without focus)
+  window.addEventListener(
+    'mousemove',
+    (e) => {
+      setCursor(e.clientX, e.clientY);
+      setShiftHeld(e.shiftKey);
+    },
+    { passive: true }
+  );
+  // keydown/keyup: catches Shift press/release while hovering without moving the mouse
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Shift') setShiftHeld(true);
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift') setShiftHeld(false);
+  });
+}
+
+export function DiffPopover({
+  file,
+  worktreeId,
+  children,
+}: {
+  file: FileChange;
+  worktreeId: string;
+  children: React.ReactNode;
+}) {
   const myKey = file.path;
-  const [open, setOpen] = React.useState(false);
-  const [side, setSide] = React.useState<'top' | 'right' | 'bottom' | 'left'>('bottom');
-  const [width, setWidth] = React.useState(POPOVER_W);
-  const triggerEl = React.useRef<Element | null>(null);
-  const triggerRef = (node: Element | null) => {
-    triggerEl.current = node;
+  const { fileClick } = useActions();
+  const shiftHeld = useDiffPopoverState((s) => s.shiftHeld);
+  const activeKey = useDiffPopoverState((s) => s.activeKey);
+  const setActiveKey = useDiffPopoverState((s) => s.setActiveKey);
+  const cursorX = useDiffPopoverState((s) => s.cursorX);
+  const cursorY = useDiffPopoverState((s) => s.cursorY);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time global setup, no deps needed
+  React.useEffect(ensureGlobalListeners, []);
+
+  const isMe = activeKey === myKey;
+  const open = isMe && shiftHeld;
+
+  const handleEnter = () => setActiveKey(myKey);
+  const handleLeave = () => {
+    // Only clear if we're still the active one
+    if (useDiffPopoverState.getState().activeKey === myKey) setActiveKey(null);
   };
 
-  const activeKey = useDiffPopoverStore((s) => s.activeKey);
-  const setActiveKey = useDiffPopoverStore((s) => s.setActiveKey);
-  const openDelay = activeKey !== null && activeKey !== myKey ? 0 : OPEN_DELAY;
+  // Snapshot cursor position when the popover opens so it doesn't jump around
+  const anchor = React.useRef({ x: 0, y: 0 });
+  const wasOpen = React.useRef(false);
+  if (open && !wasOpen.current) {
+    anchor.current = { x: cursorX, y: cursorY };
+  }
+  wasOpen.current = open;
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      setActiveKey(myKey);
-      if (triggerEl.current) {
-        const rect = triggerEl.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom - OFFSET;
-        const spaceAbove = rect.top - OFFSET;
-        setSide(spaceBelow >= spaceAbove ? 'bottom' : 'top');
-        setWidth(Math.min(POPOVER_W, window.innerWidth - COLLISION_PADDING * 2));
-      }
-    } else {
-      if (activeKey === myKey) setActiveKey(null);
-    }
-    setOpen(nextOpen);
-  };
+  // Compute position: prefer below cursor, flip above if not enough space
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 720;
+  const w = Math.min(POPOVER_W, vw - PADDING * 2);
+
+  let top: number;
+  const spaceBelow = vh - anchor.current.y - PADDING;
+  const spaceAbove = anchor.current.y - PADDING;
+  if (spaceBelow >= POPOVER_H || spaceBelow >= spaceAbove) {
+    top = anchor.current.y + 12;
+  } else {
+    top = anchor.current.y - POPOVER_H - 12;
+  }
+  top = Math.max(PADDING, Math.min(top, vh - POPOVER_H - PADDING));
+
+  let left = anchor.current.x;
+  left = Math.max(PADDING, Math.min(left, vw - w - PADDING));
 
   return (
-    <HoverCard.Root
-      open={open}
-      onOpenChange={handleOpenChange}
-      openDelay={openDelay}
-      closeDelay={50}
-    >
-      <HoverCard.Trigger asChild ref={triggerRef as React.Ref<HTMLAnchorElement>}>
+    <>
+      <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
         {children}
-      </HoverCard.Trigger>
-      <HoverCard.Portal>
-        <HoverCard.Content
-          side={side}
-          sideOffset={OFFSET}
-          align="start"
-          avoidCollisions={false}
-          className="z-50 flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md animate-popover-open"
-          style={{ width, maxHeight: POPOVER_H }}
-        >
-          <ErrorBoundary
-            resetKey={file}
-            fallback={
-              <div className="px-3 py-4 text-text-faint text-11 italic text-center">
-                diff failed to load
-              </div>
-            }
+      </div>
+      {open &&
+        ReactDOM.createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top,
+              left,
+              width: w,
+              maxHeight: POPOVER_H,
+              zIndex: 9999,
+            }}
+            className="flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md shadow-lg cursor-pointer"
+            onClick={() => fileClick(worktreeId, file.path)}
+            onMouseEnter={handleEnter}
+            onMouseLeave={handleLeave}
           >
-            <DiffOverlayContent file={file} />
-          </ErrorBoundary>
-        </HoverCard.Content>
-      </HoverCard.Portal>
-    </HoverCard.Root>
+            <ErrorBoundary
+              resetKey={file}
+              fallback={
+                <div className="px-3 py-4 text-text-faint text-11 italic text-center">
+                  diff failed to load
+                </div>
+              }
+            >
+              <DiffOverlayContent file={file} />
+            </ErrorBoundary>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }

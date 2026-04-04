@@ -25,7 +25,8 @@ export function StatusDot({ status, className }: StatusDotProps) {
       className={clsx(
         'size-2 rounded-full inline-block shrink-0',
         STATUS_CLASSES[status],
-        className
+        className,
+        'hidden' // TODO: do we want this thing at all
       )}
     />
   );

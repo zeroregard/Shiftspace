@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    "packages/ui": {
+      "entry": ["src/*.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/renderer": {
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": []
+    },
+    "apps/preview": {
+      "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts"],
+      "ignoreDependencies": ["tailwindcss", "babel-plugin-react-compiler"]
+    },
+    "apps/vscode-ext": {
+      "entry": ["src/webview/index.tsx"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": [
+        "@types/vscode",
+        "@vscode/codicons",
+        "tailwindcss",
+        "babel-plugin-react-compiler"
+      ]
+    }
+  },
+  "ignore": ["**/*.d.ts"],
+  "ignoreDependencies": ["@typescript/native-preview", "lint-staged"],
+  "ignoreBinaries": ["code"],
+  "tags": ["+@public"]
+}

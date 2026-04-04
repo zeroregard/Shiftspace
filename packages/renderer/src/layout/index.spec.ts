@@ -4,7 +4,7 @@ import { buildTree } from '../layout/tree';
 import { layoutFolder, layoutWorktreeContents } from '../layout/algorithm';
 import { computeFullLayout } from '../layout/index';
 import {
-  FILE_NODE_H,
+  FILE_NODE_BASE_H,
   FILE_NODE_W,
   FILE_V_GAP,
   FILES_TOP_GAP,
@@ -155,8 +155,8 @@ describe('layoutFolder', () => {
     const [srcNode] = buildTree('wt', [f('src/A.ts'), f('src/B.ts'), f('src/C.ts')]);
     const rect = layoutFolder(srcNode, 0);
     const [a, b, c] = rect.children;
-    expect(b.y).toBe(a.y + FILE_NODE_H + FILE_V_GAP);
-    expect(c.y).toBe(b.y + FILE_NODE_H + FILE_V_GAP);
+    expect(b.y).toBe(a.y + FILE_NODE_BASE_H + FILE_V_GAP);
+    expect(c.y).toBe(b.y + FILE_NODE_BASE_H + FILE_V_GAP);
   });
 
   it('places nested folder children at startY + FOLDER_NODE_H + FOLDER_V_GAP', () => {
@@ -209,7 +209,7 @@ describe('layoutWorktreeContents', () => {
     const { layouts } = layoutWorktreeContents(tree, startY);
     const [a, b] = layouts;
     expect(a.y).toBe(startY);
-    expect(b.y).toBe(startY + FILE_NODE_H + FILE_V_GAP);
+    expect(b.y).toBe(startY + FILE_NODE_BASE_H + FILE_V_GAP);
   });
 
   it('lays out multiple folder subtrees side by side horizontally', () => {
@@ -276,7 +276,7 @@ describe('computeFullLayout — node structure', () => {
     const contentsStartY = WT_HEADER_H + CONTAINER_PAD_TOP;
     expect(wtNode.height).toBeGreaterThan(contentsStartY);
     expect(wtNode.height).toBeGreaterThanOrEqual(
-      contentsStartY + FOLDER_NODE_H + FILES_TOP_GAP + FILE_NODE_H + CONTAINER_PAD_BOTTOM
+      contentsStartY + FOLDER_NODE_H + FILES_TOP_GAP + FILE_NODE_BASE_H + CONTAINER_PAD_BOTTOM
     );
   });
 
@@ -291,7 +291,7 @@ describe('computeFullLayout — node structure', () => {
     const { nodes } = layout([f('src/App.tsx')]);
     const file = nodes.find((n) => n.type === 'fileNode')!;
     expect(file.width).toBe(FILE_NODE_W);
-    expect(file.height).toBe(FILE_NODE_H);
+    expect(file.height).toBe(FILE_NODE_BASE_H);
   });
 });
 

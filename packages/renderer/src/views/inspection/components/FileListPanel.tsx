@@ -5,6 +5,7 @@ import type { FileChange, WorktreeState } from '../../../types';
 import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
 import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
 import { AnnotationBadges } from '../../../ui/AnnotationBadges';
+import { DiffPopover } from '../../../overlays/DiffPopover';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-label';
 import { partitionFiles, filterFilesByQuery, isValidRegex } from '../../../utils/listSections';
@@ -29,38 +30,40 @@ function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: Inspe
   const annotations = useFileAnnotations(worktreeId, file.path);
 
   return (
-    <button
-      className={clsx(
-        'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
-        'hover:bg-node-file-pulse',
-        onFileClick ? 'cursor-pointer' : 'cursor-default'
-      )}
-      onClick={() => onFileClick?.(worktreeId, file.path)}
-      onMouseEnter={() => onHoverFile?.(file.path)}
-      onMouseLeave={() => onHoverFile?.(null)}
-    >
-      <span className="shrink-0 flex items-center">
-        <ThemedFileIcon filePath={file.path} size={16} />
-      </span>
-
-      <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
-        <span
-          className={clsx(
-            'shrink-0',
-            isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
-          )}
-        >
-          {fileName}
-        </span>
-        {dirPath && (
-          <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
-            {dirPath}
-          </span>
+    <DiffPopover file={file} worktreeId={worktreeId}>
+      <button
+        className={clsx(
+          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
+          'hover:bg-node-file-pulse',
+          onFileClick ? 'cursor-pointer' : 'cursor-default'
         )}
-      </span>
+        onClick={() => onFileClick?.(worktreeId, file.path)}
+        onMouseEnter={() => onHoverFile?.(file.path)}
+        onMouseLeave={() => onHoverFile?.(null)}
+      >
+        <span className="shrink-0 flex items-center">
+          <ThemedFileIcon filePath={file.path} size={16} />
+        </span>
 
-      <AnnotationBadges annotations={annotations} />
-    </button>
+        <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
+          <span
+            className={clsx(
+              'shrink-0',
+              isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
+            )}
+          >
+            {fileName}
+          </span>
+          {dirPath && (
+            <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+              {dirPath}
+            </span>
+          )}
+        </span>
+
+        <AnnotationBadges annotations={annotations} />
+      </button>
+    </DiffPopover>
   );
 }
 

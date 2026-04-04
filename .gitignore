@@ -8,6 +8,17 @@ coverage/
 # build
 *.vsix
 
+# bundle analysis artifacts
+dist/meta-*.json
+dist/**/bundle-stats.html
+
 # playwright
 playwright-report/
 test-results/
+
+
+.nx/cache
+.nx/workspace-data
+.nx/polygraph
+.claude/worktrees
+.claude/settings.local.json
