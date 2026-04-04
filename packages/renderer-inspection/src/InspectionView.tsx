@@ -14,8 +14,9 @@ import {
   NODE_TYPES,
   InspectionHoverContext,
   getAllFilteredFiles,
+  filterFilesByProblems,
   computeSingleWorktreeLayout,
-  CheckBar,
+  ActionBar,
   useActions,
 } from '@shiftspace/renderer-core';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
@@ -84,6 +85,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   const actionConfigs = useActionStore((s) => s.actionConfigs);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [problemsOnly, setProblemsOnly] = useState(false);
   const [hoveredFilePath, setHoveredFilePath] = useState<string | null>(null);
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
 
@@ -107,7 +109,12 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
     setHoveredFilePath(null);
   }, [worktreeId]);
 
-  const hierarchyFiles = wt ? getAllFilteredFiles(wt, deferredSearchQuery) : [];
+  const hierarchyFiles = useMemo(() => {
+    if (!wt) return [];
+    const filtered = getAllFilteredFiles(wt, deferredSearchQuery);
+    if (!problemsOnly) return filtered;
+    return filterFilesByProblems(filtered, wt.id, stableFindingsIndex, stableFileDiagnostics);
+  }, [wt, deferredSearchQuery, problemsOnly, stableFindingsIndex, stableFileDiagnostics]);
 
   const { nodes, edges } = useMemo(() => {
     if (!wt)
@@ -125,8 +132,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
       }
     );
     return { nodes: layout.nodes, edges: layout.edges };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchyFiles is derived from wt + deferredSearchQuery
-  }, [wt, deferredSearchQuery, stableFindingsIndex, stableFileDiagnostics]);
+  }, [wt, hierarchyFiles, stableFindingsIndex, stableFileDiagnostics]);
 
   if (!wt) {
     return (
@@ -140,13 +146,22 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
 
   return (
     <div className="w-full h-full flex flex-col bg-canvas">
-      {actionConfigs.length > 0 && <CheckBar worktreeId={worktreeId} />}
+      {actionConfigs.length > 0 && (
+        <ActionBar
+          worktreeId={worktreeId}
+          className="px-4 py-1.5 border-b border-border-dashed shrink-0"
+        />
+      )}
 
       <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">
         <FileListPanel
           wt={wt}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          problemsOnly={problemsOnly}
+          onProblemsOnlyChange={setProblemsOnly}
+          findingsIndex={stableFindingsIndex}
+          fileDiagnostics={stableFileDiagnostics}
           onFileClick={handleFileRowClick}
           onHoverFile={setHoveredFilePath}
         />

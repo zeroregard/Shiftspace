@@ -142,6 +142,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
   return (
     <div
       ref={containerRef}
+      data-testid="tree-canvas"
       style={{
         position: 'relative',
         overflow: 'hidden',

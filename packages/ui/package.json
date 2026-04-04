@@ -12,16 +12,16 @@
       "types": "./src/button.tsx"
     },
     "./codicon": {
-      "import": "./src/codicon.tsx",
-      "types": "./src/codicon.tsx"
+      "import": "./src/icons/codicon.tsx",
+      "types": "./src/icons/codicon.tsx"
     },
     "./error-boundary": {
       "import": "./src/error-boundary.tsx",
       "types": "./src/error-boundary.tsx"
     },
     "./file-icons": {
-      "import": "./src/file-icons.tsx",
-      "types": "./src/file-icons.tsx"
+      "import": "./src/icons/file-icons.tsx",
+      "types": "./src/icons/file-icons.tsx"
     },
     "./icon-button": {
       "import": "./src/icon-button.tsx",
@@ -50,6 +50,14 @@
     "./tooltip": {
       "import": "./src/tooltip.tsx",
       "types": "./src/tooltip.tsx"
+    },
+    "./shift-icon": {
+      "import": "./src/icons/shift-icon.tsx",
+      "types": "./src/icons/shift-icon.tsx"
+    },
+    "./smell-icon": {
+      "import": "./src/icons/smell-icon.tsx",
+      "types": "./src/icons/smell-icon.tsx"
     }
   },
   "scripts": {
@@ -58,7 +66,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "peerDependencies": {
-    "react": "^19.0.0",
+    "react": "^19.2.4",
     "react-dom": "^19.0.0"
   },
   "dependencies": {
@@ -66,7 +74,7 @@
     "clsx": "^2.1.1"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.0.0",
     "@typescript/native-preview": "^7.0.0-dev.20260401.1",
     "typescript": "^5.7.2"

@@ -80,9 +80,14 @@ export {
   matchesFileFilter,
   isValidRegex,
   filterFilesByQuery,
+  filterFilesByProblems,
+  fileHasProblems,
   getAllFilteredFiles,
 } from './utils/listSections';
+export { getSourceLineFromHunks } from './utils/diffLineLookup';
+
+// UI (additional)
+export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/DiagnosticTooltipContent';
 
 // Components (shared between views)
 export { ActionBar } from './components/ActionBar';
-export { CheckBar } from './components/CheckBar';

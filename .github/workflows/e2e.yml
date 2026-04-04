@@ -1,4 +1,4 @@
-name: E2E Tests
+name: 🎭 E2E Tests
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   e2e:
-    name: 🎭 E2E Tests
+    name: E2E Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -43,21 +43,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Restore Nx cache
-        uses: actions/cache@v4
-        with:
-          path: .nx/cache
-          key: nx-${{ runner.os }}-e2e-${{ github.sha }}
-          restore-keys: |
-            nx-${{ runner.os }}-e2e-
+      - name: Fetch base branch for affected detection
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }} || true
 
       - name: Determine affected e2e specs
         id: affected
         run: |
           # Maps package directories to e2e specs (mirrors nx.json named inputs).
-          # Now that renderer is split into renderer-core / renderer-grove /
-          # renderer-inspection, the patterns are simple package-level checks.
-          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)
+          # renderer-core / renderer-grove / renderer-inspection are simple package checks.
+          CHANGED=$(git diff --name-only "origin/${{ github.event.pull_request.base.ref }}"...HEAD)
 
           has_changes() { echo "$CHANGED" | grep -qE "$1"; }
 
@@ -158,26 +152,39 @@ jobs:
         run: |
           # Use the merge-base with the PR target so that NEW screenshots
           # added in the PR show up as "Added" in the comparison comment.
-          BASE_SHA=$(git merge-base HEAD origin/${{ github.base_ref }})
+          BASE_SHA=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }})
+          echo "Base SHA: ${BASE_SHA}"
+          echo "Head SHA: $(git rev-parse HEAD)"
           echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
           echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Run affected Playwright specs with --update-snapshots
+      - name: Run Playwright with --update-snapshots
         id: playwright
         if: steps.check-tests.outputs.exist == 'true'
         continue-on-error: true
         run: |
+          echo "=== Screenshot baselines before test run ==="
+          find apps/preview/e2e/__screenshots__ -name '*.png' 2>/dev/null | sort || echo "<none>"
+          echo "Running specs: ${{ steps.affected.outputs.specs }}"
           cd apps/preview
-          npx playwright test ${{ steps.affected.outputs.specs }} --update-snapshots
+          npx playwright test ${{ steps.affected.outputs.specs }} --update-snapshots 2>&1 | tee /tmp/playwright-output.txt
+          echo "=== Screenshot baselines after test run ==="
+          find e2e/__screenshots__ -name '*.png' 2>/dev/null | sort || echo "<none>"
 
       - name: Detect screenshot changes
         id: detect
         if: steps.check-tests.outputs.exist == 'true'
         run: |
+          echo "=== git status of screenshots ==="
+          git status -- 'apps/preview/e2e/__screenshots__/'
+
           # Staged changes
           MODIFIED=$(git diff --name-only -- 'apps/preview/e2e/__screenshots__/**/*.png' 'apps/preview/e2e/__screenshots__/**/*.jpg' 2>/dev/null || true)
+          echo "Modified tracked files: ${MODIFIED:-<none>}"
+
           # Untracked new files
           NEW=$(git ls-files --others --exclude-standard -- 'apps/preview/e2e/__screenshots__/**/*.png' 'apps/preview/e2e/__screenshots__/**/*.jpg' 2>/dev/null || true)
+          echo "New untracked files: ${NEW:-<none>}"
 
           if [ -n "$MODIFIED" ] || [ -n "$NEW" ]; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
@@ -196,7 +203,7 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "No screenshot changes to commit."
           else
-            git commit -m "chore: update e2e snapshots"
+            git commit -m "chore: update e2e snapshots [skip ci]"
             git push -u origin ${{ github.head_ref }}
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "new_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
@@ -212,7 +219,7 @@ jobs:
 
       - name: Build PR comment
         id: build-comment
-        if: steps.check-tests.outputs.exist == 'true'
+        if: always()
         env:
           REPO: ${{ github.repository }}
           OLD_SHA: ${{ steps.baseline.outputs.sha }}
@@ -221,8 +228,19 @@ jobs:
         run: |
           SCREENSHOTS_DIR="apps/preview/e2e/__screenshots__"
 
+          # Fallback: compute SHAs if not available from earlier steps
+          if [ -z "$OLD_SHA" ]; then
+            OLD_SHA=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }} 2>/dev/null || echo "")
+          fi
+          if [ -z "$NEW_SHA" ]; then
+            NEW_SHA=$(git rev-parse HEAD)
+          fi
+
+          echo "Comparing OLD_SHA=${OLD_SHA} → NEW_SHA=${NEW_SHA}"
+
           # Collect changed/added/deleted screenshots vs base branch
           CHANGED_FILES=$(git diff --name-status "${OLD_SHA}" "${NEW_SHA}" -- "${SCREENSHOTS_DIR}/" 2>/dev/null || true)
+          echo "Changed files: ${CHANGED_FILES:-<none>}"
 
           CHANGED_LIST=""
           NEW_LIST=""
@@ -329,7 +347,7 @@ jobs:
 
       - name: Find existing PR comment
         id: find-comment
-        if: steps.check-tests.outputs.exist == 'true'
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -339,7 +357,7 @@ jobs:
           echo "comment_id=${COMMENT_ID:-}" >> "$GITHUB_OUTPUT"
 
       - name: Post or update PR comment
-        if: steps.check-tests.outputs.exist == 'true'
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -372,5 +390,9 @@ jobs:
       - name: Fail if Playwright tests failed
         if: steps.playwright.outcome == 'failure'
         run: |
-          echo "Playwright tests failed. See uploaded report for details."
+          echo "::group::Playwright test output"
+          cat /tmp/playwright-output.txt
+          echo "::endgroup::"
+          echo ""
+          echo "❌ Playwright tests failed — see output above or download the playwright-report artifact for the full HTML report."
           exit 1

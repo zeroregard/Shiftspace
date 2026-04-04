@@ -1,9 +1,9 @@
-name: Unit Tests
+name: 🧪 Unit Tests
 
 on:
   pull_request:
   push:
-    branches: [main, master]
+    branches: [main]
 
 concurrency:
   group: unit-tests-${{ github.ref }}
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   unit:
-    name: 🧪 Unit Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:

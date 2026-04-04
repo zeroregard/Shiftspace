@@ -1,4 +1,5 @@
-import type { FileChange, WorktreeState } from '../types';
+import type { FileChange, InsightFinding, FileDiagnosticSummary, WorktreeState } from '../types';
+import { storeKey } from './storeKeys';
 
 interface FileSections {
   committed: FileChange[];
@@ -63,6 +64,35 @@ export function isValidRegex(query: string): boolean {
 export function filterFilesByQuery(files: FileChange[], query: string): FileChange[] {
   if (!query) return files;
   return files.filter((f) => matchesFileFilter(f.path, query));
+}
+
+/**
+ * Returns true if a file has any problems (errors, warnings, or insight findings).
+ */
+export function fileHasProblems(
+  worktreeId: string,
+  filePath: string,
+  findingsIndex: Map<string, InsightFinding[]>,
+  fileDiagnostics: Map<string, FileDiagnosticSummary>
+): boolean {
+  const key = storeKey(worktreeId, filePath);
+  const findings = findingsIndex.get(key);
+  if (findings && findings.length > 0) return true;
+  const diag = fileDiagnostics.get(key);
+  if (diag && (diag.errors > 0 || diag.warnings > 0)) return true;
+  return false;
+}
+
+/**
+ * Filters an array of files to only those with problems (errors, warnings, findings).
+ */
+export function filterFilesByProblems(
+  files: FileChange[],
+  worktreeId: string,
+  findingsIndex: Map<string, InsightFinding[]>,
+  fileDiagnostics: Map<string, FileDiagnosticSummary>
+): FileChange[] {
+  return files.filter((f) => fileHasProblems(worktreeId, f.path, findingsIndex, fileDiagnostics));
 }
 
 /**

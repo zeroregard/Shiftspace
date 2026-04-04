@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import clsx from 'clsx';
 
 type BadgeVariant = 'error' | 'warning' | 'finding' | 'info' | 'success';
@@ -6,7 +6,7 @@ type BadgeVariant = 'error' | 'warning' | 'finding' | 'info' | 'success';
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   error: 'text-status-deleted border-status-deleted/30 bg-status-deleted/10',
   warning: 'text-status-modified border-status-modified/30 bg-status-modified/10',
-  finding: 'text-text-muted border-text-muted/20 bg-text-muted/5',
+  finding: 'text-purple-400 border-purple-400/30 bg-purple-400/10',
   info: 'text-teal border-teal/30 bg-teal/10',
   success: 'text-status-added border-status-added/30 bg-status-added/10',
 };
@@ -24,9 +24,13 @@ interface BadgeProps {
  *   <Badge variant="error">3 errors</Badge>
  *   <Badge variant="warning"><WarningIcon /> 2</Badge>
  */
-export function Badge({ variant, children, className }: BadgeProps) {
+export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
+  { variant, children, className },
+  ref
+) {
   return (
     <span
+      ref={ref}
       className={clsx(
         'inline-flex items-center gap-0.5 text-10 font-medium border px-1 rounded leading-tight',
         VARIANT_CLASSES[variant],
@@ -36,4 +40,4 @@ export function Badge({ variant, children, className }: BadgeProps) {
       {children}
     </span>
   );
-}
+});

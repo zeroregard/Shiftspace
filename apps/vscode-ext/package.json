@@ -2,7 +2,7 @@
   "name": "shiftspace",
   "displayName": "Shiftspace",
   "description": "Visual workspace command center — spatial node graph of your git changes across worktrees",
-  "version": "0.1.18",
+  "version": "0.1.25",
   "publisher": "shiftspace",
   "repository": {
     "type": "git",
@@ -79,12 +79,6 @@
           },
           "default": [],
           "description": "Glob patterns for files to hide from the Shiftspace view. Examples: *.lock, **/lang/*.json, *.min.js",
-          "scope": "resource"
-        },
-        "shiftspace.package": {
-          "type": "string",
-          "default": "",
-          "description": "The package/app name for filtered commands in .shiftspace.json (e.g. 'studio', 'web'). Replaces {package} in command templates.",
           "scope": "resource"
         },
         "shiftspace.additionalActions": {

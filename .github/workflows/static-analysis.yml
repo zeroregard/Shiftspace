@@ -1,9 +1,9 @@
-name: Static Analysis
+name: 🔍 Static Analysis
 
 on:
   pull_request:
   push:
-    branches: [main, master]
+    branches: [main]
 
 concurrency:
   group: static-analysis-${{ github.ref }}
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   static-analysis:
-    name: 🔍 Static Analysis
+    name: Static Analysis
     runs-on: ubuntu-latest
 
     steps:
