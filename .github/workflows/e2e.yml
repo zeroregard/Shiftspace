@@ -99,16 +99,27 @@ jobs:
         id: playwright
         if: steps.check-tests.outputs.exist == 'true'
         continue-on-error: true
-        run: bun run --filter @shiftspace/preview test:e2e:update 2>&1 | tee /tmp/playwright-output.txt
+        run: |
+          echo "=== Screenshot baselines before test run ==="
+          find apps/preview/e2e/__screenshots__ -name '*.png' 2>/dev/null | sort || echo "<none>"
+          bun run --filter @shiftspace/preview test:e2e:update 2>&1 | tee /tmp/playwright-output.txt
+          echo "=== Screenshot baselines after test run ==="
+          find apps/preview/e2e/__screenshots__ -name '*.png' 2>/dev/null | sort || echo "<none>"
 
       - name: Detect screenshot changes
         id: detect
         if: steps.check-tests.outputs.exist == 'true'
         run: |
+          echo "=== git status of screenshots ==="
+          git status -- 'apps/preview/e2e/__screenshots__/'
+
           # Staged changes
           MODIFIED=$(git diff --name-only -- 'apps/preview/e2e/__screenshots__/**/*.png' 'apps/preview/e2e/__screenshots__/**/*.jpg' 2>/dev/null || true)
+          echo "Modified tracked files: ${MODIFIED:-<none>}"
+
           # Untracked new files
           NEW=$(git ls-files --others --exclude-standard -- 'apps/preview/e2e/__screenshots__/**/*.png' 'apps/preview/e2e/__screenshots__/**/*.jpg' 2>/dev/null || true)
+          echo "New untracked files: ${NEW:-<none>}"
 
           if [ -n "$MODIFIED" ] || [ -n "$NEW" ]; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
