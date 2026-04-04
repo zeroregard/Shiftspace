@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Fetch base branch for affected detection
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }} || true
+
       - name: Check if e2e is affected
         id: affected
         run: |
@@ -87,6 +90,8 @@ jobs:
           # Use the merge-base with the PR target so that NEW screenshots
           # added in the PR show up as "Added" in the comparison comment.
           BASE_SHA=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }})
+          echo "Base SHA: ${BASE_SHA}"
+          echo "Head SHA: $(git rev-parse HEAD)"
           echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
           echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
@@ -147,8 +152,11 @@ jobs:
         run: |
           SCREENSHOTS_DIR="apps/preview/e2e/__screenshots__"
 
+          echo "Comparing OLD_SHA=${OLD_SHA} → NEW_SHA=${NEW_SHA}"
+
           # Collect changed/added/deleted screenshots vs base branch
           CHANGED_FILES=$(git diff --name-status "${OLD_SHA}" "${NEW_SHA}" -- "${SCREENSHOTS_DIR}/" 2>/dev/null || true)
+          echo "Changed files: ${CHANGED_FILES:-<none>}"
 
           CHANGED_LIST=""
           NEW_LIST=""
