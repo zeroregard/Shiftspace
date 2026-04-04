@@ -179,6 +179,7 @@ function SearchInput({
         </div>
         <Tooltip content={problemsOnly ? 'Show all files' : 'Show only files with problems'}>
           <button
+            data-testid="problems-filter-toggle"
             className={clsx(
               'shrink-0 flex items-center justify-center w-7 h-7 rounded-md border transition-colors cursor-pointer',
               problemsOnly

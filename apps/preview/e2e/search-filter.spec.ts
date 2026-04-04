@@ -208,19 +208,19 @@ test.describe('Search filter in Inspection view', () => {
 });
 
 test.describe('Problems filter in Inspection view', () => {
-  /** Locate the problems-only toggle button (next to the search input). */
+  /** Locate the problems-only toggle button via data-testid. */
   function getProblemsButton(page: import('@playwright/test').Page) {
-    // The toggle button is in the search bar area — it's the button whose
-    // direct child is the warning codicon. Annotation badge warning icons
-    // sit inside nested spans, so this selector is unambiguous.
-    return page.locator('button > .codicon-warning').first().locator('..');
+    return page.getByTestId('problems-filter-toggle');
   }
 
-  /** Count visible file rows in the list panel (buttons containing a filename span). */
+  /**
+   * Count visible file rows in the list panel.
+   * Each InspectionFileRow is a <button> with role="button" containing the
+   * filename text. We scope to the scrollable list area and exclude section
+   * labels (which are <div>s, not buttons).
+   */
   function getFileRows(page: import('@playwright/test').Page) {
-    // Each InspectionFileRow renders a <button> with a text-11 span holding
-    // the filename. Section labels use <div>, not <button>.
-    return page.locator('.overflow-y-auto button:has(span.text-11)');
+    return page.locator('.overflow-y-auto').getByRole('button');
   }
 
   test('problems filter button is visible next to search input', async ({ page }) => {
