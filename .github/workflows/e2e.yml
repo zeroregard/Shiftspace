@@ -100,7 +100,7 @@ jobs:
         id: playwright
         if: steps.check-tests.outputs.exist == 'true'
         continue-on-error: true
-        run: bun run --filter @shiftspace/preview test:e2e:update
+        run: bun run --filter @shiftspace/preview test:e2e:update 2>&1 | tee /tmp/playwright-output.txt
 
       - name: Detect screenshot changes
         id: detect
@@ -304,5 +304,9 @@ jobs:
       - name: Fail if Playwright tests failed
         if: steps.playwright.outcome == 'failure'
         run: |
-          echo "Playwright tests failed. See uploaded report for details."
+          echo "::group::Playwright test output"
+          cat /tmp/playwright-output.txt
+          echo "::endgroup::"
+          echo ""
+          echo "❌ Playwright tests failed — see output above or download the playwright-report artifact for the full HTML report."
           exit 1
