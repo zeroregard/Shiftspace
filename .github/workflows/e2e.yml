@@ -54,12 +54,15 @@ jobs:
       - name: Check if e2e is affected
         id: affected
         run: |
-          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>&1 || echo "")
-          echo "Nx affected output: $AFFECTED"
-          if echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
-            echo "run_e2e=true" >> $GITHUB_OUTPUT
-          else
+          # Default to running e2e — only skip if nx explicitly confirms unaffected
+          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>/dev/null) || true
+          echo "Nx affected output: ${AFFECTED:-<empty>}"
+          if [ -n "$AFFECTED" ] && ! echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
             echo "run_e2e=false" >> $GITHUB_OUTPUT
+            echo "Skipping: @shiftspace/preview not affected"
+          else
+            echo "run_e2e=true" >> $GITHUB_OUTPUT
+            echo "Running: @shiftspace/preview is affected (or affected check inconclusive)"
           fi
 
       - name: Restore Playwright browsers cache
