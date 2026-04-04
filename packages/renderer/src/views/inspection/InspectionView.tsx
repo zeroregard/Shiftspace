@@ -8,7 +8,7 @@ import { NODE_TYPES } from '../../nodes';
 import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
 import { getAllFilteredFiles, filterFilesByProblems } from '../../utils/listSections';
 import { computeSingleWorktreeLayout } from '../../layout';
-import { CheckBar } from './components/CheckBar';
+import { ActionBar } from './components/ActionBar';
 import { useActions } from '../../ui/ActionsContext';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { FileListPanel } from './components/FileListPanel';
@@ -137,7 +137,12 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
 
   return (
     <div className="w-full h-full flex flex-col bg-canvas">
-      {actionConfigs.length > 0 && <CheckBar worktreeId={worktreeId} />}
+      {actionConfigs.length > 0 && (
+        <ActionBar
+          worktreeId={worktreeId}
+          className="px-4 py-1.5 border-b border-border-dashed shrink-0"
+        />
+      )}
 
       <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">
         <FileListPanel
