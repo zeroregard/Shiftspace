@@ -9,6 +9,7 @@ import { useFileAnnotations } from '../hooks/useFileAnnotations';
 import { useActions } from '../ui/ActionsContext';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { Tooltip } from '@shiftspace/ui/tooltip';
+import { DiagnosticTooltipContent, FindingTooltipContent } from '../ui/DiagnosticTooltipContent';
 
 interface FileNodeData {
   file: FileChange;
@@ -91,15 +92,10 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
               {errors > 0 && (
                 <Tooltip
                   content={
-                    <div className="flex flex-col gap-0.5">
-                      {diagnostics!.details
-                        .filter((d) => d.severity === 'error')
-                        .map((d) => (
-                          <span key={`${d.line}:${d.source}`}>
-                            L{d.line}: {d.message} ({d.source})
-                          </span>
-                        ))}
-                    </div>
+                    <DiagnosticTooltipContent
+                      details={diagnostics!.details.filter((d) => d.severity === 'error')}
+                      diffHunks={file.diff}
+                    />
                   }
                   delayDuration={0}
                 >
@@ -115,15 +111,10 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
               {warnings > 0 && (
                 <Tooltip
                   content={
-                    <div className="flex flex-col gap-0.5">
-                      {diagnostics!.details
-                        .filter((d) => d.severity === 'warning')
-                        .map((d) => (
-                          <span key={`${d.line}:${d.source}`}>
-                            L{d.line}: {d.message} ({d.source})
-                          </span>
-                        ))}
-                    </div>
+                    <DiagnosticTooltipContent
+                      details={diagnostics!.details.filter((d) => d.severity === 'warning')}
+                      diffHunks={file.diff}
+                    />
                   }
                   delayDuration={0}
                 >
@@ -139,11 +130,7 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
               {findings.map((f) => (
                 <Tooltip
                   key={f.ruleId}
-                  content={
-                    <span>
-                      {f.ruleLabel}: {f.count} found (threshold: {f.threshold})
-                    </span>
-                  }
+                  content={<FindingTooltipContent findings={[f]} />}
                   delayDuration={0}
                 >
                   <div className="flex items-center gap-0.5 py-0.5 text-text-muted">

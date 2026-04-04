@@ -61,7 +61,7 @@ function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: Inspe
           )}
         </span>
 
-        <AnnotationBadges annotations={annotations} />
+        <AnnotationBadges annotations={annotations} diffHunks={file.diff} />
       </button>
     </DiffPopover>
   );
