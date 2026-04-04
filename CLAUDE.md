@@ -271,6 +271,19 @@ A control panel overlay (visible on the preview app, not part of the renderer) w
 
 ---
 
+## Commit & PR Conventions
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) for all commit messages and PR titles.
+
+**Format:** `type(scope): description`
+
+- If the change targets a single package, scope it: `fix(@shiftspace/renderer): clamp zoom level`
+- If the change spans multiple packages or is repo-wide, omit the scope: `fix: resolve merge conflict in lockfile`
+
+Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `perf`
+
+---
+
 ## Open Questions
 
 1. **Filesystem watcher debounce tuning:** 500ms is a starting point. Too short = thrashing git commands. Too long = feels laggy.
