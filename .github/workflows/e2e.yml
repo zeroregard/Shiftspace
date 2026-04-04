@@ -168,7 +168,7 @@ jobs:
         continue-on-error: true
         run: |
           cd apps/preview
-          bun run playwright test --update-snapshots ${{ steps.affected.outputs.specs }}
+          bunx playwright test --update-snapshots ${{ steps.affected.outputs.specs }}
 
       - name: Detect screenshot changes
         id: detect
