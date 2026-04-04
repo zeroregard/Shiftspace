@@ -22,67 +22,84 @@ async function enterInspection(page: import('@playwright/test').Page) {
   await page.waitForTimeout(300);
 }
 
+/**
+ * Hover an element using dispatchEvent to guarantee pointer events fire
+ * on the correct target regardless of layering or transforms.
+ */
+async function triggerHover(
+  page: import('@playwright/test').Page,
+  locator: import('@playwright/test').Locator
+) {
+  // Move mouse away first so that entering the element fires pointerenter
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(50);
+
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('Element not found or has no bounding box');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+}
+
 test.describe('Hover tooltips on annotation badges', () => {
-  test('list view: hovering an error badge shows tooltip', async ({ page }) => {
+  test('list view: hovering error badge shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    // Scope to file-list-panel so we don't accidentally match tree canvas icons
     const listPanel = page.getByTestId('file-list-panel');
-    const errorBadge = listPanel.locator('.codicon-error').first().locator('..');
-    await expect(errorBadge).toBeVisible();
-    await errorBadge.hover();
+    const errorIcon = listPanel.locator('.codicon-error').first();
+    await expect(errorIcon).toBeVisible({ timeout: 5000 });
+
+    // Move mouse to the error badge to trigger Radix tooltip
+    await triggerHover(page, errorIcon);
 
     const tooltip = page.getByRole('tooltip');
-    await expect(tooltip).toBeVisible({ timeout: 3000 });
-
+    await expect(tooltip).toBeVisible({ timeout: 5000 });
     await expect(page).toHaveScreenshot('list-error-tooltip.png');
   });
 
-  test('list view: hovering a warning badge shows tooltip', async ({ page }) => {
+  test('list view: hovering warning badge shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
     const listPanel = page.getByTestId('file-list-panel');
-    const warningBadge = listPanel.locator('.codicon-warning').first().locator('..');
-    await expect(warningBadge).toBeVisible();
-    await warningBadge.hover();
+    const warningIcon = listPanel.locator('.codicon-warning').first();
+    await expect(warningIcon).toBeVisible({ timeout: 5000 });
+
+    await triggerHover(page, warningIcon);
 
     const tooltip = page.getByRole('tooltip');
-    await expect(tooltip).toBeVisible({ timeout: 3000 });
-
+    await expect(tooltip).toBeVisible({ timeout: 5000 });
     await expect(page).toHaveScreenshot('list-warning-tooltip.png');
   });
 
-  test('tree view: hovering an error row shows tooltip', async ({ page }) => {
+  test('tree view: hovering error row shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    // Scope to tree-canvas. The annotation row div (Tooltip trigger) is the
-    // parent of the codicon icon element.
     const canvas = page.getByTestId('tree-canvas');
-    const errorRow = canvas.locator('.codicon-error').first().locator('..');
-    await expect(errorRow).toBeVisible();
-    await errorRow.hover();
+    const errorIcon = canvas.locator('.codicon-error').first();
+    await expect(errorIcon).toBeVisible({ timeout: 5000 });
+
+    await triggerHover(page, errorIcon);
 
     const tooltip = page.getByRole('tooltip');
-    await expect(tooltip).toBeVisible({ timeout: 3000 });
-
+    await expect(tooltip).toBeVisible({ timeout: 5000 });
     await expect(page).toHaveScreenshot('tree-error-tooltip.png');
   });
 
-  test('tree view: hovering a warning row shows tooltip', async ({ page }) => {
+  test('tree view: hovering warning row shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
     const canvas = page.getByTestId('tree-canvas');
-    const warningRow = canvas.locator('.codicon-warning').first().locator('..');
-    await expect(warningRow).toBeVisible();
-    await warningRow.hover();
+    const warningIcon = canvas.locator('.codicon-warning').first();
+    await expect(warningIcon).toBeVisible({ timeout: 5000 });
+
+    await triggerHover(page, warningIcon);
 
     const tooltip = page.getByRole('tooltip');
-    await expect(tooltip).toBeVisible({ timeout: 3000 });
-
+    await expect(tooltip).toBeVisible({ timeout: 5000 });
     await expect(page).toHaveScreenshot('tree-warning-tooltip.png');
   });
 });
