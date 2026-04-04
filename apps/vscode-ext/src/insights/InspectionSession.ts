@@ -30,6 +30,7 @@ export class InspectionSession {
 
   enter(worktreeId: string): void {
     this._currentWorktreeId = worktreeId;
+    this._insightRunner.clearCache(worktreeId);
     void this.runInsights(worktreeId);
     const wt = this._deps.getWorktrees().find((w) => w.id === worktreeId);
     if (wt) {
