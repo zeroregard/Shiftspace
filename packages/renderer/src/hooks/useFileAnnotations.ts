@@ -26,7 +26,7 @@ export function useFileAnnotations(worktreeId: string, filePath: string): FileAn
 
   const errors = diagnostics?.errors ?? 0;
   const warnings = diagnostics?.warnings ?? 0;
-  const totalFindings = findings.length;
+  const totalFindings = findings.reduce((sum, f) => sum + f.count, 0);
   const hasAnnotations = errors > 0 || warnings > 0 || totalFindings > 0;
 
   return { errors, warnings, findings, totalFindings, diagnostics, hasAnnotations };
