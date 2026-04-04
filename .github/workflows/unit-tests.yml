@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   unit:
-    name: 🧪 Unit Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:

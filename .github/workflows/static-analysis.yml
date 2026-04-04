@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   static-analysis:
-    name: 🔍 Static Analysis
+    name: Static Analysis
     runs-on: ubuntu-latest
 
     steps:

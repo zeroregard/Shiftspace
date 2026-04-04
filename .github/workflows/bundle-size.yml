@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   bundle-size:
-    name: 📦 Bundle Size
+    name: Bundle Size
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
