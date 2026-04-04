@@ -65,24 +65,33 @@ const PATCH_DIFF_OPTIONS = {
   fontSize: 11,
 };
 
-function DiffOverlayContent({ file }: { file: FileChange }) {
-  const patch =
-    file.rawDiff ?? (file.diff?.length ? hunksToUnified(file.path, file.diff, file.status) : null);
+const MemoizedPatchDiff = React.memo(PatchDiff);
 
-  const options = {
-    ...PATCH_DIFF_OPTIONS,
-    language: langFromPath(file.path),
-  };
+const DiffOverlayContent = React.memo(function DiffOverlayContent({ file }: { file: FileChange }) {
+  const patch = React.useMemo(
+    () =>
+      file.rawDiff ??
+      (file.diff?.length ? hunksToUnified(file.path, file.diff, file.status) : null),
+    [file.rawDiff, file.diff, file.path, file.status]
+  );
+
+  const options = React.useMemo(
+    () => ({
+      ...PATCH_DIFF_OPTIONS,
+      language: langFromPath(file.path),
+    }),
+    [file.path]
+  );
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <DiffHeader file={file} />
       <div className="flex-1 min-h-0 overflow-auto">
-        {patch ? <PatchDiff patch={patch} options={options} /> : <EmptyDiff />}
+        {patch ? <MemoizedPatchDiff patch={patch} options={options} /> : <EmptyDiff />}
       </div>
     </div>
   );
-}
+});
 
 const POPOVER_W = 720;
 const POPOVER_H = 420;
@@ -186,12 +195,17 @@ export function DiffPopover({
   let left = anchor.current.x;
   left = Math.max(PADDING, Math.min(left, vw - w - PADDING));
 
+  // Track whether this popover has ever been opened so we can lazily mount
+  // the heavy PatchDiff subtree once, then keep it alive (hidden) afterwards.
+  const hasBeenOpened = React.useRef(false);
+  if (open) hasBeenOpened.current = true;
+
   return (
     <>
       <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
         {children}
       </div>
-      {open &&
+      {hasBeenOpened.current &&
         ReactDOM.createPortal(
           <div
             style={{
@@ -201,6 +215,8 @@ export function DiffPopover({
               width: w,
               maxHeight: POPOVER_H,
               zIndex: 9999,
+              visibility: open ? 'visible' : 'hidden',
+              pointerEvents: open ? 'auto' : 'none',
             }}
             className="flex flex-col overflow-hidden bg-canvas border border-border-default rounded-md shadow-lg cursor-pointer"
             onClick={() => fileClick(worktreeId, file.path)}
