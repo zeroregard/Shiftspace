@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @source "../../../../packages/renderer/src/**/*.tsx";
+@source "../../../../packages/renderer-core/src/**/*.tsx";
+@source "../../../../packages/renderer-grove/src/**/*.tsx";
+@source "../../../../packages/renderer-inspection/src/**/*.tsx";
 @source "../../../../packages/ui/src/**/*.tsx";
 
 @theme {
