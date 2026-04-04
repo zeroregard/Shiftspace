@@ -1,6 +1,7 @@
 import { Tooltip } from '@shiftspace/ui/tooltip';
 import { Badge } from '@shiftspace/ui/badge';
 import { Codicon } from '@shiftspace/ui/codicon';
+import { SmellIcon } from '@shiftspace/ui/smell-icon';
 import type { DiffHunk } from '../types';
 import type { FileAnnotations } from '../hooks/useFileAnnotations';
 import { DiagnosticTooltipContent, FindingTooltipContent } from './DiagnosticTooltipContent';
@@ -66,7 +67,7 @@ export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: Anno
         <Tooltip content={<FindingTooltipContent findings={findings} />} delayDuration={0}>
           <span>
             <Badge variant="finding">
-              <Codicon name="debug-breakpoint-unsupported" size={iconSize} />
+              <SmellIcon width={iconSize} height={iconSize} />
               {totalFindings}
             </Badge>
           </span>
