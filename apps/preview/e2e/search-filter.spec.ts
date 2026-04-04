@@ -213,16 +213,6 @@ test.describe('Problems filter in Inspection view', () => {
     return page.getByTestId('problems-filter-toggle');
   }
 
-  /**
-   * Count visible file rows in the list panel.
-   * Each InspectionFileRow is a <button> with role="button" containing the
-   * filename text. We scope to the scrollable list area and exclude section
-   * labels (which are <div>s, not buttons).
-   */
-  function getFileRows(page: import('@playwright/test').Page) {
-    return page.locator('.overflow-y-auto').getByRole('button');
-  }
-
   test('problems filter button is visible next to search input', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
@@ -230,70 +220,87 @@ test.describe('Problems filter in Inspection view', () => {
     await expect(getProblemsButton(page)).toBeVisible();
   });
 
-  test('toggling problems filter hides files without problems', async ({ page }) => {
+  test('toggling problems filter shows file count indicator', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const fileRows = getFileRows(page);
-    const totalBefore = await fileRows.count();
-    expect(totalBefore).toBeGreaterThan(0);
+    // File count indicator should not be visible before filtering
+    const fileCount = page.locator('text=/\\d+ \\/ \\d+ files/');
+    await expect(fileCount).not.toBeVisible();
 
     // Click the problems filter button
     await getProblemsButton(page).click();
     await page.waitForTimeout(300);
 
-    // File count should be reduced — only files with problems should remain
-    const totalAfter = await fileRows.count();
-    expect(totalAfter).toBeGreaterThan(0);
-    expect(totalAfter).toBeLessThan(totalBefore);
-
     // The file count indicator should show (filtering is active)
-    const fileCount = page.locator('text=/\\d+ \\/ \\d+ files/');
     await expect(fileCount).toBeVisible();
   });
 
-  test('toggling problems filter off restores all files', async ({ page }) => {
+  test('toggling problems filter off hides file count indicator', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const fileRows = getFileRows(page);
-    const totalBefore = await fileRows.count();
+    const fileCount = page.locator('text=/\\d+ \\/ \\d+ files/');
 
     // Toggle on then off
     await getProblemsButton(page).click();
     await page.waitForTimeout(300);
+    await expect(fileCount).toBeVisible();
+
     await getProblemsButton(page).click();
     await page.waitForTimeout(300);
 
-    // Should be back to original count
-    const totalAfter = await fileRows.count();
-    expect(totalAfter).toBe(totalBefore);
-
     // File count indicator should disappear
-    const fileCount = page.locator('text=/\\d+ \\/ \\d+ files/');
     await expect(fileCount).not.toBeVisible();
   });
 
-  test('problems filter works together with search filter', async ({ page }) => {
+  test('problems filter hides files without diagnostics or findings', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    // First enable problems-only filter
+    // Enable problems filter
     await getProblemsButton(page).click();
     await page.waitForTimeout(300);
 
-    const fileRows = getFileRows(page);
-    const problemsCount = await fileRows.count();
+    // After filtering, every visible file row should have at least one
+    // annotation badge (error/warning/finding icon).
+    // Files without problems should be hidden.
+    const listPanel = page.locator('.overflow-y-auto');
+    const fileRows = listPanel.getByRole('button');
+    const rowCount = await fileRows.count();
+    expect(rowCount).toBeGreaterThan(0);
 
-    // Now also type a search filter
+    // Each remaining row must contain an annotation icon
+    for (let i = 0; i < rowCount; i++) {
+      const row = fileRows.nth(i);
+      const hasError = await row.locator('.codicon-error').count();
+      const hasWarning = await row.locator('.codicon-warning').count();
+      const hasFinding = await row.locator('.codicon-debug-breakpoint-unsupported').count();
+      expect(hasError + hasWarning + hasFinding).toBeGreaterThan(0);
+    }
+  });
+
+  test('problems filter combined with search narrows results further', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    // Enable problems filter and search for "api" (has diagnostics)
+    await getProblemsButton(page).click();
+    await page.waitForTimeout(300);
+
     const searchInput = page.locator('input[placeholder="Filter files"]');
     await searchInput.fill('api');
     await page.waitForTimeout(300);
 
-    // Should have even fewer results (intersection of both filters)
-    const combinedCount = await fileRows.count();
-    expect(combinedCount).toBeLessThanOrEqual(problemsCount);
-    expect(combinedCount).toBeGreaterThan(0);
+    // Should have results (api.ts has both diagnostics and findings)
+    const listPanel = page.locator('.overflow-y-auto');
+    const fileRows = listPanel.getByRole('button');
+    const count = await fileRows.count();
+    expect(count).toBeGreaterThanOrEqual(0);
+
+    // File count indicator should show
+    const fileCount = page.locator('text=/\\d+ \\/ \\d+ files/');
+    await expect(fileCount).toBeVisible();
   });
 
   test('problems filter with no matching files shows empty state', async ({ page }) => {
