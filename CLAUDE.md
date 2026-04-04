@@ -10,7 +10,7 @@ Shift+Space toggles the full-screen Shiftspace view. Hit it again to return to y
 
 ---
 
-## v0.1 — MVP Scope
+## Core Features
 
 ### 1. Toggle & Layout
 
@@ -99,15 +99,13 @@ Being inside the dashed worktree container already implies membership — root-l
 
 ---
 
-## Explicitly NOT in v0.1
+## Explicitly Out of Scope (for now)
 
-- Risk scoring / configurable risk indicators (future feature)
+- Risk scoring / configurable risk indicators
 - Change history / replay / timeline
 - Any paid tier or licensing logic
 - Settings UI / configuration panel
 - Multi-repo support (only worktrees within one repo)
-- Commit or staging actions from within Shiftspace (read-only view for now)
-- Integration with any specific AI agent tooling
 - Windows support (macOS/Linux first)
 
 ---
@@ -123,19 +121,30 @@ The renderer is built and tested outside of VSCode first, as a standalone web ap
 ```
 shiftspace/
 ├── packages/
-│   └── renderer/          # The core React graph renderer (shared)
-│       ├── components/    # Tree nodes, clusters, overlays
-│       ├── engine/        # Data model: worktrees, files, change events
-│       ├── layout/        # Tidy-tree layout logic (custom, no external library)
-│       ├── store/         # Zustand store (worktree state, zoom state)
-│       └── index.ts       # Public API: <ShiftspaceRenderer data={...} />
+│   ├── renderer/          # The core React graph renderer (shared)
+│   │   ├── src/
+│   │   │   ├── nodes/     # WorktreeNode, FolderNode, FileNode components
+│   │   │   ├── views/     # TreeCanvas, Inspector, overlays
+│   │   │   ├── ui/        # Shared renderer UI (search, badges)
+│   │   │   ├── layout/    # Tidy-tree layout logic (custom, no external library)
+│   │   │   ├── store/     # Zustand stores (worktree, action, insight, inspection, package)
+│   │   │   └── types.ts   # Shared data interfaces (WorktreeState, FileChange, etc.)
+│   │   └── index.ts       # Public API: <ShiftspaceRenderer data={...} />
+│   └── ui/                # Shared UI component library (badge, button, codicon, tooltip, etc.)
+│       └── src/            # Source-exported via package.json, no build step
 ├── apps/
 │   ├── preview/           # Vite + React app, deployed to Vercel
-│   │   ├── mock/          # Mock worktree engine + agent simulator
-│   │   └── controls/      # UI to configure simulation
-│   └── vscode-ext/        # VSCode extension (Phase 2)
-│       └── ...            # Extension host that feeds real git data to renderer
-└── package.json           # Workspace root (bun workspaces)
+│   │   ├── src/           # App shell, mock data, simulation handlers
+│   │   │   └── controls/  # UI to configure simulation
+│   │   └── e2e/           # Playwright E2E tests + screenshot baselines
+│   └── vscode-ext/        # VSCode extension
+│       └── src/
+│           ├── git/       # Git interaction layer (status, diff, worktree detection)
+│           ├── webview/   # React webview bridge
+│           ├── mcp/       # MCP server for Claude/AI agent integration
+│           ├── actions/   # Action/pipeline execution system
+│           └── insights/  # Diagnostics + code smell detection
+└── package.json           # Workspace root (pnpm workspaces + Nx orchestration)
 ```
 
 **Key architectural boundary:** `packages/renderer` accepts a data interface (worktrees, files, change events) and renders them. It has zero knowledge of where the data comes from — mock engine or real git.
@@ -144,26 +153,37 @@ shiftspace/
 
 ## Data Interface (shared contract)
 
+Canonical source: `packages/renderer/src/types.ts`
+
 ```typescript
 interface WorktreeState {
   id: string;
   path: string;
   branch: string;
   files: FileChange[];
+  branchFiles?: FileChange[]; // files changed relative to branch base
   process?: { port: number; command: string };
+  diffMode: DiffMode; // 'working' | { type: 'branch'; branch: string }
+  defaultBranch: string;
+  isMainWorktree: boolean;
 }
 
 interface FileChange {
   path: string; // relative to worktree root
   status: 'added' | 'modified' | 'deleted';
   staged: boolean;
+  partiallyStaged?: boolean; // git add -p support
+  committed?: boolean; // for branch diffs
   linesAdded: number;
   linesRemoved: number;
   lastChangedAt: number; // timestamp, used for pulse animation
+  diff?: DiffHunk[]; // parsed diff hunks
+  rawDiff?: string; // unified diff string
 }
 
 type ShiftspaceEvent =
   | { type: 'file-changed'; worktreeId: string; file: FileChange }
+  | { type: 'file-removed'; worktreeId: string; filePath: string }
   | { type: 'file-staged'; worktreeId: string; filePath: string }
   | { type: 'worktree-added'; worktree: WorktreeState }
   | { type: 'worktree-removed'; worktreeId: string }
@@ -213,18 +233,24 @@ A control panel overlay (visible on the preview app, not part of the renderer) w
 
 ## Tech Stack
 
-| Layer               | Choice                                                                |
-| ------------------- | --------------------------------------------------------------------- |
-| Extension host      | VSCode Extension API (TypeScript)                                     |
-| Webview rendering   | React (bundled into webview)                                          |
-| Graph rendering     | Custom `TreeCanvas` (pan/zoom, SVG edges, ~250 lines, no ext. lib)    |
-| Graph layout        | Custom tidy-tree layout (tree-in-container per worktree, no ext. lib) |
-| State management    | Zustand                                                               |
-| Git interaction     | Shell commands (`git worktree list`, `git status`, `git diff --stat`) |
-| Filesystem watching | VSCode FileSystemWatcher API                                          |
-| Port detection      | `lsof` / `netstat` (macOS/Linux first)                                |
-| Build tooling       | Bun workspaces                                                        |
-| Preview hosting     | Vite + Vercel                                                         |
+| Layer                | Choice                                                                |
+| -------------------- | --------------------------------------------------------------------- |
+| Extension host       | VSCode Extension API (TypeScript) + MCP server                        |
+| Webview rendering    | React 19 (bundled into webview)                                       |
+| Graph rendering      | Custom `TreeCanvas` (pan/zoom, SVG edges, ~200 lines, no ext. lib)    |
+| Graph layout         | Custom tidy-tree layout (tree-in-container per worktree, no ext. lib) |
+| State management     | Zustand 5                                                             |
+| Styling              | Tailwind CSS 4                                                        |
+| UI components        | `@shiftspace/ui` (shared library) + @radix-ui + @vscode/codicons      |
+| Git interaction      | Shell commands (`git worktree list`, `git status`, `git diff --stat`) |
+| Filesystem watching  | VSCode FileSystemWatcher API                                          |
+| Port detection       | `lsof` / `netstat` (macOS/Linux first)                                |
+| Diff parsing         | @pierre/diffs                                                         |
+| Build tooling        | Nx (task orchestration) + pnpm workspaces                             |
+| Bundling             | Vite + esbuild                                                        |
+| Testing              | Vitest (unit) + Playwright (E2E)                                      |
+| Linting / formatting | oxlint + Prettier                                                     |
+| Preview hosting      | Vite + Vercel                                                         |
 
 ---
 
@@ -235,47 +261,21 @@ A control panel overlay (visible on the preview app, not part of the renderer) w
 - **Tests:** `apps/preview/e2e/` — visual regression + interaction tests against the preview app
 - **Screenshots:** Baselines stored in `apps/preview/e2e/__screenshots__/`, committed directly in git (no LFS — total size is small enough)
 - **Running locally:**
-  - Install browsers once: `pnpm --filter @shiftspace/preview exec playwright install chromium`
-  - Run tests: `pnpm --filter @shiftspace/preview test:e2e`
-  - Interactive UI mode: `pnpm --filter @shiftspace/preview test:e2e:ui`
-- **Updating snapshots:** `pnpm --filter @shiftspace/preview test:e2e:update` locally, or open a PR — CI will auto-update and commit snapshots for you
+  - Install browsers once: `bun run --filter @shiftspace/preview playwright:install`
+  - Run tests: `bun run --filter @shiftspace/preview test:e2e`
+  - Interactive UI mode: `bun run --filter @shiftspace/preview test:e2e:ui`
+- **Updating snapshots:** `bun run --filter @shiftspace/preview test:e2e:update` locally, or open a PR — CI will auto-update and commit snapshots for you
 - **CI:** `e2e.yml` runs on every PR — always updates snapshots, auto-commits them back to the PR branch, and posts a before/after screenshot comparison comment
 - **Adding new tests:** Put `.spec.ts` files in `apps/preview/e2e/`. Use `toHaveScreenshot('descriptive-name.png')` for visual regression. Screenshots generated on first run become the baseline.
 - **Claude Code agent environment:** Playwright browsers cannot be installed in the remote agent environment. Write E2E tests, commit them, and let CI generate the baseline screenshots. CI will auto-update and commit snapshots back to the PR branch.
 
 ---
 
-## Development Phases
-
-### Phase 1: Preview app + mock engine (build first)
-
-- Set up monorepo with `packages/renderer` and `apps/preview`
-- Implement mock worktree engine with agent simulation
-- Build the renderer: custom `TreeCanvas` with worktree containers, tree layout, folder nodes, file nodes
-- Deploy to Vercel — iterate on design from phone/laptop
-- Goal: the preview looks and feels like the real thing
-
-### Phase 2: VSCode extension (build second)
-
-- Create `apps/vscode-ext` that wraps `packages/renderer` in a webview
-- Replace mock data source with real git commands + filesystem watcher
-- Implement Shift+Space keybinding, terminal launcher, port detection
-- Goal: daily-driveable by you and colleagues
-
----
-
 ## Open Questions
 
-1. **~~ELK vs dagre:~~** Resolved — using custom tidy-tree layout within dashed worktree containers. No external layout library needed for current requirements.
-2. **Filesystem watcher debounce tuning:** 500ms is a starting point. Too short = thrashing git commands. Too long = feels laggy.
-3. **Windows support:** Port/process detection differs on Windows. Defer to v0.2.
-4. **Naming:** Is "Shiftspace" available on the VSCode Marketplace?
-
----
-
-## Goal
-
-Ship something good enough that colleagues use it every day. Monetization comes later, once the product has proven itself organically. This is a craft project first.
+1. **Filesystem watcher debounce tuning:** 500ms is a starting point. Too short = thrashing git commands. Too long = feels laggy.
+2. **Windows support:** Port/process detection differs on Windows. Defer to v0.2.
+3. **Naming:** Is "Shiftspace" available on the VSCode Marketplace?
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

@@ -3,7 +3,7 @@ name: Static Analysis
 on:
   pull_request:
   push:
-    branches: [main, master]
+    branches: [main]
 
 concurrency:
   group: static-analysis-${{ github.ref }}

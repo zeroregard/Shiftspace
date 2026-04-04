@@ -179,10 +179,7 @@ export class ConfigLoader implements vscode.Disposable {
     // Watch VSCode settings
     this.disposables.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (
-          e.affectsConfiguration('shiftspace.additionalActions') ||
-          e.affectsConfiguration('shiftspace.package')
-        ) {
+        if (e.affectsConfiguration('shiftspace.additionalActions')) {
           this.reload();
         }
       })

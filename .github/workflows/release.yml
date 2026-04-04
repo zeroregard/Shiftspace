@@ -13,6 +13,16 @@ name: Release
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/*/src/**'
+      - 'packages/*/src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'apps/*/package.json'
+      - 'apps/*/tsconfig.json'
+      - 'packages/*/package.json'
+      - 'packages/*/tsconfig.json'
+      - 'bun.lock'
 
 # Prevent concurrent releases
 concurrency:
