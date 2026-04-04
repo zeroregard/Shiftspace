@@ -34,13 +34,6 @@
       "command": "pnpm run build",
       "type": "check",
       "icon": "build"
-    },
-    {
-      "id": "dev-preview",
-      "label": "dev",
-      "command": "pnpm run --filter preview dev",
-      "type": "service",
-      "icon": "play"
     }
   ],
   "pipelines": {

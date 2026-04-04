@@ -101,7 +101,6 @@ async function promptMcpConfiguration(): Promise<void> {
     }
   }
 
-  if (choice && choice !== 'Dismiss') {
-    await config.update(MCP_CONFIGURED_KEY, true, vscode.ConfigurationTarget.Workspace);
-  }
+  // Persist regardless of choice so the prompt doesn't reappear
+  await config.update(MCP_CONFIGURED_KEY, true, vscode.ConfigurationTarget.Workspace);
 }
