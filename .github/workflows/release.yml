@@ -8,7 +8,7 @@
 # Requires VSCE_PAT secret with a Personal Access Token
 # Add step: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }}
 
-name: Release
+name: 🚀 Release
 
 on:
   push:
