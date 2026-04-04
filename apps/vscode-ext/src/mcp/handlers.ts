@@ -25,8 +25,12 @@ export class McpToolHandlers {
 
   async handleTool(tool: string, params: Record<string, unknown>): Promise<object> {
     switch (tool) {
-      case 'get_insights':
-        return this.handleGetInsights(params);
+      case 'get_errors':
+        return this.handleGetDiagnostics(params, 'errors');
+      case 'get_warnings':
+        return this.handleGetDiagnostics(params, 'warnings');
+      case 'get_smells':
+        return this.handleGetDiagnostics(params, 'smells');
       case 'get_check_status':
         return this.handleGetCheckStatus(params);
       case 'run_check':
@@ -58,20 +62,32 @@ export class McpToolHandlers {
     return worktrees.find((wt) => wt.path === gitRoot) ?? null;
   }
 
-  private handleGetInsights(params: Record<string, unknown>): object {
+  private handleGetDiagnostics(
+    params: Record<string, unknown>,
+    level: 'errors' | 'warnings' | 'smells'
+  ): object {
     const wt = this.resolveWorktree(params['cwd'] as string | undefined);
     if (!wt) return { error: 'No worktree found' };
 
     const diagnostics = this.deps.collectDiagnostics?.(wt.files, wt.path) ?? [];
 
+    const severities: Array<'error' | 'warning' | 'info' | 'hint'> =
+      level === 'errors' ? ['error'] : level === 'warnings' ? ['warning'] : ['info', 'hint'];
+
+    const countKey = level === 'errors' ? 'errors' : level === 'warnings' ? 'warnings' : 'smells';
+
+    const filtered = diagnostics
+      .map((d) => {
+        const details = d.details.filter((det) => severities.includes(det.severity));
+        const count =
+          level === 'errors' ? d.errors : level === 'warnings' ? d.warnings : d.info + d.hints;
+        return { file: d.filePath, [countKey]: count, details: details.slice(0, 20) };
+      })
+      .filter((d) => (d[countKey] as number) > 0);
+
     return {
       worktree: { id: wt.id, branch: wt.branch, path: wt.path },
-      diagnostics: diagnostics.map((d) => ({
-        file: d.filePath,
-        errors: d.errors,
-        warnings: d.warnings,
-        details: d.details.slice(0, 20),
-      })),
+      diagnostics: filtered,
     };
   }
 

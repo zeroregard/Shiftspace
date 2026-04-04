@@ -34,9 +34,37 @@ function readLockFile(): McpLock {
 
 const TOOLS = [
   {
-    name: 'get_insights',
+    name: 'get_errors',
     description:
-      'Get compiler errors and lint warnings for changed files in the current worktree. Returns per-file error/warning counts and details from VSCode language servers.',
+      'Get compiler errors for changed files in the current worktree. Returns per-file error counts and details from VSCode language servers (e.g. TypeScript type errors, syntax errors).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        cwd: {
+          type: 'string',
+          description: 'Working directory (auto-detected if omitted)',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_warnings',
+    description:
+      'Get lint warnings for changed files in the current worktree. Returns per-file warning counts and details from VSCode language servers (e.g. ESLint warnings, unused imports).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        cwd: {
+          type: 'string',
+          description: 'Working directory (auto-detected if omitted)',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_smells',
+    description:
+      'Get code smell hints and informational diagnostics for changed files in the current worktree. Returns per-file counts and details for info/hint-level diagnostics from VSCode language servers.',
     inputSchema: {
       type: 'object' as const,
       properties: {

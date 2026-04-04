@@ -94,37 +94,45 @@ describe('get_changed_files', () => {
   });
 });
 
-describe('get_insights', () => {
+function mockDiagnostics(deps: McpHandlerDeps) {
+  deps.collectDiagnostics = vi.fn().mockReturnValue([
+    {
+      filePath: 'src/index.ts',
+      errors: 2,
+      warnings: 1,
+      info: 1,
+      hints: 1,
+      details: [
+        { severity: 'error' as const, message: 'Type error', source: 'ts', line: 10 },
+        { severity: 'error' as const, message: 'Missing import', source: 'ts', line: 1 },
+        { severity: 'warning' as const, message: 'Unused var', source: 'eslint', line: 5 },
+        { severity: 'info' as const, message: 'Unnecessary await', source: 'ts', line: 8 },
+        { severity: 'hint' as const, message: 'Prefer const', source: 'eslint', line: 12 },
+      ],
+    },
+  ]);
+}
+
+describe('get_errors', () => {
   it('returns empty diagnostics when collector is not provided', async () => {
     const { handlers } = setup();
-    const result = (await handlers.handleTool('get_insights', {})) as Record<string, unknown>;
+    const result = (await handlers.handleTool('get_errors', {})) as Record<string, unknown>;
     expect(result['worktree']).toEqual({ id: 'wt-1', branch: 'main', path: '/tmp' });
     expect(result['diagnostics']).toEqual([]);
-    expect(result['insights']).toBeUndefined();
   });
 
-  it('returns diagnostics when collector is provided', async () => {
+  it('returns only error-level diagnostics', async () => {
     const { deps } = setup();
-    deps.collectDiagnostics = vi.fn().mockReturnValue([
-      {
-        filePath: 'src/index.ts',
-        errors: 2,
-        warnings: 1,
-        info: 0,
-        hints: 0,
-        details: [
-          { severity: 'error' as const, message: 'Type error', source: 'ts', line: 10 },
-          { severity: 'error' as const, message: 'Missing import', source: 'ts', line: 1 },
-          { severity: 'warning' as const, message: 'Unused var', source: 'eslint', line: 5 },
-        ],
-      },
-    ]);
+    mockDiagnostics(deps);
     const rebuilt = new McpToolHandlers(deps);
-    const result = (await rebuilt.handleTool('get_insights', {})) as Record<string, unknown>;
+    const result = (await rebuilt.handleTool('get_errors', {})) as Record<string, unknown>;
     const diagnostics = result['diagnostics'] as Array<Record<string, unknown>>;
     expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0]).toMatchObject({ file: 'src/index.ts', errors: 2, warnings: 1 });
-    expect((diagnostics[0]['details'] as unknown[]).length).toBe(3);
+    expect(diagnostics[0]).toMatchObject({ file: 'src/index.ts', errors: 2 });
+    expect(diagnostics[0]['warnings']).toBeUndefined();
+    const details = diagnostics[0]['details'] as Array<Record<string, unknown>>;
+    expect(details).toHaveLength(2);
+    expect(details.every((d) => d['severity'] === 'error')).toBe(true);
   });
 
   it('passes correct files and worktreeRoot to collector', async () => {
@@ -132,12 +140,67 @@ describe('get_insights', () => {
     const { deps } = setup();
     deps.collectDiagnostics = collector;
     const h = new McpToolHandlers(deps);
-    await h.handleTool('get_insights', {});
+    await h.handleTool('get_errors', {});
     expect(collector).toHaveBeenCalledOnce();
     const [files, root] = collector.mock.calls[0];
     expect(root).toBe('/tmp');
     expect(files).toHaveLength(2);
     expect(files[0].path).toBe('src/index.ts');
+  });
+});
+
+describe('get_warnings', () => {
+  it('returns only warning-level diagnostics', async () => {
+    const { deps } = setup();
+    mockDiagnostics(deps);
+    const rebuilt = new McpToolHandlers(deps);
+    const result = (await rebuilt.handleTool('get_warnings', {})) as Record<string, unknown>;
+    const diagnostics = result['diagnostics'] as Array<Record<string, unknown>>;
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({ file: 'src/index.ts', warnings: 1 });
+    expect(diagnostics[0]['errors']).toBeUndefined();
+    const details = diagnostics[0]['details'] as Array<Record<string, unknown>>;
+    expect(details).toHaveLength(1);
+    expect(details[0]['severity']).toBe('warning');
+  });
+
+  it('omits files with zero warnings', async () => {
+    const { deps } = setup();
+    deps.collectDiagnostics = vi
+      .fn()
+      .mockReturnValue([
+        { filePath: 'a.ts', errors: 1, warnings: 0, info: 0, hints: 0, details: [] },
+      ]);
+    const rebuilt = new McpToolHandlers(deps);
+    const result = (await rebuilt.handleTool('get_warnings', {})) as Record<string, unknown>;
+    expect(result['diagnostics']).toEqual([]);
+  });
+});
+
+describe('get_smells', () => {
+  it('returns info and hint level diagnostics as smells', async () => {
+    const { deps } = setup();
+    mockDiagnostics(deps);
+    const rebuilt = new McpToolHandlers(deps);
+    const result = (await rebuilt.handleTool('get_smells', {})) as Record<string, unknown>;
+    const diagnostics = result['diagnostics'] as Array<Record<string, unknown>>;
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({ file: 'src/index.ts', smells: 2 });
+    const details = diagnostics[0]['details'] as Array<Record<string, unknown>>;
+    expect(details).toHaveLength(2);
+    expect(details.every((d) => d['severity'] === 'info' || d['severity'] === 'hint')).toBe(true);
+  });
+
+  it('omits files with zero smells', async () => {
+    const { deps } = setup();
+    deps.collectDiagnostics = vi
+      .fn()
+      .mockReturnValue([
+        { filePath: 'a.ts', errors: 1, warnings: 2, info: 0, hints: 0, details: [] },
+      ]);
+    const rebuilt = new McpToolHandlers(deps);
+    const result = (await rebuilt.handleTool('get_smells', {})) as Record<string, unknown>;
+    expect(result['diagnostics']).toEqual([]);
   });
 });
 
