@@ -102,5 +102,5 @@ async function promptMcpConfiguration(): Promise<void> {
   }
 
   // Persist regardless of choice so the prompt doesn't reappear
-  await config.update(MCP_CONFIGURED_KEY, true, vscode.ConfigurationTarget.Workspace);
+  await config.update(MCP_CONFIGURED_KEY, true, vscode.ConfigurationTarget.Global);
 }
