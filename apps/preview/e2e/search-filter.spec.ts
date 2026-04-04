@@ -206,3 +206,116 @@ test.describe('Search filter in Inspection view', () => {
     await expect(page).toHaveScreenshot('inspection-search-filter.png');
   });
 });
+
+test.describe('Problems filter in Inspection view', () => {
+  test('problems filter button is visible next to search input', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    // The warning icon button should be visible next to the search input
+    const problemsButton = page.locator('button .codicon-warning').first();
+    await expect(problemsButton).toBeVisible();
+  });
+
+  test('toggling problems filter hides files without problems', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    // Count total file rows before filtering
+    const fileButtons = page.locator('button:has(.seti-icon)');
+    const totalBefore = await fileButtons.count();
+    expect(totalBefore).toBeGreaterThan(0);
+
+    // Click the problems filter button (warning icon)
+    const problemsButton = page.locator('button:has(.codicon-warning)').first();
+    await problemsButton.click();
+    await page.waitForTimeout(300);
+
+    // File count should be reduced — only files with problems should remain
+    const totalAfter = await fileButtons.count();
+    expect(totalAfter).toBeGreaterThan(0);
+    expect(totalAfter).toBeLessThan(totalBefore);
+
+    // The file count indicator should show (filtering is active)
+    const fileCount = page.locator('text=/\\d+ \\/ \\d+ files/');
+    await expect(fileCount).toBeVisible();
+  });
+
+  test('toggling problems filter off restores all files', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    const fileButtons = page.locator('button:has(.seti-icon)');
+    const totalBefore = await fileButtons.count();
+
+    // Toggle on
+    const problemsButton = page.locator('button:has(.codicon-warning)').first();
+    await problemsButton.click();
+    await page.waitForTimeout(300);
+
+    // Toggle off
+    await problemsButton.click();
+    await page.waitForTimeout(300);
+
+    // Should be back to original count
+    const totalAfter = await fileButtons.count();
+    expect(totalAfter).toBe(totalBefore);
+
+    // File count indicator should disappear
+    const fileCount = page.locator('text=/\\d+ \\/ \\d+ files/');
+    await expect(fileCount).not.toBeVisible();
+  });
+
+  test('problems filter works together with search filter', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    // First enable problems-only filter
+    const problemsButton = page.locator('button:has(.codicon-warning)').first();
+    await problemsButton.click();
+    await page.waitForTimeout(300);
+
+    const fileButtons = page.locator('button:has(.seti-icon)');
+    const problemsCount = await fileButtons.count();
+
+    // Now also type a search filter
+    const searchInput = page.locator('input[placeholder="Filter files"]');
+    await searchInput.fill('api');
+    await page.waitForTimeout(300);
+
+    // Should have even fewer results (intersection of both filters)
+    const combinedCount = await fileButtons.count();
+    expect(combinedCount).toBeLessThanOrEqual(problemsCount);
+    expect(combinedCount).toBeGreaterThan(0);
+  });
+
+  test('problems filter with no matching files shows empty state', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    // Enable problems filter
+    const problemsButton = page.locator('button:has(.codicon-warning)').first();
+    await problemsButton.click();
+    await page.waitForTimeout(300);
+
+    // Also search for something that has no problems
+    const searchInput = page.locator('input[placeholder="Filter files"]');
+    await searchInput.fill('favicon');
+    await page.waitForTimeout(300);
+
+    // Should show empty state
+    await expect(page.getByText('No matching files')).toBeVisible();
+  });
+
+  test('screenshot: inspection view with problems filter active', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    // Enable problems filter
+    const problemsButton = page.locator('button:has(.codicon-warning)').first();
+    await problemsButton.click();
+    await page.waitForTimeout(500);
+
+    await expect(page).toHaveScreenshot('inspection-problems-filter.png');
+  });
+});
