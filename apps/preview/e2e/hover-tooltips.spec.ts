@@ -23,22 +23,23 @@ async function enterInspection(page: import('@playwright/test').Page) {
 }
 
 /**
- * Hover an element using dispatchEvent to guarantee pointer events fire
- * on the correct target regardless of layering or transforms.
+ * Dispatch real PointerEvent + MouseEvent on an element to trigger
+ * Radix Tooltip, which listens on onPointerMove.
  */
-async function triggerHover(
+async function dispatchHover(
   page: import('@playwright/test').Page,
   locator: import('@playwright/test').Locator
 ) {
-  // Move mouse away first so that entering the element fires pointerenter
-  await page.mouse.move(0, 0);
-  await page.waitForTimeout(50);
-
-  const box = await locator.boundingBox();
-  if (!box) throw new Error('Element not found or has no bounding box');
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(x, y);
+  await locator.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const opts = { bubbles: true, clientX: x, clientY: y, pointerType: 'mouse' as const };
+    el.dispatchEvent(new PointerEvent('pointerenter', opts));
+    el.dispatchEvent(new PointerEvent('pointermove', opts));
+    el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, clientX: x, clientY: y }));
+    el.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: x, clientY: y }));
+  });
 }
 
 test.describe('Hover tooltips on annotation badges', () => {
@@ -46,12 +47,16 @@ test.describe('Hover tooltips on annotation badges', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
+    // The AnnotationBadges component wraps each Badge in a Radix Tooltip.
+    // With asChild, the trigger is the Badge <span> (parent of the icon).
+    // Scope to file-list-panel to avoid matching tree canvas icons.
     const listPanel = page.getByTestId('file-list-panel');
     const errorIcon = listPanel.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
 
-    // Move mouse to the error badge to trigger Radix tooltip
-    await triggerHover(page, errorIcon);
+    // Dispatch pointer events on the Badge trigger (parent of icon)
+    const trigger = errorIcon.locator('xpath=..');
+    await dispatchHover(page, trigger);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -66,7 +71,8 @@ test.describe('Hover tooltips on annotation badges', () => {
     const warningIcon = listPanel.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
 
-    await triggerHover(page, warningIcon);
+    const trigger = warningIcon.locator('xpath=..');
+    await dispatchHover(page, trigger);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -81,7 +87,8 @@ test.describe('Hover tooltips on annotation badges', () => {
     const errorIcon = canvas.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
 
-    await triggerHover(page, errorIcon);
+    const trigger = errorIcon.locator('xpath=..');
+    await dispatchHover(page, trigger);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -96,7 +103,8 @@ test.describe('Hover tooltips on annotation badges', () => {
     const warningIcon = canvas.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
 
-    await triggerHover(page, warningIcon);
+    const trigger = warningIcon.locator('xpath=..');
+    await dispatchHover(page, trigger);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
