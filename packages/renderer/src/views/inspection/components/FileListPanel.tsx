@@ -243,7 +243,10 @@ export function FileListPanel({
   });
 
   return (
-    <div className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0">
+    <div
+      data-testid="file-list-panel"
+      className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0"
+    >
       <SearchInput
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
