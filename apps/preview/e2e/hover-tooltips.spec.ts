@@ -22,17 +22,30 @@ async function enterInspection(page: import('@playwright/test').Page) {
   await page.waitForTimeout(300);
 }
 
+/**
+ * Move the real mouse pointer over the centre of a locator.
+ * Unlike locator.hover({ force }), page.mouse.move dispatches genuine
+ * pointer/mouse events that Radix Tooltip listens on.
+ */
+async function hoverCenter(
+  page: import('@playwright/test').Page,
+  locator: import('@playwright/test').Locator
+) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('Element has no bounding box');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 test.describe('Hover tooltips on annotation badges', () => {
   test('list view: hovering an error badge shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
     // In the list panel, AnnotationBadges wraps each Badge (span) in a
-    // Radix Tooltip trigger. Hover the Badge span that contains the error icon.
+    // Radix Tooltip trigger. The Badge span is the parent of the codicon icon.
     const errorBadge = page.locator('button .codicon-error').first().locator('..');
     await expect(errorBadge).toBeVisible();
-    await errorBadge.hover();
-    await page.waitForTimeout(100);
+    await hoverCenter(page, errorBadge);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
@@ -46,8 +59,7 @@ test.describe('Hover tooltips on annotation badges', () => {
 
     const warningBadge = page.locator('button .codicon-warning').first().locator('..');
     await expect(warningBadge).toBeVisible();
-    await warningBadge.hover();
-    await page.waitForTimeout(100);
+    await hoverCenter(page, warningBadge);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
@@ -60,15 +72,13 @@ test.describe('Hover tooltips on annotation badges', () => {
     await enterInspection(page);
 
     // In the tree canvas, each annotation row div is a Tooltip trigger.
-    // Hover the parent div of the icon to activate the tooltip.
-    // Use force:true to bypass pointer-events from the canvas pan/zoom layer.
+    // The row div is the parent (..) of the codicon icon.
     const canvasErrorRow = page
       .locator('[data-testid="tree-canvas"] .codicon-error')
       .first()
       .locator('..');
     await expect(canvasErrorRow).toBeVisible();
-    await canvasErrorRow.hover({ force: true });
-    await page.waitForTimeout(100);
+    await hoverCenter(page, canvasErrorRow);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
@@ -85,8 +95,7 @@ test.describe('Hover tooltips on annotation badges', () => {
       .first()
       .locator('..');
     await expect(canvasWarningRow).toBeVisible();
-    await canvasWarningRow.hover({ force: true });
-    await page.waitForTimeout(100);
+    await hoverCenter(page, canvasWarningRow);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
