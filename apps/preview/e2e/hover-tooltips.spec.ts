@@ -22,41 +22,25 @@ async function enterInspection(page: import('@playwright/test').Page) {
   await page.waitForTimeout(300);
 }
 
-/**
- * Dispatch real PointerEvent + MouseEvent on an element to trigger
- * Radix Tooltip, which listens on onPointerMove.
- */
-async function dispatchHover(
-  page: import('@playwright/test').Page,
-  locator: import('@playwright/test').Locator
-) {
-  await locator.evaluate((el) => {
-    const rect = el.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const opts = { bubbles: true, clientX: x, clientY: y, pointerType: 'mouse' as const };
-    el.dispatchEvent(new PointerEvent('pointerenter', opts));
-    el.dispatchEvent(new PointerEvent('pointermove', opts));
-    el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, clientX: x, clientY: y }));
-    el.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: x, clientY: y }));
-  });
-}
-
 test.describe('Hover tooltips on annotation badges', () => {
   test('list view: hovering error badge shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    // The AnnotationBadges component wraps each Badge in a Radix Tooltip.
-    // With asChild, the trigger is the Badge <span> (parent of the icon).
-    // Scope to file-list-panel to avoid matching tree canvas icons.
+    // Use the search filter to show only page.tsx (which has 1 error + 1 warning)
     const listPanel = page.getByTestId('file-list-panel');
+    const searchInput = listPanel.locator('input[type="text"]');
+    await searchInput.fill('page');
+    await page.waitForTimeout(200);
+
+    // Debug: capture what the page looks like before hovering
+    await expect(page).toHaveScreenshot('debug-list-filtered.png');
+
+    // Now the filtered list should show page.tsx with error + warning badges.
+    // Find the error icon and hover its parent (the Badge = Tooltip trigger).
     const errorIcon = listPanel.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
-
-    // Dispatch pointer events on the Badge trigger (parent of icon)
-    const trigger = errorIcon.locator('xpath=..');
-    await dispatchHover(page, trigger);
+    await errorIcon.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -68,11 +52,13 @@ test.describe('Hover tooltips on annotation badges', () => {
     await enterInspection(page);
 
     const listPanel = page.getByTestId('file-list-panel');
+    const searchInput = listPanel.locator('input[type="text"]');
+    await searchInput.fill('page');
+    await page.waitForTimeout(200);
+
     const warningIcon = listPanel.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
-
-    const trigger = warningIcon.locator('xpath=..');
-    await dispatchHover(page, trigger);
+    await warningIcon.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -86,9 +72,7 @@ test.describe('Hover tooltips on annotation badges', () => {
     const canvas = page.getByTestId('tree-canvas');
     const errorIcon = canvas.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
-
-    const trigger = errorIcon.locator('xpath=..');
-    await dispatchHover(page, trigger);
+    await errorIcon.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -102,9 +86,7 @@ test.describe('Hover tooltips on annotation badges', () => {
     const canvas = page.getByTestId('tree-canvas');
     const warningIcon = canvas.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
-
-    const trigger = warningIcon.locator('xpath=..');
-    await dispatchHover(page, trigger);
+    await warningIcon.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
