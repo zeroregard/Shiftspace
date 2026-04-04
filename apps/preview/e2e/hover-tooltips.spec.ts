@@ -23,34 +23,31 @@ async function enterInspection(page: import('@playwright/test').Page) {
 }
 
 test.describe('Hover tooltips on annotation badges', () => {
-  test('list view: hovering an error badge shows tooltip with diagnostic details', async ({
-    page,
-  }) => {
+  test('list view: hovering an error badge shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    // The list panel contains AnnotationBadges with error/warning badges.
-    // Find the first error badge in the file list and hover it.
-    const errorBadge = page.locator('button .codicon-error').first();
+    // In the list panel, AnnotationBadges wraps each Badge (span) in a
+    // Radix Tooltip trigger. Hover the Badge span that contains the error icon.
+    const errorBadge = page.locator('button .codicon-error').first().locator('..');
     await expect(errorBadge).toBeVisible();
     await errorBadge.hover();
+    await page.waitForTimeout(100);
 
-    // Radix tooltip renders content in a portal with role="tooltip"
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
 
     await expect(page).toHaveScreenshot('list-error-tooltip.png');
   });
 
-  test('list view: hovering a warning badge shows tooltip with diagnostic details', async ({
-    page,
-  }) => {
+  test('list view: hovering a warning badge shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const warningBadge = page.locator('button .codicon-warning').first();
+    const warningBadge = page.locator('button .codicon-warning').first().locator('..');
     await expect(warningBadge).toBeVisible();
     await warningBadge.hover();
+    await page.waitForTimeout(100);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
@@ -58,18 +55,20 @@ test.describe('Hover tooltips on annotation badges', () => {
     await expect(page).toHaveScreenshot('list-warning-tooltip.png');
   });
 
-  test('tree view: hovering an error row shows tooltip with diagnostic details', async ({
-    page,
-  }) => {
+  test('tree view: hovering an error row shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    // In the tree canvas, FileNode renders annotation rows as plain divs
-    // with .codicon-error inside. These are inside the canvas area (not the
-    // list panel). Target the canvas container to scope the selector.
-    const canvasError = page.locator('[data-testid="tree-canvas"] .codicon-error').first();
-    await expect(canvasError).toBeVisible();
-    await canvasError.hover();
+    // In the tree canvas, each annotation row div is a Tooltip trigger.
+    // Hover the parent div of the icon to activate the tooltip.
+    // Use force:true to bypass pointer-events from the canvas pan/zoom layer.
+    const canvasErrorRow = page
+      .locator('[data-testid="tree-canvas"] .codicon-error')
+      .first()
+      .locator('..');
+    await expect(canvasErrorRow).toBeVisible();
+    await canvasErrorRow.hover({ force: true });
+    await page.waitForTimeout(100);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
@@ -77,15 +76,17 @@ test.describe('Hover tooltips on annotation badges', () => {
     await expect(page).toHaveScreenshot('tree-error-tooltip.png');
   });
 
-  test('tree view: hovering a warning row shows tooltip with diagnostic details', async ({
-    page,
-  }) => {
+  test('tree view: hovering a warning row shows tooltip', async ({ page }) => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    const canvasWarning = page.locator('[data-testid="tree-canvas"] .codicon-warning').first();
-    await expect(canvasWarning).toBeVisible();
-    await canvasWarning.hover();
+    const canvasWarningRow = page
+      .locator('[data-testid="tree-canvas"] .codicon-warning')
+      .first()
+      .locator('..');
+    await expect(canvasWarningRow).toBeVisible();
+    await canvasWarningRow.hover({ force: true });
+    await page.waitForTimeout(100);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
