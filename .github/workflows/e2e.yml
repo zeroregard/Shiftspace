@@ -54,7 +54,8 @@ jobs:
       - name: Check if e2e is affected
         id: affected
         run: |
-          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>/dev/null || echo "")
+          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>&1 || echo "")
+          echo "Nx affected output: $AFFECTED"
           if echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
             echo "run_e2e=true" >> $GITHUB_OUTPUT
           else
