@@ -54,6 +54,10 @@
     "./shift-icon": {
       "import": "./src/icons/shift-icon.tsx",
       "types": "./src/icons/shift-icon.tsx"
+    },
+    "./smell-icon": {
+      "import": "./src/icons/smell-icon.tsx",
+      "types": "./src/icons/smell-icon.tsx"
     }
   },
   "scripts": {

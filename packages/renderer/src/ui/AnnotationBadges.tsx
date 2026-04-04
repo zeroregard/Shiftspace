@@ -1,6 +1,7 @@
 import { Tooltip } from '@shiftspace/ui/tooltip';
 import { Badge } from '@shiftspace/ui/badge';
 import { Codicon } from '@shiftspace/ui/codicon';
+import { SmellIcon } from '@shiftspace/ui/smell-icon';
 import type { FileAnnotations } from '../hooks/useFileAnnotations';
 
 interface AnnotationBadgesProps {
@@ -79,7 +80,7 @@ export function AnnotationBadges({ annotations, iconSize = 12 }: AnnotationBadge
           delayDuration={200}
         >
           <Badge variant="finding">
-            <Codicon name="debug-breakpoint-unsupported" size={iconSize} />
+            <SmellIcon width={iconSize} height={iconSize} />
             {totalFindings}
           </Badge>
         </Tooltip>
