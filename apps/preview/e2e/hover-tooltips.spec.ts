@@ -27,20 +27,25 @@ test.describe('Hover tooltips on annotation badges', () => {
     await seedMathRandom(page);
     await enterInspection(page);
 
-    // Use the search filter to show only page.tsx (which has 1 error + 1 warning)
+    // Filter to page.tsx which has mock diagnostics (1 error, 1 warning)
     const listPanel = page.getByTestId('file-list-panel');
-    const searchInput = listPanel.locator('input[type="text"]');
-    await searchInput.fill('page');
-    await page.waitForTimeout(200);
+    await listPanel.locator('input[type="text"]').fill('page');
+    await page.waitForTimeout(300);
 
-    // Debug: capture what the page looks like before hovering
-    await expect(page).toHaveScreenshot('debug-list-filtered.png');
-
-    // Now the filtered list should show page.tsx with error + warning badges.
-    // Find the error icon and hover its parent (the Badge = Tooltip trigger).
     const errorIcon = listPanel.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
-    await errorIcon.hover();
+
+    // Click away from the search input first, then hover the badge trigger
+    await page.mouse.click(1, 1);
+    await page.waitForTimeout(100);
+
+    // Hover the Badge (parent of icon) — the Radix Tooltip trigger
+    const trigger = errorIcon.locator('xpath=..');
+    await trigger.hover();
+    await page.waitForTimeout(500);
+
+    // Take screenshot to see the state after hover, before asserting tooltip
+    await expect(page).toHaveScreenshot('list-after-error-hover.png');
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -52,13 +57,20 @@ test.describe('Hover tooltips on annotation badges', () => {
     await enterInspection(page);
 
     const listPanel = page.getByTestId('file-list-panel');
-    const searchInput = listPanel.locator('input[type="text"]');
-    await searchInput.fill('page');
-    await page.waitForTimeout(200);
+    await listPanel.locator('input[type="text"]').fill('page');
+    await page.waitForTimeout(300);
 
     const warningIcon = listPanel.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
-    await warningIcon.hover();
+
+    await page.mouse.click(1, 1);
+    await page.waitForTimeout(100);
+
+    const trigger = warningIcon.locator('xpath=..');
+    await trigger.hover();
+    await page.waitForTimeout(500);
+
+    await expect(page).toHaveScreenshot('list-after-warning-hover.png');
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
