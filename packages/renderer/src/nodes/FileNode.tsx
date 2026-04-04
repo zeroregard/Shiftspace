@@ -8,6 +8,8 @@ import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useFileAnnotations } from '../hooks/useFileAnnotations';
 import { useActions } from '../ui/ActionsContext';
 import { Codicon } from '@shiftspace/ui/codicon';
+import { ShiftIcon } from '@shiftspace/ui/shift-icon';
+import { SmellIcon } from '@shiftspace/ui/smell-icon';
 import { Tooltip } from '@shiftspace/ui/tooltip';
 import { DiagnosticTooltipContent, FindingTooltipContent } from '../ui/DiagnosticTooltipContent';
 
@@ -84,7 +86,7 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
                 isNodeHovered && 'opacity-100'
               )}
             >
-              <Codicon name="arrow-up" size={12} />
+              <ShiftIcon width={12} height={12} />
             </span>
           </div>
           {hasAnnotations && (
@@ -133,8 +135,8 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
                   content={<FindingTooltipContent findings={[f]} />}
                   delayDuration={0}
                 >
-                  <div className="flex items-center gap-0.5 py-0.5 text-text-muted">
-                    <Codicon name="debug-breakpoint-unsupported" size={16} />
+                  <div className="flex items-center gap-0.5 py-0.5 text-purple-400">
+                    <SmellIcon width={16} height={16} />
                     <span className="text-11 ml-0.5 mt-px">{f.count}</span>
                     <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
                   </div>

@@ -275,7 +275,7 @@ test.describe('Problems filter in Inspection view', () => {
       const row = fileRows.nth(i);
       const hasError = await row.locator('.codicon-error').count();
       const hasWarning = await row.locator('.codicon-warning').count();
-      const hasFinding = await row.locator('.codicon-debug-breakpoint-unsupported').count();
+      const hasFinding = await row.locator('[data-icon="smell"]').count();
       expect(hasError + hasWarning + hasFinding).toBeGreaterThan(0);
     }
   });
@@ -326,5 +326,38 @@ test.describe('Problems filter in Inspection view', () => {
     await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot('inspection-problems-filter.png');
+  });
+
+  test('button shows warning icon when worktree has problems', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    const btn = getProblemsButton(page);
+    await expect(btn).toBeEnabled();
+    await expect(btn.locator('.codicon-warning')).toBeVisible();
+    await expect(btn.locator('.codicon-check')).not.toBeVisible();
+  });
+
+  test('button shows green checkmark and is disabled when worktree has no problems', async ({
+    page,
+  }) => {
+    await seedMathRandom(page);
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(500);
+
+    // Add a third worktree (wt-2 — deep template, no mock diagnostics or findings)
+    await page.getByText('+ wt').click();
+    await page.waitForTimeout(500);
+
+    // Enter inspection for the new worktree
+    await page.getByTestId('enter-inspection-wt-2').click();
+    await page.locator('.codicon-arrow-left').waitFor();
+    await page.waitForTimeout(300);
+
+    const btn = getProblemsButton(page);
+    await expect(btn).toBeDisabled();
+    await expect(btn.locator('.codicon-check')).toBeVisible();
+    await expect(btn.locator('.codicon-warning')).not.toBeVisible();
   });
 });

@@ -18,6 +18,7 @@ import {
   partitionFiles,
   filterFilesByQuery,
   filterFilesByProblems,
+  fileHasProblems,
   isValidRegex,
 } from '../../../utils/listSections';
 
@@ -114,6 +115,7 @@ interface SearchInputProps {
   onProblemsOnlyChange: (value: boolean) => void;
   filteredFileCount: number;
   totalFileCount: number;
+  hasProblems: boolean;
 }
 
 function SearchInput({
@@ -123,6 +125,7 @@ function SearchInput({
   onProblemsOnlyChange,
   filteredFileCount,
   totalFileCount,
+  hasProblems,
 }: SearchInputProps) {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -177,18 +180,29 @@ function SearchInput({
             </button>
           )}
         </div>
-        <Tooltip content={problemsOnly ? 'Show all files' : 'Show only files with problems'}>
+        <Tooltip
+          content={
+            !hasProblems
+              ? 'No files with problems'
+              : problemsOnly
+                ? 'Show all files'
+                : 'Show only files with problems'
+          }
+        >
           <button
             data-testid="problems-filter-toggle"
+            disabled={!hasProblems}
             className={clsx(
-              'shrink-0 flex items-center justify-center w-7 h-7 rounded-md border transition-colors cursor-pointer',
-              problemsOnly
-                ? 'bg-status-deleted/15 border-status-deleted text-status-deleted'
-                : 'bg-node-file border-border-dashed text-text-faint hover:text-text-primary hover:border-text-muted'
+              'shrink-0 flex items-center justify-center w-7 h-7 rounded-md border transition-colors',
+              !hasProblems
+                ? 'bg-node-file border-border-dashed text-green-500 opacity-60 cursor-default'
+                : problemsOnly
+                  ? 'bg-status-deleted/15 border-status-deleted text-status-deleted cursor-pointer'
+                  : 'bg-node-file border-border-dashed text-text-faint hover:text-text-primary hover:border-text-muted cursor-pointer'
             )}
-            onClick={() => onProblemsOnlyChange(!problemsOnly)}
+            onClick={() => hasProblems && onProblemsOnlyChange(!problemsOnly)}
           >
-            <Codicon name="warning" size={14} />
+            <Codicon name={hasProblems ? 'warning' : 'check'} size={14} />
           </button>
         </Tooltip>
       </div>
@@ -232,6 +246,16 @@ export function FileListPanel({
 
   const sections = useMemo(() => partitionFiles(wt), [wt]);
   const { committed, staged, unstaged } = sections;
+
+  const hasAnyProblems = useMemo(() => {
+    const allFiles = [...committed, ...staged, ...unstaged];
+    return allFiles.some((f) => fileHasProblems(wt.id, f.path, findingsIndex, fileDiagnostics));
+  }, [committed, staged, unstaged, wt.id, findingsIndex, fileDiagnostics]);
+
+  // Auto-toggle off when no files have problems
+  useEffect(() => {
+    if (!hasAnyProblems && problemsOnly) onProblemsOnlyChange(false);
+  }, [hasAnyProblems, problemsOnly, onProblemsOnlyChange]);
 
   const filteredCommitted = useMemo(() => {
     let files = filterFilesByQuery(committed, searchQuery);
@@ -297,6 +321,7 @@ export function FileListPanel({
         onProblemsOnlyChange={onProblemsOnlyChange}
         filteredFileCount={filteredFileCount}
         totalFileCount={totalFileCount}
+        hasProblems={hasAnyProblems}
       />
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 pt-0">
         {isEmpty ? (
