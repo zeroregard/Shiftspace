@@ -43,26 +43,16 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Restore Nx cache
-        uses: actions/cache@v4
-        with:
-          path: .nx/cache
-          key: nx-${{ runner.os }}-e2e-${{ github.sha }}
-          restore-keys: |
-            nx-${{ runner.os }}-e2e-
-
       - name: Check if e2e is affected
         id: affected
         run: |
-          # Default to running e2e — only skip if nx explicitly confirms unaffected
-          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.base_ref }} 2>/dev/null) || true
-          echo "Nx affected output: ${AFFECTED:-<empty>}"
-          if [ -n "$AFFECTED" ] && ! echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
-            echo "run_e2e=false" >> $GITHUB_OUTPUT
-            echo "Skipping: @shiftspace/preview not affected"
-          else
+          # Use the same nx affected pattern as unit-tests and static-analysis workflows
+          AFFECTED=$(npx nx show projects --affected -t test:e2e --base=origin/${{ github.event.pull_request.base.ref }})
+          echo "Nx affected: $AFFECTED"
+          if echo "$AFFECTED" | grep -q "@shiftspace/preview"; then
             echo "run_e2e=true" >> $GITHUB_OUTPUT
-            echo "Running: @shiftspace/preview is affected (or affected check inconclusive)"
+          else
+            echo "run_e2e=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Restore Playwright browsers cache
@@ -96,7 +86,7 @@ jobs:
         run: |
           # Use the merge-base with the PR target so that NEW screenshots
           # added in the PR show up as "Added" in the comparison comment.
-          BASE_SHA=$(git merge-base HEAD origin/${{ github.base_ref }})
+          BASE_SHA=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }})
           echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
           echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
