@@ -98,6 +98,11 @@ export class ShiftspacePanel {
     this._context = context;
     this._panel.webview.html = getWebviewHtml(this._panel.webview, context.extensionUri);
 
+    // Register the ready handler immediately so the first "ready" message
+    // from the webview is not silently dropped (all other handlers are
+    // registered inside onReady → registerHandlers).
+    this._router.on('ready', () => void this.onReady());
+
     this._panel.webview.onDidReceiveMessage(
       (message: WebviewMessage) => this._router.dispatch(message),
       null,
@@ -173,7 +178,7 @@ export class ShiftspacePanel {
     // Watch for repo switching on editor change
     this._repoTracker.startWatching(async (newRoot) => {
       await this._gitProvider?.switchRepo(newRoot);
-      await this._actionCoordinator?.initialize(newRoot);
+      await this._actionCoordinator?.initialize(newRoot, this._viewSettings?.get().selectedPackage);
       this.syncWorktreesToCoordinator();
     });
 
@@ -196,7 +201,7 @@ export class ShiftspacePanel {
     const viewSettings = this._viewSettings.get();
     this._gitProvider.applyDiffModeOverrides(viewSettings.diffModeOverrides);
 
-    await this._actionCoordinator.initialize(gitRoot);
+    await this._actionCoordinator.initialize(gitRoot, viewSettings.selectedPackage);
     this.syncWorktreesToCoordinator();
     this.registerMcpHandlers(gitRoot);
     this.restoreViewSettings(viewSettings);

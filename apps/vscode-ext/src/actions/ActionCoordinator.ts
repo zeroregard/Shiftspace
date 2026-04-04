@@ -49,27 +49,15 @@ export class ActionCoordinator implements vscode.Disposable {
 
   constructor(private readonly postMessage: PostMessage) {}
 
-  async initialize(repoRoot: string): Promise<void> {
+  async initialize(repoRoot: string, selectedPackage = ''): Promise<void> {
     this.repoRoot = repoRoot;
-    this.selectedPackage =
-      vscode.workspace.getConfiguration('shiftspace').get<string>('package') ?? '';
+    this.selectedPackage = selectedPackage;
 
     await this.configLoader.load(repoRoot);
 
     this.configLoader.setOnChange((_config) => {
       this.sendConfigToWebview();
     });
-
-    // Watch for package setting changes
-    this.disposables.push(
-      vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('shiftspace.package')) {
-          this.selectedPackage =
-            vscode.workspace.getConfiguration('shiftspace').get<string>('package') ?? '';
-          this.sendConfigToWebview();
-        }
-      })
-    );
 
     // Forward state changes to webview
     this.stateManager.onChange((worktreeId, actionId, state) => {
@@ -316,11 +304,8 @@ export class ActionCoordinator implements vscode.Disposable {
     this.postMessage({ type: 'action-log', worktreeId, actionId, content });
   }
 
-  async setPackage(packageName: string): Promise<void> {
+  setPackage(packageName: string): void {
     this.selectedPackage = packageName;
-    await vscode.workspace
-      .getConfiguration('shiftspace')
-      .update('package', packageName, vscode.ConfigurationTarget.Workspace);
     this.sendConfigToWebview();
   }
 
