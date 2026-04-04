@@ -69,6 +69,16 @@ export class ActionCoordinator implements vscode.Disposable {
       });
     });
 
+    // Watch for package.json changes to refresh the package dropdown
+    const pkgWatcher = vscode.workspace.createFileSystemWatcher('**/package.json');
+    const redetect = () => void this.detectAndSendPackages();
+    this.disposables.push(
+      pkgWatcher,
+      pkgWatcher.onDidChange(redetect),
+      pkgWatcher.onDidCreate(redetect),
+      pkgWatcher.onDidDelete(redetect)
+    );
+
     this.sendConfigToWebview();
     void this.detectAndSendPackages();
   }

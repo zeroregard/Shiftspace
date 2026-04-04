@@ -34,13 +34,6 @@
       "command": "bun run build",
       "type": "check",
       "icon": "build"
-    },
-    {
-      "id": "dev-preview",
-      "label": "dev",
-      "command": "bun run --filter preview dev",
-      "type": "service",
-      "icon": "play"
     }
   ],
   "pipelines": {
@@ -51,16 +44,22 @@
   },
   "smells": [
     {
-      "id": "console-log",
-      "label": "Console Log",
-      "pattern": "console\\.log",
+      "id": "eslint-disable",
+      "label": "ESLint Disable",
+      "pattern": "eslint-disable",
       "threshold": 1,
       "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
     },
     {
-      "id": "eslint-disable",
-      "label": "ESLint Disable",
-      "pattern": "eslint-disable",
+      "id": "llm-comment",
+      "label": "LLM Comment",
+      "pattern": "// ---------------------------------------------------------------------------",
+      "threshold": "1"
+    },
+    {
+      "id": "console-log",
+      "label": "Console Log",
+      "pattern": "console\\.log",
       "threshold": 1,
       "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
     },
@@ -76,12 +75,6 @@
       "label": "TODO Comment",
       "pattern": "//\\s*TODO",
       "threshold": 1
-    },
-    {
-      "id": "llm-comment",
-      "label": "LLM Comment",
-      "pattern": "// ---------------------------------------------------------------------------",
-      "threshold": "1"
     },
     {
       "id": "legacy",
