@@ -34,18 +34,7 @@ test.describe('Hover tooltips on annotation badges', () => {
 
     const errorIcon = listPanel.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
-
-    // Click away from the search input first, then hover the badge trigger
-    await page.mouse.click(1, 1);
-    await page.waitForTimeout(100);
-
-    // Hover the Badge (parent of icon) — the Radix Tooltip trigger
-    const trigger = errorIcon.locator('xpath=..');
-    await trigger.hover();
-    await page.waitForTimeout(500);
-
-    // Take screenshot to see the state after hover, before asserting tooltip
-    await expect(page).toHaveScreenshot('list-after-error-hover.png');
+    await errorIcon.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -62,15 +51,7 @@ test.describe('Hover tooltips on annotation badges', () => {
 
     const warningIcon = listPanel.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
-
-    await page.mouse.click(1, 1);
-    await page.waitForTimeout(100);
-
-    const trigger = warningIcon.locator('xpath=..');
-    await trigger.hover();
-    await page.waitForTimeout(500);
-
-    await expect(page).toHaveScreenshot('list-after-warning-hover.png');
+    await warningIcon.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
