@@ -36,9 +36,9 @@ test.describe('Hover tooltips on annotation badges', () => {
     const errorIcon = listPanel.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
 
-    // Hover the trigger span (grandparent: span > Badge(span) > i.codicon)
-    const trigger = errorIcon.locator('xpath=../..');
-    await trigger.hover();
+    // Hover the icon — pointerenter propagates to the Radix Tooltip trigger ancestor
+    await errorIcon.hover();
+    await page.waitForTimeout(200);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -56,8 +56,10 @@ test.describe('Hover tooltips on annotation badges', () => {
     const warningIcon = listPanel.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
 
-    const trigger = warningIcon.locator('xpath=../..');
-    await trigger.hover();
+    // Hover the warning icon directly — Radix Tooltip triggers on any hover
+    // within the trigger subtree, so we don't need to navigate to the parent.
+    await warningIcon.hover();
+    await page.waitForTimeout(200);
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
