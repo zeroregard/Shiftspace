@@ -168,7 +168,7 @@ jobs:
         continue-on-error: true
         run: |
           cd apps/preview
-          bun run test:e2e:update -- ${{ steps.affected.outputs.specs }}
+          npx playwright test --update-snapshots ${{ steps.affected.outputs.specs }}
 
       - name: Detect screenshot changes
         id: detect
