@@ -1,15 +1,24 @@
 import { useState, useDeferredValue, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useWorktreeStore, useActionStore, useInsightStore, getFileFindings } from '../../store';
-import type { InsightFinding, FileDiagnosticSummary } from '../../types';
-import { storeKey, storeKeyPrefix } from '../../utils/storeKeys';
-import { TreeCanvas, type PanZoomConfig } from '../../TreeCanvas';
-import { NODE_TYPES } from '../../nodes';
-import { InspectionHoverContext } from '../../shared/InspectionHoverContext';
-import { getAllFilteredFiles, filterFilesByProblems } from '../../utils/listSections';
-import { computeSingleWorktreeLayout } from '../../layout';
-import { ActionBar } from './components/ActionBar';
-import { useActions } from '../../ui/ActionsContext';
+import {
+  useWorktreeStore,
+  useActionStore,
+  useInsightStore,
+  getFileFindings,
+  type InsightFinding,
+  type FileDiagnosticSummary,
+  storeKey,
+  storeKeyPrefix,
+  TreeCanvas,
+  type PanZoomConfig,
+  NODE_TYPES,
+  InspectionHoverContext,
+  getAllFilteredFiles,
+  filterFilesByProblems,
+  computeSingleWorktreeLayout,
+  ActionBar,
+  useActions,
+} from '@shiftspace/renderer-core';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { FileListPanel } from './components/FileListPanel';
 

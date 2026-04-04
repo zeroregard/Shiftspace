@@ -6,22 +6,21 @@ import type {
   InsightFinding,
   FileDiagnosticSummary,
   WorktreeState,
-} from '../../../types';
-import { useFileAnnotations } from '../../../hooks/useFileAnnotations';
-import { ThemedFileIcon } from '../../../shared/ThemedFileIcon';
-import { AnnotationBadges } from '../../../ui/AnnotationBadges';
-import { DiffPopover } from '../../../overlays/DiffPopover';
-import { Codicon } from '@shiftspace/ui/codicon';
-import { Tooltip } from '@shiftspace/ui/tooltip';
-import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-label';
+} from '@shiftspace/renderer-core';
 import {
+  useFileAnnotations,
+  ThemedFileIcon,
+  AnnotationBadges,
+  DiffPopover,
   partitionFiles,
   filterFilesByQuery,
   filterFilesByProblems,
   fileHasProblems,
   isValidRegex,
-} from '../../../utils/listSections';
-
+} from '@shiftspace/renderer-core';
+import { Codicon } from '@shiftspace/ui/codicon';
+import { Tooltip } from '@shiftspace/ui/tooltip';
+import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-label';
 // ---------------------------------------------------------------------------
 // File row
 // ---------------------------------------------------------------------------

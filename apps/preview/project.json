@@ -1,0 +1,86 @@
+{
+  "name": "@shiftspace/preview",
+  "targets": {
+    "e2e:controls": {
+      "command": "playwright test e2e/controls.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/controls.spec.ts",
+        "{projectRoot}/src/controls/**/*",
+        "{projectRoot}/src/mock/**/*",
+        "{projectRoot}/src/useSimulationHandlers.ts",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/controls.spec.ts"]
+    },
+    "e2e:diagnostics": {
+      "command": "playwright test e2e/diagnostics.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/diagnostics.spec.ts",
+        "{projectRoot}/src/mockData.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/diagnostics.spec.ts"]
+    },
+    "e2e:graph": {
+      "command": "playwright test e2e/graph.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/graph.spec.ts",
+        "{projectRoot}/src/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/graph.spec.ts"]
+    },
+    "e2e:inspector-file-categories": {
+      "command": "playwright test e2e/inspector-file-categories.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/inspector-file-categories.spec.ts",
+        "{projectRoot}/src/mockData.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/inspector-file-categories.spec.ts"]
+    },
+    "e2e:search-filter": {
+      "command": "playwright test e2e/search-filter.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/search-filter.spec.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/search-filter.spec.ts"]
+    },
+    "test:e2e": {
+      "dependsOn": [
+        "e2e:controls",
+        "e2e:diagnostics",
+        "e2e:graph",
+        "e2e:inspector-file-categories",
+        "e2e:search-filter"
+      ],
+      "command": "echo 'All E2E specs completed'",
+      "cache": false
+    }
+  }
+}

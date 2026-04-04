@@ -26,6 +26,6 @@
   },
   "ignore": ["**/*.d.ts"],
   "ignoreDependencies": ["@typescript/native-preview", "lint-staged"],
-  "ignoreBinaries": ["code"],
+  "ignoreBinaries": ["code", "playwright"],
   "tags": ["+@public"]
 }

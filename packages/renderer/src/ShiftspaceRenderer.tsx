@@ -1,16 +1,14 @@
 import React, { Suspense, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
-import type { WorktreeState, ShiftspaceEvent, DiffMode } from './types';
-import { useWorktreeStore } from './store';
-import { useInspectionStore } from './store';
-import { type PanZoomConfig } from './TreeCanvas';
-import { GroveView } from './views/grove';
-import { UnifiedHeader } from './shared/UnifiedHeader';
-import { ActionsProvider } from './ui/ActionsContext';
+import type { WorktreeState, ShiftspaceEvent, DiffMode } from '@shiftspace/renderer-core';
+import { useWorktreeStore, useInspectionStore } from '@shiftspace/renderer-core';
+import { type PanZoomConfig } from '@shiftspace/renderer-core';
+import { GroveView } from '@shiftspace/renderer-grove';
+import { UnifiedHeader, ActionsProvider } from '@shiftspace/renderer-core';
 
 const LazyInspectionView = React.lazy(() =>
-  import('./views/inspection').then((m) => ({ default: m.InspectionView }))
+  import('@shiftspace/renderer-inspection').then((m) => ({ default: m.InspectionView }))
 );
 
 interface Props {
