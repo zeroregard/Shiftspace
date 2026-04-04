@@ -8,6 +8,7 @@ import { useInspectionHover } from '../shared/InspectionHoverContext';
 import { useFileAnnotations } from '../hooks/useFileAnnotations';
 import { useActions } from '../ui/ActionsContext';
 import { Codicon } from '@shiftspace/ui/codicon';
+import { ShiftIcon } from '@shiftspace/ui/shift-icon';
 
 interface FileNodeData {
   file: FileChange;
@@ -79,7 +80,7 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
                 isNodeHovered && 'opacity-100'
               )}
             >
-              <Codicon name="arrow-up" size={12} />
+              <ShiftIcon width={12} height={12} />
             </span>
           </div>
           {hasAnnotations && (
