@@ -38,10 +38,12 @@ export function AnnotationBadges({ annotations, iconSize = 12 }: AnnotationBadge
           }
           delayDuration={0}
         >
-          <Badge variant="error">
-            <Codicon name="error" size={iconSize} />
-            {errors}
-          </Badge>
+          <span>
+            <Badge variant="error">
+              <Codicon name="error" size={iconSize} />
+              {errors}
+            </Badge>
+          </span>
         </Tooltip>
       )}
       {warnings > 0 && (
@@ -59,10 +61,12 @@ export function AnnotationBadges({ annotations, iconSize = 12 }: AnnotationBadge
           }
           delayDuration={0}
         >
-          <Badge variant="warning">
-            <Codicon name="warning" size={iconSize} />
-            {warnings}
-          </Badge>
+          <span>
+            <Badge variant="warning">
+              <Codicon name="warning" size={iconSize} />
+              {warnings}
+            </Badge>
+          </span>
         </Tooltip>
       )}
       {totalFindings > 0 && (
@@ -78,10 +82,12 @@ export function AnnotationBadges({ annotations, iconSize = 12 }: AnnotationBadge
           }
           delayDuration={0}
         >
-          <Badge variant="finding">
-            <Codicon name="debug-breakpoint-unsupported" size={iconSize} />
-            {totalFindings}
-          </Badge>
+          <span>
+            <Badge variant="finding">
+              <Codicon name="debug-breakpoint-unsupported" size={iconSize} />
+              {totalFindings}
+            </Badge>
+          </span>
         </Tooltip>
       )}
     </span>

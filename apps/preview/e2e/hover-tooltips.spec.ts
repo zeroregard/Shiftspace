@@ -32,9 +32,13 @@ test.describe('Hover tooltips on annotation badges', () => {
     await listPanel.locator('input[type="text"]').fill('page');
     await page.waitForTimeout(300);
 
+    // The error badge is inside a Tooltip trigger <span> wrapping <Badge>
     const errorIcon = listPanel.locator('.codicon-error').first();
     await expect(errorIcon).toBeVisible({ timeout: 5000 });
-    await errorIcon.hover();
+
+    // Hover the trigger span (grandparent: span > Badge(span) > i.codicon)
+    const trigger = errorIcon.locator('xpath=../..');
+    await trigger.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -51,7 +55,9 @@ test.describe('Hover tooltips on annotation badges', () => {
 
     const warningIcon = listPanel.locator('.codicon-warning').first();
     await expect(warningIcon).toBeVisible({ timeout: 5000 });
-    await warningIcon.hover();
+
+    const trigger = warningIcon.locator('xpath=../..');
+    await trigger.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
