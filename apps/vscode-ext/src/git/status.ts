@@ -308,6 +308,35 @@ export async function getBranchDiffFileChanges(
   return result;
 }
 
+/**
+ * List all tracked files in the repository using `git ls-files`.
+ * Returns FileChange[] with status 'modified', zero line counts, and no diff.
+ * Used by the "All files" diff mode so users can browse every tracked file
+ * and filter by diagnostics/problems.
+ */
+export async function getRepoFiles(worktreePath: string): Promise<FileChange[]> {
+  const opts = { cwd: worktreePath, timeout: 15_000 };
+  const result = await gitReadOnly(['ls-files'], opts);
+  const now = Date.now();
+  const files: FileChange[] = [];
+
+  for (const line of result.stdout.split('\n')) {
+    const filePath = line.trim();
+    if (!filePath) continue;
+    files.push({
+      path: filePath,
+      status: 'modified',
+      staged: false,
+      committed: true,
+      linesAdded: 0,
+      linesRemoved: 0,
+      lastChangedAt: now,
+    });
+  }
+
+  return files;
+}
+
 /** Run git status + diff queries against a worktree directory and return FileChange[]. */
 export async function getFileChanges(worktreePath: string): Promise<FileChange[]> {
   const opts = { cwd: worktreePath, timeout: 10_000 };

@@ -30,6 +30,8 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
       if (!engine) return;
       if (diffMode.type === 'working') {
         updateWorktreeFiles(worktreeId, engine.getMockWorkingFiles(worktreeId), diffMode);
+      } else if (diffMode.type === 'repo') {
+        updateWorktreeFiles(worktreeId, [], diffMode, engine.getMockRepoFiles(worktreeId));
       } else {
         updateWorktreeFiles(
           worktreeId,
