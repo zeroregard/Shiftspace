@@ -415,19 +415,18 @@ export class ShiftspacePanel {
   // ---------------------------------------------------------------------------
 
   private updateInsightStatusBar(running: boolean): void {
-    if (running) {
-      if (!this._insightStatusBar) {
-        this._insightStatusBar = vscode.window.createStatusBarItem(
-          vscode.StatusBarAlignment.Left,
-          0
-        );
-        this._insightStatusBar.command = 'shiftspace.recheckInsights';
-      }
-      this._insightStatusBar.text = '$(sync~spin) Shiftspace: Analyzing…';
-      this._insightStatusBar.tooltip = 'Shiftspace is analyzing files for code smells';
+    if (!this._insightStatusBar) {
+      this._insightStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+      this._insightStatusBar.command = 'shiftspace.recheckInsights';
       this._insightStatusBar.show();
+    }
+
+    if (running) {
+      this._insightStatusBar.text = '$(sync~spin) Shiftspace';
+      this._insightStatusBar.tooltip = 'Analyzing files for code smells…';
     } else {
-      this._insightStatusBar?.hide();
+      this._insightStatusBar.text = '$(beaker) Shiftspace';
+      this._insightStatusBar.tooltip = 'Click to recheck code smells';
     }
   }
 
