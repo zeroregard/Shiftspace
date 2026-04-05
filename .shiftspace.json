@@ -81,6 +81,12 @@
       "label": "Legacy",
       "pattern": "Legacy",
       "threshold": "1"
+    },
+    {
+      "id": "backwards",
+      "label": "Backwards compatability",
+      "pattern": "Backwards",
+      "threshold": "1"
     }
   ]
 }
