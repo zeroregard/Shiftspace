@@ -24,8 +24,9 @@
       ]
     }
   },
+  "ignoreWorkspaces": ["packages/renderer-browser-tests"],
   "ignore": ["**/*.d.ts"],
   "ignoreDependencies": ["@typescript/native-preview", "lint-staged"],
-  "ignoreBinaries": ["code", "ovsx", "playwright"],
+  "ignoreBinaries": ["code", "ovsx", "playwright", "playwright-ct.config.ts"],
   "tags": ["+@public"]
 }

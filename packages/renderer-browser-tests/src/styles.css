@@ -1,0 +1,97 @@
+@import "tailwindcss";
+@source "../../renderer/src/**/*.tsx";
+@source "../../renderer-core/src/**/*.tsx";
+@source "../../renderer-grove/src/**/*.tsx";
+@source "../../renderer-inspection/src/**/*.tsx";
+@source "../../ui/src/**/*.tsx";
+
+@theme {
+  --color-canvas:          #0d0d1a;
+  --color-node-file:       #141428;
+  --color-node-file-pulse: #1e1e3a;
+  --color-node-folder:     #151522;
+  --color-cluster:         #1a1a2e;
+  --color-cluster-alpha:   rgba(26, 26, 46, 0.5);
+  --color-process-badge:   #0d2d26;
+  --color-border-default:  #3a3a4a;
+  --color-border-dashed:   #2a2a4a;
+  --color-border-staged:   #4a6baa;
+  --color-handle:          #3a3a5a;
+  --color-text-primary:    #e0e0ff;
+  --color-text-secondary:  #c0c0e0;
+  --color-text-muted:      #9a9ab0;
+  --color-text-dim:        #8a8ab0;
+  --color-text-faint:      #6b6b8a;
+  --color-status-added:    #4ec94e;
+  --color-status-modified: #e0c44e;
+  --color-status-deleted:  #e05c5c;
+  --color-teal:            #4ec9b0;
+  --color-grid-dot:        #2a2a3a;
+  --color-debug-green:     #00ff00;
+  --color-debug-bg:        rgba(0, 0, 0, 0.75);
+  --font-mono: "Courier New", Courier, monospace;
+
+  --text-10: 0.625rem;
+  --text-11: 0.6875rem;
+  --text-13: 0.8125rem;
+
+  --color-pulse-overlay: rgba(78, 201, 78, 0.06);
+
+  --color-diff-added-bg:   rgba(78, 201, 78, 0.08);
+  --color-diff-removed-bg: rgba(224, 92, 92, 0.08);
+  --color-diff-hunk-bg:    rgba(255, 255, 255, 0.03);
+
+  --color-heat-cool: #2a5a8a;
+  --color-heat-warm: #8a7a2a;
+  --color-heat-hot:  #8a4a2a;
+  --color-heat-max:  #8a2a2a;
+}
+
+/* @pierre/diffs theme integration */
+:root {
+  --diffs-bg: var(--color-canvas);
+  --diffs-fg: var(--color-text-primary);
+  --diffs-addition-base: var(--color-status-added);
+  --diffs-deletion-base: var(--color-status-deleted);
+  --diffs-bg-context: transparent;
+  --diffs-bg-separator: var(--color-diff-hunk-bg);
+  --diffs-bg-addition: var(--color-diff-added-bg);
+  --diffs-bg-deletion: var(--color-diff-removed-bg);
+  --diffs-border: var(--color-border-default);
+  --diffs-line-number: var(--color-text-faint);
+  --diffs-font-family: var(--font-mono);
+  --diffs-bg-addition-number-override: rgba(78, 201, 78, 0.12);
+  --diffs-bg-deletion-number-override: rgba(224, 92, 92, 0.12);
+  --diffs-bg-addition-hover-override:  rgba(78, 201, 78, 0.12);
+  --diffs-bg-deletion-hover-override:  rgba(224, 92, 92, 0.12);
+}
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade-in { animation: fadeIn 0.1s ease; }
+
+@keyframes slideDownAndFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUpAndFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideRightAndFade {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideLeftAndFade {
+  from { opacity: 0; transform: translateX(4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-hover-card-open  { animation: slideDownAndFade 0.15s ease; }
+.animate-hover-card-close { animation: slideUpAndFade  0.1s  ease; }
+.animate-popover-open[data-side="bottom"] { animation: slideDownAndFade  0.15s ease; }
+.animate-popover-open[data-side="top"]    { animation: slideUpAndFade    0.15s ease; }
+.animate-popover-open[data-side="right"]  { animation: slideRightAndFade 0.15s ease; }
+.animate-popover-open[data-side="left"]   { animation: slideLeftAndFade  0.15s ease; }
+.animate-popover-close    { animation: slideUpAndFade  0.1s  ease; }
+
+html, body, #root { width: 100%; height: 100%; background: var(--color-canvas); }

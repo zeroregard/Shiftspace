@@ -6,6 +6,7 @@
     "production": [
       "default",
       "!{projectRoot}/**/*.spec.ts",
+      "!{projectRoot}/**/*.spec.tsx",
       "!{projectRoot}/**/*.test.ts",
       "!{projectRoot}/e2e/**/*"
     ],
@@ -24,7 +25,14 @@
       "{workspaceRoot}/packages/ui/src/**/*"
     ],
     "rendererGrove": ["{workspaceRoot}/packages/renderer-grove/src/**/*"],
-    "rendererInspection": ["{workspaceRoot}/packages/renderer-inspection/src/**/*"]
+    "rendererInspection": ["{workspaceRoot}/packages/renderer-inspection/src/**/*"],
+    "ctShared": [
+      "{workspaceRoot}/packages/renderer-browser-tests/playwright-ct.config.ts",
+      "{workspaceRoot}/packages/renderer-browser-tests/playwright/**/*",
+      "{workspaceRoot}/packages/renderer-browser-tests/src/fixtures/**/*",
+      "{workspaceRoot}/packages/renderer-browser-tests/src/styles.css",
+      "sharedGlobals"
+    ]
   },
   "targetDefaults": {
     "build": {

@@ -1,0 +1,77 @@
+{
+  "name": "@shiftspace/renderer-browser-tests",
+  "targets": {
+    "ct:folder-node": {
+      "command": "bun run test:ct -- src/FolderNode.spec.tsx",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/FolderNode.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/FolderNode.spec.tsx"]
+    },
+    "ct:file-node": {
+      "command": "bun run test:ct -- src/FileNode.spec.tsx",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/FileNode.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/FileNode.spec.tsx"]
+    },
+    "ct:file-list-panel": {
+      "command": "bun run test:ct -- src/FileListPanel.spec.tsx",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src/FileListPanel.spec.tsx",
+        "ctShared",
+        "rendererCore",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/__screenshots__/FileListPanel.spec.tsx"]
+    },
+    "ct:worktree-card": {
+      "command": "bun run test:ct -- src/WorktreeCard.spec.tsx",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src/WorktreeCard.spec.tsx",
+        "ctShared",
+        "rendererCore",
+        "rendererGrove"
+      ],
+      "outputs": ["{projectRoot}/__screenshots__/WorktreeCard.spec.tsx"]
+    },
+    "ct:action-bar": {
+      "command": "bun run test:ct -- src/ActionBar.spec.tsx",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/ActionBar.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/ActionBar.spec.tsx"]
+    },
+    "ct:diff-popover": {
+      "command": "bun run test:ct -- src/DiffPopover.spec.tsx",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/DiffPopover.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/DiffPopover.spec.tsx"]
+    },
+    "ct:unified-header": {
+      "command": "bun run test:ct -- src/UnifiedHeader.spec.tsx",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/UnifiedHeader.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/UnifiedHeader.spec.tsx"]
+    },
+    "test:ct": {
+      "dependsOn": [
+        "ct:folder-node",
+        "ct:file-node",
+        "ct:file-list-panel",
+        "ct:worktree-card",
+        "ct:action-bar",
+        "ct:diff-popover",
+        "ct:unified-header"
+      ],
+      "command": "echo 'All component tests completed'",
+      "cache": false
+    }
+  }
+}
