@@ -41,7 +41,7 @@
     },
     "apps/vscode-ext": {
       "name": "shiftspace",
-      "version": "0.1.29",
+      "version": "0.1.32",
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
         "minimatch": "^10.0.1",
@@ -76,6 +76,7 @@
         "@shiftspace/renderer-core": "workspace:*",
         "@shiftspace/renderer-grove": "workspace:*",
         "@shiftspace/renderer-inspection": "workspace:*",
+        "@shiftspace/ui": "workspace:*",
         "zustand": "^5.0.3",
       },
       "devDependencies": {

@@ -353,6 +353,28 @@ export class MockEngine {
     });
   }
 
+  /** Generate mock files representing all tracked files in the repo (for "All files" mode). */
+  getMockRepoFiles(worktreeId: string): FileChange[] {
+    const templateKey = this.templateMap.get(worktreeId) ?? 'nextjs';
+    const template = FILE_TREE_TEMPLATES[templateKey];
+    const now = Date.now();
+
+    return template.map((filePath) => {
+      const diff = makeDiff(filePath, 0, 0, 'modified');
+      return {
+        path: filePath,
+        status: 'modified' as const,
+        staged: false,
+        committed: true,
+        linesAdded: 0,
+        linesRemoved: 0,
+        lastChangedAt: now,
+        diff,
+        rawDiff: hunksToRawDiff(filePath, diff, 'modified'),
+      };
+    });
+  }
+
   /**
    * Returns committed (branch diff) + staged/unstaged (working tree) files combined.
    * Used for branch-mode worktrees so all three list sections are populated.

@@ -1,6 +1,7 @@
 export type DiffMode =
   | { type: 'working' } // current behavior: unstaged + staged changes
-  | { type: 'branch'; branch: string }; // diff HEAD against another branch
+  | { type: 'branch'; branch: string } // diff HEAD against another branch
+  | { type: 'repo' }; // all tracked files in the repository
 
 export interface WorktreeState {
   id: string;

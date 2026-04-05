@@ -2,7 +2,7 @@
   "name": "shiftspace",
   "displayName": "Shiftspace",
   "description": "Visual workspace command center — spatial node graph of your git changes across worktrees",
-  "version": "0.1.29",
+  "version": "0.1.32",
   "publisher": "shiftspace",
   "repository": {
     "type": "git",
@@ -50,6 +50,11 @@
         "command": "shiftspace.detectActions",
         "title": "Detect Actions",
         "category": "Shiftspace"
+      },
+      {
+        "command": "shiftspace.recheckInsights",
+        "title": "Recheck Insights",
+        "category": "Shiftspace"
       }
     ],
     "keybindings": [
@@ -77,12 +82,6 @@
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "shiftspace.sidebar",
-        "contents": "Shiftspace opens as an editor tab for the best experience.\n[Open Shiftspace](command:shiftspace.openTab)"
-      }
-    ],
     "configuration": {
       "title": "Shiftspace",
       "properties": {

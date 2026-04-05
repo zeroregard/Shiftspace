@@ -7,6 +7,8 @@ interface Props {
   delayDuration?: number;
 }
 
+export const TooltipProvider = RadixTooltip.Provider;
+
 export const Tooltip = ({ content, children, delayDuration = 300 }: Props) => (
   <RadixTooltip.Root delayDuration={delayDuration}>
     <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>

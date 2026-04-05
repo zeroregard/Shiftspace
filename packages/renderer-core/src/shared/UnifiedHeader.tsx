@@ -1,7 +1,5 @@
-import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useInspectionStore } from '../store';
-import { useInsightStore } from '../store/insightStore';
 import type { DiffMode } from '../types';
 import { BranchPicker } from '../overlays/BranchPicker';
 import { Codicon } from '@shiftspace/ui/codicon';
@@ -50,7 +48,12 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const diffMode: DiffMode = wt?.diffMode ?? { type: 'working' };
   const defaultBranch = wt?.defaultBranch ?? 'main';
-  const modeLabel = diffMode.type === 'working' ? 'Working changes' : `vs ${diffMode.branch}`;
+  const modeLabel =
+    diffMode.type === 'working'
+      ? 'Working changes'
+      : diffMode.type === 'repo'
+        ? 'All files'
+        : `vs ${diffMode.branch}`;
 
   const diffModeStaticOptions = wt
     ? [
@@ -71,6 +74,12 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
                   actions.diffModeChange(wt.id, { type: 'branch', branch: defaultBranch }),
               },
             ]),
+        {
+          key: 'repo',
+          label: 'All files',
+          selected: diffMode.type === 'repo',
+          onSelect: () => actions.diffModeChange(wt.id, { type: 'repo' }),
+        },
       ]
     : [];
 
@@ -142,32 +151,6 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
           onDetectPackages={actions.detectPackages}
         />
       )}
-
-      {isInspecting && worktreeId && (
-        <InsightStatusButton onRecheck={() => actions.recheckInsights(worktreeId)} />
-      )}
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Insight status indicator — spinner while running, checkmark when done.
-// Click to recheck.
-// ---------------------------------------------------------------------------
-
-const InsightStatusButton = React.memo(({ onRecheck }: { onRecheck: () => void }) => {
-  const running = useInsightStore((s) => s.insightsRunning);
-
-  return (
-    <IconButton
-      icon={running ? 'loading' : 'check'}
-      label={running ? 'Analyzing…' : 'Recheck insights'}
-      iconSize={13}
-      iconAnimation={running ? 'spin 1s linear infinite' : undefined}
-      onClick={running ? undefined : onRecheck}
-      disabled={running}
-      ghost
-    />
-  );
-});
-InsightStatusButton.displayName = 'InsightStatusButton';

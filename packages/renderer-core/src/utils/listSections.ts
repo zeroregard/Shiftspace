@@ -18,11 +18,19 @@ function sortFiles(files: FileChange[]): FileChange[] {
  * Partitions a worktree's files into Committed / Staged / Unstaged sections.
  * - Branch diff mode  → branchFiles → Committed; files → Staged/Unstaged
  * - Working mode      → files → Staged/Unstaged only (no Committed)
+ * - Repo mode         → branchFiles → Tracked (all tracked files, no sections)
  *
  * A file with `partiallyStaged: true` (e.g. after `git add -p`) appears in
  * **both** Staged and Unstaged — its chunks are split across both sections.
  */
 export function partitionFiles(wt: WorktreeState): FileSections {
+  if (wt.diffMode.type === 'repo') {
+    return {
+      committed: sortFiles(wt.branchFiles ?? []),
+      staged: [],
+      unstaged: [],
+    };
+  }
   return {
     committed: wt.diffMode.type === 'branch' ? sortFiles(wt.branchFiles ?? []) : [],
     staged: sortFiles(wt.files.filter((f) => f.staged || !!f.partiallyStaged)),

@@ -15,7 +15,7 @@ import {
   moveWorktree,
   recoverStuckTempBranch,
 } from './git/worktrees';
-import { getFileChanges, getBranchDiffFileChanges } from './git/status';
+import { getFileChanges, getBranchDiffFileChanges, getRepoFiles } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
 import { filterIgnoredFiles } from './git/ignoreFilter';
 import { gitQueue } from './git/gitUtils';
@@ -156,6 +156,10 @@ export class GitDataProvider implements vscode.Disposable {
     wt: WorktreeState
   ): Promise<{ files: FileChange[]; branchFiles?: FileChange[] }> {
     const patterns = getIgnorePatterns();
+    if (wt.diffMode.type === 'repo') {
+      const branchFiles = await getRepoFiles(wt.path).then((f) => filterIgnoredFiles(f, patterns));
+      return { files: [], branchFiles };
+    }
     if (wt.diffMode.type === 'branch') {
       // Run sequentially to avoid concurrent git processes on the same repo
       const files = await getFileChanges(wt.path).then((f) => filterIgnoredFiles(f, patterns));

@@ -149,7 +149,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
       {actionConfigs.length > 0 && (
         <ActionBar
           worktreeId={worktreeId}
-          className="px-4 py-1.5 border-b border-border-dashed shrink-0"
+          className="px-3 py-1.5 border-b border-border-dashed shrink-0"
         />
       )}
 
