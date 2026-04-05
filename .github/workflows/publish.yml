@@ -1,0 +1,168 @@
+name: 🚀 Publish to VS Code Marketplace
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      dry-run:
+        description: 'Dry run (package only, do not publish)'
+        required: false
+        type: boolean
+        default: false
+
+# Prevent concurrent publishes
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # needed for pushing version bump + tags
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-publish-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-publish-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Bump version
+        id: bump
+        run: |
+          cd apps/vscode-ext
+          CURRENT=$(node -p "require('./package.json').version")
+          BUMP_TYPE="${{ inputs.version }}"
+          NEW=$(node -e "
+            const [ma, mi, pa] = '${CURRENT}'.split('.').map(Number);
+            const v = {
+              major: \`\${ma+1}.0.0\`,
+              minor: \`\${ma}.\${mi+1}.0\`,
+              patch: \`\${ma}.\${mi}.\${pa+1}\`
+            }['${BUMP_TYPE}'];
+            process.stdout.write(v);
+          ")
+          node -e "
+            const p = require('./package.json');
+            p.version = '${NEW}';
+            require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+          echo "version=${NEW}" >> $GITHUB_OUTPUT
+          echo "::notice::Version bump: ${CURRENT} → ${NEW} (${BUMP_TYPE})"
+
+      - name: Build
+        run: npx nx run-many -t build
+
+      - name: Package extension
+        run: |
+          cd apps/vscode-ext
+          npx @vscode/vsce package --no-dependencies
+          VSIX=$(ls *.vsix)
+          echo "vsix_file=${VSIX}" >> $GITHUB_ENV
+          echo "::notice::Packaged ${VSIX}"
+
+      - name: Publish to VS Code Marketplace
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          cd apps/vscode-ext
+          npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }} --no-dependencies
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish to Open VSX Registry
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          cd apps/vscode-ext
+          npx ovsx publish ${{ env.vsix_file }} -p ${{ secrets.OVSX_PAT }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        continue-on-error: true # Don't fail the whole workflow if Open VSX is down
+
+      - name: Commit version bump
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/vscode-ext/package.json
+          git commit -m "chore: release v${{ steps.bump.outputs.version }}"
+          git tag "v${{ steps.bump.outputs.version }}"
+          git push origin main --follow-tags
+
+      - name: Create GitHub Release
+        if: ${{ inputs.dry-run == false }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.bump.outputs.version }}"
+          name: "Shiftspace v${{ steps.bump.outputs.version }}"
+          body: |
+            ## Shiftspace v${{ steps.bump.outputs.version }}
+
+            Published to the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace).
+
+            ### Manual install
+            Download the `.vsix` file below and run:
+            ```
+            code --install-extension shiftspace-${{ steps.bump.outputs.version }}.vsix
+            ```
+          files: apps/vscode-ext/${{ env.vsix_file }}
+          generate_release_notes: true
+
+      - name: Upload .vsix artifact (dry run)
+        if: ${{ inputs.dry-run == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: shiftspace-${{ steps.bump.outputs.version }}.vsix
+          path: apps/vscode-ext/${{ env.vsix_file }}
+
+      - name: Summary
+        run: |
+          echo "## 🚀 Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | v${{ steps.bump.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Bump type** | ${{ inputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Dry run** | ${{ inputs.dry-run }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Package** | ${{ env.vsix_file }} |" >> $GITHUB_STEP_SUMMARY

@@ -1,12 +1,5 @@
-# TODO: Smart version bumping based on conventional commits:
-# - feat: → minor bump
-# - fix: → patch bump
-# - BREAKING CHANGE → major bump
-# For now, always bumps patch.
-
-# TODO: Publish to VSCode Marketplace
-# Requires VSCE_PAT secret with a Personal Access Token
-# Add step: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }}
+# Automated release: builds, packages .vsix, and creates a GitHub Release on push to main.
+# For publishing to the VS Code Marketplace, use the manual "Publish" workflow instead.
 
 name: 🚀 Release
 
