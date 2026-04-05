@@ -263,10 +263,15 @@ jobs:
           DELETED_LIST=""
           UNCHANGED_LIST=""
 
+          COMPARE_URL="https://github.com/${REPO}/compare/${OLD_SHA}..${NEW_SHA}"
+
           # Process changed files
           while IFS=$'\t' read -r status file; do
             [ -z "$file" ] && continue
             NAME=$(basename "$file")
+            # Compute GitHub's diff anchor: diff-{sha256 of path}
+            FILE_HASH=$(printf '%s' "$file" | sha256sum | cut -d' ' -f1)
+            DIFF_ANCHOR="${COMPARE_URL}#diff-${FILE_HASH}"
             case "$status" in
               M)
                 BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
@@ -278,6 +283,8 @@ jobs:
           | Before | After |
           |--------|-------|
           | ![before](${BEFORE_URL}) | ![after](${AFTER_URL}) |
+
+          [View image diff (swipe/onion-skin)](${DIFF_ANCHOR})
 
           </details>
           "
@@ -340,6 +347,8 @@ jobs:
             else
               if [ "$CHANGED_COUNT" -gt 0 ]; then
                 echo "### Changed (${CHANGED_COUNT})"
+                echo ""
+                echo "> Use the **swipe / onion-skin** diff on each file link below, or [compare all changes](${COMPARE_URL})."
                 echo ""
                 echo "${CHANGED_LIST}"
               fi
