@@ -1,0 +1,335 @@
+name: 🧩 Component Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ct-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  component-tests:
+    name: Component Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Fetch base branch for affected detection
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }} || true
+
+      - name: Determine affected CT specs
+        id: affected
+        run: |
+          CHANGED=$(git diff --name-only "origin/${{ github.event.pull_request.base.ref }}"...HEAD)
+
+          has_changes() { echo "$CHANGED" | grep -qE "$1"; }
+
+          # --- package-level groups ---
+          CT_SHARED=false
+          has_changes '^packages/renderer-browser-tests/(playwright-ct\.config\.ts|playwright/|src/fixtures/|src/styles\.css)' && CT_SHARED=true
+          has_changes '^tsconfig\.base\.json' && CT_SHARED=true
+
+          CORE=false
+          has_changes '^packages/(renderer-core|renderer|ui)/src/' && CORE=true
+
+          GROVE=false
+          has_changes '^packages/renderer-grove/src/' && GROVE=true
+
+          INSPECTION=false
+          has_changes '^packages/renderer-inspection/src/' && INSPECTION=true
+
+          # --- map to spec files ---
+          SPECS=""
+          add_spec() { SPECS="${SPECS} src/$1.spec.tsx"; }
+
+          # FolderNode, FileNode, ActionBar, DiffPopover, UnifiedHeader: core only
+          for spec in FolderNode FileNode ActionBar DiffPopover UnifiedHeader; do
+            if has_changes "^packages/renderer-browser-tests/src/${spec}\\.spec\\.tsx" \
+               || $CT_SHARED || $CORE; then
+              add_spec "$spec"
+            fi
+          done
+
+          # FileListPanel: core + inspection
+          if has_changes '^packages/renderer-browser-tests/src/FileListPanel\.spec\.tsx' \
+             || $CT_SHARED || $CORE || $INSPECTION; then
+            add_spec FileListPanel
+          fi
+
+          # WorktreeCard: core + grove
+          if has_changes '^packages/renderer-browser-tests/src/WorktreeCard\.spec\.tsx' \
+             || $CT_SHARED || $CORE || $GROVE; then
+            add_spec WorktreeCard
+          fi
+
+          # Deduplicate
+          SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
+
+          if [ -n "$SPECS" ]; then
+            echo "run_ct=true" >> $GITHUB_OUTPUT
+            echo "specs=${SPECS}" >> $GITHUB_OUTPUT
+            echo "Affected CT specs: ${SPECS}"
+          else
+            echo "run_ct=false" >> $GITHUB_OUTPUT
+            echo "specs=" >> $GITHUB_OUTPUT
+            echo "No CT specs affected"
+          fi
+
+      - name: Restore Playwright browsers cache
+        if: steps.affected.outputs.run_ct == 'true'
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-ct-${{ runner.os }}-${{ hashFiles('packages/renderer-browser-tests/package.json') }}
+
+      - name: Install Playwright system deps
+        if: steps.affected.outputs.run_ct == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: cd packages/renderer-browser-tests && npx playwright install-deps chromium
+
+      - name: Install Playwright browsers
+        if: steps.affected.outputs.run_ct == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: cd packages/renderer-browser-tests && npx playwright install chromium
+
+      - name: Record baseline and head SHAs
+        id: baseline
+        run: |
+          BASE_SHA=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }})
+          echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
+          echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Run CT specs with --update-snapshots
+        id: playwright
+        if: steps.affected.outputs.run_ct == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo "Running CT specs: ${{ steps.affected.outputs.specs }}"
+          cd packages/renderer-browser-tests
+          npx playwright test ${{ steps.affected.outputs.specs }} --config playwright-ct.config.ts --update-snapshots 2>&1 | tee /tmp/ct-output.txt
+
+      - name: Detect screenshot changes
+        id: detect
+        if: steps.affected.outputs.run_ct == 'true'
+        run: |
+          MODIFIED=$(git diff --name-only -- 'packages/renderer-browser-tests/__screenshots__/**/*.png' 2>/dev/null || true)
+          NEW=$(git ls-files --others --exclude-standard -- 'packages/renderer-browser-tests/__screenshots__/**/*.png' 2>/dev/null || true)
+
+          if [ -n "$MODIFIED" ] || [ -n "$NEW" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit updated screenshots
+        id: commit
+        if: steps.affected.outputs.run_ct == 'true' && steps.detect.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add 'packages/renderer-browser-tests/__screenshots__/'
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "chore: update CT snapshots [skip ci]"
+            git push -u origin ${{ github.head_ref }}
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "new_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Playwright report
+        if: always() && steps.playwright.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ct-playwright-report
+          path: packages/renderer-browser-tests/playwright-report/
+          retention-days: 7
+
+      - name: Build PR comment
+        id: build-comment
+        if: always()
+        env:
+          REPO: ${{ github.repository }}
+          OLD_SHA: ${{ steps.baseline.outputs.sha }}
+          NEW_SHA: ${{ steps.commit.outputs.new_sha || steps.baseline.outputs.head_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PLAYWRIGHT_OUTCOME: ${{ steps.playwright.outcome || 'skipped' }}
+        run: |
+          SCREENSHOTS_DIR="packages/renderer-browser-tests/__screenshots__"
+
+          if [ -z "$OLD_SHA" ]; then
+            OLD_SHA=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }} 2>/dev/null || echo "")
+          fi
+          if [ -z "$NEW_SHA" ]; then
+            NEW_SHA=$(git rev-parse HEAD)
+          fi
+
+          CHANGED_FILES=$(git diff --name-status "${OLD_SHA}" "${NEW_SHA}" -- "${SCREENSHOTS_DIR}/" 2>/dev/null || true)
+
+          CHANGED_LIST=""
+          NEW_LIST=""
+          DELETED_LIST=""
+          UNCHANGED_LIST=""
+
+          while IFS=$'\t' read -r status file; do
+            [ -z "$file" ] && continue
+            NAME=$(basename "$file")
+            case "$status" in
+              M)
+                BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
+                AFTER_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${file}"
+                CHANGED_LIST="${CHANGED_LIST}
+          <details>
+          <summary>🔄 ${NAME}</summary>
+
+          | Before | After |
+          |--------|-------|
+          | ![before](${BEFORE_URL}) | ![after](${AFTER_URL}) |
+
+          </details>
+          "
+                ;;
+              A)
+                AFTER_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${file}"
+                NEW_LIST="${NEW_LIST}
+          <details>
+          <summary>🆕 ${NAME}</summary>
+
+          ![new](${AFTER_URL})
+
+          </details>
+          "
+                ;;
+              D)
+                BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
+                DELETED_LIST="${DELETED_LIST}
+          <details>
+          <summary>🗑️ ${NAME}</summary>
+
+          ![removed](${BEFORE_URL})
+
+          </details>
+          "
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            NAME=$(basename "$file")
+            if echo "$CHANGED_FILES" | grep -q "$file"; then
+              continue
+            fi
+            UNCHANGED_LIST="${UNCHANGED_LIST}${NAME}, "
+          done < <(git ls-files -- "${SCREENSHOTS_DIR}/**/*.png" 2>/dev/null || true)
+          UNCHANGED_LIST="${UNCHANGED_LIST%, }"
+
+          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c '^M' || true)
+          NEW_COUNT=$(echo "$CHANGED_FILES" | grep -c '^A' || true)
+          DELETED_COUNT=$(echo "$CHANGED_FILES" | grep -c '^D' || true)
+
+          {
+            echo "<!-- ct-screenshot-report -->"
+            echo "## 🧩 Component Screenshot Report"
+            echo ""
+
+            if [ "$PLAYWRIGHT_OUTCOME" = "failure" ]; then
+              echo "> **Tests failed.** Some component tests hit errors. [View logs](${RUN_URL})."
+              echo ""
+            fi
+
+            if [ "$CHANGED_COUNT" -eq 0 ] && [ "$NEW_COUNT" -eq 0 ] && [ "$DELETED_COUNT" -eq 0 ]; then
+              echo "📸 All component screenshots unchanged."
+            else
+              if [ "$CHANGED_COUNT" -gt 0 ]; then
+                echo "### Changed (${CHANGED_COUNT})"
+                echo ""
+                echo "${CHANGED_LIST}"
+              fi
+              if [ "$NEW_COUNT" -gt 0 ]; then
+                echo "### New (${NEW_COUNT})"
+                echo ""
+                echo "${NEW_LIST}"
+              fi
+              if [ "$DELETED_COUNT" -gt 0 ]; then
+                echo "### Removed (${DELETED_COUNT})"
+                echo ""
+                echo "${DELETED_LIST}"
+              fi
+              if [ -n "$UNCHANGED_LIST" ]; then
+                echo "### Unchanged"
+                echo ""
+                echo "${UNCHANGED_LIST}"
+              fi
+            fi
+
+            echo ""
+            echo "_[View workflow run](${RUN_URL})_"
+          } > /tmp/ct-comment.md
+
+      - name: Find existing PR comment
+        id: find-comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_ID=$(gh api \
+            repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            --jq '[.[] | select(.body | startswith("<!-- ct-screenshot-report -->"))] | last | .id // empty')
+          echo "comment_id=${COMMENT_ID:-}" >> "$GITHUB_OUTPUT"
+
+      - name: Post or update PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_ID="${{ steps.find-comment.outputs.comment_id }}"
+          if [ -n "$COMMENT_ID" ]; then
+            gh api \
+              repos/${{ github.repository }}/issues/comments/${COMMENT_ID} \
+              -X PATCH \
+              -f body="$(cat /tmp/ct-comment.md)"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" \
+              --repo "${{ github.repository }}" \
+              --body-file /tmp/ct-comment.md
+          fi
+
+      - name: Fail if CT tests failed
+        if: always() && steps.playwright.outcome == 'failure'
+        run: |
+          echo "::group::CT test output"
+          cat /tmp/ct-output.txt
+          echo "::endgroup::"
+          echo ""
+          echo "❌ Component tests failed — see output above or download the ct-playwright-report artifact."
+          exit 1

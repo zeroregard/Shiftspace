@@ -1,0 +1,77 @@
+{
+  "name": "@shiftspace/renderer-browser-tests",
+  "targets": {
+    "ct:folder-node": {
+      "command": "playwright test src/FolderNode.spec.tsx --config playwright-ct.config.ts",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/FolderNode.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/FolderNode.spec.tsx"]
+    },
+    "ct:file-node": {
+      "command": "playwright test src/FileNode.spec.tsx --config playwright-ct.config.ts",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/FileNode.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/FileNode.spec.tsx"]
+    },
+    "ct:file-list-panel": {
+      "command": "playwright test src/FileListPanel.spec.tsx --config playwright-ct.config.ts",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src/FileListPanel.spec.tsx",
+        "ctShared",
+        "rendererCore",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/__screenshots__/FileListPanel.spec.tsx"]
+    },
+    "ct:worktree-card": {
+      "command": "playwright test src/WorktreeCard.spec.tsx --config playwright-ct.config.ts",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src/WorktreeCard.spec.tsx",
+        "ctShared",
+        "rendererCore",
+        "rendererGrove"
+      ],
+      "outputs": ["{projectRoot}/__screenshots__/WorktreeCard.spec.tsx"]
+    },
+    "ct:action-bar": {
+      "command": "playwright test src/ActionBar.spec.tsx --config playwright-ct.config.ts",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/ActionBar.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/ActionBar.spec.tsx"]
+    },
+    "ct:diff-popover": {
+      "command": "playwright test src/DiffPopover.spec.tsx --config playwright-ct.config.ts",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/DiffPopover.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/DiffPopover.spec.tsx"]
+    },
+    "ct:unified-header": {
+      "command": "playwright test src/UnifiedHeader.spec.tsx --config playwright-ct.config.ts",
+      "options": { "cwd": "packages/renderer-browser-tests" },
+      "cache": true,
+      "inputs": ["{projectRoot}/src/UnifiedHeader.spec.tsx", "ctShared", "rendererCore"],
+      "outputs": ["{projectRoot}/__screenshots__/UnifiedHeader.spec.tsx"]
+    },
+    "test:ct": {
+      "dependsOn": [
+        "ct:folder-node",
+        "ct:file-node",
+        "ct:file-list-panel",
+        "ct:worktree-card",
+        "ct:action-bar",
+        "ct:diff-popover",
+        "ct:unified-header"
+      ],
+      "command": "echo 'All component tests completed'",
+      "cache": false
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@shiftspace/renderer-browser-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test:ct": "playwright test --config playwright-ct.config.ts",
+    "test:ct:update": "playwright test --config playwright-ct.config.ts --update-snapshots",
+    "test:ct:ui": "playwright test --config playwright-ct.config.ts --ui",
+    "playwright:install": "playwright install chromium",
+    "playwright:install-deps": "playwright install-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.58.2",
+    "@playwright/test": "^1.58.2",
+    "@shiftspace/renderer-core": "workspace:*",
+    "@shiftspace/renderer-grove": "workspace:*",
+    "@shiftspace/renderer-inspection": "workspace:*",
+    "@shiftspace/renderer": "workspace:*",
+    "@shiftspace/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vscode/codicons": "^0.0.45",
+    "@vitejs/plugin-react": "^4.3.4",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "clsx": "^2.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}
