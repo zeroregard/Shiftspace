@@ -71,11 +71,26 @@
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/search-filter.spec.ts"]
     },
+    "e2e:hover-tooltips": {
+      "command": "playwright test e2e/hover-tooltips.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/hover-tooltips.spec.ts",
+        "{projectRoot}/src/mockData.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/hover-tooltips.spec.ts"]
+    },
     "test:e2e": {
       "dependsOn": [
         "e2e:controls",
         "e2e:diagnostics",
         "e2e:graph",
+        "e2e:hover-tooltips",
         "e2e:inspector-file-categories",
         "e2e:search-filter"
       ],

@@ -5,11 +5,19 @@ import { isInsightEnabled, getInsightSettings } from './settingsLoader';
 import { log } from '../logger';
 
 interface CacheEntry {
-  files: FileChange[];
+  /** Content-based key derived from file paths and change metadata. */
+  filesCacheKey: string;
   /** Stringified extraSettings for cache invalidation when rules change. */
   extraSettingsKey: string;
   summaries: InsightSummary[];
   details: InsightDetail[];
+}
+
+function computeFilesCacheKey(files: FileChange[]): string {
+  return files
+    .map((f) => `${f.path}:${f.status}:${f.linesAdded}:${f.linesRemoved}:${f.staged}`)
+    .sort()
+    .join('\n');
 }
 
 export class InsightRunner {
@@ -17,9 +25,8 @@ export class InsightRunner {
 
   /**
    * Run all enabled insight plugins for the given worktree.
-   * Results are cached per worktree by files reference — pass the same array to
-   * get the cached result. The caller (ShiftspacePanel) is responsible for
-   * invalidating via `clearCache` when files change.
+   * Results are cached per worktree using a content-based key derived from file
+   * paths and change metadata. The caller can force re-analysis via `clearCache`.
    *
    * Plugins run in parallel; a failure in one does not abort others.
    */
@@ -34,8 +41,13 @@ export class InsightRunner {
     const { worktreeId, files, repoRoot, worktreeRoot, signal, extraSettings } = opts;
 
     const extraSettingsKey = extraSettings ? JSON.stringify(extraSettings) : '';
+    const filesCacheKey = computeFilesCacheKey(files);
     const cached = this.cache.get(worktreeId);
-    if (cached && cached.files === files && cached.extraSettingsKey === extraSettingsKey) {
+    if (
+      cached &&
+      cached.filesCacheKey === filesCacheKey &&
+      cached.extraSettingsKey === extraSettingsKey
+    ) {
       return { summaries: cached.summaries, details: cached.details };
     }
 
@@ -81,7 +93,7 @@ export class InsightRunner {
       }
     }
 
-    this.cache.set(worktreeId, { files, extraSettingsKey, summaries, details });
+    this.cache.set(worktreeId, { filesCacheKey, extraSettingsKey, summaries, details });
     return { summaries, details };
   }
 

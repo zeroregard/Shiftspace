@@ -21,7 +21,7 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
 
   const { updateWorktreeFiles, setDiffModeLoading, setBranchList } = useWorktreeStore();
   const { setActionState } = useActionStore();
-  const { setInsightDetail, setFileDiagnostics } = useInsightStore();
+  const { setInsightDetail, setFileDiagnostics, setInsightsRunning } = useInsightStore();
 
   const handleDiffModeChange = (worktreeId: string, diffMode: DiffMode) => {
     setDiffModeLoading(worktreeId, true);
@@ -73,13 +73,17 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
   };
 
   const handleRecheckInsights = (worktreeId: string) => {
-    if (worktreeId === 'wt-0') {
-      setInsightDetail('wt-0', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT0);
-      setFileDiagnostics('wt-0', MOCK_DIAGNOSTICS_WT0);
-    } else if (worktreeId === 'wt-1') {
-      setInsightDetail('wt-1', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT1);
-      setFileDiagnostics('wt-1', MOCK_DIAGNOSTICS_WT1);
-    }
+    setInsightsRunning(true);
+    setTimeout(() => {
+      if (worktreeId === 'wt-0') {
+        setInsightDetail('wt-0', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT0);
+        setFileDiagnostics('wt-0', MOCK_DIAGNOSTICS_WT0);
+      } else if (worktreeId === 'wt-1') {
+        setInsightDetail('wt-1', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT1);
+        setFileDiagnostics('wt-1', MOCK_DIAGNOSTICS_WT1);
+      }
+      setInsightsRunning(false);
+    }, 600);
   };
 
   const cleanupSimulations = () => {

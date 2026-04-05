@@ -109,6 +109,38 @@ describe('InspectionSession — insights', () => {
     vi.useRealTimers();
   });
 
+  it('clears cache on enter', () => {
+    const runner = makeInsightRunner();
+    const session = new InspectionSession(
+      runner as never,
+      makeDiagnosticCollector() as never,
+      makeDeps()
+    );
+
+    session.enter('wt-1');
+    expect(runner.clearCache).toHaveBeenCalledWith('wt-1');
+  });
+
+  it('posts insights-status running/done around analysis', async () => {
+    const runner = makeInsightRunner({ summaries: [], details: [] });
+    const postMessage = vi.fn();
+    const session = new InspectionSession(runner as never, makeDiagnosticCollector() as never, {
+      ...makeDeps(),
+      postMessage,
+    });
+
+    session.enter('wt-1');
+    await vi.runAllTimersAsync();
+
+    const statusCalls = postMessage.mock.calls
+      .map(([msg]: [{ type: string }]) => msg)
+      .filter((msg: { type: string }) => msg.type === 'insights-status');
+    expect(statusCalls).toEqual([
+      { type: 'insights-status', running: true },
+      { type: 'insights-status', running: false },
+    ]);
+  });
+
   it('runs insights on enter', async () => {
     const runner = makeInsightRunner({
       summaries: [],

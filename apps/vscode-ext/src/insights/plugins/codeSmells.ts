@@ -3,6 +3,7 @@ import * as path from 'path';
 import type { InsightPlugin, InsightFinding, FileInsight, AnalyzeContext } from '../types';
 import { insightRegistry } from '../registry';
 import type { SmellRule } from '../../actions/types';
+import { log } from '../../logger';
 
 function readFileContent(worktreeRoot: string, filePath: string): string | null {
   try {
@@ -35,14 +36,30 @@ const codeSmellsPlugin: InsightPlugin = {
 
     if (rules.length === 0) return empty;
 
+    // Pre-compile regexes once (gap 6: perf) with per-rule error handling (gap 7: resilience)
+    const compiledRules: Array<{ rule: SmellRule; regex: RegExp }> = [];
+    for (const rule of rules) {
+      try {
+        compiledRules.push({ rule, regex: new RegExp(rule.pattern, 'g') });
+      } catch (err) {
+        log.warn(
+          `Code smell rule "${rule.id}" has invalid pattern "${rule.pattern}", skipping: ${err}`
+        );
+      }
+    }
+
+    if (compiledRules.length === 0) return empty;
+
     const fileInsights: FileInsight[] = [];
 
     for (const file of files) {
       if (signal?.aborted) break;
 
       const ext = path.extname(file.path).toLowerCase();
-      const applicableRules = rules.filter((r) => !r.fileTypes || r.fileTypes.includes(ext));
-      if (applicableRules.length === 0) continue;
+      const applicable = compiledRules.filter(
+        ({ rule }) => !rule.fileTypes || rule.fileTypes.includes(ext)
+      );
+      if (applicable.length === 0) continue;
 
       const content = readFileContent(worktreeRoot, file.path);
       if (!content) continue;
@@ -50,8 +67,7 @@ const codeSmellsPlugin: InsightPlugin = {
       const lines = content.split('\n');
       const findings: InsightFinding[] = [];
 
-      for (const rule of applicableRules) {
-        const regex = new RegExp(rule.pattern, 'g');
+      for (const { rule, regex } of applicable) {
         let count = 0;
         for (const line of lines) {
           const matches = line.match(regex);

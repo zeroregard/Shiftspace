@@ -101,6 +101,13 @@ jobs:
             add_spec inspector-file-categories
           fi
 
+          # hover-tooltips: core + inspection + preview mock/mockData
+          if has_changes '^apps/preview/e2e/hover-tooltips\.spec\.ts' \
+             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
+            add_spec hover-tooltips
+          fi
+
           # search-filter: core + inspection + preview mock
           if has_changes '^apps/preview/e2e/search-filter\.spec\.ts' \
              || has_changes '^apps/preview/src/mock/' \
@@ -163,6 +170,7 @@ jobs:
         if: steps.check-tests.outputs.exist == 'true'
         continue-on-error: true
         run: |
+          set -o pipefail
           echo "=== Screenshot baselines before test run ==="
           find apps/preview/e2e/__screenshots__ -name '*.png' 2>/dev/null | sort || echo "<none>"
           echo "Running specs: ${{ steps.affected.outputs.specs }}"
@@ -210,7 +218,7 @@ jobs:
           fi
 
       - name: Upload Playwright report
-        if: steps.playwright.outcome == 'failure'
+        if: always() && steps.playwright.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -225,6 +233,7 @@ jobs:
           OLD_SHA: ${{ steps.baseline.outputs.sha }}
           NEW_SHA: ${{ steps.commit.outputs.new_sha || steps.baseline.outputs.head_sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PLAYWRIGHT_OUTCOME: ${{ steps.playwright.outcome || 'skipped' }}
         run: |
           SCREENSHOTS_DIR="apps/preview/e2e/__screenshots__"
 
@@ -314,6 +323,11 @@ jobs:
             echo "## 📸 E2E Screenshot Report"
             echo ""
 
+            if [ "$PLAYWRIGHT_OUTCOME" = "failure" ]; then
+              echo "> **Tests failed.** Some tests hit timeouts or could not find expected elements. [View logs](${RUN_URL})."
+              echo ""
+            fi
+
             if [ "$CHANGED_COUNT" -eq 0 ] && [ "$NEW_COUNT" -eq 0 ] && [ "$DELETED_COUNT" -eq 0 ]; then
               echo "📸 All screenshots unchanged."
             else
@@ -388,7 +402,7 @@ jobs:
           No e2e tests found."
 
       - name: Fail if Playwright tests failed
-        if: steps.playwright.outcome == 'failure'
+        if: always() && steps.playwright.outcome == 'failure'
         run: |
           echo "::group::Playwright test output"
           cat /tmp/playwright-output.txt

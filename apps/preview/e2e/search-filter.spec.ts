@@ -346,12 +346,13 @@ test.describe('Problems filter in Inspection view', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(500);
 
-    // Add a third worktree (wt-2 — deep template, no mock diagnostics or findings)
+    // Add a third worktree (deep template, no mock diagnostics or findings).
+    // The mock engine assigns a timestamp-based ID (wt-<Date.now()>), so we
+    // click the last enter-inspection button which is the newly added worktree.
     await page.getByText('+ wt').click();
     await page.waitForTimeout(500);
 
-    // Enter inspection for the new worktree
-    await page.getByTestId('enter-inspection-wt-2').click();
+    await page.locator('[data-testid^="enter-inspection-"]').last().click();
     await page.locator('.codicon-arrow-left').waitFor();
     await page.waitForTimeout(300);
 
