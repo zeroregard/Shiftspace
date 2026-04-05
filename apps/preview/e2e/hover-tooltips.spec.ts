@@ -32,12 +32,10 @@ test.describe('Hover tooltips on annotation badges', () => {
     await listPanel.locator('input[type="text"]').fill('page');
     await page.waitForTimeout(300);
 
-    // The error badge is inside a Tooltip trigger <span> wrapping <Badge>
-    const errorIcon = listPanel.locator('.codicon-error').first();
-    await expect(errorIcon).toBeVisible({ timeout: 5000 });
-
-    // Hover the icon — pointerenter propagates to the Radix Tooltip trigger ancestor
-    await errorIcon.hover();
+    // Hover the error badge tooltip trigger
+    const errorBadge = listPanel.getByTestId('badge-error').first();
+    await expect(errorBadge).toBeVisible({ timeout: 5000 });
+    await errorBadge.hover();
     await page.waitForTimeout(200);
 
     const tooltip = page.getByRole('tooltip');
@@ -53,12 +51,10 @@ test.describe('Hover tooltips on annotation badges', () => {
     await listPanel.locator('input[type="text"]').fill('page');
     await page.waitForTimeout(300);
 
-    const warningIcon = listPanel.locator('.codicon-warning').first();
-    await expect(warningIcon).toBeVisible({ timeout: 5000 });
-
-    // Hover the warning icon directly — Radix Tooltip triggers on any hover
-    // within the trigger subtree, so we don't need to navigate to the parent.
-    await warningIcon.hover();
+    // Hover the warning badge tooltip trigger
+    const warningBadge = listPanel.getByTestId('badge-warning').first();
+    await expect(warningBadge).toBeVisible({ timeout: 5000 });
+    await warningBadge.hover();
     await page.waitForTimeout(200);
 
     const tooltip = page.getByRole('tooltip');
@@ -71,9 +67,9 @@ test.describe('Hover tooltips on annotation badges', () => {
     await enterInspection(page);
 
     const canvas = page.getByTestId('tree-canvas');
-    const errorIcon = canvas.locator('.codicon-error').first();
-    await expect(errorIcon).toBeVisible({ timeout: 5000 });
-    await errorIcon.hover();
+    const errorBadge = canvas.getByTestId('badge-error').first();
+    await expect(errorBadge).toBeVisible({ timeout: 5000 });
+    await errorBadge.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
@@ -85,9 +81,9 @@ test.describe('Hover tooltips on annotation badges', () => {
     await enterInspection(page);
 
     const canvas = page.getByTestId('tree-canvas');
-    const warningIcon = canvas.locator('.codicon-warning').first();
-    await expect(warningIcon).toBeVisible({ timeout: 5000 });
-    await warningIcon.hover();
+    const warningBadge = canvas.getByTestId('badge-warning').first();
+    await expect(warningBadge).toBeVisible({ timeout: 5000 });
+    await warningBadge.hover();
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });

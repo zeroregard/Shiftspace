@@ -37,7 +37,7 @@ export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: Anno
           }
           delayDuration={0}
         >
-          <span>
+          <span data-testid="badge-error">
             <Badge variant="error">
               <Codicon name="error" size={iconSize} />
               {errors}
@@ -55,7 +55,7 @@ export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: Anno
           }
           delayDuration={0}
         >
-          <span>
+          <span data-testid="badge-warning">
             <Badge variant="warning">
               <Codicon name="warning" size={iconSize} />
               {warnings}
@@ -65,7 +65,7 @@ export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: Anno
       )}
       {totalFindings > 0 && (
         <Tooltip content={<FindingTooltipContent findings={findings} />} delayDuration={0}>
-          <span>
+          <span data-testid="badge-finding">
             <Badge variant="finding">
               <SmellIcon width={iconSize} height={iconSize} />
               {totalFindings}
