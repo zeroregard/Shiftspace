@@ -13,6 +13,15 @@
       "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts"],
       "ignoreDependencies": ["tailwindcss", "babel-plugin-react-compiler"]
     },
+    "packages/renderer-browser-tests": {
+      "entry": ["src/**/*.spec.tsx"],
+      "project": ["src/**/*.{ts,tsx}", "playwright/**/*.{ts,tsx}"],
+      "ignoreDependencies": [
+        "tailwindcss",
+        "babel-plugin-react-compiler",
+        "@playwright/experimental-ct-react"
+      ]
+    },
     "apps/vscode-ext": {
       "entry": ["src/webview/index.tsx"],
       "project": ["src/**/*.{ts,tsx}"],

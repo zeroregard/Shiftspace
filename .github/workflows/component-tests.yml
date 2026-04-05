@@ -114,11 +114,11 @@ jobs:
 
       - name: Install Playwright system deps
         if: steps.affected.outputs.run_ct == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: cd packages/renderer-browser-tests && npx playwright install-deps chromium
+        run: bun run --filter @shiftspace/renderer-browser-tests playwright:install-deps
 
       - name: Install Playwright browsers
         if: steps.affected.outputs.run_ct == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: cd packages/renderer-browser-tests && npx playwright install chromium
+        run: bun run --filter @shiftspace/renderer-browser-tests playwright:install
 
       - name: Record baseline and head SHAs
         id: baseline
@@ -135,7 +135,7 @@ jobs:
           set -o pipefail
           echo "Running CT specs: ${{ steps.affected.outputs.specs }}"
           cd packages/renderer-browser-tests
-          npx playwright test ${{ steps.affected.outputs.specs }} --config playwright-ct.config.ts --update-snapshots 2>&1 | tee /tmp/ct-output.txt
+          ../../node_modules/.bin/playwright test ${{ steps.affected.outputs.specs }} --config playwright-ct.config.ts --update-snapshots 2>&1 | tee /tmp/ct-output.txt
 
       - name: Detect screenshot changes
         id: detect
