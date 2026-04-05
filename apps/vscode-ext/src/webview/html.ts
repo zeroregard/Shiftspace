@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 
-export function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
+export function getWebviewHtml(
+  webview: vscode.Webview,
+  extensionUri: vscode.Uri,
+  mode: 'full' | 'sidebar' = 'full'
+): string {
   const nonce = crypto.randomBytes(16).toString('hex');
 
   const jsUri = webview.asWebviewUri(
@@ -29,7 +33,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri
   <link href="${codiconsUri}" rel="stylesheet">
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root" data-mode="${mode}"></div>
   <script nonce="${nonce}" src="${jsUri}"></script>
 </body>
 </html>`;

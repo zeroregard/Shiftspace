@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   ShiftspaceRenderer,
+  SidebarView,
   useWorktreeStore,
   useActionStore,
   useInsightStore,
@@ -358,8 +359,58 @@ const App: React.FC = () => {
   );
 };
 
+const SidebarApp: React.FC = () => {
+  const worktrees = useWorktreeStore((s) => s.worktrees);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
+
+  useEffect(() => {
+    const handler = (e: MessageEvent<HostMessage>) => {
+      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
+      handleCoreMessage(e.data, setErrorMessage);
+    };
+
+    window.addEventListener('message', handler);
+    vscode?.postMessage({ type: 'ready' });
+
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const handleWorktreeClick = (worktreeId: string) => {
+    vscode?.postMessage({ type: 'worktree-click', worktreeId });
+  };
+
+  if (errorMessage) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--vscode-descriptionForeground, #888)',
+          fontSize: '13px',
+        }}
+      >
+        {errorMessage}
+      </div>
+    );
+  }
+
+  const wtArray = Array.from(worktrees.values()).sort((a, b) => {
+    if (a.isMainWorktree && !b.isMainWorktree) return -1;
+    if (!a.isMainWorktree && b.isMainWorktree) return 1;
+    const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
+    const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
+  return <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />;
+};
+
 const container = document.getElementById('root');
 if (container) {
+  const isSidebar = container.dataset.mode === 'sidebar';
   const root = createRoot(container);
-  root.render(<App />);
+  root.render(isSidebar ? <SidebarApp /> : <App />);
 }
