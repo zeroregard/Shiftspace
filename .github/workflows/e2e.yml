@@ -101,6 +101,13 @@ jobs:
             add_spec inspector-file-categories
           fi
 
+          # hover-tooltips: core + inspection + preview mock/mockData
+          if has_changes '^apps/preview/e2e/hover-tooltips\.spec\.ts' \
+             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || $E2E_SHARED || $CORE || $INSPECTION; then
+            add_spec hover-tooltips
+          fi
+
           # search-filter: core + inspection + preview mock
           if has_changes '^apps/preview/e2e/search-filter\.spec\.ts' \
              || has_changes '^apps/preview/src/mock/' \
