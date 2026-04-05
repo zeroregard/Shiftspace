@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '@vscode/codicons/dist/codicon.css';
-import { SidebarView, useActionStore, useInsightStore, useWorktreeStore, ActionsProvider, TooltipProvider } from '@shiftspace/renderer';
+import {
+  SidebarView,
+  useActionStore,
+  useInsightStore,
+  useWorktreeStore,
+  ActionsProvider,
+  TooltipProvider,
+} from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
 import { MockEngine } from './mock/engine';
 import { MOCK_ACTION_CONFIGS, MOCK_PIPELINES, getMockInitialStates } from './mock/actions';

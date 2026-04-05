@@ -113,7 +113,9 @@ export function WorktreeCard({ worktree: wt, variant = 'full' }: WorktreeCardPro
   } = useWorktreeRename(wt.id, folderName);
 
   return (
-    <div className={`group ${variant === 'full' ? 'w-[32rem] gap-3 p-4' : 'w-full gap-2 p-3'} flex flex-col rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-colors`}>
+    <div
+      className={`group ${variant === 'full' ? 'w-[32rem] gap-3 p-4' : 'w-full gap-2 p-3'} flex flex-col rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-colors`}
+    >
       {/* Workspace name + branch picker */}
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center gap-1.5 min-w-0">

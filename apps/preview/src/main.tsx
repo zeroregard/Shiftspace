@@ -7,7 +7,5 @@ import { SidebarPage } from './SidebarPage';
 const route = window.location.pathname;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    {route === '/sidebar' ? <SidebarPage /> : <App />}
-  </React.StrictMode>
+  <React.StrictMode>{route === '/sidebar' ? <SidebarPage /> : <App />}</React.StrictMode>
 );
