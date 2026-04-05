@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import type { MockEngine } from '../mock/engine';
 import type { AgentPersona } from '../mock/types';
-import { WORKTREE_PRESETS } from '../mock/templates';
 
 interface Props {
   engine: MockEngine;
@@ -149,10 +148,6 @@ export const ControlPanel: React.FC<Props> = ({
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="mt-1 text-[9px] text-[rgba(0,255,0,0.25)]">
-        {WORKTREE_PRESETS.length} presets available
       </div>
     </div>
   );
