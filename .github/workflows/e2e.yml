@@ -115,6 +115,13 @@ jobs:
             add_spec search-filter
           fi
 
+          # sidebar: core + grove + preview SidebarPage/mock
+          if has_changes '^apps/preview/e2e/sidebar\.spec\.ts' \
+             || has_changes '^apps/preview/src/(SidebarPage\.tsx|mock/)' \
+             || $E2E_SHARED || $CORE || $GROVE; then
+            add_spec sidebar
+          fi
+
           # Deduplicate
           SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
 

@@ -80,11 +80,20 @@ function BranchRow({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: Br
 
 // ---------------------------------------------------------------------------
 
+type WorktreeCardVariant = 'full' | 'slim';
+
 interface WorktreeCardProps {
   worktree: WorktreeState;
+  variant?: WorktreeCardVariant;
+  /** Override the default click behavior (enter inspection). Used by the sidebar to open a tab instead. */
+  onWorktreeClick?: (worktreeId: string) => void;
 }
 
-export function WorktreeCard({ worktree: wt }: WorktreeCardProps) {
+export function WorktreeCard({
+  worktree: wt,
+  variant = 'full',
+  onWorktreeClick,
+}: WorktreeCardProps) {
   const actions = useActions();
   const enterInspection = useInspectionStore((s) => s.enterInspection);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
@@ -110,7 +119,9 @@ export function WorktreeCard({ worktree: wt }: WorktreeCardProps) {
   } = useWorktreeRename(wt.id, folderName);
 
   return (
-    <div className="group w-[32rem] flex flex-col gap-3 p-4 rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-colors">
+    <div
+      className={`group ${variant === 'full' ? 'w-[32rem] gap-3 p-4' : 'w-full gap-2 p-3'} flex flex-col rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-colors`}
+    >
       {/* Workspace name + branch picker */}
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -144,7 +155,7 @@ export function WorktreeCard({ worktree: wt }: WorktreeCardProps) {
             <button
               data-testid={`enter-inspection-${wt.id}`}
               className="font-semibold text-13 text-text-primary truncate text-left bg-transparent border-none p-0 cursor-pointer hover:text-text-secondary transition-colors flex-1 min-w-0"
-              onClick={() => enterInspection(wt.id)}
+              onClick={() => (onWorktreeClick ? onWorktreeClick(wt.id) : enterInspection(wt.id))}
             >
               {folderName}
             </button>
@@ -187,14 +198,16 @@ export function WorktreeCard({ worktree: wt }: WorktreeCardProps) {
         />
       </div>
 
-      {/* Action buttons */}
-      <div
-        className="flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <ActionBar worktreeId={wt.id} />
-      </div>
+      {/* Action buttons (hidden in slim variant) */}
+      {variant === 'full' && (
+        <div
+          className="flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <ActionBar worktreeId={wt.id} />
+        </div>
+      )}
 
       {/* Stats */}
       <div className="flex items-center justify-between text-11">

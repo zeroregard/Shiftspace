@@ -62,5 +62,6 @@ export {
   type StaticOption,
 } from '@shiftspace/renderer-core';
 
-export { GroveView } from '@shiftspace/renderer-grove';
+export { GroveView, SidebarView, WorktreeCard } from '@shiftspace/renderer-grove';
+export { TooltipProvider } from '@shiftspace/ui/tooltip';
 export { InspectionView } from '@shiftspace/renderer-inspection';

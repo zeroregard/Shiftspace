@@ -85,6 +85,20 @@
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/hover-tooltips.spec.ts"]
     },
+    "e2e:sidebar": {
+      "command": "playwright test e2e/sidebar.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/sidebar.spec.ts",
+        "{projectRoot}/src/SidebarPage.tsx",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/sidebar.spec.ts"]
+    },
     "test:e2e": {
       "dependsOn": [
         "e2e:controls",
@@ -92,7 +106,8 @@
         "e2e:graph",
         "e2e:hover-tooltips",
         "e2e:inspector-file-categories",
-        "e2e:search-filter"
+        "e2e:search-filter",
+        "e2e:sidebar"
       ],
       "command": "echo 'All E2E specs completed'",
       "cache": false
