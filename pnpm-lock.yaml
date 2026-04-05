@@ -166,6 +166,9 @@ importers:
       '@shiftspace/renderer-inspection':
         specifier: workspace:*
         version: link:../renderer-inspection
+      '@shiftspace/ui':
+        specifier: workspace:*
+        version: link:../ui
       react:
         specifier: ^19.0.0
         version: 19.2.4
