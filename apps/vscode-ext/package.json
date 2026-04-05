@@ -8,13 +8,27 @@
     "type": "git",
     "url": "https://github.com/zeroregard/shiftspace"
   },
-  "private": true,
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "SCM Providers",
+    "Visualization"
   ],
+  "keywords": [
+    "git",
+    "worktree",
+    "graph",
+    "diff",
+    "source control",
+    "spatial",
+    "visualization"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
