@@ -13,16 +13,12 @@ name: 🚀 Release
 on:
   push:
     branches: [main]
-    paths:
-      - 'apps/*/src/**'
-      - 'packages/*/src/**'
-      - 'package.json'
-      - 'tsconfig.json'
-      - 'apps/*/package.json'
-      - 'apps/*/tsconfig.json'
-      - 'packages/*/package.json'
-      - 'packages/*/tsconfig.json'
-      - 'bun.lock'
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE'
+      - '.github/**'
+      - 'apps/preview/e2e/**'
+      - 'apps/preview/playwright.config.ts'
 
 # Prevent concurrent releases
 concurrency:
