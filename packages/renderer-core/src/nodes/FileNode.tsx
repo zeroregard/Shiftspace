@@ -101,7 +101,10 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
                   }
                   delayDuration={0}
                 >
-                  <div data-testid="badge-error" className="flex items-center gap-0.5 py-0.5 text-status-deleted">
+                  <div
+                    data-testid="badge-error"
+                    className="flex items-center gap-0.5 py-0.5 text-status-deleted"
+                  >
                     <Codicon name="error" size={16} />
                     <span className="text-11 ml-0.5 mt-px">{errors}</span>
                     <span className="text-11 truncate mt-px">
@@ -120,7 +123,10 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
                   }
                   delayDuration={0}
                 >
-                  <div data-testid="badge-warning" className="flex items-center gap-0.5 py-0.5 text-status-modified">
+                  <div
+                    data-testid="badge-warning"
+                    className="flex items-center gap-0.5 py-0.5 text-status-modified"
+                  >
                     <Codicon name="warning" size={16} />
                     <span className="text-11 ml-0.5 mt-px">{warnings}</span>
                     <span className="text-11 truncate mt-px">
