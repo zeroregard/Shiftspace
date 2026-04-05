@@ -280,7 +280,7 @@ export function FileListPanel({
   const items = useMemo(() => {
     const result: VirtualItem[] = [];
     if (filteredCommitted.length > 0) {
-      result.push({ type: 'label', label: 'Committed' });
+      result.push({ type: 'label', label: wt.diffMode.type === 'repo' ? 'Tracked' : 'Committed' });
       for (const file of filteredCommitted) {
         result.push({ type: 'file', file, sectionKey: 'committed' });
       }
@@ -298,7 +298,7 @@ export function FileListPanel({
       }
     }
     return result;
-  }, [filteredCommitted, filteredStaged, filteredUnstaged]);
+  }, [filteredCommitted, filteredStaged, filteredUnstaged, wt.diffMode.type]);
 
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -325,7 +325,11 @@ export function FileListPanel({
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 pt-0">
         {isEmpty ? (
           <div className="text-text-faint text-11 px-3 py-2">
-            {searchQuery || problemsOnly ? 'No matching files' : 'No changes'}
+            {searchQuery || problemsOnly
+              ? 'No matching files'
+              : wt.diffMode.type === 'repo'
+                ? 'No tracked files'
+                : 'No changes'}
           </div>
         ) : (
           <div

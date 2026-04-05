@@ -48,7 +48,12 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const diffMode: DiffMode = wt?.diffMode ?? { type: 'working' };
   const defaultBranch = wt?.defaultBranch ?? 'main';
-  const modeLabel = diffMode.type === 'working' ? 'Working changes' : `vs ${diffMode.branch}`;
+  const modeLabel =
+    diffMode.type === 'working'
+      ? 'Working changes'
+      : diffMode.type === 'repo'
+        ? 'All files'
+        : `vs ${diffMode.branch}`;
 
   const diffModeStaticOptions = wt
     ? [
@@ -69,6 +74,12 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
                   actions.diffModeChange(wt.id, { type: 'branch', branch: defaultBranch }),
               },
             ]),
+        {
+          key: 'repo',
+          label: 'All files',
+          selected: diffMode.type === 'repo',
+          onSelect: () => actions.diffModeChange(wt.id, { type: 'repo' }),
+        },
       ]
     : [];
 
