@@ -250,6 +250,69 @@ describe('getAllFilteredFiles', () => {
     const all = getAllFilteredFiles(wt, '');
     expect(all).toHaveLength(3);
   });
+
+  it('does not duplicate partially-staged files', () => {
+    const partialFile: FileChange = {
+      path: 'src/App.tsx',
+      status: 'modified',
+      staged: true,
+      partiallyStaged: true,
+      linesAdded: 5,
+      linesRemoved: 2,
+      lastChangedAt: 0,
+    };
+    const wt = makeWt({ files: [partialFile] });
+    const result = getAllFilteredFiles(wt, '');
+    // partiallyStaged file should appear exactly once, not twice
+    expect(result.filter((f) => f.path === 'src/App.tsx')).toHaveLength(1);
+  });
+
+  it('does not duplicate partially-staged files when filtering', () => {
+    const partialFile: FileChange = {
+      path: 'src/App.tsx',
+      status: 'modified',
+      staged: true,
+      partiallyStaged: true,
+      linesAdded: 5,
+      linesRemoved: 2,
+      lastChangedAt: 0,
+    };
+    const otherFile = makeFile('lib/utils.ts', false);
+    const wt = makeWt({ files: [partialFile, otherFile] });
+    const result = getAllFilteredFiles(wt, 'App');
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('src/App.tsx');
+  });
+
+  it('deduplicates multiple partially-staged files correctly', () => {
+    const files: FileChange[] = [
+      {
+        path: 'src/A.tsx',
+        status: 'modified',
+        staged: true,
+        partiallyStaged: true,
+        linesAdded: 1,
+        linesRemoved: 0,
+        lastChangedAt: 0,
+      },
+      {
+        path: 'src/B.tsx',
+        status: 'modified',
+        staged: true,
+        partiallyStaged: true,
+        linesAdded: 1,
+        linesRemoved: 0,
+        lastChangedAt: 0,
+      },
+      makeFile('src/C.tsx', true),
+      makeFile('src/D.tsx', false),
+    ];
+    const wt = makeWt({ files });
+    const result = getAllFilteredFiles(wt, '');
+    const paths = result.map((f) => f.path);
+    // Each file should appear exactly once
+    expect(paths.sort()).toEqual(['src/A.tsx', 'src/B.tsx', 'src/C.tsx', 'src/D.tsx']);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -257,7 +320,7 @@ describe('getAllFilteredFiles', () => {
 // ---------------------------------------------------------------------------
 
 describe('partitionFiles + filterFilesByQuery consistency', () => {
-  it('filtering each section produces the same result as getAllFilteredFiles', () => {
+  it('filtering each section produces the same unique paths as getAllFilteredFiles', () => {
     const wt = makeWt({
       diffMode: { type: 'branch', branch: 'main' },
       branchFiles: [makeFile('src/committed1.ts', false), makeFile('lib/committed2.ts', false)],
@@ -274,8 +337,30 @@ describe('partitionFiles + filterFilesByQuery consistency', () => {
 
     const filteredAll = getAllFilteredFiles(wt, query);
 
-    expect(filteredSections.map((f) => f.path).sort()).toEqual(
-      filteredAll.map((f) => f.path).sort()
-    );
+    // getAllFilteredFiles deduplicates, so compare unique paths
+    const uniqueSectionPaths = [...new Set(filteredSections.map((f) => f.path))].sort();
+    expect(uniqueSectionPaths).toEqual(filteredAll.map((f) => f.path).sort());
+  });
+
+  it('partially-staged files appear once in getAllFilteredFiles despite being in two sections', () => {
+    const partialFile: FileChange = {
+      path: 'src/shared.ts',
+      status: 'modified',
+      staged: true,
+      partiallyStaged: true,
+      linesAdded: 3,
+      linesRemoved: 1,
+      lastChangedAt: 0,
+    };
+    const wt = makeWt({ files: [partialFile] });
+
+    const { staged, unstaged } = partitionFiles(wt);
+    // partitionFiles intentionally puts it in both sections
+    expect(staged.filter((f) => f.path === 'src/shared.ts')).toHaveLength(1);
+    expect(unstaged.filter((f) => f.path === 'src/shared.ts')).toHaveLength(1);
+
+    // But getAllFilteredFiles deduplicates for the tree view
+    const all = getAllFilteredFiles(wt, '');
+    expect(all.filter((f) => f.path === 'src/shared.ts')).toHaveLength(1);
   });
 });

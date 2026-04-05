@@ -207,6 +207,54 @@ test.describe('Search filter in Inspection view', () => {
   });
 });
 
+test.describe('Tree deduplication — partially staged files', () => {
+  const PARTIAL_FILE = 'page.tsx'; // the mock engine's partially staged file
+
+  test('partially staged file appears only once in the tree hierarchy', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    // Filter to just the partially staged file so we can count tree nodes
+    const searchInput = page.locator('input[placeholder="Filter files"]');
+    await searchInput.fill('page.tsx');
+    await page.waitForTimeout(400);
+
+    // In the tree canvas (right panel), the file should appear exactly once.
+    // File nodes render a span with the filename as text-11.
+    const treeCanvas = page.getByTestId('tree-canvas');
+    const treeFileNodes = treeCanvas.locator('span.text-11').filter({ hasText: PARTIAL_FILE });
+    await expect(treeFileNodes).toHaveCount(1);
+  });
+
+  test('filtering for partially staged file still shows it in both list sections', async ({
+    page,
+  }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    const searchInput = page.locator('input[placeholder="Filter files"]');
+    await searchInput.fill('page.tsx');
+    await page.waitForTimeout(400);
+
+    // In the list panel (left), the file should still appear in both
+    // Staged and Unstaged sections — that's intentional for `git add -p` files.
+    const listPanel = page.locator('.overflow-y-auto');
+    const listRows = listPanel.getByRole('button').filter({ hasText: PARTIAL_FILE });
+    await expect(listRows).toHaveCount(2);
+  });
+
+  test('screenshot: tree with filtered partially staged file', async ({ page }) => {
+    await seedMathRandom(page);
+    await enterInspection(page);
+
+    const searchInput = page.locator('input[placeholder="Filter files"]');
+    await searchInput.fill('page.tsx');
+    await page.waitForTimeout(500);
+
+    await expect(page).toHaveScreenshot('tree-partial-staged-filtered.png');
+  });
+});
+
 test.describe('Problems filter in Inspection view', () => {
   /** Locate the problems-only toggle button via data-testid. */
   function getProblemsButton(page: import('@playwright/test').Page) {

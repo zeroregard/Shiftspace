@@ -137,6 +137,18 @@ describe('buildTree', () => {
     expect(folder).toBeDefined();
     expect(rootFile).toMatchObject({ name: 'package.json' });
   });
+
+  it('creates duplicate file nodes when the same path appears twice in input', () => {
+    // buildTree itself does NOT deduplicate — callers must ensure unique paths.
+    // This test documents the behavior so the dedup contract is clear.
+    const staged = f('src/App.tsx', { staged: true, partiallyStaged: true });
+    const unstaged = f('src/App.tsx', { staged: false, partiallyStaged: true });
+    const tree = buildTree('wt', [staged, unstaged]);
+    const srcFolder = tree.find((n) => n.kind === 'folder' && n.name === 'src');
+    expect(srcFolder).toBeDefined();
+    // Two file entries for the same path — this is why callers must deduplicate
+    expect(srcFolder!.children.filter((c) => c.kind === 'file')).toHaveLength(2);
+  });
 });
 
 // ---------------------------------------------------------------------------

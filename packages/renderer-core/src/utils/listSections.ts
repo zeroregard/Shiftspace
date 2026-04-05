@@ -110,5 +110,13 @@ export function filterFilesByProblems(
 export function getAllFilteredFiles(wt: WorktreeState, query: string): FileChange[] {
   const { committed, staged, unstaged } = partitionFiles(wt);
   const all = [...committed, ...staged, ...unstaged];
-  return filterFilesByQuery(all, query);
+  // Deduplicate by path — partiallyStaged files appear in both staged and
+  // unstaged sections, but the tree must contain each file only once.
+  const seen = new Set<string>();
+  const unique = all.filter((f) => {
+    if (seen.has(f.path)) return false;
+    seen.add(f.path);
+    return true;
+  });
+  return filterFilesByQuery(unique, query);
 }
