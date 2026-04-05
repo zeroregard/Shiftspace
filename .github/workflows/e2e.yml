@@ -207,45 +207,6 @@ jobs:
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Generate diff images
-        if: steps.check-tests.outputs.exist == 'true' && steps.detect.outputs.has_changes == 'true'
-        run: |
-          SCREENSHOTS_DIR="apps/preview/e2e/__screenshots__"
-          DIFFS_DIR="${SCREENSHOTS_DIR}/__diffs__"
-          rm -rf "$DIFFS_DIR"
-          mkdir -p "$DIFFS_DIR"
-
-          # Only generate diffs for modified files (not new/deleted)
-          MODIFIED=$(git diff --name-only -- "${SCREENSHOTS_DIR}/**/*.png" 2>/dev/null || true)
-          if [ -z "$MODIFIED" ]; then
-            echo "No modified screenshots to diff."
-            exit 0
-          fi
-
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            NAME=$(basename "$file" .png)
-            SPEC_DIR=$(basename "$(dirname "$file")")
-            DIFF_OUT="${DIFFS_DIR}/${SPEC_DIR}--${NAME}.png"
-
-            # Extract old version from git
-            git show "HEAD:${file}" > /tmp/old_screenshot.png 2>/dev/null || continue
-
-            # Generate diff: faded original with red highlights on changed pixels
-            compare -metric AE -fuzz 2% \
-              /tmp/old_screenshot.png "$file" \
-              -highlight-color '#FF000080' -lowlight-color 'none' \
-              -compose src "$DIFF_OUT" 2>/dev/null || true
-
-            if [ -f "$DIFF_OUT" ]; then
-              echo "Generated diff: $DIFF_OUT"
-            fi
-          done <<< "$MODIFIED"
-
-          # Count generated diffs
-          DIFF_COUNT=$(find "$DIFFS_DIR" -name '*.png' 2>/dev/null | wc -l | tr -d ' ')
-          echo "Generated ${DIFF_COUNT} diff image(s)"
-
       - name: Commit updated screenshots
         id: commit
         if: steps.check-tests.outputs.exist == 'true' && steps.detect.outputs.has_changes == 'true'
@@ -302,26 +263,21 @@ jobs:
           DELETED_LIST=""
           UNCHANGED_LIST=""
 
-          DIFFS_DIR="${SCREENSHOTS_DIR}/__diffs__"
-
           # Process changed files
           while IFS=$'\t' read -r status file; do
             [ -z "$file" ] && continue
-            NAME=$(basename "$file" .png)
-            SPEC_DIR=$(basename "$(dirname "$file")")
+            NAME=$(basename "$file")
             case "$status" in
               M)
                 BEFORE_URL="https://raw.githubusercontent.com/${REPO}/${OLD_SHA}/${file}"
                 AFTER_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${file}"
-                DIFF_FILE="${DIFFS_DIR}/${SPEC_DIR}--${NAME}.png"
-                DIFF_URL="https://raw.githubusercontent.com/${REPO}/${NEW_SHA}/${DIFF_FILE}"
                 CHANGED_LIST="${CHANGED_LIST}
           <details>
-          <summary>🔄 ${NAME}.png</summary>
+          <summary>🔄 ${NAME}</summary>
 
-          | Before | After | Diff |
-          |--------|-------|------|
-          | ![before](${BEFORE_URL}) | ![after](${AFTER_URL}) | ![diff](${DIFF_URL}) |
+          | Before | After |
+          |--------|-------|
+          | ![before](${BEFORE_URL}) | ![after](${AFTER_URL}) |
 
           </details>
           "
