@@ -104,16 +104,8 @@ jobs:
             echo "No CT specs affected"
           fi
 
-      - name: Restore Playwright browsers cache
-        if: steps.affected.outputs.run_ct == 'true'
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-ct-${{ runner.os }}-${{ hashFiles('packages/renderer-browser-tests/package.json') }}
-
       - name: Install Playwright browsers
-        if: steps.affected.outputs.run_ct == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.affected.outputs.run_ct == 'true'
         run: cd packages/renderer-browser-tests && ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Record baseline and head SHAs
