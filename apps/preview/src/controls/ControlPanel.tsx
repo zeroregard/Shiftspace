@@ -205,10 +205,6 @@ export const ControlPanel: React.FC<Props> = ({
           </div>
         ))}
       </div>
-
-      <div className="mt-1.5 text-[9px] text-text-faint">
-        {WORKTREE_PRESETS.length} presets available
-      </div>
     </div>
   );
 };
