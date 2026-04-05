@@ -1,3 +1,8 @@
+import { installSeededRandom } from './mock/seed';
+
+// Must run before any module-level code calls Math.random
+installSeededRandom();
+
 import './styles.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
