@@ -1,18 +1,7 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import { DiffPopover } from '@shiftspace/renderer-core/src/overlays/DiffPopover';
-import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/ActionsContext';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
 import { createFileWithDiff } from './fixtures/mockFiles';
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <RadixTooltip.Provider>
-      <ActionsProvider>
-        <div style={{ padding: 16, background: 'var(--color-canvas)' }}>{children}</div>
-      </ActionsProvider>
-    </RadixTooltip.Provider>
-  );
-}
+import { DiffPopoverWrapper as Wrapper } from './fixtures/Wrappers';
 
 test.describe('DiffPopover', () => {
   test('closed state wrapping a child', async ({ mount }) => {

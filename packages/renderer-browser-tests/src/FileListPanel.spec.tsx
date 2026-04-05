@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import { FileListPanel } from '@shiftspace/renderer-inspection/src/components/FileListPanel';
-import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/ActionsContext';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
 import { createMockWorktreeWithFiles } from './fixtures/mockWorktree';
 import {
   createMockFile,
@@ -11,25 +9,7 @@ import {
   createPartiallyStagedFile,
 } from './fixtures/mockFiles';
 import { resetAllStores } from './fixtures/storeHelpers';
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <RadixTooltip.Provider>
-      <ActionsProvider>
-        <div
-          style={{
-            width: 350,
-            height: 500,
-            background: 'var(--color-canvas)',
-            display: 'flex',
-          }}
-        >
-          {children}
-        </div>
-      </ActionsProvider>
-    </RadixTooltip.Provider>
-  );
-}
+import { FileListPanelWrapper as Wrapper } from './fixtures/Wrappers';
 
 const noopFn = () => {};
 

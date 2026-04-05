@@ -1,20 +1,9 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import { UnifiedHeader } from '@shiftspace/renderer-core/src/shared/UnifiedHeader';
-import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/ActionsContext';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
 import { createMockWorktreeWithFiles } from './fixtures/mockWorktree';
 import { createMockFile } from './fixtures/mockFiles';
 import { resetAllStores, seedWorktree, enterInspectionMode } from './fixtures/storeHelpers';
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <RadixTooltip.Provider>
-      <ActionsProvider>
-        <div style={{ width: 800, background: 'var(--color-canvas)' }}>{children}</div>
-      </ActionsProvider>
-    </RadixTooltip.Provider>
-  );
-}
+import { UnifiedHeaderWrapper as Wrapper } from './fixtures/Wrappers';
 
 test.beforeEach(() => {
   resetAllStores();

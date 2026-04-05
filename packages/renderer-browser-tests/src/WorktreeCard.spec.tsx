@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import { WorktreeCard } from '@shiftspace/renderer-grove/src/components/WorktreeCard';
-import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/ActionsContext';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
 import { createMockWorktreeWithFiles } from './fixtures/mockWorktree';
 import { createMockFile, createStagedFile, createAddedFile } from './fixtures/mockFiles';
 import {
@@ -11,16 +9,7 @@ import {
   seedActionState,
   seedPipelines,
 } from './fixtures/storeHelpers';
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <RadixTooltip.Provider>
-      <ActionsProvider>
-        <div style={{ padding: 16, background: 'var(--color-canvas)' }}>{children}</div>
-      </ActionsProvider>
-    </RadixTooltip.Provider>
-  );
-}
+import { WorktreeCardWrapper as Wrapper } from './fixtures/Wrappers';
 
 test.beforeEach(() => {
   resetAllStores();

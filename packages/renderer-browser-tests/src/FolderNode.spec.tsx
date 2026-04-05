@@ -1,14 +1,6 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import { FolderNode } from '@shiftspace/renderer-core/src/nodes/FolderNode';
-import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/ActionsContext';
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <ActionsProvider>
-      <div style={{ width: 180, padding: 8, background: 'var(--color-canvas)' }}>{children}</div>
-    </ActionsProvider>
-  );
-}
+import { FolderNodeWrapper as Wrapper } from './fixtures/Wrappers';
 
 test.describe('FolderNode', () => {
   test('short name', async ({ mount }) => {

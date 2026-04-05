@@ -1,23 +1,12 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import { ActionBar } from '@shiftspace/renderer-core/src/components/ActionBar';
-import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/ActionsContext';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
 import {
   resetAllStores,
   seedActionConfigs,
   seedActionState,
   seedPipelines,
 } from './fixtures/storeHelpers';
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <RadixTooltip.Provider>
-      <ActionsProvider>
-        <div style={{ padding: 8, background: 'var(--color-canvas)' }}>{children}</div>
-      </ActionsProvider>
-    </RadixTooltip.Provider>
-  );
-}
+import { ActionBarWrapper as Wrapper } from './fixtures/Wrappers';
 
 test.beforeEach(() => {
   resetAllStores();

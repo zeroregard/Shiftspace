@@ -1,8 +1,5 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import { FileNode } from '@shiftspace/renderer-core/src/nodes/FileNode';
-import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/ActionsContext';
-import { InspectionHoverContext } from '@shiftspace/renderer-core/src/shared/InspectionHoverContext';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
 import {
   createMockFile,
   createDeletedFile,
@@ -11,26 +8,7 @@ import {
 } from './fixtures/mockFiles';
 import { createFileDiagnostics, createInsightDetail } from './fixtures/mockInsights';
 import { resetAllStores, seedFileDiagnostics, seedInsightDetail } from './fixtures/storeHelpers';
-
-function Wrapper({
-  children,
-  hoveredFilePath = null,
-}: {
-  children: React.ReactNode;
-  hoveredFilePath?: string | null;
-}) {
-  return (
-    <RadixTooltip.Provider>
-      <ActionsProvider>
-        <InspectionHoverContext.Provider value={{ hoveredFilePath }}>
-          <div style={{ width: 180, padding: 8, background: 'var(--color-canvas)' }}>
-            {children}
-          </div>
-        </InspectionHoverContext.Provider>
-      </ActionsProvider>
-    </RadixTooltip.Provider>
-  );
-}
+import { FileNodeWrapper as Wrapper } from './fixtures/Wrappers';
 
 test.beforeEach(() => {
   resetAllStores();
