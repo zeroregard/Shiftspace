@@ -150,7 +150,7 @@ function SearchInput({
   const isFiltering = !!localQuery || problemsOnly;
 
   return (
-    <div className="px-2 pt-2 pb-1 shrink-0">
+    <div className="px-3 pt-2 pb-1 shrink-0">
       <div className="flex items-center gap-1">
         <div className="relative flex-1">
           <Codicon

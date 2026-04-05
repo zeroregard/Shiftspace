@@ -50,6 +50,11 @@
         "command": "shiftspace.detectActions",
         "title": "Detect Actions",
         "category": "Shiftspace"
+      },
+      {
+        "command": "shiftspace.recheckInsights",
+        "title": "Recheck Insights",
+        "category": "Shiftspace"
       }
     ],
     "keybindings": [

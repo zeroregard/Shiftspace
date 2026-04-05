@@ -46,6 +46,12 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand('shiftspace.recheckInsights', () => {
+      ShiftspacePanel.recheckInsights();
+    })
+  );
+
   // Expose the MCP HTTP server so ShiftspacePanel can register handlers
   ShiftspacePanel.setMcpHttpServer(mcpHttpServer);
 

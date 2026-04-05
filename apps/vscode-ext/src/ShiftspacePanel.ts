@@ -34,6 +34,7 @@ export class ShiftspacePanel {
 
   private _iconDebounceTimer: ReturnType<typeof setTimeout> | undefined;
   private _settingsChangeDisposable: vscode.Disposable | undefined;
+  private _insightStatusBar: vscode.StatusBarItem | undefined;
 
   // ---------------------------------------------------------------------------
   // Static API (consumed by extension.ts)
@@ -63,6 +64,13 @@ export class ShiftspacePanel {
         },
       })
     );
+  }
+
+  static recheckInsights(): void {
+    const wt = ShiftspacePanel.currentPanel?._inspection?.currentWorktreeId;
+    if (wt) {
+      ShiftspacePanel.currentPanel?._inspection?.recheck(wt);
+    }
   }
 
   static createOrShow(context: vscode.ExtensionContext) {
@@ -120,6 +128,10 @@ export class ShiftspacePanel {
   private async onReady(): Promise<void> {
     const postMessage = (msg: object) => {
       void this._panel.webview.postMessage(msg);
+      // Mirror insight status to the VS Code status bar
+      if ((msg as { type: string }).type === 'insights-status') {
+        this.updateInsightStatusBar((msg as { running: boolean }).running);
+      }
     };
 
     // Dispose previous providers
@@ -385,6 +397,27 @@ export class ShiftspacePanel {
   }
 
   // ---------------------------------------------------------------------------
+  // Insight status bar
+  // ---------------------------------------------------------------------------
+
+  private updateInsightStatusBar(running: boolean): void {
+    if (running) {
+      if (!this._insightStatusBar) {
+        this._insightStatusBar = vscode.window.createStatusBarItem(
+          vscode.StatusBarAlignment.Left,
+          0
+        );
+        this._insightStatusBar.command = 'shiftspace.recheckInsights';
+      }
+      this._insightStatusBar.text = '$(sync~spin) Shiftspace: Analyzing…';
+      this._insightStatusBar.tooltip = 'Shiftspace is analyzing files for code smells';
+      this._insightStatusBar.show();
+    } else {
+      this._insightStatusBar?.hide();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Disposal
   // ---------------------------------------------------------------------------
 
@@ -398,6 +431,8 @@ export class ShiftspacePanel {
     this._settingsChangeDisposable?.dispose();
     this._settingsChangeDisposable = undefined;
 
+    this._insightStatusBar?.dispose();
+    this._insightStatusBar = undefined;
     this._inspection?.dispose();
     this._inspection = undefined;
     this._repoTracker?.dispose();

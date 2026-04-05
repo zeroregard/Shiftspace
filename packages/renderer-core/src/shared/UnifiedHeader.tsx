@@ -1,7 +1,5 @@
-import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useInspectionStore } from '../store';
-import { useInsightStore } from '../store/insightStore';
 import type { DiffMode } from '../types';
 import { BranchPicker } from '../overlays/BranchPicker';
 import { Codicon } from '@shiftspace/ui/codicon';
@@ -142,32 +140,6 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
           onDetectPackages={actions.detectPackages}
         />
       )}
-
-      {isInspecting && worktreeId && (
-        <InsightStatusButton onRecheck={() => actions.recheckInsights(worktreeId)} />
-      )}
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Insight status indicator — spinner while running, checkmark when done.
-// Click to recheck.
-// ---------------------------------------------------------------------------
-
-const InsightStatusButton = React.memo(({ onRecheck }: { onRecheck: () => void }) => {
-  const running = useInsightStore((s) => s.insightsRunning);
-
-  return (
-    <IconButton
-      icon={running ? 'loading' : 'check'}
-      label={running ? 'Analyzing…' : 'Recheck insights'}
-      iconSize={13}
-      iconAnimation={running ? 'spin 1s linear infinite' : undefined}
-      onClick={running ? undefined : onRecheck}
-      disabled={running}
-      ghost
-    />
-  );
-});
-InsightStatusButton.displayName = 'InsightStatusButton';
