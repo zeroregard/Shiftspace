@@ -170,6 +170,7 @@ jobs:
         if: steps.check-tests.outputs.exist == 'true'
         continue-on-error: true
         run: |
+          set -o pipefail
           echo "=== Screenshot baselines before test run ==="
           find apps/preview/e2e/__screenshots__ -name '*.png' 2>/dev/null | sort || echo "<none>"
           echo "Running specs: ${{ steps.affected.outputs.specs }}"
