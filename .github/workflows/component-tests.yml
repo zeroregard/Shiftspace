@@ -273,6 +273,16 @@ jobs:
             if [ "$PLAYWRIGHT_OUTCOME" = "failure" ]; then
               echo "> **Tests failed.** Some component tests hit errors. [View logs](${RUN_URL})."
               echo ""
+              if [ -f /tmp/ct-output.txt ]; then
+                echo "<details>"
+                echo "<summary>Test output (click to expand)</summary>"
+                echo ""
+                echo '```'
+                tail -80 /tmp/ct-output.txt
+                echo '```'
+                echo "</details>"
+                echo ""
+              fi
             fi
 
             if [ "$CHANGED_COUNT" -eq 0 ] && [ "$NEW_COUNT" -eq 0 ] && [ "$DELETED_COUNT" -eq 0 ]; then
