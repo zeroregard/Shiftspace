@@ -14,12 +14,16 @@
       "ignoreDependencies": ["tailwindcss", "babel-plugin-react-compiler"]
     },
     "packages/renderer-browser-tests": {
-      "entry": ["src/**/*.spec.tsx"],
-      "project": ["src/**/*.{ts,tsx}", "playwright/**/*.{ts,tsx}"],
+      "entry": ["src/**/*.spec.tsx", "playwright/**/*.{ts,tsx}"],
+      "project": ["src/**/*.{ts,tsx}", "playwright/**/*.{ts,tsx}", "playwright-ct.config.ts"],
       "ignoreDependencies": [
         "tailwindcss",
         "babel-plugin-react-compiler",
-        "@playwright/experimental-ct-react"
+        "@playwright/experimental-ct-react",
+        "@playwright/test",
+        "@tailwindcss/vite",
+        "@vitejs/plugin-react",
+        "vite"
       ]
     },
     "apps/vscode-ext": {
