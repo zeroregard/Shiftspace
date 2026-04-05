@@ -104,7 +104,7 @@ export class ShiftspacePanel {
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
     this._panel = panel;
     this._context = context;
-    this._panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'media', 'icon.svg');
+    this._panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'media', 'icon-tab.svg');
     this._panel.webview.html = getWebviewHtml(this._panel.webview, context.extensionUri);
 
     // Register the ready handler immediately so the first "ready" message
