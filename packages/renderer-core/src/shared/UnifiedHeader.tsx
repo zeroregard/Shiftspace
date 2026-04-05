@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import * as Popover from '@radix-ui/react-popover';
+import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useInspectionStore } from '../store';
+import { useInsightStore } from '../store/insightStore';
 import type { DiffMode } from '../types';
 import { BranchPicker } from '../overlays/BranchPicker';
 import { Codicon } from '@shiftspace/ui/codicon';
@@ -143,55 +143,31 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
         />
       )}
 
-      <EllipsisMenu
-        disabled={!isInspecting}
-        onRefresh={worktreeId ? () => actions.recheckInsights(worktreeId) : undefined}
-      />
+      {isInspecting && worktreeId && (
+        <InsightStatusButton onRecheck={() => actions.recheckInsights(worktreeId)} />
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Ellipsis (3-dot) menu
+// Insight status indicator — spinner while running, checkmark when done.
+// Click to recheck.
 // ---------------------------------------------------------------------------
 
-interface EllipsisMenuProps {
-  disabled: boolean;
-  onRefresh?: () => void;
-}
-
-const EllipsisMenu = React.memo(({ disabled, onRefresh }: EllipsisMenuProps) => {
-  const [open, setOpen] = useState(false);
+const InsightStatusButton = React.memo(({ onRecheck }: { onRecheck: () => void }) => {
+  const running = useInsightStore((s) => s.insightsRunning);
 
   return (
-    <Popover.Root open={open} onOpenChange={disabled ? undefined : setOpen}>
-      <Popover.Trigger asChild>
-        <span>
-          <IconButton icon="ellipsis" label="More actions" iconSize={13} disabled={disabled} />
-        </span>
-      </Popover.Trigger>
-
-      <Popover.Portal>
-        <Popover.Content
-          className="z-50 min-w-[140px] bg-node-file border border-border-dashed rounded-lg shadow-lg overflow-hidden animate-popover-open"
-          sideOffset={4}
-          align="end"
-        >
-          <div className="py-1">
-            <button
-              className="w-full text-left px-3 py-1.5 text-11 text-text-primary hover:bg-node-file-pulse cursor-pointer bg-transparent border-none flex items-center gap-1.5"
-              onClick={() => {
-                onRefresh?.();
-                setOpen(false);
-              }}
-            >
-              <Codicon name="refresh" size={12} />
-              Refresh
-            </button>
-          </div>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+    <IconButton
+      icon={running ? 'loading' : 'check'}
+      label={running ? 'Analyzing…' : 'Recheck insights'}
+      iconSize={13}
+      iconAnimation={running ? 'spin 1s linear infinite' : undefined}
+      onClick={running ? undefined : onRecheck}
+      disabled={running}
+      ghost
+    />
   );
 });
-EllipsisMenu.displayName = 'EllipsisMenu';
+InsightStatusButton.displayName = 'InsightStatusButton';

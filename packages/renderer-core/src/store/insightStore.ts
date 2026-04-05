@@ -134,6 +134,9 @@ interface InsightStore {
   findingsIndex: FindingsIndex;
   /** Keyed by `${worktreeId}:${filePath}` */
   fileDiagnostics: Map<string, FileDiagnosticSummary>;
+  /** True while the extension is running insight analysis for the active worktree. */
+  insightsRunning: boolean;
+  setInsightsRunning: (running: boolean) => void;
   setInsightDetail: (worktreeId: string, insightId: string, detail: InsightDetail) => void;
   clearInsightDetails: (worktreeId: string) => void;
   /** Merge/upsert diagnostics — only updates entries for the given files, leaves others untouched. */
@@ -160,6 +163,8 @@ export const useInsightStore = create<InsightStore>((set) => ({
   insightDetails: new Map(),
   findingsIndex: new Map(),
   fileDiagnostics: new Map(),
+  insightsRunning: false,
+  setInsightsRunning: (running) => set({ insightsRunning: running }),
 
   setInsightDetail: (worktreeId, insightId, detail) =>
     set((s) => {

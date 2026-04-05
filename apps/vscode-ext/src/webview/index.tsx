@@ -91,6 +91,7 @@ type HostMessage =
   | { type: 'packages-list'; packages: string[] }
   | { type: 'icon-theme'; payload: IconMap }
   | { type: 'insight-detail'; detail: InsightDetail }
+  | { type: 'insights-status'; running: boolean }
   | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
   | { type: 'diagnostics-remove'; worktreeId: string; filePaths: string[] }
   | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string };
@@ -181,6 +182,9 @@ function handleActionMessage(msg: HostMessage): boolean {
       useInsightStore
         .getState()
         .setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
+      return true;
+    case 'insights-status':
+      useInsightStore.getState().setInsightsRunning(msg.running);
       return true;
     case 'diagnostics-update':
       useInsightStore.getState().setFileDiagnostics(msg.worktreeId, msg.files);

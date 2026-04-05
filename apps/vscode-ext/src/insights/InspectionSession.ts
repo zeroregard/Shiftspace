@@ -109,6 +109,8 @@ export class InspectionSession {
       codeSmells: { smellRules },
     };
 
+    this._deps.postMessage({ type: 'insights-status', running: true });
+
     try {
       const { details } = await this._insightRunner.analyzeWorktree({
         worktreeId,
@@ -127,6 +129,10 @@ export class InspectionSession {
     } catch (err) {
       if (controller.signal.aborted) return;
       log.error('runInsights error:', err);
+    } finally {
+      if (!controller.signal.aborted) {
+        this._deps.postMessage({ type: 'insights-status', running: false });
+      }
     }
   }
 }
