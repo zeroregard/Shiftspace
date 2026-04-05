@@ -21,7 +21,7 @@ import { useSimulationHandlers } from './useSimulationHandlers';
 
 export const SidebarPage: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
-  const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
+  const [_worktreeIds, setWorktreeIds] = useState<string[]>([]);
 
   const { setActionConfigs, setPipelines, setActionState } = useActionStore();
   const { setInsightDetail, setFileDiagnostics } = useInsightStore();
