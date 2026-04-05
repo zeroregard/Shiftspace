@@ -460,6 +460,8 @@ export class GitDataProvider implements vscode.Disposable {
         diffMode,
         branchFiles,
       });
+      // Notify so insights re-run against the new file set
+      this.onFileChange?.(worktreeId);
     } catch (err) {
       log.error('handleSetDiffMode error:', err);
       // Send back empty to clear loading state
