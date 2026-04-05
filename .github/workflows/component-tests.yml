@@ -112,13 +112,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-ct-${{ runner.os }}-${{ hashFiles('packages/renderer-browser-tests/package.json') }}
 
-      - name: Install Playwright system deps
-        if: steps.affected.outputs.run_ct == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bun run --filter @shiftspace/renderer-browser-tests playwright:install-deps
-
       - name: Install Playwright browsers
         if: steps.affected.outputs.run_ct == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bun run --filter @shiftspace/renderer-browser-tests playwright:install
+        run: cd packages/renderer-browser-tests && ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Record baseline and head SHAs
         id: baseline
@@ -135,7 +131,13 @@ jobs:
           set -o pipefail
           echo "Running CT specs: ${{ steps.affected.outputs.specs }}"
           cd packages/renderer-browser-tests
-          echo "Playwright binary: $(./node_modules/.bin/playwright --version 2>&1 || echo 'not found')"
+          echo "=== Debug info ==="
+          echo "Playwright binary target: $(readlink -f ./node_modules/.bin/playwright 2>/dev/null || echo 'not found')"
+          echo "Playwright version: $(./node_modules/.bin/playwright --version 2>&1 || echo 'error')"
+          echo "Node version: $(node --version)"
+          echo "Bun version: $(bun --version)"
+          ls -la node_modules/.bin/playwright 2>/dev/null || echo "No playwright binary in node_modules/.bin"
+          echo "=== Running tests ==="
           bun run test:ct:update -- ${{ steps.affected.outputs.specs }} 2>&1 | tee /tmp/ct-output.txt
 
       - name: Detect screenshot changes
