@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ShiftspacePanel } from './ShiftspacePanel';
+import { SidebarViewProvider } from './SidebarViewProvider';
 import { runDetectActionsCommand } from './actions/detect';
 import { ShiftspaceMcpHttpServer } from './mcp/httpServer';
 import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/autoConfig';
@@ -17,15 +18,12 @@ export function activate(context: vscode.ExtensionContext) {
   // Start the MCP HTTP server (non-blocking)
   void startMcpServer(context);
 
-  // Activity bar icon: clicking it opens Shiftspace as an editor tab
+  // Activity bar sidebar: renders slim grove view with worktree cards
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('shiftspace.sidebar', {
-      resolveWebviewView(webviewView) {
-        ShiftspacePanel.createOrShow(context);
-        webviewView.webview.html =
-          '<html><body style="color:var(--vscode-foreground);padding:16px;font-family:var(--vscode-font-family)">Opening Shiftspace in a tab…</body></html>';
-      },
-    })
+    vscode.window.registerWebviewViewProvider(
+      'shiftspace.sidebar',
+      new SidebarViewProvider(context)
+    )
   );
 
   context.subscriptions.push(
