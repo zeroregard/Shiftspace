@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
 import type { ConfigLoader } from '../actions/configLoader';
 import type { StateManager } from '../actions/stateManager';
@@ -47,7 +47,7 @@ export class McpToolHandlers {
     }
     let gitRoot: string;
     try {
-      gitRoot = execSync('git rev-parse --show-toplevel', {
+      gitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
         cwd,
         encoding: 'utf-8',
         timeout: 5000,

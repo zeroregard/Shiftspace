@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 /**
  * Detect available packages in a monorepo from pnpm-workspace.yaml,
@@ -28,10 +28,14 @@ async function detectPnpmPackages(repoRoot: string): Promise<string[]> {
 
   try {
     // Try pnpm list --json to get actual package names
-    const { stdout } = await execAsync('pnpm list --filter "*" --depth -1 --json 2>/dev/null', {
-      cwd: repoRoot,
-      timeout: 10_000,
-    });
+    const { stdout } = await execFileAsync(
+      'pnpm',
+      ['list', '--filter', '*', '--depth', '-1', '--json'],
+      {
+        cwd: repoRoot,
+        timeout: 10_000,
+      }
+    );
     const parsed = JSON.parse(stdout) as Array<{ name?: string }>;
     const names = parsed
       .map((p) => p.name)

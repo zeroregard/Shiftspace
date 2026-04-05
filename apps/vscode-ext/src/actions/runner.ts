@@ -6,6 +6,19 @@ import type { CheckResult } from './types';
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
+ * Reject commands that contain obvious shell injection patterns.
+ * Commands are defined in .shiftspace.json config files so we allow
+ * normal shell syntax (pipes, redirects, &&) but reject backtick/$(...)
+ * substitutions that could indicate injection through interpolated values.
+ */
+function validateCommand(command: string): void {
+  // Block command substitution patterns that could come from injected values
+  if (/\$\(/.test(command) || /`/.test(command)) {
+    throw new Error(`Command rejected: command substitution syntax is not allowed`);
+  }
+}
+
+/**
  * Build an env with augmented PATH so that tools installed outside /usr/bin
  * (bun, homebrew, nvm, etc.) are found when VSCode spawns a non-login shell.
  */
@@ -42,6 +55,8 @@ export function runCheck(
   return new Promise((resolve, reject) => {
     const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const startedAt = Date.now();
+
+    validateCommand(command);
 
     // Use shell: true to support shell commands (pipelines, env vars, etc.)
     const child = spawn(command, [], {
@@ -140,6 +155,8 @@ function parsePort(text: string): number | null {
 
 /** Start a service (long-running process). Returns a handle to stop it. */
 export function startService(command: string, opts: RunOptions): ServiceHandle {
+  validateCommand(command);
+
   const child = spawn(command, [], {
     cwd: opts.cwd,
     shell: true,
