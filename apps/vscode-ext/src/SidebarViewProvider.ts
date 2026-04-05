@@ -46,7 +46,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             break;
           case 'worktree-click':
             if (message.worktreeId) {
-              ShiftspacePanel.createOrShow(this._context);
+              ShiftspacePanel.openInspection(this._context, message.worktreeId);
             }
             break;
         }

@@ -73,6 +73,17 @@ export class ShiftspacePanel {
     }
   }
 
+  static openInspection(context: vscode.ExtensionContext, worktreeId: string) {
+    ShiftspacePanel.createOrShow(context);
+    // Post the enter-inspection message once the panel is ready.
+    // If the panel already exists it's already ready; if it was just created,
+    // the webview will queue messages until its "ready" handler fires.
+    void ShiftspacePanel.currentPanel?._panel.webview.postMessage({
+      type: 'restore-view-settings',
+      mode: { type: 'inspection', worktreeId },
+    });
+  }
+
   static createOrShow(context: vscode.ExtensionContext) {
     const column = vscode.window.activeTextEditor
       ? vscode.window.activeTextEditor.viewColumn
