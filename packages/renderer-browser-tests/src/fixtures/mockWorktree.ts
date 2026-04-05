@@ -1,4 +1,4 @@
-import type { WorktreeState, DiffMode, FileChange } from '@shiftspace/renderer-core';
+import type { WorktreeState, DiffMode, FileChange } from '@shiftspace/renderer-core/src/types.ts';
 
 export function createMockWorktree(overrides?: Partial<WorktreeState>): WorktreeState {
   return {

@@ -23,7 +23,11 @@
         "@playwright/test",
         "@tailwindcss/vite",
         "@vitejs/plugin-react",
-        "vite"
+        "vite",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom",
+        "typescript"
       ]
     },
     "apps/vscode-ext": {

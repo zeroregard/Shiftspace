@@ -1,9 +1,7 @@
-import {
-  useWorktreeStore,
-  useInspectionStore,
-  useInsightStore,
-  useActionStore,
-} from '@shiftspace/renderer-core';
+import { useWorktreeStore } from '@shiftspace/renderer-core/src/store/worktreeStore.ts';
+import { useInspectionStore } from '@shiftspace/renderer-core/src/store/inspectionStore.ts';
+import { useInsightStore } from '@shiftspace/renderer-core/src/store/insightStore.ts';
+import { useActionStore } from '@shiftspace/renderer-core/src/store/actionStore.ts';
 import type {
   WorktreeState,
   ActionConfig,
@@ -11,7 +9,7 @@ import type {
   PipelineConfig,
   FileDiagnosticSummary,
   InsightDetail,
-} from '@shiftspace/renderer-core';
+} from '@shiftspace/renderer-core/src/types.ts';
 
 /** Reset all Zustand stores to their initial state. Call in test.beforeEach(). */
 export function resetAllStores(): void {

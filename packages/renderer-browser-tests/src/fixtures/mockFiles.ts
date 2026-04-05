@@ -1,4 +1,4 @@
-import type { FileChange, DiffHunk } from '@shiftspace/renderer-core';
+import type { FileChange, DiffHunk } from '@shiftspace/renderer-core/src/types.ts';
 
 export function createMockFile(overrides?: Partial<FileChange>): FileChange {
   return {

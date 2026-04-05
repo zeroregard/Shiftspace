@@ -1,4 +1,4 @@
-import type { FileDiagnosticSummary, InsightDetail } from '@shiftspace/renderer-core';
+import type { FileDiagnosticSummary, InsightDetail } from '@shiftspace/renderer-core/src/types.ts';
 
 export function createFileDiagnostics(
   filePath: string,
