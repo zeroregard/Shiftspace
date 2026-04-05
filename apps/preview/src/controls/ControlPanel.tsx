@@ -19,13 +19,13 @@ const PERSONA_LABELS: Record<AgentPersona, string> = {
   bugfix: 'bugfix',
 };
 
-function dbgBtn(active: boolean, small = false): string {
+function ctrlBtn(active: boolean, small = false): string {
   return clsx(
-    'flex-1 rounded-[2px] px-1.5 py-0.5 cursor-pointer font-mono border',
+    'flex-1 rounded-md px-2 py-1 cursor-pointer border transition-colors',
     small ? 'text-[9px]' : 'text-10',
     active
-      ? 'bg-[rgba(0,255,0,0.15)] border-[rgba(0,255,0,0.4)] text-debug-green'
-      : 'bg-[rgba(0,255,0,0.05)] border-[rgba(0,255,0,0.15)] text-[rgba(0,255,0,0.6)]'
+      ? 'bg-[rgba(77,163,255,0.15)] border-[rgba(77,163,255,0.3)] text-[#E6EAF2]'
+      : 'bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)] text-[#9AA4B2] hover:text-[#B8BFC9] hover:bg-[rgba(255,255,255,0.06)]'
   );
 }
 
@@ -75,34 +75,33 @@ export const ControlPanel: React.FC<Props> = ({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fixed bottom-3 left-3 bg-[rgba(0,0,0,0.7)] border border-[rgba(0,255,0,0.3)] rounded px-2 py-1 text-debug-green font-mono text-10 font-bold cursor-pointer z-1000 tracking-widest"
+        className="fixed bottom-3 left-3 bg-[rgba(20,24,32,0.85)] border border-[rgba(255,255,255,0.06)] rounded-lg px-2.5 py-1.5 text-[#9AA4B2] text-10 cursor-pointer z-1000 backdrop-blur-[8px] hover:text-[#E6EAF2] transition-colors"
       >
-        DEBUG
+        Controls
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-3 left-3 bg-debug-bg border border-[rgba(0,255,0,0.25)] rounded-xs px-2.5 py-2 w-65 text-[rgba(0,255,0,0.8)] font-mono text-11 z-1000 backdrop-blur [WebkitBackdropFilter:blur(8px)]">
-      {/* Header with DEBUG badge and collapse button */}
-      <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-[rgba(0,255,0,0.15)]">
+    <div className="fixed bottom-3 left-3 bg-[rgba(20,24,32,0.85)] border border-[rgba(255,255,255,0.06)] rounded-xl px-3 py-2.5 w-65 text-[#9AA4B2] text-11 z-1000 backdrop-blur-[8px]">
+      {/* Header with badge and collapse button */}
+      <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center gap-1.5">
-          <span className="bg-[rgba(0,255,0,0.15)] border border-[rgba(0,255,0,0.4)] rounded-xs px-1.25 py-px text-[9px] font-bold tracking-widest text-debug-green">
-            DEBUG
+          <span className="bg-[rgba(77,163,255,0.12)] border border-[rgba(77,163,255,0.25)] rounded-md px-1.5 py-0.5 text-[9px] text-[rgba(77,163,255,0.8)] tracking-wide">
+            Simulation
           </span>
-          <span className="text-10 text-[rgba(0,255,0,0.5)]">simulation</span>
         </div>
         <button
           onClick={() => setCollapsed(true)}
-          className="bg-transparent border-none text-[rgba(0,255,0,0.5)] cursor-pointer text-[14px] px-0.5 leading-none"
+          className="bg-transparent border-none text-[#5C6573] cursor-pointer text-[14px] px-0.5 leading-none hover:text-[#9AA4B2] transition-colors"
         >
           ×
         </button>
       </div>
 
       {/* Speed */}
-      <div className="mb-2">
-        <div className="text-[9px] text-[rgba(0,255,0,0.4)] mb-0.5">speed: {speed.toFixed(1)}x</div>
+      <div className="mb-2.5">
+        <div className="text-[9px] text-[#5C6573] mb-1">Speed: {speed.toFixed(1)}x</div>
         <input
           type="range"
           min={0.1}
@@ -110,20 +109,20 @@ export const ControlPanel: React.FC<Props> = ({
           step={0.1}
           value={speed}
           onChange={(e) => handleSpeedChange(Number(e.target.value))}
-          style={{ accentColor: '#00ff00' }}
+          style={{ accentColor: '#5AAFC4' }}
           className="w-full h-0.5"
         />
       </div>
 
       {/* Pause / Reset / Add */}
-      <div className="flex gap-1 mb-2">
-        <button onClick={handlePause} className={dbgBtn(paused)}>
+      <div className="flex gap-1.5 mb-2.5">
+        <button onClick={handlePause} className={ctrlBtn(paused)}>
           {paused ? '▶ resume' : '⏸ pause'}
         </button>
-        <button onClick={onReset} className={dbgBtn(false)}>
+        <button onClick={onReset} className={ctrlBtn(false)}>
           ↻ reset
         </button>
-        <button onClick={onAddWorktree} className={dbgBtn(false)}>
+        <button onClick={onAddWorktree} className={ctrlBtn(false)}>
           + wt
         </button>
       </div>
@@ -131,19 +130,19 @@ export const ControlPanel: React.FC<Props> = ({
       {/* Worktree agent controls */}
       <div>
         {worktreeIds.map((id) => (
-          <div key={id} className="mb-1 pb-1 border-b border-[rgba(0,255,0,0.08)]">
-            <div className="text-[9px] text-[rgba(0,255,0,0.4)] mb-0.5">{id}</div>
-            <div className="flex gap-0.75 items-center">
+          <div key={id} className="mb-1.5 pb-1.5 border-b border-[rgba(255,255,255,0.04)]">
+            <div className="text-[9px] text-[#5C6573] mb-1">{id}</div>
+            <div className="flex gap-1 items-center">
               {PERSONAS.map((persona) => (
                 <button
                   key={persona}
                   onClick={() => toggleAgent(id, persona)}
-                  className={dbgBtn(agentStates[id] === persona, true)}
+                  className={ctrlBtn(agentStates[id] === persona, true)}
                 >
                   {PERSONA_LABELS[persona]}
                 </button>
               ))}
-              <button onClick={() => onRemoveWorktree(id)} className={dbgBtn(false, true)}>
+              <button onClick={() => onRemoveWorktree(id)} className={ctrlBtn(false, true)}>
                 ✕
               </button>
             </div>
@@ -151,7 +150,7 @@ export const ControlPanel: React.FC<Props> = ({
         ))}
       </div>
 
-      <div className="mt-1 text-[9px] text-[rgba(0,255,0,0.25)]">
+      <div className="mt-1.5 text-[9px] text-[#5C6573]">
         {WORKTREE_PRESETS.length} presets available
       </div>
     </div>

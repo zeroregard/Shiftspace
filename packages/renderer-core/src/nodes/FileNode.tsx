@@ -20,13 +20,13 @@ interface FileNodeData {
 }
 
 function getChangeTint(file: FileChange): string {
-  if (file.status === 'deleted') return 'rgba(224, 92, 92, 0.12)';
+  if (file.status === 'deleted') return 'rgba(196, 92, 92, 0.08)';
   const total = file.linesAdded + file.linesRemoved;
   if (total === 0) return 'transparent';
   const ratio = file.linesAdded / total;
-  if (ratio > 0.66) return 'rgba(78, 201, 78, 0.10)';
-  if (ratio < 0.33) return 'rgba(224, 92, 92, 0.10)';
-  return 'rgba(224, 196, 78, 0.10)';
+  if (ratio > 0.66) return 'rgba(91, 168, 122, 0.07)';
+  if (ratio < 0.33) return 'rgba(196, 92, 92, 0.07)';
+  return 'rgba(201, 168, 78, 0.07)';
 }
 
 export const FileNode = React.memo(function FileNode({ data }: NodeComponentProps<FileNodeData>) {

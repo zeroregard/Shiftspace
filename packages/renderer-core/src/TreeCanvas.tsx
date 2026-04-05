@@ -70,7 +70,7 @@ const EdgePath = React.memo(function EdgePath({ edge, nodeMap }: EdgePathProps) 
     <path
       d={smoothstepPath(x1, y1, x2, y2)}
       fill="none"
-      stroke={(edge.style?.stroke as string) ?? 'var(--color-border-dashed)'}
+      stroke={(edge.style?.stroke as string) ?? 'rgba(255, 255, 255, 0.12)'}
       strokeWidth={(edge.style?.strokeWidth as number) ?? 1}
     />
   );
@@ -150,7 +150,7 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
         height: '100%',
         cursor: 'grab',
         touchAction: 'none',
-        backgroundImage: `radial-gradient(circle, rgba(42, 42, 58, ${dotOpacity}) 1px, transparent 1px)`,
+        backgroundImage: `radial-gradient(circle, rgba(30, 35, 48, ${dotOpacity}) 1px, transparent 1px)`,
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundPosition: `${x}px ${y}px`,
       }}

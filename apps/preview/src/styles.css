@@ -43,29 +43,31 @@
  * inside a :root block injected into the webview. No component code changes needed.
  */
 @theme {
-  --color-canvas:          #0d0d1a;
-  --color-node-file:       #141428;
-  --color-node-file-pulse: #1e1e3a;
-  --color-node-folder:     #151522;
-  --color-cluster:         #1a1a2e;
-  --color-cluster-alpha:   rgba(26, 26, 46, 0.5);
-  --color-process-badge:   #0d2d26;
-  --color-border-default:  #3a3a4a;
-  --color-border-dashed:   #2a2a4a;
-  --color-border-staged:   #4a6baa;
-  --color-handle:          #3a3a5a;
-  --color-text-primary:    #e0e0ff;
-  --color-text-secondary:  #c0c0e0;
-  --color-text-muted:      #9a9ab0;
-  --color-text-dim:        #8a8ab0;
-  --color-text-faint:      #6b6b8a;
-  --color-status-added:    #4ec94e;
-  --color-status-modified: #e0c44e;
-  --color-status-deleted:  #e05c5c;
-  --color-teal:            #4ec9b0;
-  --color-grid-dot:        #2a2a3a;
-  --color-debug-green:     #00ff00;
-  --color-debug-bg:        rgba(0, 0, 0, 0.75);
+  /* 3-layer depth system: base → surface → elevated */
+  --color-canvas:          #0F1115;
+  --color-node-file:       #1B2130;
+  --color-node-file-pulse: #212838;
+  --color-node-folder:     #181D28;
+  --color-cluster:         #151922;
+  --color-cluster-alpha:   rgba(21, 25, 34, 0.6);
+  --color-process-badge:   #152420;
+  --color-border-default:  rgba(255, 255, 255, 0.06);
+  --color-border-dashed:   rgba(255, 255, 255, 0.08);
+  --color-border-staged:   rgba(77, 163, 255, 0.4);
+  --color-handle:          rgba(255, 255, 255, 0.10);
+  --color-text-primary:    #E6EAF2;
+  --color-text-secondary:  #B8BFC9;
+  --color-text-muted:      #9AA4B2;
+  --color-text-dim:        #7B8594;
+  --color-text-faint:      #5C6573;
+  --color-status-added:    #5BA87A;
+  --color-status-modified: #C9A84E;
+  --color-status-deleted:  #C45C5C;
+  --color-teal:            #5AAFC4;
+  --color-grid-dot:        #1E2330;
+  --color-debug-text:      #9AA4B2;
+  --color-debug-accent:    rgba(77, 163, 255, 0.7);
+  --color-debug-bg:        rgba(20, 24, 32, 0.85);
   --font-mono: "Courier New", Courier, monospace;
 
   /* Font sizes not in Tailwind's built-in scale */
@@ -74,10 +76,10 @@
   --text-13: 0.8125rem;
 
   /* Subtle pulse overlay color */
-  --color-pulse-overlay: rgba(78, 201, 78, 0.06);
+  --color-pulse-overlay: rgba(90, 175, 196, 0.06);
 
-  --color-diff-added-bg:   rgba(78, 201, 78, 0.08);
-  --color-diff-removed-bg: rgba(224, 92, 92, 0.08);
+  --color-diff-added-bg:   rgba(91, 168, 122, 0.10);
+  --color-diff-removed-bg: rgba(196, 92, 92, 0.10);
   --color-diff-hunk-bg:    rgba(255, 255, 255, 0.03);
 
   /* Heatmap mode colors */
@@ -100,10 +102,10 @@
   --diffs-border: var(--color-border-default);
   --diffs-line-number: var(--color-text-faint);
   --diffs-font-family: var(--font-mono);
-  --diffs-bg-addition-number-override: rgba(78, 201, 78, 0.12);
-  --diffs-bg-deletion-number-override: rgba(224, 92, 92, 0.12);
-  --diffs-bg-addition-hover-override:  rgba(78, 201, 78, 0.12);
-  --diffs-bg-deletion-hover-override:  rgba(224, 92, 92, 0.12);
+  --diffs-bg-addition-number-override: rgba(91, 168, 122, 0.14);
+  --diffs-bg-deletion-number-override: rgba(196, 92, 92, 0.14);
+  --diffs-bg-addition-hover-override:  rgba(91, 168, 122, 0.14);
+  --diffs-bg-deletion-hover-override:  rgba(196, 92, 92, 0.14);
 }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
