@@ -6,45 +6,56 @@
 @source "../../ui/src/**/*.tsx";
 
 @theme {
-  --color-canvas:          #0d0d1a;
-  --color-node-file:       #141428;
-  --color-node-file-pulse: #1e1e3a;
-  --color-node-folder:     #151522;
-  --color-cluster:         #1a1a2e;
-  --color-cluster-alpha:   rgba(26, 26, 46, 0.5);
-  --color-process-badge:   #0d2d26;
-  --color-border-default:  #3a3a4a;
-  --color-border-dashed:   #2a2a4a;
-  --color-border-staged:   #4a6baa;
-  --color-handle:          #3a3a5a;
-  --color-text-primary:    #e0e0ff;
-  --color-text-secondary:  #c0c0e0;
-  --color-text-muted:      #9a9ab0;
-  --color-text-dim:        #8a8ab0;
-  --color-text-faint:      #6b6b8a;
-  --color-status-added:    #4ec94e;
-  --color-status-modified: #e0c44e;
-  --color-status-deleted:  #e05c5c;
-  --color-teal:            #4ec9b0;
-  --color-grid-dot:        #2a2a3a;
-  --color-debug-green:     #00ff00;
-  --color-debug-bg:        rgba(0, 0, 0, 0.75);
+  /* 3-layer depth system: base → surface → elevated
+     Hue aligned with icon dark (#1e293b) */
+  --color-canvas:          #0d1117;
+  --color-node-file:       #1a2332;
+  --color-node-file-pulse: #202d3f;
+  --color-node-folder:     #151e2c;
+  --color-cluster:         #131b27;
+  --color-cluster-alpha:   rgba(19, 27, 39, 0.6);
+  --color-process-badge:   #122a22;
+  --color-border-default:  rgba(255, 255, 255, 0.06);
+  --color-border-dashed:   rgba(255, 255, 255, 0.08);
+  --color-border-staged:   rgba(96, 165, 250, 0.4);
+  --color-handle:          rgba(255, 255, 255, 0.10);
+  --color-text-primary:    #e2e8f0;
+  --color-text-secondary:  #b0bac8;
+  --color-text-muted:      #8b97a8;
+  --color-text-dim:        #6b7a8d;
+  --color-text-faint:      #4b5768;
+  --color-status-added:    #5BA87A;
+  --color-status-modified: #C9A84E;
+  --color-status-deleted:  #C45C5C;
+  --color-teal:            #60a5fa;
+  --color-grid-dot:        #1a2332;
+  --color-debug-text:      #8b97a8;
+  --color-debug-accent:    rgba(96, 165, 250, 0.7);
+  --color-debug-bg:        rgba(13, 17, 23, 0.85);
   --font-mono: "Courier New", Courier, monospace;
 
   --text-10: 0.625rem;
   --text-11: 0.6875rem;
   --text-13: 0.8125rem;
 
-  --color-pulse-overlay: rgba(78, 201, 78, 0.06);
+  --color-pulse-overlay: rgba(96, 165, 250, 0.06);
 
-  --color-diff-added-bg:   rgba(78, 201, 78, 0.08);
-  --color-diff-removed-bg: rgba(224, 92, 92, 0.08);
+  --color-diff-added-bg:   rgba(91, 168, 122, 0.10);
+  --color-diff-removed-bg: rgba(196, 92, 92, 0.10);
   --color-diff-hunk-bg:    rgba(255, 255, 255, 0.03);
 
   --color-heat-cool: #2a5a8a;
   --color-heat-warm: #8a7a2a;
   --color-heat-hot:  #8a4a2a;
   --color-heat-max:  #8a2a2a;
+
+  /* Dynamic values used in components */
+  --color-grid-dot-rgb:    30, 35, 48;
+  --color-edge-stroke:     rgba(255, 255, 255, 0.12);
+  --color-tint-deleted:    rgba(196, 92, 92, 0.08);
+  --color-tint-added:      rgba(91, 168, 122, 0.07);
+  --color-tint-removed:    rgba(196, 92, 92, 0.07);
+  --color-tint-mixed:      rgba(201, 168, 78, 0.07);
 }
 
 /* @pierre/diffs theme integration */
@@ -60,10 +71,10 @@
   --diffs-border: var(--color-border-default);
   --diffs-line-number: var(--color-text-faint);
   --diffs-font-family: var(--font-mono);
-  --diffs-bg-addition-number-override: rgba(78, 201, 78, 0.12);
-  --diffs-bg-deletion-number-override: rgba(224, 92, 92, 0.12);
-  --diffs-bg-addition-hover-override:  rgba(78, 201, 78, 0.12);
-  --diffs-bg-deletion-hover-override:  rgba(224, 92, 92, 0.12);
+  --diffs-bg-addition-number-override: rgba(91, 168, 122, 0.14);
+  --diffs-bg-deletion-number-override: rgba(196, 92, 92, 0.14);
+  --diffs-bg-addition-hover-override:  rgba(91, 168, 122, 0.14);
+  --diffs-bg-deletion-hover-override:  rgba(196, 92, 92, 0.14);
 }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

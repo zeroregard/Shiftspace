@@ -22,7 +22,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       'shiftspace.sidebar',
-      new SidebarViewProvider(context)
+      new SidebarViewProvider(context),
+      { webviewOptions: { retainContextWhenHidden: true } }
     )
   );
 

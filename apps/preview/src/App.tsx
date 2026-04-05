@@ -12,11 +12,13 @@ import {
   MOCK_DIAGNOSTICS_WT1,
 } from './mockData';
 import { useSimulationHandlers } from './useSimulationHandlers';
+import { useTheme } from './useTheme';
 
 export const App: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState(0);
+  const theme = useTheme();
 
   const { setActionConfigs, setPipelines, setActionState } = useActionStore();
   const { setInsightDetail, setFileDiagnostics } = useInsightStore();
@@ -123,6 +125,8 @@ export const App: React.FC = () => {
         onReset={handleReset}
         onAddWorktree={handleAddWorktree}
         onRemoveWorktree={handleRemoveWorktree}
+        resolvedTheme={theme.resolved}
+        onToggleTheme={theme.cycle}
       />
     </div>
   );
