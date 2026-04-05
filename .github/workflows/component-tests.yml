@@ -119,15 +119,31 @@ jobs:
           echo "sha=${BASE_SHA}" >> $GITHUB_OUTPUT
           echo "head_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
+      - name: Verify Playwright CT binary
+        if: steps.affected.outputs.run_ct == 'true'
+        run: |
+          CT_BIN="packages/renderer-browser-tests/node_modules/.bin/playwright"
+          if [ ! -f "$CT_BIN" ] && [ ! -L "$CT_BIN" ]; then
+            echo "::error::Playwright CT binary not found at $CT_BIN"
+            echo "Searching for playwright binaries..."
+            find packages/renderer-browser-tests/node_modules -name "playwright" -type f -o -name "playwright" -type l 2>/dev/null | head -20
+            echo "node_modules/.bin contents:"
+            ls -la packages/renderer-browser-tests/node_modules/.bin/ 2>/dev/null | head -20
+            exit 1
+          fi
+          echo "CT binary: $(readlink -f $CT_BIN)"
+          $CT_BIN --version
+
       - name: Run CT specs with --update-snapshots
         id: playwright
         if: steps.affected.outputs.run_ct == 'true'
         continue-on-error: true
         run: |
           set -o pipefail
+          CT_BIN="packages/renderer-browser-tests/node_modules/.bin/playwright"
           echo "Running CT specs: ${{ steps.affected.outputs.specs }}"
           cd packages/renderer-browser-tests
-          npx playwright test -c playwright-ct.config.ts --update-snapshots all ${{ steps.affected.outputs.specs }} 2>&1 | tee /tmp/ct-output.txt
+          ./node_modules/.bin/playwright test -c playwright-ct.config.ts --update-snapshots all ${{ steps.affected.outputs.specs }} 2>&1 | tee /tmp/ct-output.txt
 
       - name: Detect screenshot changes
         id: detect
