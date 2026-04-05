@@ -425,7 +425,7 @@ export class ShiftspacePanel {
       this._insightStatusBar.text = '$(sync~spin) Shiftspace';
       this._insightStatusBar.tooltip = 'Analyzing files for code smells…';
     } else {
-      this._insightStatusBar.text = '$(beaker) Shiftspace';
+      this._insightStatusBar.text = '$(shiftspace-icon) Shiftspace';
       this._insightStatusBar.tooltip = 'Click to recheck code smells';
     }
   }
