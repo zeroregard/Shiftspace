@@ -26,12 +26,12 @@ A visual workspace command center for VS Code. See your git changes as a real-ti
 
 ## Configuration
 
-| Setting | Description |
-|---|---|
-| `shiftspace.ignorePatterns` | Glob patterns for files to hide (e.g. `*.lock`, `**/lang/*.json`) |
-| `shiftspace.additionalActions` | Custom action buttons per worktree |
-| `shiftspace.insights.diagnostics.enabled` | Show compiler errors/warnings on file nodes |
-| `shiftspace.insights.codeSmells.enabled` | Show code smell detection results on file nodes |
+| Setting                                   | Description                                                       |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g. `*.lock`, `**/lang/*.json`) |
+| `shiftspace.additionalActions`            | Custom action buttons per worktree                                |
+| `shiftspace.insights.diagnostics.enabled` | Show compiler errors/warnings on file nodes                       |
+| `shiftspace.insights.codeSmells.enabled`  | Show code smell detection results on file nodes                   |
 
 You can also define shared actions and code smell rules in a `.shiftspace.json` file at the root of your project.
 
