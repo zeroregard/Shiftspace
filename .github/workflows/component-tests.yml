@@ -136,7 +136,7 @@ jobs:
           echo "Running CT specs: ${{ steps.affected.outputs.specs }}"
           cd packages/renderer-browser-tests
           echo "Playwright binary: $(./node_modules/.bin/playwright --version 2>&1 || echo 'not found')"
-          ./node_modules/.bin/playwright test ${{ steps.affected.outputs.specs }} --config playwright-ct.config.ts --update-snapshots 2>&1 | tee /tmp/ct-output.txt
+          bun run test:ct:update -- ${{ steps.affected.outputs.specs }} 2>&1 | tee /tmp/ct-output.txt
 
       - name: Detect screenshot changes
         id: detect

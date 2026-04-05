@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test:ct": "playwright test --config playwright-ct.config.ts",
-    "test:ct:update": "playwright test --config playwright-ct.config.ts --update-snapshots",
-    "test:ct:ui": "playwright test --config playwright-ct.config.ts --ui",
+    "test:ct": "playwright test -c playwright-ct.config.ts",
+    "test:ct:update": "playwright test -c playwright-ct.config.ts --update-snapshots",
+    "test:ct:ui": "playwright test -c playwright-ct.config.ts --ui",
     "playwright:install": "playwright install chromium",
     "playwright:install-deps": "playwright install-deps chromium"
   },

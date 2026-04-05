@@ -13,23 +13,6 @@
       "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts"],
       "ignoreDependencies": ["tailwindcss", "babel-plugin-react-compiler"]
     },
-    "packages/renderer-browser-tests": {
-      "entry": ["src/**/*.spec.tsx", "playwright/**/*.{ts,tsx}"],
-      "project": ["src/**/*.{ts,tsx}", "playwright/**/*.{ts,tsx}", "playwright-ct.config.ts"],
-      "ignoreDependencies": [
-        "tailwindcss",
-        "babel-plugin-react-compiler",
-        "@playwright/experimental-ct-react",
-        "@playwright/test",
-        "@tailwindcss/vite",
-        "@vitejs/plugin-react",
-        "vite",
-        "react-dom",
-        "@types/react",
-        "@types/react-dom",
-        "typescript"
-      ]
-    },
     "apps/vscode-ext": {
       "entry": ["src/webview/index.tsx"],
       "project": ["src/**/*.{ts,tsx}"],
@@ -41,6 +24,7 @@
       ]
     }
   },
+  "ignoreWorkspaces": ["packages/renderer-browser-tests"],
   "ignore": ["**/*.d.ts"],
   "ignoreDependencies": ["@typescript/native-preview", "lint-staged"],
   "ignoreBinaries": ["code", "ovsx", "playwright"],
