@@ -10,6 +10,8 @@ interface Props {
   onReset: () => void;
   onAddWorktree: () => void;
   onRemoveWorktree: (id: string) => void;
+  resolvedTheme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
 const PERSONAS: AgentPersona[] = ['refactor', 'feature', 'bugfix'];
@@ -24,8 +26,52 @@ function ctrlBtn(active: boolean, small = false): string {
     'flex-1 rounded-md px-2 py-1 cursor-pointer border transition-colors',
     small ? 'text-[9px]' : 'text-10',
     active
-      ? 'bg-[rgba(77,163,255,0.15)] border-[rgba(77,163,255,0.3)] text-[#E6EAF2]'
-      : 'bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)] text-[#9AA4B2] hover:text-[#B8BFC9] hover:bg-[rgba(255,255,255,0.06)]'
+      ? 'bg-[rgba(96,165,250,0.15)] border-[rgba(96,165,250,0.3)] text-text-primary'
+      : 'bg-[rgba(128,128,128,0.06)] border-border-default text-text-muted hover:text-text-secondary hover:bg-[rgba(128,128,128,0.10)]'
+  );
+}
+
+/** Sun icon (16x16) */
+function SunIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
+/** Moon icon (16x16) */
+function MoonIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
   );
 }
 
@@ -35,6 +81,8 @@ export const ControlPanel: React.FC<Props> = ({
   onReset,
   onAddWorktree,
   onRemoveWorktree,
+  resolvedTheme,
+  onToggleTheme,
 }) => {
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
@@ -75,7 +123,7 @@ export const ControlPanel: React.FC<Props> = ({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fixed bottom-3 left-3 bg-[rgba(20,24,32,0.85)] border border-[rgba(255,255,255,0.06)] rounded-lg px-2.5 py-1.5 text-[#9AA4B2] text-10 cursor-pointer z-1000 backdrop-blur-[8px] hover:text-[#E6EAF2] transition-colors"
+        className="fixed bottom-3 left-3 bg-debug-bg border border-border-default rounded-lg px-2.5 py-1.5 text-text-muted text-10 cursor-pointer z-1000 backdrop-blur-[8px] hover:text-text-primary transition-colors"
       >
         Controls
       </button>
@@ -83,25 +131,34 @@ export const ControlPanel: React.FC<Props> = ({
   }
 
   return (
-    <div className="fixed bottom-3 left-3 bg-[rgba(20,24,32,0.85)] border border-[rgba(255,255,255,0.06)] rounded-xl px-3 py-2.5 w-65 text-[#9AA4B2] text-11 z-1000 backdrop-blur-[8px]">
-      {/* Header with badge and collapse button */}
-      <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-[rgba(255,255,255,0.06)]">
+    <div className="fixed bottom-3 left-3 bg-debug-bg border border-border-default rounded-xl px-3 py-2.5 w-65 text-text-muted text-11 z-1000 backdrop-blur-[8px]">
+      {/* Header with badge, theme toggle, and collapse button */}
+      <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-border-default">
         <div className="flex items-center gap-1.5">
-          <span className="bg-[rgba(77,163,255,0.12)] border border-[rgba(77,163,255,0.25)] rounded-md px-1.5 py-0.5 text-[9px] text-[rgba(77,163,255,0.8)] tracking-wide">
+          <span className="bg-[rgba(96,165,250,0.12)] border border-[rgba(96,165,250,0.25)] rounded-md px-1.5 py-0.5 text-[9px] text-[rgba(96,165,250,0.8)] tracking-wide">
             Simulation
           </span>
         </div>
-        <button
-          onClick={() => setCollapsed(true)}
-          className="bg-transparent border-none text-[#5C6573] cursor-pointer text-[14px] px-0.5 leading-none hover:text-[#9AA4B2] transition-colors"
-        >
-          ×
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onToggleTheme}
+            className="bg-transparent border-none text-text-faint cursor-pointer p-0.5 leading-none hover:text-text-primary transition-colors"
+            title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {resolvedTheme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
+          <button
+            onClick={() => setCollapsed(true)}
+            className="bg-transparent border-none text-text-faint cursor-pointer text-[14px] px-0.5 leading-none hover:text-text-primary transition-colors"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Speed */}
       <div className="mb-2.5">
-        <div className="text-[9px] text-[#5C6573] mb-1">Speed: {speed.toFixed(1)}x</div>
+        <div className="text-[9px] text-text-faint mb-1">Speed: {speed.toFixed(1)}x</div>
         <input
           type="range"
           min={0.1}
@@ -109,7 +166,7 @@ export const ControlPanel: React.FC<Props> = ({
           step={0.1}
           value={speed}
           onChange={(e) => handleSpeedChange(Number(e.target.value))}
-          style={{ accentColor: '#5AAFC4' }}
+          style={{ accentColor: 'var(--color-teal)' }}
           className="w-full h-0.5"
         />
       </div>
@@ -130,8 +187,8 @@ export const ControlPanel: React.FC<Props> = ({
       {/* Worktree agent controls */}
       <div>
         {worktreeIds.map((id) => (
-          <div key={id} className="mb-1.5 pb-1.5 border-b border-[rgba(255,255,255,0.04)]">
-            <div className="text-[9px] text-[#5C6573] mb-1">{id}</div>
+          <div key={id} className="mb-1.5 pb-1.5 border-b border-border-default/50">
+            <div className="text-[9px] text-text-faint mb-1">{id}</div>
             <div className="flex gap-1 items-center">
               {PERSONAS.map((persona) => (
                 <button
@@ -150,7 +207,7 @@ export const ControlPanel: React.FC<Props> = ({
         ))}
       </div>
 
-      <div className="mt-1.5 text-[9px] text-[#5C6573]">
+      <div className="mt-1.5 text-[9px] text-text-faint">
         {WORKTREE_PRESETS.length} presets available
       </div>
     </div>

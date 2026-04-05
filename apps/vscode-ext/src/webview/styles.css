@@ -6,28 +6,29 @@
 @source "../../../../packages/ui/src/**/*.tsx";
 
 @theme {
-  /* 3-layer depth system: base → surface → elevated */
-  --color-canvas:          #0F1115;
-  --color-node-file:       #1B2130;
-  --color-node-file-pulse: #212838;
-  --color-node-folder:     #181D28;
-  --color-cluster:         #151922;
-  --color-cluster-alpha:   rgba(21, 25, 34, 0.6);
-  --color-process-badge:   #152420;
+  /* 3-layer depth system: base → surface → elevated
+     Hue aligned with icon dark (#1e293b) */
+  --color-canvas:          #0d1117;
+  --color-node-file:       #1a2332;
+  --color-node-file-pulse: #202d3f;
+  --color-node-folder:     #151e2c;
+  --color-cluster:         #131b27;
+  --color-cluster-alpha:   rgba(19, 27, 39, 0.6);
+  --color-process-badge:   #122a22;
   --color-border-default:  rgba(255, 255, 255, 0.06);
   --color-border-dashed:   rgba(255, 255, 255, 0.08);
-  --color-border-staged:   rgba(77, 163, 255, 0.4);
+  --color-border-staged:   rgba(96, 165, 250, 0.4);
   --color-handle:          rgba(255, 255, 255, 0.10);
-  --color-text-primary:    #E6EAF2;
-  --color-text-secondary:  #B8BFC9;
-  --color-text-muted:      #9AA4B2;
-  --color-text-dim:        #7B8594;
-  --color-text-faint:      #5C6573;
+  --color-text-primary:    #e2e8f0;
+  --color-text-secondary:  #b0bac8;
+  --color-text-muted:      #8b97a8;
+  --color-text-dim:        #6b7a8d;
+  --color-text-faint:      #4b5768;
   --color-status-added:    #5BA87A;
   --color-status-modified: #C9A84E;
   --color-status-deleted:  #C45C5C;
-  --color-teal:            #5AAFC4;
-  --color-grid-dot:        #1E2330;
+  --color-teal:            #60a5fa;
+  --color-grid-dot:        #1a2332;
   --font-mono: "Courier New", Courier, monospace;
 
   /* Font sizes not in Tailwind's built-in scale */
@@ -36,7 +37,7 @@
   --text-13: 0.8125rem;
 
   /* Subtle pulse overlay color */
-  --color-pulse-overlay: rgba(90, 175, 196, 0.06);
+  --color-pulse-overlay: rgba(96, 165, 250, 0.06);
 
   /* Hover background for list/menu items */
   --color-item-hover: var(--color-node-file-pulse);
@@ -50,6 +51,14 @@
   --color-heat-warm: #8a7a2a;
   --color-heat-hot:  #8a4a2a;
   --color-heat-max:  #8a2a2a;
+
+  /* Dynamic values used in components */
+  --color-grid-dot-rgb:    30, 35, 48;
+  --color-edge-stroke:     rgba(255, 255, 255, 0.12);
+  --color-tint-deleted:    rgba(196, 92, 92, 0.08);
+  --color-tint-added:      rgba(91, 168, 122, 0.07);
+  --color-tint-removed:    rgba(196, 92, 92, 0.07);
+  --color-tint-mixed:      rgba(201, 168, 78, 0.07);
 }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
