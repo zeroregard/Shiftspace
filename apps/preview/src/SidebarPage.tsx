@@ -111,7 +111,12 @@ export const SidebarPage: React.FC = () => {
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
         <div className="w-80 h-screen bg-canvas">
-          <SidebarView worktrees={wtArray} />
+          <SidebarView
+            worktrees={wtArray}
+            onWorktreeClick={() => {
+              /* In VSCode, this opens/focuses a Shiftspace tab */
+            }}
+          />
         </div>
       </TooltipProvider>
     </ActionsProvider>

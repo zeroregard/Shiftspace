@@ -4,6 +4,8 @@ import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 
 interface SidebarViewProps {
   worktrees: WorktreeState[];
+  /** Called when a worktree card is clicked. The host should open/focus a Shiftspace tab with inspection for this worktree. */
+  onWorktreeClick?: (worktreeId: string) => void;
 }
 
 function WorktreeCardError() {
@@ -14,7 +16,7 @@ function WorktreeCardError() {
   );
 }
 
-export function SidebarView({ worktrees }: SidebarViewProps) {
+export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   return (
     <div className="w-full h-full overflow-auto">
       <div className="p-3">
@@ -24,7 +26,7 @@ export function SidebarView({ worktrees }: SidebarViewProps) {
           <div className="flex flex-col gap-3">
             {worktrees.map((wt) => (
               <ErrorBoundary key={wt.id} fallback={<WorktreeCardError />}>
-                <WorktreeCard worktree={wt} variant="slim" />
+                <WorktreeCard worktree={wt} variant="slim" onWorktreeClick={onWorktreeClick} />
               </ErrorBoundary>
             ))}
           </div>

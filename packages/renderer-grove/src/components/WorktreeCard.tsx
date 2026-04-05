@@ -85,9 +85,15 @@ type WorktreeCardVariant = 'full' | 'slim';
 interface WorktreeCardProps {
   worktree: WorktreeState;
   variant?: WorktreeCardVariant;
+  /** Override the default click behavior (enter inspection). Used by the sidebar to open a tab instead. */
+  onWorktreeClick?: (worktreeId: string) => void;
 }
 
-export function WorktreeCard({ worktree: wt, variant = 'full' }: WorktreeCardProps) {
+export function WorktreeCard({
+  worktree: wt,
+  variant = 'full',
+  onWorktreeClick,
+}: WorktreeCardProps) {
   const actions = useActions();
   const enterInspection = useInspectionStore((s) => s.enterInspection);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
@@ -149,7 +155,7 @@ export function WorktreeCard({ worktree: wt, variant = 'full' }: WorktreeCardPro
             <button
               data-testid={`enter-inspection-${wt.id}`}
               className="font-semibold text-13 text-text-primary truncate text-left bg-transparent border-none p-0 cursor-pointer hover:text-text-secondary transition-colors flex-1 min-w-0"
-              onClick={() => enterInspection(wt.id)}
+              onClick={() => (onWorktreeClick ? onWorktreeClick(wt.id) : enterInspection(wt.id))}
             >
               {folderName}
             </button>
