@@ -23,6 +23,13 @@
         "babel-plugin-react-compiler",
         "fantasticon"
       ]
+    },
+    "apps/cursor-ext": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@types/vscode"]
+    },
+    "packages/core": {
+      "project": ["src/**/*.ts"]
     }
   },
   "ignoreWorkspaces": ["packages/renderer-browser-tests"],

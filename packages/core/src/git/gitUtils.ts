@@ -53,6 +53,7 @@ export async function gitReadOnly(
   args: string[],
   options: { cwd: string; timeout?: number }
 ): Promise<{ stdout: string; stderr: string }> {
+  validateGitArgs(args);
   const maxRetries = 2;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -78,6 +79,29 @@ export async function gitReadOnly(
 }
 
 /**
+ * Long-form git flags that allow arbitrary command execution.
+ * --upload-pack and --exec can run arbitrary binaries via git.
+ * Short flags like -u are NOT included — they are overloaded
+ * (e.g. `git stash push -u` means "include untracked").
+ */
+const DANGEROUS_GIT_FLAGS = ['--upload-pack', '--exec'];
+
+/**
+ * Reject git arguments that could enable command execution.
+ * This guards against second-order injection where a caller
+ * accidentally passes attacker-controlled values as git args.
+ */
+function validateGitArgs(args: string[]): void {
+  for (const arg of args) {
+    for (const flag of DANGEROUS_GIT_FLAGS) {
+      if (arg === flag || arg.startsWith(`${flag}=`)) {
+        throw new Error(`Blocked dangerous git flag: ${arg}`);
+      }
+    }
+  }
+}
+
+/**
  * Run a git command that modifies the repo (checkout, stash, fetch, etc.).
  * These are serialized through the global queue so writes never overlap.
  */
@@ -85,6 +109,7 @@ export async function gitWrite(
   args: string[],
   options: { cwd: string; timeout?: number }
 ): Promise<{ stdout: string; stderr: string }> {
+  validateGitArgs(args);
   return gitQueue.enqueue(() =>
     execFileAsync('git', args, {
       ...options,

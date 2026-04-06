@@ -128,10 +128,9 @@ export class ShiftspaceMcpHttpServer {
       const result = await this.handlers.handleTool(tool, params);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+    } catch {
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: message }));
+      res.end(JSON.stringify({ error: 'Internal server error' }));
     }
   }
 

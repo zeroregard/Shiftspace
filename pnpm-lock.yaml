@@ -37,17 +37,10 @@ importers:
         version: 5.9.3
 
   apps/cursor-ext:
-    dependencies:
-      minimatch:
-        specifier: ^10.0.1
-        version: 10.2.5
     devDependencies:
       '@shiftspace/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@shiftspace/renderer':
-        specifier: workspace:*
-        version: link:../../packages/renderer
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.37
@@ -121,9 +114,6 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.3.6)
-      minimatch:
-        specifier: ^10.0.1
-        version: 10.2.5
     devDependencies:
       '@shiftspace/core':
         specifier: workspace:*
