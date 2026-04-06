@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { codeSmellsPlugin } from '../../src/insights/plugins/codeSmells';
+import { codeSmellsPlugin } from '../../../../packages/core/src/insights/plugins/codeSmells';
 import type { FileChange } from '@shiftspace/renderer';
 import type { SmellRule } from '../../src/actions/types';
 

@@ -1,5 +1,5 @@
-// Side-effect import: registers codeSmells plugin via @shiftspace/core
-import '@shiftspace/core/src/insights/plugins/codeSmells';
-
-// Re-export for compatibility
-export { codeSmellsPlugin } from '@shiftspace/core/src/insights/plugins/codeSmells';
+// The codeSmells plugin is registered as a side-effect when @shiftspace/core
+// is imported (core's index.ts includes `import './insights/plugins/codeSmells'`).
+// This file exists for backwards compatibility with the side-effect import in
+// ShiftspacePanel.ts. Importing @shiftspace/core anywhere triggers registration.
+export {};
