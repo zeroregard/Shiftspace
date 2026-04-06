@@ -72,7 +72,7 @@ test.describe('Search filter in Inspection view', () => {
     await expect(page.locator('.codicon-arrow-left')).toBeVisible();
 
     // The split panel layout should still exist
-    const listPanel = page.locator('.overflow-y-auto');
+    const listPanel = page.getByTestId('file-list-panel');
     await expect(listPanel).toBeVisible();
   });
 
@@ -238,7 +238,7 @@ test.describe('Tree deduplication — partially staged files', () => {
 
     // In the list panel (left), the file should still appear in both
     // Staged and Unstaged sections — that's intentional for `git add -p` files.
-    const listPanel = page.locator('.overflow-y-auto');
+    const listPanel = page.getByTestId('file-list-panel');
     const listRows = listPanel.getByRole('button').filter({ hasText: PARTIAL_FILE });
     await expect(listRows).toHaveCount(2);
   });
@@ -313,7 +313,7 @@ test.describe('Problems filter in Inspection view', () => {
     // After filtering, every visible file row should have at least one
     // annotation badge (error/warning/finding icon).
     // Files without problems should be hidden.
-    const listPanel = page.locator('.overflow-y-auto');
+    const listPanel = page.getByTestId('file-list-panel');
     const fileRows = listPanel.getByRole('button');
     const rowCount = await fileRows.count();
     expect(rowCount).toBeGreaterThan(0);
@@ -341,7 +341,7 @@ test.describe('Problems filter in Inspection view', () => {
     await page.waitForTimeout(300);
 
     // Should have results (api.ts has both diagnostics and findings)
-    const listPanel = page.locator('.overflow-y-auto');
+    const listPanel = page.getByTestId('file-list-panel');
     const fileRows = listPanel.getByRole('button');
     const count = await fileRows.count();
     expect(count).toBeGreaterThanOrEqual(0);
