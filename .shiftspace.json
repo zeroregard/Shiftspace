@@ -57,14 +57,6 @@
       "threshold": "1"
     },
     {
-      "id": "console-log",
-      "label": "Console Log",
-      "pattern": "console\\.log",
-      "threshold": 1,
-      "fileTypes": [".js", ".jsx", ".ts", ".tsx"],
-      "excludePatterns": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"]
-    },
-    {
       "id": "use-effect-overuse",
       "label": "useEffect Overuse",
       "pattern": "useEffect\\s*\\(",
