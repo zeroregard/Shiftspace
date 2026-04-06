@@ -59,21 +59,23 @@ export class InspectionSession {
   onFileChange(worktreeId: string): void {
     if (this._currentWorktreeId !== worktreeId) return;
 
-    if (this._insightDebounceTimer !== undefined) clearTimeout(this._insightDebounceTimer);
-    this._insightDebounceTimer = setTimeout(() => {
-      this._insightDebounceTimer = undefined;
-      // Don't clearCache here — the runner's content-based cache key will
-      // detect whether files actually changed and skip re-analysis if not.
-      // Clearing the cache on every FS event caused unnecessary re-runs that
-      // raced with each other and produced flickering findings.
-      void this.runInsights(worktreeId);
-    }, 2000);
+    // Only schedule an insight re-run if the cache was explicitly cleared
+    // (by enter/recheck). The status poll fires onFileChange every few seconds
+    // even when nothing meaningful changed — without this guard we'd re-send
+    // identical findings on every tick.
+    if (!this._insightRunner.hasCacheEntry(worktreeId)) {
+      if (this._insightDebounceTimer !== undefined) clearTimeout(this._insightDebounceTimer);
+      this._insightDebounceTimer = setTimeout(() => {
+        this._insightDebounceTimer = undefined;
+        void this.runInsights(worktreeId);
+      }, 2000);
+    }
 
     if (this._diagnosticDebounceTimer !== undefined) clearTimeout(this._diagnosticDebounceTimer);
     this._diagnosticDebounceTimer = setTimeout(() => {
       this._diagnosticDebounceTimer = undefined;
       const files = this._deps.getWorktreeFiles(worktreeId);
-      this._diagnosticCollector.updateFiles(files);
+      if (files.length > 0) this._diagnosticCollector.updateFiles(files);
     }, 300);
   }
 
@@ -103,12 +105,25 @@ export class InspectionSession {
     if (!wt) return;
 
     // Cancel any in-flight insight run so stale results never overwrite fresh ones
+    const hadPrevious = !!this._insightAbortController;
     this._insightAbortController?.abort();
     const controller = new AbortController();
     this._insightAbortController = controller;
 
     const files = this._deps.getWorktreeFiles(worktreeId);
     const smellRules = this._deps.getSmellRules();
+
+    log.info(
+      `[insights] runInsights start: ${files.length} files, ${smellRules.length} rules, abortedPrevious=${hadPrevious}`
+    );
+
+    // Guard: if the file list is empty, skip — this is almost certainly a
+    // transient state (e.g. git ls-files returned empty during a concurrent
+    // git operation). Sending an empty detail would wipe existing findings.
+    if (files.length === 0) {
+      log.info('[insights] runInsights skipped: 0 files (transient)');
+      return;
+    }
 
     const extraSettings: Record<string, Record<string, unknown>> = {
       codeSmells: { smellRules },
@@ -126,13 +141,32 @@ export class InspectionSession {
         extraSettings,
       });
 
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        log.info('[insights] runInsights aborted after analysis');
+        return;
+      }
 
+      let totalFindings = 0;
       for (const detail of details) {
+        const count =
+          detail.fileInsights?.reduce(
+            (sum: number, fi: { findings: unknown[] }) => sum + fi.findings.length,
+            0
+          ) ?? 0;
+        totalFindings += count;
+        log.info(
+          `[insights] sending detail: ${detail.insightId}, ${detail.fileInsights?.length ?? 0} files, ${count} findings`
+        );
         this._deps.postMessage({ type: 'insight-detail', detail });
       }
+      log.info(
+        `[insights] runInsights done: ${details.length} details, ${totalFindings} total findings`
+      );
     } catch (err) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        log.info('[insights] runInsights aborted in catch');
+        return;
+      }
       log.error('runInsights error:', err);
     } finally {
       if (!controller.signal.aborted) {

@@ -100,4 +100,9 @@ export class InsightRunner {
   clearCache(worktreeId: string): void {
     this.cache.delete(worktreeId);
   }
+
+  /** Returns true if a cache entry exists for this worktree (may or may not be stale). */
+  hasCacheEntry(worktreeId: string): boolean {
+    return this.cache.has(worktreeId);
+  }
 }
