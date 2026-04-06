@@ -44,7 +44,7 @@ function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: Inspe
     <DiffPopover file={file} worktreeId={worktreeId}>
       <button
         className={clsx(
-          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
+          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors min-w-16',
           'hover:bg-node-file-pulse',
           onFileClick ? 'cursor-pointer' : 'cursor-default'
         )}
@@ -379,8 +379,8 @@ export function FileListPanel({
   return (
     <div
       data-testid="file-list-panel"
-      className="relative border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0"
-      style={{ width: resize.width }}
+      className="grow min-[600px]:grow-0 relative border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col w-full min-[600px]:w-(--panel-w) min-[600px]:min-w-0 shrink-0 overflow-hidden"
+      style={{ '--panel-w': `${resize.width}px` } as React.CSSProperties}
     >
       {/* Drag handle */}
       <div
