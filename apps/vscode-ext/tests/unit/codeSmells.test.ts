@@ -6,9 +6,7 @@ import { codeSmellsPlugin } from '../../src/insights/plugins/codeSmells';
 import type { FileChange } from '@shiftspace/renderer';
 import type { SmellRule } from '../../src/actions/types';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 let tmpDir: string;
 
@@ -57,9 +55,7 @@ async function analyze(files: FileChange[], rules: SmellRule[], signal?: AbortSi
   });
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 describe('codeSmellsPlugin — no rules', () => {
   it('returns score 0 when no smell rules configured', async () => {

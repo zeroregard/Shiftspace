@@ -19,9 +19,7 @@ import * as path from 'path';
 import type { IconMap } from '@shiftspace/renderer';
 import { log } from './logger';
 
-// ---------------------------------------------------------------------------
 // Internal types mirroring the VSCode icon-theme JSON schema
-// ---------------------------------------------------------------------------
 
 interface IconDefinition {
   iconPath?: string; // SVG file, relative to the theme JSON
@@ -51,9 +49,7 @@ interface IconThemeJson extends IconThemeVariant {
   fonts?: IconFont[];
 }
 
-// ---------------------------------------------------------------------------
 // IconThemeProvider
-// ---------------------------------------------------------------------------
 
 export class IconThemeProvider implements vscode.Disposable {
   private _themeJson: IconThemeJson | null = null;

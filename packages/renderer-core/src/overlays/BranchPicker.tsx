@@ -20,9 +20,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { Tooltip } from '@shiftspace/ui/tooltip';
 import { Codicon } from '@shiftspace/ui/codicon';
 
-// ---------------------------------------------------------------------------
 // Context — shared state between compound sub-components
-// ---------------------------------------------------------------------------
 
 interface BranchPickerCtx {
   query: string;
@@ -40,9 +38,7 @@ function usePicker(): BranchPickerCtx {
   return useContext(Ctx);
 }
 
-// ---------------------------------------------------------------------------
 // Root
-// ---------------------------------------------------------------------------
 
 interface RootProps {
   onSelect?: (value: string) => void;
@@ -93,9 +89,7 @@ function useSelect(): (value: string) => void {
   return (value: string) => ref?.current?.(value);
 }
 
-// ---------------------------------------------------------------------------
 // Trigger
-// ---------------------------------------------------------------------------
 
 interface TriggerProps {
   children: React.ReactNode;
@@ -145,9 +139,7 @@ function Trigger({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Content
-// ---------------------------------------------------------------------------
 
 interface ContentProps {
   children: React.ReactNode;
@@ -169,9 +161,7 @@ function Content({ children, align = 'end' }: ContentProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Search
-// ---------------------------------------------------------------------------
 
 function Search({ placeholder = 'Search branches…' }: { placeholder?: string }) {
   const { query, setQuery, close } = usePicker();
@@ -200,9 +190,7 @@ function Search({ placeholder = 'Search branches…' }: { placeholder?: string }
   );
 }
 
-// ---------------------------------------------------------------------------
 // Static Options
-// ---------------------------------------------------------------------------
 
 interface StaticOption {
   key: string;
@@ -237,17 +225,13 @@ function Options({ options }: { options: StaticOption[] }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Separator
-// ---------------------------------------------------------------------------
 
 function Separator() {
   return <div className="my-1 border-t border-border-default" />;
 }
 
-// ---------------------------------------------------------------------------
 // Branch list
-// ---------------------------------------------------------------------------
 
 interface BranchesProps {
   branches: string[];
@@ -290,9 +274,7 @@ function Branches({ branches, selected, labelFn, maxVisible = 10 }: BranchesProp
   );
 }
 
-// ---------------------------------------------------------------------------
 // Fetch button
-// ---------------------------------------------------------------------------
 
 function timeAgo(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -360,9 +342,7 @@ function Fetch({ onFetch, isFetching, lastFetchAt }: FetchProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // SearchRow — Search input + optional Fetch button in one row
-// ---------------------------------------------------------------------------
 
 interface SearchRowProps {
   placeholder?: string;
@@ -380,17 +360,13 @@ function SearchRow({ placeholder, fetch }: SearchRowProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Empty state
-// ---------------------------------------------------------------------------
 
 function Empty({ children = 'No branches found' }: { children?: React.ReactNode }) {
   return <div className="px-2 py-1.5 text-11 text-text-faint italic">{children}</div>;
 }
 
-// ---------------------------------------------------------------------------
 // Namespace export
-// ---------------------------------------------------------------------------
 
 export const BranchPicker = Object.assign(Root, {
   Trigger,

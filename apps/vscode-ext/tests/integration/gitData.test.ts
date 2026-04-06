@@ -289,9 +289,7 @@ index def..ghi 100644
   });
 });
 
-// ---------------------------------------------------------------------------
 // getBranchDiffFileChanges (integration)
-// ---------------------------------------------------------------------------
 describe('getBranchDiffFileChanges (integration)', () => {
   beforeEach(() => {
     vi.clearAllMocks();

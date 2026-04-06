@@ -92,9 +92,7 @@ describe('parseWorktreeOutput', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // getDefaultBranch
-// ---------------------------------------------------------------------------
 describe('getDefaultBranch', () => {
   it('returns a string (integration — requires git)', async () => {
     // This test runs against the actual repo. It should return a valid branch name.
@@ -109,9 +107,7 @@ describe('getDefaultBranch', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // getGitRoot
-// ---------------------------------------------------------------------------
 describe('getGitRoot', () => {
   it('returns the repo root from a directory inside a git repo', async () => {
     const root = await getGitRoot(process.cwd());
@@ -125,9 +121,7 @@ describe('getGitRoot', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // listBranches
-// ---------------------------------------------------------------------------
 describe('listBranches', () => {
   it('returns an array of branch name strings', async () => {
     const branches = await listBranches(process.cwd());

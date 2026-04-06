@@ -5,9 +5,7 @@ const MAX_ITEMS = 5;
 
 type DiagnosticDetail = FileDiagnosticSummary['details'][number];
 
-// ---------------------------------------------------------------------------
 // Diagnostic tooltip (errors / warnings)
-// ---------------------------------------------------------------------------
 
 interface DiagnosticTooltipContentProps {
   details: DiagnosticDetail[];
@@ -60,9 +58,7 @@ function DiagnosticCard({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Finding tooltip (code smells)
-// ---------------------------------------------------------------------------
 
 interface FindingTooltipContentProps {
   findings: InsightFinding[];

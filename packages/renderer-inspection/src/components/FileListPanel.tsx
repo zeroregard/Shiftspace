@@ -20,9 +20,7 @@ import {
 import { Codicon } from '@shiftspace/ui/codicon';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-label';
-// ---------------------------------------------------------------------------
 // File row
-// ---------------------------------------------------------------------------
 
 interface InspectionFileRowProps {
   file: FileChange;
@@ -47,9 +45,7 @@ function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: Inspe
   );
 }
 
-// ---------------------------------------------------------------------------
 // Section label
-// ---------------------------------------------------------------------------
 
 function FileSectionLabel({ label, icon }: { label: string; icon?: string }) {
   return (
@@ -60,9 +56,7 @@ function FileSectionLabel({ label, icon }: { label: string; icon?: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Virtual list item types
-// ---------------------------------------------------------------------------
 
 const SECTION_LABEL_HEIGHT = 28;
 const FILE_ROW_HEIGHT = 32;
@@ -71,9 +65,7 @@ type VirtualItem =
   | { type: 'label'; label: string; icon?: string }
   | { type: 'file'; file: FileChange; sectionKey: string };
 
-// ---------------------------------------------------------------------------
 // Debounced search input
-// ---------------------------------------------------------------------------
 
 const SEARCH_DEBOUNCE_MS = 150;
 
@@ -185,9 +177,7 @@ function SearchInput({
   );
 }
 
-// ---------------------------------------------------------------------------
 // File list panel
-// ---------------------------------------------------------------------------
 
 interface FileListPanelProps {
   wt: WorktreeState;
@@ -201,9 +191,7 @@ interface FileListPanelProps {
   onHoverFile: (filePath: string | null) => void;
 }
 
-// ---------------------------------------------------------------------------
 // Resizable panel width (persisted to localStorage)
-// ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'shiftspace:file-list-width';
 const MIN_WIDTH = 180;

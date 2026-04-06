@@ -15,9 +15,7 @@ import { Link } from '@shiftspace/ui/link';
 
 const EMPTY_BRANCHES: string[] = [];
 
-// ---------------------------------------------------------------------------
 // Branch picker row — extracted to keep WorktreeCard under the line limit
-// ---------------------------------------------------------------------------
 
 interface BranchRowProps {
   wt: WorktreeState;
@@ -71,8 +69,6 @@ function BranchRow({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: Br
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
 
 type WorktreeCardVariant = 'full' | 'slim';
 

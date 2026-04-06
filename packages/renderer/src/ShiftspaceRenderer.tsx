@@ -37,9 +37,7 @@ interface Props {
 
 export { type PanZoomConfig };
 
-// ---------------------------------------------------------------------------
 // Main renderer
-// ---------------------------------------------------------------------------
 
 export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
@@ -99,9 +97,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   );
 };
 
-// ---------------------------------------------------------------------------
 // Inner content — consumes actions from context, no prop drilling
-// ---------------------------------------------------------------------------
 
 interface ContentProps {
   showPackageSwitcher: boolean;

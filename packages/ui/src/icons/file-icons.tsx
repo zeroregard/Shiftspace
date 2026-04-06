@@ -1,8 +1,6 @@
 import React from 'react';
 
-// ---------------------------------------------------------------------------
 // SVG base shapes
-// ---------------------------------------------------------------------------
 
 interface FileShapeProps {
   /** Main fill color */
@@ -71,9 +69,7 @@ const FolderIconSvg: React.FC<FolderShapeProps> = ({ color, size }) => (
   </svg>
 );
 
-// ---------------------------------------------------------------------------
 // File type config
-// ---------------------------------------------------------------------------
 
 interface FileConfig {
   color: string;
@@ -155,9 +151,7 @@ const FILENAME_MAP: Record<string, FileConfig> = {
 
 const GENERIC_FILE: FileConfig = { color: '#9090A0' };
 
-// ---------------------------------------------------------------------------
 // Folder type config
-// ---------------------------------------------------------------------------
 
 const FOLDER_MAP: Record<string, string> = {
   src: '#4B9EE0',
@@ -214,9 +208,7 @@ const FOLDER_MAP: Record<string, string> = {
 
 const GENERIC_FOLDER_COLOR = '#788090';
 
-// ---------------------------------------------------------------------------
 // Public lookup functions
-// ---------------------------------------------------------------------------
 
 export function getFileIconConfig(filename: string): FileConfig {
   const lower = filename.toLowerCase();
@@ -231,9 +223,7 @@ export function getFolderIconColor(folderName: string): string {
   return FOLDER_MAP[lower] ?? FOLDER_MAP[folderName] ?? GENERIC_FOLDER_COLOR;
 }
 
-// ---------------------------------------------------------------------------
 // React components for use in nodes
-// ---------------------------------------------------------------------------
 
 export interface FileIconProps {
   filename: string;
