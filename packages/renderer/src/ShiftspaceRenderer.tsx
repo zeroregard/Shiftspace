@@ -33,6 +33,11 @@ interface Props {
   onGetLog?: (worktreeId: string, actionId: string) => void;
   onRecheckInsights?: (worktreeId: string) => void;
   panZoomConfig?: PanZoomConfig;
+  /**
+   * When set, skip the Grove view and go directly to Inspection for this worktree.
+   * Used by the Cursor extension which doesn't need Grove (Cursor manages worktrees).
+   */
+  forceInspectionWorktreeId?: string;
 }
 
 export { type PanZoomConfig };
@@ -59,8 +64,10 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onGetLog,
   onRecheckInsights,
   panZoomConfig,
+  forceInspectionWorktreeId,
 }) => {
   const { setWorktrees, applyEvent } = useWorktreeStore();
+  const enterInspection = useInspectionStore((s) => s.enterInspection);
 
   useEffect(() => {
     if (initialWorktrees.length > 0) setWorktrees(initialWorktrees);
@@ -70,6 +77,13 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     if (!onEvent) return;
     return onEvent(applyEvent);
   }, [onEvent, applyEvent]);
+
+  // Force inspection mode when requested (e.g. Cursor extension skipping Grove)
+  useEffect(() => {
+    if (forceInspectionWorktreeId) {
+      enterInspection(forceInspectionWorktreeId);
+    }
+  }, [forceInspectionWorktreeId, enterInspection]);
 
   return (
     <ActionsProvider

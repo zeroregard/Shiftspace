@@ -5,11 +5,14 @@ import { runDetectActionsCommand } from './actions/detect';
 import { ShiftspaceMcpHttpServer } from './mcp/httpServer';
 import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/autoConfig';
 import { initLogger, log } from './logger';
+import { setLogger } from '@shiftspace/core';
 
 const mcpHttpServer = new ShiftspaceMcpHttpServer();
 
 export function activate(context: vscode.ExtensionContext) {
   initLogger(context);
+  // Bridge the VSCode logger into @shiftspace/core so shared modules log properly
+  setLogger(log);
 
   // Restore any Shiftspace tabs that were open before a window reload.
   // Must be registered synchronously at activation time.

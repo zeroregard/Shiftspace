@@ -1,0 +1,90 @@
+{
+  "name": "shiftspace-cursor",
+  "displayName": "Shiftspace (Cursor)",
+  "description": "Agent workspace review tool — code quality insights for your worktrees",
+  "version": "0.1.0",
+  "publisher": "zeroregard",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zeroregard/shiftspace"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Visualization"
+  ],
+  "keywords": [
+    "cursor",
+    "git",
+    "worktree",
+    "inspection",
+    "diagnostics",
+    "code quality"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "shiftspace.openInspection",
+        "title": "Shiftspace: Inspect Current Worktree"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "shiftspace.openInspection",
+        "key": "shift+space",
+        "when": "!inputFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Shiftspace",
+      "properties": {
+        "shiftspace.ignorePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Glob patterns for files to hide from the Shiftspace view. Examples: *.lock, **/lang/*.json, *.min.js",
+          "scope": "resource"
+        },
+        "shiftspace.insights.codeSmells.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable code smell detection based on rules defined in .shiftspace.json",
+          "scope": "resource"
+        },
+        "shiftspace.insights.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show compiler errors and lint warnings from diagnostics on file nodes",
+          "scope": "resource"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js",
+    "watch": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --sourcemap --outfile=dist/extension.js --watch",
+    "package": "vsce package --no-dependencies",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "minimatch": "^10.0.1"
+  },
+  "devDependencies": {
+    "@shiftspace/core": "workspace:*",
+    "@shiftspace/renderer": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.3.2",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.2"
+  }
+}

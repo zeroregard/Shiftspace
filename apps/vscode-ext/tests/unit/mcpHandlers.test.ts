@@ -41,7 +41,7 @@ function makeDeps(worktrees: WorktreeState[] = [makeWorktree()]): McpHandlerDeps
     worktreeProvider: {
       getWorktrees: () => worktrees,
     },
-    configLoader: {
+    configProvider: {
       config: {
         actions: [
           { id: 'fmt', label: 'Format', command: 'echo formatted', type: 'check', icon: 'check' },
@@ -58,7 +58,7 @@ function makeDeps(worktrees: WorktreeState[] = [makeWorktree()]): McpHandlerDeps
           verify: { steps: ['fmt', 'lint'], stopOnFailure: true },
         },
       },
-    } as unknown as McpHandlerDeps['configLoader'],
+    } as unknown as McpHandlerDeps['configProvider'],
     stateManager,
     repoRoot: '/tmp',
     getPackageName: () => '',

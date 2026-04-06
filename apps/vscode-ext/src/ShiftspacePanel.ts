@@ -400,7 +400,7 @@ export class ShiftspacePanel {
           }));
         },
       },
-      configLoader: coordinator['configLoader'] as import('./actions/configLoader').ConfigLoader,
+      configProvider: coordinator['configLoader'] as import('./actions/configLoader').ConfigLoader,
       stateManager: coordinator['stateManager'] as import('./actions/stateManager').StateManager,
       repoRoot,
       getPackageName: () => (coordinator['selectedPackage'] as string) ?? '',

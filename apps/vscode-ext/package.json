@@ -192,6 +192,7 @@
     "minimatch": "^10.0.1"
   },
   "devDependencies": {
+    "@shiftspace/core": "workspace:*",
     "@shiftspace/renderer": "workspace:*",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^20.0.0",
