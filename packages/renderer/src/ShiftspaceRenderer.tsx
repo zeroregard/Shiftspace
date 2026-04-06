@@ -6,6 +6,7 @@ import { useWorktreeStore, useInspectionStore } from '@shiftspace/renderer-core'
 import { type PanZoomConfig } from '@shiftspace/renderer-core';
 import { GroveView } from '@shiftspace/renderer-grove';
 import { UnifiedHeader, ActionsProvider } from '@shiftspace/renderer-core';
+import { Loader } from '@shiftspace/ui/loader';
 
 const LazyInspectionView = React.lazy(() =>
   import('@shiftspace/renderer-inspection').then((m) => ({ default: m.InspectionView }))
@@ -128,13 +129,7 @@ function ShiftspaceContent({ showPackageSwitcher, panZoomConfig }: ContentProps)
         {mode.type === 'grove' ? (
           <GroveView worktrees={wtArray} />
         ) : (
-          <Suspense
-            fallback={
-              <div className="w-full h-full flex items-center justify-center text-text-faint text-13">
-                Loading…
-              </div>
-            }
-          >
+          <Suspense fallback={<Loader />}>
             <LazyInspectionView worktreeId={mode.worktreeId} panZoomConfig={panZoomConfig} />
           </Suspense>
         )}
