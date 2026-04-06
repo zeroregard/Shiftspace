@@ -1,6 +1,8 @@
 import type { WorktreeState } from '@shiftspace/renderer-core';
+import { useWorktreeStore } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/WorktreeCard';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
+import { Loader } from '@shiftspace/ui/loader';
 
 interface SidebarViewProps {
   worktrees: WorktreeState[];
@@ -17,6 +19,16 @@ function WorktreeCardError() {
 }
 
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
+  const initialized = useWorktreeStore((s) => s.initialized);
+
+  if (!initialized) {
+    return (
+      <div className="w-full h-full">
+        <Loader />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full overflow-auto">
       <div className="p-3">
