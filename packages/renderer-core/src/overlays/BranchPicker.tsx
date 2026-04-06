@@ -130,7 +130,7 @@ function Trigger({
         onPointerDown={stopPropagation ? (e) => e.stopPropagation() : undefined}
         onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
       >
-        <span className="shrink-0">
+        <span className="shrink-0 translate-y-0.5">
           <Codicon name={icon} />
         </span>
         {children}
