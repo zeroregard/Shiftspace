@@ -2,7 +2,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useInspectionStore } from '../store';
 import type { DiffMode } from '../types';
 import { BranchPicker } from '../overlays/BranchPicker';
-import { Codicon } from '@shiftspace/ui/codicon';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { PackageSwitcher } from './PackageSwitcher';
 import { useActions } from '../ui/ActionsContext';
@@ -96,14 +95,11 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
             onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
             onOpen={() => actions.requestBranchList(wt.id)}
           >
-            <BranchPicker.Trigger>
-              <button
-                className="flex items-center gap-1 text-text-primary hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold truncate"
-                title="Switch branch"
-              >
-                <Codicon name="git-branch" />
-                {wt.branch}
-              </button>
+            <BranchPicker.Trigger
+              className="text-text-primary hover:text-text-primary text-13 font-semibold truncate"
+              title="Switch branch"
+            >
+              {wt.branch}
             </BranchPicker.Trigger>
             <BranchPicker.Content>
               <BranchPicker.SearchRow
@@ -121,11 +117,12 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
             onSelect={(branch) => actions.diffModeChange(wt.id, { type: 'branch', branch })}
             onOpen={() => actions.requestBranchList(wt.id)}
           >
-            <BranchPicker.Trigger>
-              <button className="flex items-center gap-1 px-1.5 py-1 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-text-muted text-10 whitespace-nowrap cursor-pointer bg-transparent">
-                <Codicon name="git-compare" />
-                <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
-              </button>
+            <BranchPicker.Trigger
+              icon="git-compare"
+              variant="pill"
+              className="text-text-muted hover:text-text-primary text-10 whitespace-nowrap"
+            >
+              <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
             </BranchPicker.Trigger>
             <BranchPicker.Content>
               <BranchPicker.Search />

@@ -5,9 +5,7 @@ import { isInsightEnabled, getInsightSettings } from '../../src/insights/setting
 import type { InsightPlugin } from '../../src/insights/types';
 import type { FileChange } from '@shiftspace/renderer';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeFile(path: string): FileChange {
   return {
@@ -44,9 +42,7 @@ function makePlugin(id: string, _enabled = true): InsightPlugin & { analyzed: nu
   return plugin;
 }
 
-// ---------------------------------------------------------------------------
 // SettingsLoader
-// ---------------------------------------------------------------------------
 
 describe('settingsLoader', () => {
   // The vscode mock in __mocks__/vscode.ts returns getConfiguration().get() → []
@@ -75,9 +71,7 @@ describe('settingsLoader', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // InsightRegistry
-// ---------------------------------------------------------------------------
 
 describe('InsightRegistry', () => {
   let registry: InsightRegistry;
@@ -114,9 +108,7 @@ describe('InsightRegistry', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // InsightRunner
-// ---------------------------------------------------------------------------
 
 describe('InsightRunner', () => {
   // We use a local registry + runner for each test to avoid global state pollution

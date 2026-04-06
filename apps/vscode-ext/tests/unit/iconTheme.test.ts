@@ -27,9 +27,7 @@ vi.mock('vscode', () => ({
   },
 }));
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function enc(s: string): Uint8Array {
   return new TextEncoder().encode(s);
@@ -66,9 +64,7 @@ const SVG_JS = '<svg xmlns="http://www.w3.org/2000/svg"><text>JS</text></svg>';
 const SVG_JSON = '<svg xmlns="http://www.w3.org/2000/svg"><text>JSON</text></svg>';
 const SVG_DEFAULT = '<svg xmlns="http://www.w3.org/2000/svg"><text>?</text></svg>';
 
-// ---------------------------------------------------------------------------
 // Setup helpers
-// ---------------------------------------------------------------------------
 
 function setupExtension(themeId = 'test-theme', extPath = '/ext') {
   mockExtensions.all = [
@@ -102,9 +98,7 @@ function setupFileReads(extPath = '/ext') {
   return extPath;
 }
 
-// ---------------------------------------------------------------------------
 // Import after mocks are in place
-// ---------------------------------------------------------------------------
 
 // Dynamic import so the vscode mock is registered first
 async function makeProvider() {
@@ -112,9 +106,7 @@ async function makeProvider() {
   return new IconThemeProvider();
 }
 
-// ---------------------------------------------------------------------------
 // Tests — Phase 1: theme loading
-// ---------------------------------------------------------------------------
 
 describe('IconThemeProvider.load()', () => {
   beforeEach(() => {
@@ -158,9 +150,7 @@ describe('IconThemeProvider.load()', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Tests — Phase 2: file → icon resolution
-// ---------------------------------------------------------------------------
 
 describe('IconThemeProvider.resolveForFiles()', () => {
   beforeEach(() => {
@@ -289,9 +279,7 @@ describe('IconThemeProvider.resolveForFiles()', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Tests — Preview app: no icon-map dependency
-// ---------------------------------------------------------------------------
 
 describe('Preview app isolation', () => {
   it('renderer store starts with empty iconMap', async () => {

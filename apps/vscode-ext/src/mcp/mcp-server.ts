@@ -113,6 +113,20 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'get_smells',
+    description:
+      'Run code smell analysis on changed files in the current worktree. Returns per-file findings based on configured smell rules in .shiftspace.json.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        cwd: {
+          type: 'string',
+          description: 'Working directory (auto-detected if omitted)',
+        },
+      },
+    },
+  },
 ];
 
 async function callExtension(

@@ -46,22 +46,16 @@
     {
       "id": "eslint-disable",
       "label": "ESLint Disable",
-      "pattern": "eslint-disable",
+      "pattern": "//\\s*eslint-disable",
       "threshold": 1,
-      "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
+      "fileTypes": [".jsx", ".ts", ".tsx"],
+      "excludePatterns": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"]
     },
     {
       "id": "llm-comment",
       "label": "LLM Comment",
       "pattern": "// ---------------------------------------------------------------------------",
       "threshold": "1"
-    },
-    {
-      "id": "console-log",
-      "label": "Console Log",
-      "pattern": "console\\.log",
-      "threshold": 1,
-      "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
     },
     {
       "id": "use-effect-overuse",

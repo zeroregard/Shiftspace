@@ -21,9 +21,7 @@ function makeFile(overrides: Partial<FileChange> & { path: string }): FileChange
 
 const WT = 'wt-0';
 
-// ---------------------------------------------------------------------------
 // Full flow: git output → FileChange[] → surgical events
-// ---------------------------------------------------------------------------
 describe('Full flow: initial load → file change → surgical events', () => {
   it('initial state: all files produce file-changed events vs empty previous', () => {
     const initial = buildFileChanges(

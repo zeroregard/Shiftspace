@@ -43,10 +43,6 @@
       "import": "./src/spinner.tsx",
       "types": "./src/spinner.tsx"
     },
-    "./status-dot": {
-      "import": "./src/status-dot.tsx",
-      "types": "./src/status-dot.tsx"
-    },
     "./tooltip": {
       "import": "./src/tooltip.tsx",
       "types": "./src/tooltip.tsx"
@@ -58,6 +54,10 @@
     "./smell-icon": {
       "import": "./src/icons/smell-icon.tsx",
       "types": "./src/icons/smell-icon.tsx"
+    },
+    "./link": {
+      "import": "./src/link.tsx",
+      "types": "./src/link.tsx"
     },
     "./loader": {
       "import": "./src/loader.tsx",

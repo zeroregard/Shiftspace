@@ -1,9 +1,7 @@
 import type { InsightDetail, FileDiagnosticSummary } from '@shiftspace/renderer';
 
-// ---------------------------------------------------------------------------
 // Mock insight data — seeded so insight pills are always visible in the
 // preview app's inspection mode, covering all files from each template.
-// ---------------------------------------------------------------------------
 
 function smellDetail(
   worktreeId: string,
@@ -68,9 +66,7 @@ export const MOCK_CODE_SMELL_DETAIL_WT1 = smellDetail('wt-1', [
   ['src/index.ts', [['console-log', 'Console Log', 1, 1, 10]]],
 ]);
 
-// ---------------------------------------------------------------------------
 // Mock diagnostic data — simulates VSCode diagnostics (TS errors, lint warnings)
-// ---------------------------------------------------------------------------
 
 export const MOCK_DIAGNOSTICS_WT0: FileDiagnosticSummary[] = [
   {

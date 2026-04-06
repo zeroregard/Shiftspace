@@ -15,7 +15,7 @@ interface SectionLabelProps {
 export function SectionLabel({ children, className }: SectionLabelProps) {
   return (
     <span
-      className={clsx('text-10 font-semibold uppercase tracking-wider text-text-faint', className)}
+      className={clsx('text-11 font-semibold uppercase tracking-wider text-text-faint', className)}
     >
       {children}
     </span>

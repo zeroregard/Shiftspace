@@ -46,6 +46,7 @@ export { UnifiedHeader } from './shared/UnifiedHeader';
 export { ThemedFileIcon } from './shared/ThemedFileIcon';
 export { PackageSwitcher } from './shared/PackageSwitcher';
 export { InspectionHoverContext, useInspectionHover } from './shared/InspectionHoverContext';
+export { FileRowButton } from './shared/FileRowButton';
 
 // UI
 export {
@@ -57,7 +58,6 @@ export {
   ListItem,
   SectionLabel,
   Spinner,
-  StatusDot,
   ActionsProvider,
   useActions,
   type ShiftspaceActions,

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Button } from '@shiftspace/ui/button';
 import { usePanZoom } from './hooks/usePanZoom';
 
 export interface LayoutNode {
@@ -188,28 +189,14 @@ export const TreeCanvas: React.FC<TreeCanvasProps> = ({
           <NodeWrapper key={node.id} node={node} nodeTypes={nodeTypes} />
         ))}
       </div>
-      <button
-        style={{
-          position: 'absolute',
-          bottom: 16,
-          right: 16,
-          zIndex: 10,
-          background: 'var(--color-node-file)',
-          border: '1px solid var(--color-border-default)',
-          borderRadius: 6,
-          padding: '5px 10px',
-          cursor: 'pointer',
-          color: 'var(--color-text-secondary)',
-          fontSize: 11,
-          lineHeight: 1,
-          userSelect: 'none',
-        }}
+      <div
+        style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 10 }}
         onPointerDown={(e) => e.stopPropagation()}
-        onClick={handleFitView}
-        title="Reset view"
       >
-        Fit
-      </button>
+        <Button variant="ghost" size="sm" onClick={handleFitView}>
+          Fit
+        </Button>
+      </div>
     </div>
   );
 };

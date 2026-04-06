@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { partitionFiles } from './listSections';
 import type { WorktreeState, FileChange } from '../types';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeFile(
   path: string,
@@ -36,9 +34,7 @@ function makeWt(overrides: Partial<WorktreeState> = {}): WorktreeState {
   };
 }
 
-// ---------------------------------------------------------------------------
 // partitionFiles — working mode
-// ---------------------------------------------------------------------------
 
 describe('partitionFiles — working mode', () => {
   it('puts staged files in staged section', () => {
@@ -79,9 +75,7 @@ describe('partitionFiles — working mode', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // partitionFiles — partial staging (git add -p)
-// ---------------------------------------------------------------------------
 
 describe('partitionFiles — partial staging', () => {
   it('a partiallyStaged file appears in both staged and unstaged', () => {
@@ -130,9 +124,7 @@ describe('partitionFiles — partial staging', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // partitionFiles — branch mode
-// ---------------------------------------------------------------------------
 
 describe('partitionFiles — branch mode', () => {
   it('puts branchFiles in committed section', () => {
@@ -189,9 +181,7 @@ describe('partitionFiles — branch mode', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Store flow: applyEvent respects diffMode
-// ---------------------------------------------------------------------------
 
 describe('store applyEvent — branch mode guard', () => {
   // Import the store fresh for each test to avoid cross-test pollution

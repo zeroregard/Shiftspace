@@ -71,7 +71,7 @@ export function useCanvasGestures({
     }
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Touch events for pinch-to-zoom
   useEffect(() => {
@@ -122,5 +122,5 @@ export function useCanvasGestures({
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 }

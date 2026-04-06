@@ -5,6 +5,14 @@ import { insightRegistry } from '../registry';
 import type { SmellRule } from '../../actions/types';
 import { log } from '../../logger';
 
+/** Simple glob match supporting leading `*` (e.g. `*.test.ts` matches `foo.test.ts`). */
+function matchesGlob(filePath: string, pattern: string): boolean {
+  if (pattern.startsWith('*')) {
+    return filePath.endsWith(pattern.slice(1));
+  }
+  return filePath === pattern;
+}
+
 function readFileContent(worktreeRoot: string, filePath: string): string | null {
   try {
     return fs.readFileSync(path.join(worktreeRoot, filePath), 'utf8');
@@ -54,11 +62,14 @@ const codeSmellsPlugin: InsightPlugin = {
 
     for (const file of files) {
       if (signal?.aborted) break;
+      if (file.path === '.shiftspace.json') continue;
 
       const ext = path.extname(file.path).toLowerCase();
-      const applicable = compiledRules.filter(
-        ({ rule }) => !rule.fileTypes || rule.fileTypes.includes(ext)
-      );
+      const applicable = compiledRules.filter(({ rule }) => {
+        if (rule.fileTypes && !rule.fileTypes.includes(ext)) return false;
+        if (rule.excludePatterns?.some((p) => matchesGlob(file.path, p))) return false;
+        return true;
+      });
       if (applicable.length === 0) continue;
 
       const content = readFileContent(worktreeRoot, file.path);

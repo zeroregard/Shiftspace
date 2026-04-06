@@ -54,16 +54,6 @@ type HostMessage =
   | { type: 'fetch-loading'; worktreeId: string; loading: boolean }
   | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] }
   | { type: 'swap-loading'; worktreeId: string; loading: boolean }
-  // Legacy action messages (kept for backward compat)
-  | { type: 'actions-config'; actions: ActionConfig[] }
-  | {
-      type: 'action-status';
-      worktreeId: string;
-      actionId: string;
-      status: ActionStatus;
-      port?: number;
-    }
-  // New check system messages
   | {
       type: 'actions-config-v2';
       actions: Array<{ id: string; label: string; type: 'check' | 'service'; icon: string }>;
@@ -137,15 +127,6 @@ function handleCoreMessage(
 
 function handleActionMessage(msg: HostMessage): boolean {
   switch (msg.type) {
-    case 'actions-config':
-      useActionStore.getState().setActionConfigs(msg.actions);
-      return true;
-    case 'action-status':
-      useActionStore.getState().setActionState(msg.worktreeId, msg.actionId, {
-        status: msg.status,
-        port: msg.port,
-      });
-      return true;
     case 'actions-config-v2': {
       const configs: ActionConfig[] = msg.actions.map((a) => ({
         id: a.id,

@@ -186,6 +186,10 @@
         "react-dom": "^19.0.0",
       },
     },
+    "packages/rules": {
+      "name": "@shiftspace/rules",
+      "version": "0.1.0",
+    },
     "packages/ui": {
       "name": "@shiftspace/ui",
       "version": "0.1.0",
@@ -665,6 +669,8 @@
     "@shiftspace/renderer-grove": ["@shiftspace/renderer-grove@workspace:packages/renderer-grove"],
 
     "@shiftspace/renderer-inspection": ["@shiftspace/renderer-inspection@workspace:packages/renderer-inspection"],
+
+    "@shiftspace/rules": ["@shiftspace/rules@workspace:packages/rules"],
 
     "@shiftspace/ui": ["@shiftspace/ui@workspace:packages/ui"],
 

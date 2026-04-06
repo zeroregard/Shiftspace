@@ -2,7 +2,8 @@ import { execFileSync } from 'child_process';
 import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
 import type { ConfigLoader } from '../actions/configLoader';
 import type { StateManager } from '../actions/stateManager';
-import type { CheckResult, ShiftspaceActionConfig } from '../actions/types';
+import type { CheckResult, ShiftspaceActionConfig, SmellRule } from '../actions/types';
+import type { InsightRunner } from '../insights/runner';
 import { resolveCommand } from '../actions/commandResolver';
 import { runCheck } from '../actions/runner';
 import { runPipeline } from '../actions/pipelineRunner';
@@ -18,6 +19,8 @@ export interface McpHandlerDeps {
   repoRoot: string;
   getPackageName: () => string;
   collectDiagnostics?: (files: FileChange[], worktreeRoot: string) => FileDiagnosticSummary[];
+  insightRunner?: InsightRunner;
+  getSmellRules?: () => SmellRule[];
 }
 
 export class McpToolHandlers {
@@ -35,6 +38,8 @@ export class McpToolHandlers {
         return this.handleRunPipeline(params);
       case 'get_changed_files':
         return this.handleGetChangedFiles(params);
+      case 'get_smells':
+        return this.handleGetSmells(params);
       default:
         return { error: `Unknown tool: ${tool}` };
     }
@@ -216,6 +221,49 @@ export class McpToolHandlers {
         linesAdded: f.linesAdded,
         linesRemoved: f.linesRemoved,
       })),
+    };
+  }
+
+  private async handleGetSmells(params: Record<string, unknown>): Promise<object> {
+    const runner = this.deps.insightRunner;
+    const getRules = this.deps.getSmellRules;
+    if (!runner || !getRules) return { error: 'Smell analysis not available' };
+
+    const wt = this.resolveWorktree(params['cwd'] as string | undefined);
+    if (!wt) return { error: 'No worktree found' };
+
+    const smellRules = getRules();
+    if (smellRules.length === 0) {
+      return {
+        worktree: { id: wt.id, branch: wt.branch },
+        smells: [],
+        totalSmells: 0,
+      };
+    }
+
+    const { details } = await runner.analyzeWorktree({
+      worktreeId: wt.id,
+      files: wt.files,
+      repoRoot: this.deps.repoRoot,
+      worktreeRoot: wt.path,
+      extraSettings: { codeSmells: { smellRules } },
+    });
+
+    const smellDetail = details.find((d) => d.insightId === 'codeSmells');
+    const fileInsights = smellDetail?.fileInsights ?? [];
+
+    return {
+      worktree: { id: wt.id, branch: wt.branch },
+      smells: fileInsights.map((fi) => ({
+        file: fi.filePath,
+        findings: fi.findings.map((f) => ({
+          ruleId: f.ruleId,
+          ruleLabel: f.ruleLabel,
+          count: f.count,
+          threshold: f.threshold,
+        })),
+      })),
+      totalSmells: fileInsights.reduce((sum, fi) => sum + fi.findings.length, 0),
     };
   }
 }

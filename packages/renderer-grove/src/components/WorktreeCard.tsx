@@ -9,15 +9,13 @@ import {
   useActions,
   useWorktreeRename,
 } from '@shiftspace/renderer-core';
-import { Codicon } from '@shiftspace/ui/codicon';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Input } from '@shiftspace/ui/input';
+import { Link } from '@shiftspace/ui/link';
 
 const EMPTY_BRANCHES: string[] = [];
 
-// ---------------------------------------------------------------------------
 // Branch picker row — extracted to keep WorktreeCard under the line limit
-// ---------------------------------------------------------------------------
 
 interface BranchRowProps {
   wt: WorktreeState;
@@ -50,18 +48,12 @@ function BranchRow({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: Br
         onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
         onOpen={() => actions.requestBranchList(wt.id)}
       >
-        <BranchPicker.Trigger>
-          <button
-            className="flex items-center gap-1 min-w-0 max-w-full text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-11"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            title={wt.branch}
-          >
-            <span className="shrink-0">
-              <Codicon name="git-branch" />
-            </span>
-            <span className="truncate">{wt.branch}</span>
-          </button>
+        <BranchPicker.Trigger
+          className="min-w-0 max-w-full text-text-muted hover:text-text-primary text-11"
+          title={wt.branch}
+          stopPropagation
+        >
+          <span className="truncate">{wt.branch}</span>
         </BranchPicker.Trigger>
         <BranchPicker.Content>
           <BranchPicker.SearchRow
@@ -77,8 +69,6 @@ function BranchRow({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: Br
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
 
 type WorktreeCardVariant = 'full' | 'slim';
 
@@ -152,13 +142,13 @@ export function WorktreeCard({
               />
             </>
           ) : (
-            <button
+            <Link
               data-testid={`enter-inspection-${wt.id}`}
-              className="font-semibold text-13 text-text-primary truncate text-left bg-transparent border-none p-0 cursor-pointer hover:text-text-secondary transition-colors flex-1 min-w-0"
+              className="font-semibold text-13 text-text-primary truncate hover:text-text-secondary flex-1 min-w-0"
               onClick={() => (onWorktreeClick ? onWorktreeClick(wt.id) : enterInspection(wt.id))}
             >
               {folderName}
-            </button>
+            </Link>
           )}
           {!wt.isMainWorktree && !isRenaming && (
             <>

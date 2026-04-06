@@ -168,44 +168,6 @@
           "default": true,
           "description": "Show compiler errors and lint warnings from VSCode diagnostics on file nodes in Inspection mode",
           "scope": "resource"
-        },
-        "shiftspace.actions": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "Unique identifier for the action"
-              },
-              "label": {
-                "type": "string",
-                "description": "Display name (shown in tooltip)"
-              },
-              "command": {
-                "type": "string",
-                "description": "Shell command to run"
-              },
-              "icon": {
-                "type": "string",
-                "description": "Codicon name (e.g. 'play', 'package', 'tools')"
-              },
-              "persistent": {
-                "type": "boolean",
-                "description": "True for long-running processes (e.g. dev server), false for one-shot (e.g. install)",
-                "default": false
-              }
-            },
-            "required": [
-              "id",
-              "label",
-              "command",
-              "icon"
-            ]
-          },
-          "default": [],
-          "description": "Legacy: Commands available as action buttons on each worktree. Use .shiftspace.json + shiftspace.additionalActions instead.",
-          "scope": "resource"
         }
       }
     }
