@@ -41,6 +41,9 @@ importers:
       '@shiftspace/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
+      '@shiftspace/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@vscode/codicons':
         specifier: ^0.0.45
         version: 0.0.45

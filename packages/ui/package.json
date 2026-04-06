@@ -58,6 +58,10 @@
     "./smell-icon": {
       "import": "./src/icons/smell-icon.tsx",
       "types": "./src/icons/smell-icon.tsx"
+    },
+    "./loader": {
+      "import": "./src/loader.tsx",
+      "types": "./src/loader.tsx"
     }
   },
   "scripts": {
