@@ -7,18 +7,19 @@ import type { InsightDetail, FileDiagnosticSummary } from '@shiftspace/renderer'
 
 function smellDetail(
   worktreeId: string,
-  entries: Array<[string, Array<[string, string, number, number]>]>
+  entries: Array<[string, Array<[string, string, number, number, number?]>]>
 ): InsightDetail {
   return {
     insightId: 'codeSmells',
     worktreeId,
     fileInsights: entries.map(([filePath, findings]) => ({
       filePath,
-      findings: findings.map(([ruleId, ruleLabel, count, threshold]) => ({
+      findings: findings.map(([ruleId, ruleLabel, count, threshold, firstLine]) => ({
         ruleId,
         ruleLabel,
         count,
         threshold,
+        ...(firstLine !== undefined ? { firstLine } : {}),
       })),
     })),
   };
@@ -26,19 +27,19 @@ function smellDetail(
 
 // nextjs template — wt-0
 export const MOCK_CODE_SMELL_DETAIL_WT0 = smellDetail('wt-0', [
-  ['src/app/page.tsx', [['console-log', 'Console Log', 2, 1]]],
-  ['src/components/Header.tsx', [['eslint-disable', 'ESLint Disable', 1, 1]]],
-  ['src/components/Button.tsx', [['console-log', 'Console Log', 1, 1]]],
-  ['src/lib/api.ts', [['console-log', 'Console Log', 3, 1]]],
+  ['src/app/page.tsx', [['console-log', 'Console Log', 2, 1, 12]]],
+  ['src/components/Header.tsx', [['eslint-disable', 'ESLint Disable', 1, 1, 1]]],
+  ['src/components/Button.tsx', [['console-log', 'Console Log', 1, 1, 8]]],
+  ['src/lib/api.ts', [['console-log', 'Console Log', 3, 1, 5]]],
   [
     'src/lib/utils.ts',
     [
-      ['todo-comment', 'TODO Comment', 4, 3],
-      ['console-log', 'Console Log', 1, 1],
+      ['todo-comment', 'TODO Comment', 4, 3, 3],
+      ['console-log', 'Console Log', 1, 1, 22],
     ],
   ],
-  ['src/hooks/useData.ts', [['use-effect-overuse', 'useEffect Overuse', 6, 5]]],
-  ['src/hooks/useAuth.ts', [['console-log', 'Console Log', 1, 1]]],
+  ['src/hooks/useData.ts', [['use-effect-overuse', 'useEffect Overuse', 6, 5, 7]]],
+  ['src/hooks/useAuth.ts', [['console-log', 'Console Log', 1, 1, 15]]],
 ]);
 
 // api template — wt-1
@@ -46,25 +47,25 @@ export const MOCK_CODE_SMELL_DETAIL_WT1 = smellDetail('wt-1', [
   [
     'src/routes/users.ts',
     [
-      ['console-log', 'Console Log', 2, 1],
-      ['eslint-disable', 'ESLint Disable', 1, 1],
+      ['console-log', 'Console Log', 2, 1, 14],
+      ['eslint-disable', 'ESLint Disable', 1, 1, 1],
     ],
   ],
-  ['src/routes/auth.ts', [['console-log', 'Console Log', 1, 1]]],
-  ['src/routes/products.ts', [['todo-comment', 'TODO Comment', 3, 3]]],
-  ['src/middleware/auth.ts', [['console-log', 'Console Log', 1, 1]]],
-  ['src/models/User.ts', [['console-log', 'Console Log', 1, 1]]],
-  ['src/models/Product.ts', [['eslint-disable', 'ESLint Disable', 2, 1]]],
+  ['src/routes/auth.ts', [['console-log', 'Console Log', 1, 1, 23]]],
+  ['src/routes/products.ts', [['todo-comment', 'TODO Comment', 3, 3, 8]]],
+  ['src/middleware/auth.ts', [['console-log', 'Console Log', 1, 1, 11]]],
+  ['src/models/User.ts', [['console-log', 'Console Log', 1, 1, 19]]],
+  ['src/models/Product.ts', [['eslint-disable', 'ESLint Disable', 2, 1, 2]]],
   [
     'src/services/database.ts',
     [
-      ['console-log', 'Console Log', 4, 1],
-      ['todo-comment', 'TODO Comment', 3, 3],
+      ['console-log', 'Console Log', 4, 1, 6],
+      ['todo-comment', 'TODO Comment', 3, 3, 30],
     ],
   ],
-  ['src/services/email.ts', [['console-log', 'Console Log', 2, 1]]],
-  ['src/utils/validate.ts', [['todo-comment', 'TODO Comment', 4, 3]]],
-  ['src/index.ts', [['console-log', 'Console Log', 1, 1]]],
+  ['src/services/email.ts', [['console-log', 'Console Log', 2, 1, 17]]],
+  ['src/utils/validate.ts', [['todo-comment', 'TODO Comment', 4, 3, 4]]],
+  ['src/index.ts', [['console-log', 'Console Log', 1, 1, 10]]],
 ]);
 
 // ---------------------------------------------------------------------------

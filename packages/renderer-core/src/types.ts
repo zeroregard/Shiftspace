@@ -118,6 +118,8 @@ export interface InsightFinding {
   count: number;
   /** Minimum matches to trigger this rule. */
   threshold: number;
+  /** 1-indexed line number of the first match (for jump-to-line). */
+  firstLine?: number;
 }
 
 /** All findings for a single file from one insight plugin. */

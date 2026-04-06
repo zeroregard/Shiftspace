@@ -93,8 +93,8 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   // layout recomputation (tree build + flatten) is batched by React.
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const handleFileRowClick = (wtId: string, filePath: string) => {
-    actions.fileClick(wtId, filePath);
+  const handleFileRowClick = (wtId: string, filePath: string, line?: number) => {
+    actions.fileClick(wtId, filePath, line);
     setFocusNodeId(`file-${wtId}-${filePath}`);
   };
 

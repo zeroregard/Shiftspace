@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import type { NodeComponentProps } from '../TreeCanvas';
-import type { FileChange } from '../types';
+import type { FileChange, InsightFinding, FileDiagnosticSummary } from '../types';
 import { DiffPopover } from '../overlays/DiffPopover';
 import { ThemedFileIcon } from '../shared/ThemedFileIcon';
 import { useInspectionHover } from '../shared/InspectionHoverContext';
@@ -29,6 +29,113 @@ function getChangeTint(file: FileChange): string {
   return 'var(--color-tint-mixed)';
 }
 
+// ---------------------------------------------------------------------------
+// Annotation rows (extracted to keep FileNode under the linter line limit)
+// ---------------------------------------------------------------------------
+
+interface FileNodeAnnotationsProps {
+  file: FileChange;
+  errors: number;
+  warnings: number;
+  findings: InsightFinding[];
+  diagnostics: FileDiagnosticSummary | undefined;
+  onLineClick: (line: number, e: React.MouseEvent) => void;
+}
+
+function FileNodeAnnotations({
+  file,
+  errors,
+  warnings,
+  findings,
+  diagnostics,
+  onLineClick,
+}: FileNodeAnnotationsProps) {
+  const firstErrorLine = diagnostics?.details.find((d) => d.severity === 'error')?.line;
+  const firstWarningLine = diagnostics?.details.find((d) => d.severity === 'warning')?.line;
+
+  return (
+    <div className="mt-1 pt-1 border-border-default/40">
+      {errors > 0 && (
+        <Tooltip
+          content={
+            <DiagnosticTooltipContent
+              details={diagnostics!.details.filter((d) => d.severity === 'error')}
+              diffHunks={file.diff}
+            />
+          }
+          delayDuration={0}
+        >
+          <div
+            data-testid="badge-error"
+            className={clsx(
+              'flex items-center gap-0.5 py-0.5 text-status-deleted',
+              firstErrorLine !== undefined && 'cursor-pointer'
+            )}
+            onClick={
+              firstErrorLine !== undefined ? (e) => onLineClick(firstErrorLine, e) : undefined
+            }
+          >
+            <Codicon name="error" size={16} />
+            <span className="text-11 ml-0.5 mt-px">{errors}</span>
+            <span className="text-11 truncate mt-px">{errors === 1 ? 'error' : 'errors'}</span>
+          </div>
+        </Tooltip>
+      )}
+      {warnings > 0 && (
+        <Tooltip
+          content={
+            <DiagnosticTooltipContent
+              details={diagnostics!.details.filter((d) => d.severity === 'warning')}
+              diffHunks={file.diff}
+            />
+          }
+          delayDuration={0}
+        >
+          <div
+            data-testid="badge-warning"
+            className={clsx(
+              'flex items-center gap-0.5 py-0.5 text-status-modified',
+              firstWarningLine !== undefined && 'cursor-pointer'
+            )}
+            onClick={
+              firstWarningLine !== undefined ? (e) => onLineClick(firstWarningLine, e) : undefined
+            }
+          >
+            <Codicon name="warning" size={16} />
+            <span className="text-11 ml-0.5 mt-px">{warnings}</span>
+            <span className="text-11 truncate mt-px">
+              {warnings === 1 ? 'warning' : 'warnings'}
+            </span>
+          </div>
+        </Tooltip>
+      )}
+      {findings.map((f) => (
+        <Tooltip
+          key={f.ruleId}
+          content={<FindingTooltipContent findings={[f]} />}
+          delayDuration={0}
+        >
+          <div
+            className={clsx(
+              'flex items-center gap-0.5 py-0.5 text-purple-400',
+              f.firstLine !== undefined && 'cursor-pointer'
+            )}
+            onClick={f.firstLine !== undefined ? (e) => onLineClick(f.firstLine!, e) : undefined}
+          >
+            <SmellIcon width={16} height={16} />
+            <span className="text-11 ml-0.5 mt-px">{f.count}</span>
+            <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
+          </div>
+        </Tooltip>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FileNode
+// ---------------------------------------------------------------------------
+
 export const FileNode = React.memo(function FileNode({ data }: NodeComponentProps<FileNodeData>) {
   const { file, worktreeId } = data;
   const { fileClick } = useActions();
@@ -43,6 +150,11 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
     worktreeId,
     file.path
   );
+
+  const handleAnnotationClick = (line: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    fileClick(worktreeId, file.path, line);
+  };
 
   return (
     <DiffPopover file={file} worktreeId={worktreeId}>
@@ -90,65 +202,14 @@ export const FileNode = React.memo(function FileNode({ data }: NodeComponentProp
             </span>
           </div>
           {hasAnnotations && (
-            <div className="mt-1 pt-1 border-border-default/40">
-              {errors > 0 && (
-                <Tooltip
-                  content={
-                    <DiagnosticTooltipContent
-                      details={diagnostics!.details.filter((d) => d.severity === 'error')}
-                      diffHunks={file.diff}
-                    />
-                  }
-                  delayDuration={0}
-                >
-                  <div
-                    data-testid="badge-error"
-                    className="flex items-center gap-0.5 py-0.5 text-status-deleted"
-                  >
-                    <Codicon name="error" size={16} />
-                    <span className="text-11 ml-0.5 mt-px">{errors}</span>
-                    <span className="text-11 truncate mt-px">
-                      {errors === 1 ? 'error' : 'errors'}
-                    </span>
-                  </div>
-                </Tooltip>
-              )}
-              {warnings > 0 && (
-                <Tooltip
-                  content={
-                    <DiagnosticTooltipContent
-                      details={diagnostics!.details.filter((d) => d.severity === 'warning')}
-                      diffHunks={file.diff}
-                    />
-                  }
-                  delayDuration={0}
-                >
-                  <div
-                    data-testid="badge-warning"
-                    className="flex items-center gap-0.5 py-0.5 text-status-modified"
-                  >
-                    <Codicon name="warning" size={16} />
-                    <span className="text-11 ml-0.5 mt-px">{warnings}</span>
-                    <span className="text-11 truncate mt-px">
-                      {warnings === 1 ? 'warning' : 'warnings'}
-                    </span>
-                  </div>
-                </Tooltip>
-              )}
-              {findings.map((f) => (
-                <Tooltip
-                  key={f.ruleId}
-                  content={<FindingTooltipContent findings={[f]} />}
-                  delayDuration={0}
-                >
-                  <div className="flex items-center gap-0.5 py-0.5 text-purple-400">
-                    <SmellIcon width={16} height={16} />
-                    <span className="text-11 ml-0.5 mt-px">{f.count}</span>
-                    <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
-                  </div>
-                </Tooltip>
-              ))}
-            </div>
+            <FileNodeAnnotations
+              file={file}
+              errors={errors}
+              warnings={warnings}
+              findings={findings}
+              diagnostics={diagnostics}
+              onLineClick={handleAnnotationClick}
+            />
           )}
         </button>
       </div>

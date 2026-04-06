@@ -15,7 +15,7 @@ const LazyInspectionView = React.lazy(() =>
 interface Props {
   initialWorktrees?: WorktreeState[];
   onEvent?: (handler: (event: ShiftspaceEvent) => void) => () => void;
-  onFileClick?: (worktreeId: string, filePath: string) => void;
+  onFileClick?: (worktreeId: string, filePath: string, line?: number) => void;
   onTerminalOpen?: (worktreeId: string) => void;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;

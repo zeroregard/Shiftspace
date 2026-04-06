@@ -253,7 +253,11 @@ export class ShiftspacePanel {
 
     // Git provider handlers
     this._router.on('file-click', (m) => {
-      void this._gitProvider?.handleFileClick(m.worktreeId ?? '', m.filePath ?? '');
+      void this._gitProvider?.handleFileClick(
+        m.worktreeId ?? '',
+        m.filePath ?? '',
+        typeof m.line === 'number' ? m.line : undefined
+      );
     });
     this._router.on('set-diff-mode', (m) => {
       if (!m.worktreeId || !m.diffMode) return;

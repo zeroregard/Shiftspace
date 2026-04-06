@@ -241,8 +241,8 @@ const App: React.FC = () => {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  const handleFileClick = (worktreeId: string, filePath: string) => {
-    vscode?.postMessage({ type: 'file-click', worktreeId, filePath });
+  const handleFileClick = (worktreeId: string, filePath: string, line?: number) => {
+    vscode?.postMessage({ type: 'file-click', worktreeId, filePath, line });
   };
 
   const handleDiffModeChange = (worktreeId: string, diffMode: DiffMode) => {

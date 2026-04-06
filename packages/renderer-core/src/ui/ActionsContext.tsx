@@ -11,7 +11,7 @@ import type { DiffMode } from '../types';
  * receiving `onFileClick` as a prop.
  */
 export interface ShiftspaceActions {
-  fileClick: (worktreeId: string, filePath: string) => void;
+  fileClick: (worktreeId: string, filePath: string, line?: number) => void;
   folderClick: (worktreeId: string, folderPath: string) => void;
   diffModeChange: (worktreeId: string, diffMode: DiffMode) => void;
   requestBranchList: (worktreeId: string) => void;
@@ -59,7 +59,7 @@ export function useActions(): ShiftspaceActions {
 
 /** Raw callback props accepted by the provider (matches ShiftspaceRenderer's existing API). */
 interface ActionsProviderProps {
-  onFileClick?: (worktreeId: string, filePath: string) => void;
+  onFileClick?: (worktreeId: string, filePath: string, line?: number) => void;
   onFolderClick?: (worktreeId: string, folderPath: string) => void;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
@@ -107,7 +107,7 @@ export function ActionsProvider({
 }: ActionsProviderProps) {
   const actions: ShiftspaceActions = useMemo(
     () => ({
-      fileClick: (a, b) => onFileClick?.(a, b),
+      fileClick: (a, b, c) => onFileClick?.(a, b, c),
       folderClick: (a, b) => onFolderClick?.(a, b),
       diffModeChange: (a, b) => onDiffModeChange?.(a, b),
       requestBranchList: (a) => onRequestBranchList?.(a),
