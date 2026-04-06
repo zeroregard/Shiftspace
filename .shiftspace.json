@@ -48,7 +48,7 @@
       "label": "ESLint Disable",
       "pattern": "eslint-disable",
       "threshold": 1,
-      "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
+      "fileTypes": [".jsx", ".ts", ".tsx"]
     },
     {
       "id": "llm-comment",

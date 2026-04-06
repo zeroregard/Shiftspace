@@ -19,6 +19,7 @@ import {
   ActionBar,
   useActions,
 } from '@shiftspace/renderer-core';
+import { Button } from '@shiftspace/ui/button';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { FileListPanel } from './components/FileListPanel';
 
@@ -172,12 +173,9 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
             fallback={(retry) => (
               <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-text-faint text-13">
                 <span>Graph failed to render</span>
-                <button
-                  onClick={retry}
-                  className="px-2 py-1 text-11 rounded border border-border-default hover:bg-node-file cursor-pointer"
-                >
+                <Button variant="ghost" size="sm" onClick={retry}>
                   Retry
-                </button>
+                </Button>
               </div>
             )}
           >

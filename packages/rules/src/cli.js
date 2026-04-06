@@ -12,7 +12,7 @@ if (buttonViolations.length > 0) {
   console.error(
     'no-raw-button: Raw <button> is not allowed in renderer packages.\n' +
       'Use <Button> or <IconButton> from @shiftspace/ui instead.\n' +
-      "Add '// lint-allow-button' to suppress for a specific line.\n"
+      "Suppress with: // eslint-disable-next-line @shiftspace/no-raw-button\n"
   );
   for (const v of buttonViolations) {
     console.error(`  ${v.file}:${v.line}: ${v.text}`);

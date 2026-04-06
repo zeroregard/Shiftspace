@@ -66,16 +66,12 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
             onSelect={(branch) => actions.checkoutBranch(wt.id, branch)}
             onOpen={() => actions.requestBranchList(wt.id)}
           >
-            <BranchPicker.Trigger>
-              <button
-                className="flex items-center gap-1 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0 text-13 font-semibold"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                title="Switch branch"
-              >
-                <Codicon name="git-branch" />
-                {pathPart ? `(${wt.branch})` : wt.branch}
-              </button>
+            <BranchPicker.Trigger
+              className="text-text-faint hover:text-text-primary text-13 font-semibold"
+              title="Switch branch"
+              stopPropagation
+            >
+              {pathPart ? `(${wt.branch})` : wt.branch}
             </BranchPicker.Trigger>
             <BranchPicker.Content>
               <BranchPicker.SearchRow
