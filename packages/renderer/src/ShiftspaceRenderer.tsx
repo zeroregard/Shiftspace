@@ -37,9 +37,7 @@ interface Props {
 
 export { type PanZoomConfig };
 
-// ---------------------------------------------------------------------------
 // Main renderer
-// ---------------------------------------------------------------------------
 
 export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
@@ -66,7 +64,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   useEffect(() => {
     if (initialWorktrees.length > 0) setWorktrees(initialWorktrees);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!onEvent) return;
@@ -99,9 +97,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   );
 };
 
-// ---------------------------------------------------------------------------
 // Inner content — consumes actions from context, no prop drilling
-// ---------------------------------------------------------------------------
 
 interface ContentProps {
   showPackageSwitcher: boolean;

@@ -6,5 +6,4 @@ export { Input } from '@shiftspace/ui/input';
 export { ListItem } from '@shiftspace/ui/list-item';
 export { SectionLabel } from '@shiftspace/ui/section-label';
 export { Spinner } from '@shiftspace/ui/spinner';
-export { StatusDot } from '@shiftspace/ui/status-dot';
 export { ActionsProvider, useActions, type ShiftspaceActions } from './ActionsContext';

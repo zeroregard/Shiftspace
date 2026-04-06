@@ -34,6 +34,8 @@ interface IconButtonProps {
   disabled?: boolean;
   /** Stop pointer-down propagation (useful in draggable containers) */
   stopPropagation?: boolean;
+  /** Test ID for E2E selectors */
+  'data-testid'?: string;
 }
 
 /**
@@ -58,6 +60,7 @@ export function IconButton({
   className,
   disabled = false,
   stopPropagation = false,
+  'data-testid': dataTestId,
 }: IconButtonProps) {
   const btn = (
     <button
@@ -79,6 +82,7 @@ export function IconButton({
       onPointerDown={stopPropagation ? (e) => e.stopPropagation() : undefined}
       aria-label={label}
       disabled={disabled}
+      data-testid={dataTestId}
     >
       <i
         className={`codicon codicon-${icon}`}

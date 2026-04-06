@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { WorktreeState, FileChange, ShiftspaceEvent } from '@shiftspace/renderer';
 
-// ---------------------------------------------------------------------------
 // Message protocol serialization tests
 // These verify that the data structures used in host↔webview messages
 // round-trip through JSON correctly, matching the expected shape.
-// ---------------------------------------------------------------------------
 
 function roundtrip<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;

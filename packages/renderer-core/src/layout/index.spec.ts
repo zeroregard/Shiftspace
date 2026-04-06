@@ -18,9 +18,7 @@ import {
   CONTAINER_GAP,
 } from '../layout/config';
 
-// ---------------------------------------------------------------------------
 // Test helpers
-// ---------------------------------------------------------------------------
 
 function f(path: string, overrides: Partial<FileChange> = {}): FileChange {
   return {
@@ -51,9 +49,7 @@ function layout(files: FileChange[]) {
   return computeFullLayout([wt('wt1', files)]);
 }
 
-// ---------------------------------------------------------------------------
 // buildTree
-// ---------------------------------------------------------------------------
 
 describe('buildTree', () => {
   it('returns an empty array for no files', () => {
@@ -151,9 +147,7 @@ describe('buildTree', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // layoutFolder
-// ---------------------------------------------------------------------------
 
 describe('layoutFolder', () => {
   it('places the first file below the folder node by FILES_TOP_GAP', () => {
@@ -204,9 +198,7 @@ describe('layoutFolder', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // layoutWorktreeContents
-// ---------------------------------------------------------------------------
 
 describe('layoutWorktreeContents', () => {
   it('returns totalW=200 and totalH=0 for no files', () => {
@@ -240,9 +232,7 @@ describe('layoutWorktreeContents', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // computeFullLayout — node structure
-// ---------------------------------------------------------------------------
 
 describe('computeFullLayout — node structure', () => {
   it('always creates a worktree container node', () => {
@@ -307,9 +297,7 @@ describe('computeFullLayout — node structure', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // computeFullLayout — edge rules
-// ---------------------------------------------------------------------------
 
 describe('computeFullLayout — edge rules', () => {
   it('creates no edges when worktree has only root-level files (no folders)', () => {
@@ -374,9 +362,7 @@ describe('computeFullLayout — edge rules', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // computeFullLayout — positions
-// ---------------------------------------------------------------------------
 
 describe('computeFullLayout — positions', () => {
   it('file node is positioned below its parent folder node', () => {

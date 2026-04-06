@@ -8,9 +8,7 @@ import {
 } from './listSections';
 import type { WorktreeState, FileChange } from '../types';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeFile(
   path: string,
@@ -33,9 +31,7 @@ function makeWt(overrides: Partial<WorktreeState> = {}): WorktreeState {
   };
 }
 
-// ---------------------------------------------------------------------------
 // matchesFileFilter
-// ---------------------------------------------------------------------------
 
 describe('matchesFileFilter', () => {
   it('returns true for empty query', () => {
@@ -106,9 +102,7 @@ describe('matchesFileFilter', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // isValidRegex
-// ---------------------------------------------------------------------------
 
 describe('isValidRegex', () => {
   it('returns true for empty string', () => {
@@ -129,9 +123,7 @@ describe('isValidRegex', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // filterFilesByQuery
-// ---------------------------------------------------------------------------
 
 describe('filterFilesByQuery', () => {
   const files: FileChange[] = [
@@ -192,9 +184,7 @@ describe('filterFilesByQuery', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // getAllFilteredFiles
-// ---------------------------------------------------------------------------
 
 describe('getAllFilteredFiles', () => {
   it('combines committed + staged + unstaged in working mode and filters', () => {
@@ -315,9 +305,7 @@ describe('getAllFilteredFiles', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Integration: partitionFiles + filterFilesByQuery consistency
-// ---------------------------------------------------------------------------
 
 describe('partitionFiles + filterFilesByQuery consistency', () => {
   it('filtering each section produces the same unique paths as getAllFilteredFiles', () => {

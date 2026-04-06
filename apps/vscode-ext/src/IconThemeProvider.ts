@@ -19,9 +19,7 @@ import * as path from 'path';
 import type { IconMap } from '@shiftspace/renderer';
 import { log } from './logger';
 
-// ---------------------------------------------------------------------------
 // Internal types mirroring the VSCode icon-theme JSON schema
-// ---------------------------------------------------------------------------
 
 interface IconDefinition {
   iconPath?: string; // SVG file, relative to the theme JSON
@@ -51,9 +49,7 @@ interface IconThemeJson extends IconThemeVariant {
   fonts?: IconFont[];
 }
 
-// ---------------------------------------------------------------------------
 // IconThemeProvider
-// ---------------------------------------------------------------------------
 
 export class IconThemeProvider implements vscode.Disposable {
   private _themeJson: IconThemeJson | null = null;
@@ -168,7 +164,6 @@ export class IconThemeProvider implements vscode.Disposable {
   private _buildExtToLangIdMap(): void {
     this._extToLangId.clear();
     for (const ext of vscode.extensions.all) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const langs = ext.packageJSON?.contributes?.languages as
         | Array<{ id: string; extensions?: string[] }>
         | undefined;
@@ -205,7 +200,6 @@ export class IconThemeProvider implements vscode.Disposable {
     themeId: string
   ): { extensionPath: string; themePath: string } | null {
     for (const ext of vscode.extensions.all) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const themes = ext.packageJSON?.contributes?.iconThemes as
         | Array<{ id: string; path: string }>
         | undefined;

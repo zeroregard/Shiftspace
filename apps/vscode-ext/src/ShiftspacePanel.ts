@@ -31,14 +31,13 @@ export class ShiftspacePanel {
   private _viewSettings: ViewSettingsStore | undefined;
   private _repoTracker: RepoTracker | undefined;
   private _inspection: InspectionSession | undefined;
+  private _insightRunner: InsightRunner | undefined;
 
   private _iconDebounceTimer: ReturnType<typeof setTimeout> | undefined;
   private _settingsChangeDisposable: vscode.Disposable | undefined;
   private _insightStatusBar: vscode.StatusBarItem | undefined;
 
-  // ---------------------------------------------------------------------------
   // Static API (consumed by extension.ts)
-  // ---------------------------------------------------------------------------
 
   static setMcpHttpServer(server: ShiftspaceMcpHttpServer): void {
     ShiftspacePanel.mcpHttpServer = server;
@@ -113,9 +112,7 @@ export class ShiftspacePanel {
     ShiftspacePanel.currentPanel = new ShiftspacePanel(panel, context);
   }
 
-  // ---------------------------------------------------------------------------
   // Constructor
-  // ---------------------------------------------------------------------------
 
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
     this._panel = panel;
@@ -140,9 +137,7 @@ export class ShiftspacePanel {
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
   }
 
-  // ---------------------------------------------------------------------------
   // Initialization (called when webview sends "ready")
-  // ---------------------------------------------------------------------------
 
   private async onReady(): Promise<void> {
     const postMessage = (msg: object) => {
@@ -170,7 +165,7 @@ export class ShiftspacePanel {
     this._repoTracker = new RepoTracker();
     this._iconProvider = new IconThemeProvider();
 
-    const insightRunner = new InsightRunner();
+    this._insightRunner = new InsightRunner();
     const diagnosticCollector = new DiagnosticCollector(postMessage);
 
     // Create providers
@@ -189,7 +184,7 @@ export class ShiftspacePanel {
     this._actionCoordinator = new ActionCoordinator(postMessage);
 
     // Create inspection session (needs providers to be ready)
-    this._inspection = new InspectionSession(insightRunner, diagnosticCollector, {
+    this._inspection = new InspectionSession(this._insightRunner, diagnosticCollector, {
       postMessage,
       getWorktrees: () => this._gitProvider?.getWorktrees() ?? [],
       getWorktreeFiles: (id) => this._gitProvider?.getWorktreeFiles(id) ?? [],
@@ -242,9 +237,7 @@ export class ShiftspacePanel {
     void this.reloadIcons();
   }
 
-  // ---------------------------------------------------------------------------
   // Message handler registration
-  // ---------------------------------------------------------------------------
 
   private registerHandlers(): void {
     this._router.clear();
@@ -336,9 +329,7 @@ export class ShiftspacePanel {
     });
   }
 
-  // ---------------------------------------------------------------------------
   // Small helpers (stay inline — not worth extracting)
-  // ---------------------------------------------------------------------------
 
   private restoreViewSettings(settings: PersistedViewSettings): void {
     const worktrees = this._gitProvider?.getWorktrees() ?? [];
@@ -410,14 +401,14 @@ export class ShiftspacePanel {
       repoRoot,
       getPackageName: () => (coordinator['selectedPackage'] as string) ?? '',
       collectDiagnostics,
+      insightRunner: this._insightRunner,
+      getSmellRules: () => coordinator.getSmellRules(),
     });
 
     server.setHandlers(handlers);
   }
 
-  // ---------------------------------------------------------------------------
   // Insight status bar
-  // ---------------------------------------------------------------------------
 
   private updateInsightStatusBar(running: boolean): void {
     if (!this._insightStatusBar) {
@@ -438,9 +429,7 @@ export class ShiftspacePanel {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Disposal
-  // ---------------------------------------------------------------------------
 
   private dispose() {
     ShiftspacePanel.currentPanel = undefined;

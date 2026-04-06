@@ -12,9 +12,7 @@ import {
 
 const fixture = (name: string) => readFileSync(join(__dirname, '../fixtures', name), 'utf8');
 
-// ---------------------------------------------------------------------------
 // parseStatusOutput
-// ---------------------------------------------------------------------------
 describe('parseStatusOutput', () => {
   it('parses unstaged modified file ( M)', () => {
     const map = parseStatusOutput(' M src/app/page.tsx\n');
@@ -87,9 +85,7 @@ describe('parseStatusOutput', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // parseNumstatOutput
-// ---------------------------------------------------------------------------
 describe('parseNumstatOutput', () => {
   it('parses basic numstat lines', () => {
     const map = parseNumstatOutput('12\t4\tsrc/app/page.tsx\n');
@@ -126,9 +122,7 @@ describe('parseNumstatOutput', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // buildFileChanges
-// ---------------------------------------------------------------------------
 describe('buildFileChanges', () => {
   it('combines status + unstaged diff + staged diff', () => {
     const status = ' M src/app/page.tsx\nA  src/new.ts\n';
@@ -181,9 +175,7 @@ describe('buildFileChanges', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // parseDiffOutput
-// ---------------------------------------------------------------------------
 describe('parseDiffOutput', () => {
   it('returns empty map for empty output', () => {
     expect(parseDiffOutput('').size).toBe(0);
@@ -249,9 +241,7 @@ Binary files a/assets/logo.png and b/assets/logo.png differ
   });
 });
 
-// ---------------------------------------------------------------------------
 // parseRawDiffSections
-// ---------------------------------------------------------------------------
 describe('parseRawDiffSections', () => {
   it('returns empty map for empty output', () => {
     expect(parseRawDiffSections('').size).toBe(0);
@@ -314,9 +304,7 @@ Binary files a/assets/logo.png and b/assets/logo.png differ
   });
 });
 
-// ---------------------------------------------------------------------------
 // parseBranchNameStatus
-// ---------------------------------------------------------------------------
 describe('parseBranchNameStatus', () => {
   it('parses added files', () => {
     const map = parseBranchNameStatus('A\tsrc/new-feature.ts\n');

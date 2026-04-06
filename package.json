@@ -10,7 +10,7 @@
     "dev": "nx run-many -t dev",
     "build": "nx run-many -t build",
     "typecheck": "nx run-many -t typecheck",
-    "lint:check": "oxlint --deny-warnings .",
+    "lint:check": "oxlint --deny-warnings . && node packages/rules/src/cli.js",
     "fmt:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",
     "fmt:write": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .prettierignore",

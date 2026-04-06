@@ -21,6 +21,8 @@ export interface SmellRule {
   threshold: number;
   /** File extensions this rule applies to (e.g. ['.ts', '.tsx']). Omit to apply to all. */
   fileTypes?: string[];
+  /** Glob patterns to exclude (matched against the relative file path, e.g. '*.test.ts'). */
+  excludePatterns?: string[];
 }
 
 export interface ShiftspaceConfig {

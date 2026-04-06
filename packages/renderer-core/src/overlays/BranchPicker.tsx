@@ -4,9 +4,7 @@
  * Replaces the flat 11-prop BranchPickerPopover with composable sub-components:
  *
  *   <BranchPicker onSelect={fn} onOpen={fn}>
- *     <BranchPicker.Trigger>
- *       <button>Pick a branch</button>
- *     </BranchPicker.Trigger>
+ *     <BranchPicker.Trigger>Pick a branch</BranchPicker.Trigger>
  *     <BranchPicker.Content>
  *       <BranchPicker.Search />
  *       <BranchPicker.Options options={staticOpts} />
@@ -17,13 +15,12 @@
  *   </BranchPicker>
  */
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import clsx from 'clsx';
 import * as Popover from '@radix-ui/react-popover';
 import { Tooltip } from '@shiftspace/ui/tooltip';
 import { Codicon } from '@shiftspace/ui/codicon';
 
-// ---------------------------------------------------------------------------
 // Context — shared state between compound sub-components
-// ---------------------------------------------------------------------------
 
 interface BranchPickerCtx {
   query: string;
@@ -41,9 +38,7 @@ function usePicker(): BranchPickerCtx {
   return useContext(Ctx);
 }
 
-// ---------------------------------------------------------------------------
 // Root
-// ---------------------------------------------------------------------------
 
 interface RootProps {
   onSelect?: (value: string) => void;
@@ -94,17 +89,57 @@ function useSelect(): (value: string) => void {
   return (value: string) => ref?.current?.(value);
 }
 
-// ---------------------------------------------------------------------------
 // Trigger
-// ---------------------------------------------------------------------------
 
-function Trigger({ children }: { children: React.ReactNode }) {
-  return <Popover.Trigger asChild>{children}</Popover.Trigger>;
+interface TriggerProps {
+  children: React.ReactNode;
+  /** Codicon icon name (default: "git-branch") */
+  icon?: string;
+  /** Visual variant: "inline" (no border) or "pill" (bordered badge) */
+  variant?: 'inline' | 'pill';
+  /** Extra classes merged onto the button */
+  className?: string;
+  /** Tooltip / title text */
+  title?: string;
+  /** Stop pointer/click propagation (useful inside draggable containers) */
+  stopPropagation?: boolean;
 }
 
-// ---------------------------------------------------------------------------
+const TRIGGER_VARIANTS = {
+  inline: 'border-none p-0',
+  pill: 'px-1.5 py-1 rounded border border-border-dashed hover:border-text-muted',
+};
+
+function Trigger({
+  children,
+  icon = 'git-branch',
+  variant = 'inline',
+  className,
+  title,
+  stopPropagation,
+}: TriggerProps) {
+  return (
+    <Popover.Trigger asChild>
+      <button
+        className={clsx(
+          'flex items-center gap-1 cursor-pointer bg-transparent transition-colors',
+          TRIGGER_VARIANTS[variant],
+          className
+        )}
+        title={title}
+        onPointerDown={stopPropagation ? (e) => e.stopPropagation() : undefined}
+        onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
+      >
+        <span className="shrink-0 translate-y-0.5">
+          <Codicon name={icon} />
+        </span>
+        {children}
+      </button>
+    </Popover.Trigger>
+  );
+}
+
 // Content
-// ---------------------------------------------------------------------------
 
 interface ContentProps {
   children: React.ReactNode;
@@ -126,9 +161,7 @@ function Content({ children, align = 'end' }: ContentProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Search
-// ---------------------------------------------------------------------------
 
 function Search({ placeholder = 'Search branches…' }: { placeholder?: string }) {
   const { query, setQuery, close } = usePicker();
@@ -157,9 +190,7 @@ function Search({ placeholder = 'Search branches…' }: { placeholder?: string }
   );
 }
 
-// ---------------------------------------------------------------------------
 // Static Options
-// ---------------------------------------------------------------------------
 
 interface StaticOption {
   key: string;
@@ -194,17 +225,13 @@ function Options({ options }: { options: StaticOption[] }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Separator
-// ---------------------------------------------------------------------------
 
 function Separator() {
   return <div className="my-1 border-t border-border-default" />;
 }
 
-// ---------------------------------------------------------------------------
 // Branch list
-// ---------------------------------------------------------------------------
 
 interface BranchesProps {
   branches: string[];
@@ -247,9 +274,7 @@ function Branches({ branches, selected, labelFn, maxVisible = 10 }: BranchesProp
   );
 }
 
-// ---------------------------------------------------------------------------
 // Fetch button
-// ---------------------------------------------------------------------------
 
 function timeAgo(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -317,9 +342,7 @@ function Fetch({ onFetch, isFetching, lastFetchAt }: FetchProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // SearchRow — Search input + optional Fetch button in one row
-// ---------------------------------------------------------------------------
 
 interface SearchRowProps {
   placeholder?: string;
@@ -337,17 +360,13 @@ function SearchRow({ placeholder, fetch }: SearchRowProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Empty state
-// ---------------------------------------------------------------------------
 
 function Empty({ children = 'No branches found' }: { children?: React.ReactNode }) {
   return <div className="px-2 py-1.5 text-11 text-text-faint italic">{children}</div>;
 }
 
-// ---------------------------------------------------------------------------
 // Namespace export
-// ---------------------------------------------------------------------------
 
 export const BranchPicker = Object.assign(Root, {
   Trigger,

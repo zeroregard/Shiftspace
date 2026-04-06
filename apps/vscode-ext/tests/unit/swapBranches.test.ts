@@ -7,9 +7,7 @@ vi.mock('child_process', () => ({
 import { swapBranches, checkWorktreeSafety } from '../../src/git/worktrees';
 import { execFile } from 'child_process';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function mockSuccess(stdout = '') {
   return (_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
@@ -44,9 +42,7 @@ function normalizeGitArgs(args: string[]): string[] {
   return args[0] === '--no-optional-locks' ? args.slice(1) : args;
 }
 
-// ---------------------------------------------------------------------------
 // checkWorktreeSafety
-// ---------------------------------------------------------------------------
 
 describe('checkWorktreeSafety', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -110,9 +106,7 @@ describe('checkWorktreeSafety', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // swapBranches — shared helpers
-// ---------------------------------------------------------------------------
 
 const DEFAULT_SWAP_OPTS = {
   worktreeAPath: '/wt/feature',
@@ -150,9 +144,7 @@ function recordingMock(
   return { calls, joined: () => calls.map((a) => a.join(' ')) };
 }
 
-// ---------------------------------------------------------------------------
 // swapBranches — happy path: clean swap
-// ---------------------------------------------------------------------------
 
 describe('swapBranches — clean swap', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -180,9 +172,7 @@ describe('swapBranches — clean swap', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // swapBranches — happy path: stash scenarios
-// ---------------------------------------------------------------------------
 
 describe('swapBranches — stash scenarios', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -239,9 +229,7 @@ describe('swapBranches — stash scenarios', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // swapBranches — failure & rollback
-// ---------------------------------------------------------------------------
 
 describe('swapBranches — failure and rollback', () => {
   beforeEach(() => vi.clearAllMocks());

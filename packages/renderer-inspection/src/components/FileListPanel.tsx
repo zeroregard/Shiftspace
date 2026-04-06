@@ -9,8 +9,7 @@ import type {
 } from '@shiftspace/renderer-core';
 import {
   useFileAnnotations,
-  ThemedFileIcon,
-  AnnotationBadges,
+  FileRowButton,
   DiffPopover,
   partitionFiles,
   filterFilesByQuery,
@@ -19,11 +18,9 @@ import {
   isValidRegex,
 } from '@shiftspace/renderer-core';
 import { Codicon } from '@shiftspace/ui/codicon';
-import { Tooltip } from '@shiftspace/ui/tooltip';
+import { IconButton } from '@shiftspace/ui/icon-button';
 import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-label';
-// ---------------------------------------------------------------------------
 // File row
-// ---------------------------------------------------------------------------
 
 interface InspectionFileRowProps {
   file: FileChange;
@@ -33,77 +30,42 @@ interface InspectionFileRowProps {
 }
 
 function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: InspectionFileRowProps) {
-  const parts = file.path.split('/');
-  const fileName = parts.pop() ?? file.path;
-  const dirPath = parts.join('/');
-  const isDeleted = file.status === 'deleted';
-
   const annotations = useFileAnnotations(worktreeId, file.path);
 
   return (
     <DiffPopover file={file} worktreeId={worktreeId}>
-      <button
-        className={clsx(
-          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors min-w-16',
-          'hover:bg-node-file-pulse',
-          onFileClick ? 'cursor-pointer' : 'cursor-default'
-        )}
-        onClick={() => onFileClick?.(worktreeId, file.path)}
-        onMouseEnter={() => onHoverFile?.(file.path)}
-        onMouseLeave={() => onHoverFile?.(null)}
-      >
-        <span className="shrink-0 flex items-center">
-          <ThemedFileIcon filePath={file.path} size={16} />
-        </span>
-
-        <span className="text-11 flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
-          <span
-            className={clsx(
-              'shrink-0',
-              isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
-            )}
-          >
-            {fileName}
-          </span>
-          {dirPath && (
-            <span className="text-text-muted overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
-              {dirPath}
-            </span>
-          )}
-        </span>
-
-        <AnnotationBadges annotations={annotations} diffHunks={file.diff} />
-      </button>
+      <FileRowButton
+        file={file}
+        annotations={annotations}
+        onClick={onFileClick ? () => onFileClick(worktreeId, file.path) : undefined}
+        onMouseEnter={onHoverFile ? () => onHoverFile(file.path) : undefined}
+        onMouseLeave={onHoverFile ? () => onHoverFile(null) : undefined}
+      />
     </DiffPopover>
   );
 }
 
-// ---------------------------------------------------------------------------
 // Section label
-// ---------------------------------------------------------------------------
 
-function FileSectionLabel({ label }: { label: string }) {
+function FileSectionLabel({ label, icon }: { label: string; icon?: string }) {
   return (
-    <div className="flex items-center gap-2 px-3 pt-2 pb-0.5">
+    <div className="ml-2.5 flex items-center gap-2 pt-2 pb-0.5">
+      {icon && <Codicon name={icon} size={16} className="text-text-faint -translate-y-px" />}
       <SectionLabelPrimitive>{label}</SectionLabelPrimitive>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
 // Virtual list item types
-// ---------------------------------------------------------------------------
 
 const SECTION_LABEL_HEIGHT = 28;
 const FILE_ROW_HEIGHT = 32;
 
 type VirtualItem =
-  | { type: 'label'; label: string }
+  | { type: 'label'; label: string; icon?: string }
   | { type: 'file'; file: FileChange; sectionKey: string };
 
-// ---------------------------------------------------------------------------
 // Debounced search input
-// ---------------------------------------------------------------------------
 
 const SEARCH_DEBOUNCE_MS = 150;
 
@@ -171,39 +133,40 @@ function SearchInput({
             )}
           />
           {localQuery && (
-            <button
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-primary cursor-pointer bg-transparent border-none p-0"
-              onClick={handleClear}
-            >
-              <Codicon name="close" size={12} />
-            </button>
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2">
+              <IconButton
+                icon="close"
+                label="Clear filter"
+                size="sm"
+                ghost
+                tooltip={false}
+                onClick={handleClear}
+              />
+            </span>
           )}
         </div>
-        <Tooltip
-          content={
+        <IconButton
+          icon={hasProblems ? 'warning' : 'check'}
+          label={
             !hasProblems
               ? 'No files with problems'
               : problemsOnly
                 ? 'Show all files'
                 : 'Show only files with problems'
           }
-        >
-          <button
-            data-testid="problems-filter-toggle"
-            disabled={!hasProblems}
-            className={clsx(
-              'shrink-0 flex items-center justify-center w-7 h-7 rounded-md border transition-colors',
-              !hasProblems
-                ? 'bg-node-file border-border-dashed text-green-500 opacity-60 cursor-default'
-                : problemsOnly
-                  ? 'bg-status-deleted/15 border-status-deleted text-status-deleted cursor-pointer'
-                  : 'bg-node-file border-border-dashed text-text-faint hover:text-text-primary hover:border-text-muted cursor-pointer'
-            )}
-            onClick={() => hasProblems && onProblemsOnlyChange(!problemsOnly)}
-          >
-            <Codicon name={hasProblems ? 'warning' : 'check'} size={14} />
-          </button>
-        </Tooltip>
+          iconSize={14}
+          disabled={!hasProblems}
+          data-testid="problems-filter-toggle"
+          className={clsx(
+            'w-7 h-7 rounded-md border',
+            !hasProblems
+              ? 'bg-node-file border-border-dashed text-green-500 opacity-60'
+              : problemsOnly
+                ? 'bg-status-deleted/15 border-status-deleted text-status-deleted'
+                : 'bg-node-file border-border-dashed text-text-faint hover:text-text-primary hover:border-text-muted'
+          )}
+          onClick={() => hasProblems && onProblemsOnlyChange(!problemsOnly)}
+        />
       </div>
       {isFiltering && (
         <div className="text-10 text-text-faint px-1 pt-1">
@@ -214,9 +177,7 @@ function SearchInput({
   );
 }
 
-// ---------------------------------------------------------------------------
 // File list panel
-// ---------------------------------------------------------------------------
 
 interface FileListPanelProps {
   wt: WorktreeState;
@@ -230,9 +191,7 @@ interface FileListPanelProps {
   onHoverFile: (filePath: string | null) => void;
 }
 
-// ---------------------------------------------------------------------------
 // Resizable panel width (persisted to localStorage)
-// ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'shiftspace:file-list-width';
 const MIN_WIDTH = 180;
@@ -346,19 +305,23 @@ export function FileListPanel({
   const items = useMemo(() => {
     const result: VirtualItem[] = [];
     if (filteredCommitted.length > 0) {
-      result.push({ type: 'label', label: wt.diffMode.type === 'repo' ? 'Tracked' : 'Committed' });
+      result.push({
+        type: 'label',
+        label: wt.diffMode.type === 'repo' ? 'Tracked' : 'Committed',
+        icon: 'git-branch',
+      });
       for (const file of filteredCommitted) {
         result.push({ type: 'file', file, sectionKey: 'committed' });
       }
     }
     if (filteredStaged.length > 0) {
-      result.push({ type: 'label', label: 'Staged' });
+      result.push({ type: 'label', label: 'Staged', icon: 'git-branch-staged-changes' });
       for (const file of filteredStaged) {
         result.push({ type: 'file', file, sectionKey: 'staged' });
       }
     }
     if (filteredUnstaged.length > 0) {
-      result.push({ type: 'label', label: 'Unstaged' });
+      result.push({ type: 'label', label: 'Unstaged', icon: 'git-branch-changes' });
       for (const file of filteredUnstaged) {
         result.push({ type: 'file', file, sectionKey: 'unstaged' });
       }
@@ -398,7 +361,7 @@ export function FileListPanel({
         totalFileCount={totalFileCount}
         hasProblems={hasAnyProblems}
       />
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 pt-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 pt-0">
         {isEmpty ? (
           <div className="text-text-faint text-11 px-3 py-2">
             {searchQuery || problemsOnly
@@ -430,7 +393,7 @@ export function FileListPanel({
                   }}
                 >
                   {item.type === 'label' ? (
-                    <FileSectionLabel label={item.label} />
+                    <FileSectionLabel label={item.label} icon={item.icon} />
                   ) : (
                     <InspectionFileRow
                       file={item.file}

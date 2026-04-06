@@ -62,9 +62,7 @@ export type LODLevel = 'worktree' | 'directory' | 'file';
 
 export type AppMode = { type: 'grove' } | { type: 'inspection'; worktreeId: string };
 
-// ---------------------------------------------------------------------------
 // Action buttons
-// ---------------------------------------------------------------------------
 
 export interface ActionConfig {
   id: string;
@@ -106,9 +104,7 @@ export interface LogEntry {
   isStderr: boolean;
 }
 
-// ---------------------------------------------------------------------------
 // Insight findings (populated by the VSCode extension host insight runner)
-// ---------------------------------------------------------------------------
 
 /** A single rule that was triggered for a file. */
 export interface InsightFinding {
@@ -133,9 +129,7 @@ export interface InsightDetail {
   fileInsights: FileInsight[];
 }
 
-// ---------------------------------------------------------------------------
 // Diagnostics (populated by the VSCode extension host diagnostic collector)
-// ---------------------------------------------------------------------------
 
 /** Summary of VSCode diagnostics (compiler errors, lint warnings) for a single file. */
 export interface FileDiagnosticSummary {
@@ -153,9 +147,7 @@ export interface FileDiagnosticSummary {
   }>;
 }
 
-// ---------------------------------------------------------------------------
 // File icon theme (populated by the VSCode extension host, not the preview app)
-// ---------------------------------------------------------------------------
 
 /**
  * Per-file icon entry. `dark` is a base64 SVG data URI for dark themes.
