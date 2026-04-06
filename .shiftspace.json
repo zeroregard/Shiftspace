@@ -46,7 +46,7 @@
     {
       "id": "eslint-disable",
       "label": "ESLint Disable",
-      "pattern": "eslint-disable",
+      "pattern": "//\\s*eslint-disable",
       "threshold": 1,
       "fileTypes": [".jsx", ".ts", ".tsx"]
     },
