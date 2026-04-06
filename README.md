@@ -1,47 +1,75 @@
 # Shiftspace
 
-Shiftspace is a VSCode extension that helps you with two things:
+Worktree manager and code review tool for VS Code. Keep tabs on multiple branches, inspect changes, and catch problems before you open a PR.
 
-1. Have an overview of work trees and a way to manage them
-2. Dive into worktree branches and spot problems
+> **Preview release** — Shiftspace is under active development. Expect rough edges and frequent updates.
 
-## Work tree management
+![Grove view — worktree cards with check status and insights](https://github.com/user-attachments/assets/416be536-148f-4e2d-b33b-bd7c8a6df726)
 
-Watch all your work trees, run checks on a high level, rename work trees, change branches, swap with your primary work tree:
+## What it does
 
-<img width="2140" height="792" alt="image" src="https://github.com/user-attachments/assets/416be536-148f-4e2d-b33b-bd7c8a6df726" />
+Shiftspace gives you two views:
 
-You can access the work trees from primary side bar tab as well:
-<img width="388" height="387" alt="image" src="https://github.com/user-attachments/assets/9e3688bf-7bb7-48ea-b7b5-dbcbf5fb3111" />
+**Grove** — a dashboard of all your git worktrees as cards. Each card shows the branch, file count, lines changed, check results (lint, typecheck, test, etc.), and code smell counts. One glance tells you which worktree needs your attention.
 
-## Inspection view
+**Inspection** — click a card to drill in. A file list and tree view of every change in that branch. Pick a diff mode (working changes, vs main, vs any ref) and browse files with inline insight badges.
 
-A list + tree view of all changed files in a branch. You can choose to look at working changes, or all changes against e.g. `main` to have an overview of all files.
+![Inspection view — file list, tree hierarchy, and diff details](https://github.com/user-attachments/assets/16dace98-a738-446b-bc5b-1e7166226dd7)
 
-<img width="3024" height="1648" alt="image" src="https://github.com/user-attachments/assets/16dace98-a738-446b-bc5b-1e7166226dd7" />
+## Key features
 
-## Insights
+**Worktree management** — Rename worktrees, swap branches, switch your primary worktree. Access everything from the sidebar or the full-screen panel.
 
-Shiftspace can be configured (`.shiftspace.json`) to highlight changes in files that linting will not catch for you, for example, lint disables.
+![Sidebar worktree view](https://github.com/user-attachments/assets/9e3688bf-7bb7-48ea-b7b5-dbcbf5fb3111)
+
+**Checks & pipelines** — Define lint, typecheck, test, build, or any custom command in `.shiftspace.json`. Run them per worktree. Chain them into pipelines (e.g., fmt → lint → typecheck → test). Results show pass/fail badges on each card and go stale automatically when files change.
+
+**Code smell detection** — Define regex patterns in `.shiftspace.json` to flag things linters won't catch: `eslint-disable` comments, LLM-generated separators, TODO counts, whatever matters to your team. Findings appear as badges on file nodes in Inspection mode.
+
+![Code smell badges on file nodes](https://github.com/user-attachments/assets/a52c1cf2-ced9-44a9-bae8-3c6b6a1c30b7)
+
+**MCP server** — Built-in Model Context Protocol server so AI agents can query insights, check status, run checks, and list changed files programmatically.
+
+**Bundled themes** — Ships with Shiftspace Dark and Shiftspace Light color themes.
+
+## Getting started
+
+1. Install the extension
+2. Press `Shift+Space` to open Shiftspace (or run `Shiftspace: Open as Tab` from the command palette)
+3. Your worktrees appear automatically — click one to inspect it
+4. Drop a `.shiftspace.json` in your repo root to configure checks and code smell rules:
 
 ```json
+{
+  "actions": [
+    { "id": "lint", "label": "Lint", "command": "npm run lint", "type": "check", "icon": "search" },
+    { "id": "test", "label": "Test", "command": "npm test", "type": "check", "icon": "beaker" }
+  ],
+  "pipelines": [
+    { "id": "verify", "label": "Verify", "steps": ["lint", "test"], "stopOnFailure": true }
+  ],
   "smells": [
-    {
-      "id": "eslint-disable",
-      "label": "ESLint Disable",
-      "pattern": "eslint-disable",
-      "threshold": 1,
-      "fileTypes": [".js", ".jsx", ".ts", ".tsx"]
-    },
-    {
-      "id": "llm-comment",
-      "label": "LLM Comment",
-      "pattern": "// ---------------------------------------------------------------------------",
-      "threshold": "1"
-    },
-    ...
+    { "id": "eslint-disable", "label": "ESLint Disable", "pattern": "eslint-disable", "threshold": 1, "fileTypes": [".ts", ".tsx"] }
+  ]
+}
 ```
 
-These code smells are higlighted in the aforementioend inspection view. This helps you review your agent code before opening a pull request.
+## Configuration
 
-<img width="236" height="84" alt="image" src="https://github.com/user-attachments/assets/a52c1cf2-ced9-44a9-bae8-3c6b6a1c30b7" />
+| Setting | Description |
+|---|---|
+| `shiftspace.ignorePatterns` | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`) |
+| `shiftspace.additionalActions` | Personal action buttons beyond what `.shiftspace.json` defines |
+| `shiftspace.insights.codeSmells.enabled` | Enable/disable code smell detection (default: on) |
+| `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on) |
+
+## Requirements
+
+- VS Code 1.85+
+- Git
+
+## Links
+
+- [GitHub](https://github.com/zeroregard/Shiftspace)
+- [Report an issue](https://github.com/zeroregard/Shiftspace/issues)
+- [License (MIT)](https://github.com/zeroregard/Shiftspace/blob/main/LICENSE)
