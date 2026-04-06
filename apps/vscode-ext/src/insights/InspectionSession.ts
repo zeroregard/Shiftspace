@@ -48,6 +48,8 @@ export class InspectionSession {
   }
 
   recheck(worktreeId: string): void {
+    // Cancel any pending debounced runs so they don't abort this one
+    this.clearTimers();
     this._insightRunner.clearCache(worktreeId);
     void this.runInsights(worktreeId);
     this._diagnosticCollector.recheck();
@@ -60,7 +62,10 @@ export class InspectionSession {
     if (this._insightDebounceTimer !== undefined) clearTimeout(this._insightDebounceTimer);
     this._insightDebounceTimer = setTimeout(() => {
       this._insightDebounceTimer = undefined;
-      this._insightRunner.clearCache(worktreeId);
+      // Don't clearCache here — the runner's content-based cache key will
+      // detect whether files actually changed and skip re-analysis if not.
+      // Clearing the cache on every FS event caused unnecessary re-runs that
+      // raced with each other and produced flickering findings.
       void this.runInsights(worktreeId);
     }, 2000);
 

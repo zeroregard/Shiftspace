@@ -213,7 +213,6 @@ function handleHostMessage(
 
 const App: React.FC = () => {
   const { setDiffModeLoading } = useWorktreeStore();
-  const { clearInsightDetails, clearFileDiagnostics } = useInsightStore();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useInspectionStore((s) => s.mode as AppMode);
 
@@ -226,13 +225,9 @@ const App: React.FC = () => {
     if (mode.type === 'inspection') {
       vscode?.postMessage({ type: 'enter-inspection', worktreeId: mode.worktreeId });
     } else {
-      if (prev.type === 'inspection') {
-        clearInsightDetails(prev.worktreeId);
-        clearFileDiagnostics(prev.worktreeId);
-      }
       vscode?.postMessage({ type: 'exit-inspection' });
     }
-  }, [mode, clearInsightDetails, clearFileDiagnostics]);
+  }, [mode]);
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {

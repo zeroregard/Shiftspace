@@ -67,9 +67,14 @@ export class ShiftspacePanel {
   }
 
   static recheckInsights(): void {
-    const wt = ShiftspacePanel.currentPanel?._inspection?.currentWorktreeId;
+    const panel = ShiftspacePanel.currentPanel;
+    if (!panel) return;
+    // Prefer current inspection worktree, fall back to first available
+    const wt = panel._inspection?.currentWorktreeId ?? panel._gitProvider?.getWorktrees()[0]?.id;
     if (wt) {
-      ShiftspacePanel.currentPanel?._inspection?.recheck(wt);
+      // Show spinner immediately (don't rely on the async postMessage round-trip)
+      panel.updateInsightStatusBar(true);
+      panel._inspection?.recheck(wt);
     }
   }
 
@@ -416,16 +421,19 @@ export class ShiftspacePanel {
 
   private updateInsightStatusBar(running: boolean): void {
     if (!this._insightStatusBar) {
-      this._insightStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+      this._insightStatusBar = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Right,
+        100
+      );
       this._insightStatusBar.command = 'shiftspace.recheckInsights';
       this._insightStatusBar.show();
     }
 
     if (running) {
-      this._insightStatusBar.text = '$(sync~spin) Shiftspace';
+      this._insightStatusBar.text = '$(sync~spin)';
       this._insightStatusBar.tooltip = 'Analyzing files for code smells…';
     } else {
-      this._insightStatusBar.text = '$(shiftspace-icon) Shiftspace';
+      this._insightStatusBar.text = '$(shiftspace-icon)';
       this._insightStatusBar.tooltip = 'Click to recheck code smells';
     }
   }
