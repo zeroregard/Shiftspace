@@ -25,12 +25,16 @@ import { SectionLabel as SectionLabelPrimitive } from '@shiftspace/ui/section-la
 interface InspectionFileRowProps {
   file: FileChange;
   worktreeId: string;
-  onFileClick?: (worktreeId: string, filePath: string) => void;
+  onFileClick?: (worktreeId: string, filePath: string, line?: number) => void;
   onHoverFile?: (filePath: string | null) => void;
 }
 
 function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: InspectionFileRowProps) {
   const annotations = useFileAnnotations(worktreeId, file.path);
+
+  const handleBadgeClick = onFileClick
+    ? (line: number) => onFileClick(worktreeId, file.path, line)
+    : undefined;
 
   return (
     <DiffPopover file={file} worktreeId={worktreeId}>
@@ -40,6 +44,7 @@ function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: Inspe
         onClick={onFileClick ? () => onFileClick(worktreeId, file.path) : undefined}
         onMouseEnter={onHoverFile ? () => onHoverFile(file.path) : undefined}
         onMouseLeave={onHoverFile ? () => onHoverFile(null) : undefined}
+        onBadgeClick={handleBadgeClick}
       />
     </DiffPopover>
   );
@@ -187,7 +192,7 @@ interface FileListPanelProps {
   onProblemsOnlyChange: (value: boolean) => void;
   findingsIndex: Map<string, InsightFinding[]>;
   fileDiagnostics: Map<string, FileDiagnosticSummary>;
-  onFileClick: (worktreeId: string, filePath: string) => void;
+  onFileClick: (worktreeId: string, filePath: string, line?: number) => void;
   onHoverFile: (filePath: string | null) => void;
 }
 

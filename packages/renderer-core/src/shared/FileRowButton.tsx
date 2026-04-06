@@ -11,6 +11,8 @@ interface FileRowButtonProps {
   onClick?: (e: MouseEvent) => void;
   onMouseEnter?: (e: MouseEvent) => void;
   onMouseLeave?: (e: MouseEvent) => void;
+  /** Called when an annotation badge is clicked, with the 1-indexed line of the first result. */
+  onBadgeClick?: (line: number) => void;
   className?: string;
 }
 
@@ -20,6 +22,7 @@ export function FileRowButton({
   onClick,
   onMouseEnter,
   onMouseLeave,
+  onBadgeClick,
   className,
 }: FileRowButtonProps) {
   const parts = file.path.split('/');
@@ -59,7 +62,11 @@ export function FileRowButton({
         )}
       </span>
 
-      <AnnotationBadges annotations={annotations} diffHunks={file.diff} />
+      <AnnotationBadges
+        annotations={annotations}
+        diffHunks={file.diff}
+        onBadgeClick={onBadgeClick}
+      />
     </button>
   );
 }

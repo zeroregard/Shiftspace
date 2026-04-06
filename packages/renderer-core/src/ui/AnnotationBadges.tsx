@@ -11,6 +11,8 @@ interface AnnotationBadgesProps {
   diffHunks?: DiffHunk[];
   /** Icon size inside badges (default: 12) */
   iconSize?: number;
+  /** Called when a badge is clicked, with the 1-indexed line of the first result. */
+  onBadgeClick?: (line: number) => void;
 }
 
 /**
@@ -20,10 +22,25 @@ interface AnnotationBadgesProps {
  *
  * Returns null if there are no annotations to show.
  */
-export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: AnnotationBadgesProps) {
+export function AnnotationBadges({
+  annotations,
+  diffHunks,
+  iconSize = 12,
+  onBadgeClick,
+}: AnnotationBadgesProps) {
   const { errors, warnings, findings, totalFindings, diagnostics, hasAnnotations } = annotations;
 
   if (!hasAnnotations) return null;
+
+  const handleBadgeClick = (line: number | undefined, e: React.MouseEvent) => {
+    if (line === undefined || !onBadgeClick) return;
+    e.stopPropagation();
+    onBadgeClick(line);
+  };
+
+  const firstErrorLine = diagnostics?.details.find((d) => d.severity === 'error')?.line;
+  const firstWarningLine = diagnostics?.details.find((d) => d.severity === 'warning')?.line;
+  const firstFindingLine = findings.find((f) => f.firstLine !== undefined)?.firstLine;
 
   return (
     <span className="shrink-0 flex items-center gap-1">
@@ -37,7 +54,11 @@ export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: Anno
           }
           delayDuration={0}
         >
-          <span data-testid="badge-error">
+          <span
+            data-testid="badge-error"
+            onClick={(e) => handleBadgeClick(firstErrorLine, e)}
+            className={onBadgeClick && firstErrorLine !== undefined ? 'cursor-pointer' : undefined}
+          >
             <Badge variant="error">
               <Codicon name="error" size={iconSize} />
               {errors}
@@ -55,7 +76,13 @@ export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: Anno
           }
           delayDuration={0}
         >
-          <span data-testid="badge-warning">
+          <span
+            data-testid="badge-warning"
+            onClick={(e) => handleBadgeClick(firstWarningLine, e)}
+            className={
+              onBadgeClick && firstWarningLine !== undefined ? 'cursor-pointer' : undefined
+            }
+          >
             <Badge variant="warning">
               <Codicon name="warning" size={iconSize} />
               {warnings}
@@ -65,7 +92,13 @@ export function AnnotationBadges({ annotations, diffHunks, iconSize = 12 }: Anno
       )}
       {totalFindings > 0 && (
         <Tooltip content={<FindingTooltipContent findings={findings} />} delayDuration={0}>
-          <span data-testid="badge-finding">
+          <span
+            data-testid="badge-finding"
+            onClick={(e) => handleBadgeClick(firstFindingLine, e)}
+            className={
+              onBadgeClick && firstFindingLine !== undefined ? 'cursor-pointer' : undefined
+            }
+          >
             <Badge variant="finding">
               <SmellIcon width={iconSize} height={iconSize} />
               {totalFindings}

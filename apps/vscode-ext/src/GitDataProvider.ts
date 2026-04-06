@@ -662,8 +662,8 @@ export class GitDataProvider implements vscode.Disposable {
     await vscode.commands.executeCommand('revealInExplorer', vscode.Uri.file(absolutePath));
   }
 
-  /** Open the clicked file in the editor. */
-  async handleFileClick(worktreeId: string, filePath: string): Promise<void> {
+  /** Open the clicked file in the editor, optionally jumping to a 1-indexed line. */
+  async handleFileClick(worktreeId: string, filePath: string, line?: number): Promise<void> {
     const wt = this.worktrees.find((w) => w.id === worktreeId);
     if (!wt) return;
     const absolutePath = path.join(wt.path, filePath);
@@ -678,10 +678,22 @@ export class GitDataProvider implements vscode.Disposable {
       // Prefer a view column that doesn't contain the Shiftspace webview.
       // Walk tab groups to find a group with at least one non-Shiftspace tab.
       const targetColumn = this.findNonShiftspaceColumn() ?? vscode.ViewColumn.Active;
-      await vscode.commands.executeCommand('vscode.open', fileUri, {
-        preview: true,
-        viewColumn: targetColumn,
-      });
+
+      if (line !== undefined && line >= 1) {
+        // Open with selection at the target line (0-indexed for Position)
+        const position = new vscode.Position(line - 1, 0);
+        const selection = new vscode.Selection(position, position);
+        await vscode.commands.executeCommand('vscode.open', fileUri, {
+          preview: true,
+          viewColumn: targetColumn,
+          selection,
+        });
+      } else {
+        await vscode.commands.executeCommand('vscode.open', fileUri, {
+          preview: true,
+          viewColumn: targetColumn,
+        });
+      }
     } catch (err) {
       log.error('handleFileClick error:', err);
     }

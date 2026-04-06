@@ -80,9 +80,13 @@ const codeSmellsPlugin: InsightPlugin = {
 
       for (const { rule, regex } of applicable) {
         let count = 0;
-        for (const line of lines) {
-          const matches = line.match(regex);
-          if (matches) count += matches.length;
+        let firstLine: number | undefined;
+        for (let i = 0; i < lines.length; i++) {
+          const matches = lines[i].match(regex);
+          if (matches) {
+            count += matches.length;
+            if (firstLine === undefined) firstLine = i + 1; // 1-indexed
+          }
         }
         if (count >= rule.threshold) {
           findings.push({
@@ -90,6 +94,7 @@ const codeSmellsPlugin: InsightPlugin = {
             ruleLabel: rule.label,
             count,
             threshold: rule.threshold,
+            firstLine,
           });
         }
       }
