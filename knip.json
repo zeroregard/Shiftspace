@@ -20,13 +20,14 @@
         "@types/vscode",
         "@vscode/codicons",
         "tailwindcss",
-        "babel-plugin-react-compiler"
+        "babel-plugin-react-compiler",
+        "fantasticon"
       ]
     }
   },
   "ignoreWorkspaces": ["packages/renderer-browser-tests"],
   "ignore": ["**/*.d.ts"],
   "ignoreDependencies": ["@typescript/native-preview", "lint-staged"],
-  "ignoreBinaries": ["code", "ovsx", "playwright", "playwright-ct.config.ts"],
+  "ignoreBinaries": ["code", "ovsx", "playwright"],
   "tags": ["+@public"]
 }
