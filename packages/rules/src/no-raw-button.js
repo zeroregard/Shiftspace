@@ -4,15 +4,38 @@
  *
  * Suppress with: // eslint-disable-next-line @shiftspace/no-raw-button
  */
-import { readFileSync, globSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve, relative } from 'node:path';
 
 const DISABLE_COMMENT = '@shiftspace/no-raw-button';
 
+function findTsxFiles(dir) {
+  const results = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = resolve(dir, entry.name);
+    if (entry.isDirectory()) results.push(...findTsxFiles(full));
+    else if (entry.name.endsWith('.tsx')) results.push(full);
+  }
+  return results;
+}
+
 export function noRawButton(root) {
-  const files = globSync('packages/renderer-*/src/**/*.tsx', { cwd: root }).filter(
-    (f) => !f.includes('renderer-browser-tests') && !f.includes('renderer-core')
-  );
+  const packagesDir = resolve(root, 'packages');
+  const rendererDirs = readdirSync(packagesDir, { withFileTypes: true })
+    .filter(
+      (d) =>
+        d.isDirectory() &&
+        d.name.startsWith('renderer-') &&
+        d.name !== 'renderer-browser-tests' &&
+        d.name !== 'renderer-core'
+    )
+    .map((d) => resolve(packagesDir, d.name, 'src'));
+
+  const files = rendererDirs
+    .flatMap((dir) => {
+      try { return findTsxFiles(dir); } catch { return []; }
+    })
+    .map((f) => relative(root, f));
 
   const violations = [];
 
