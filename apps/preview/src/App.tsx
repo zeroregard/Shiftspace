@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '@vscode/codicons/dist/codicon.css';
-import { ShiftspaceRenderer, useActionStore, useInsightStore } from '@shiftspace/renderer';
+import {
+  ShiftspaceRenderer,
+  useActionStore,
+  useInsightStore,
+  usePackageStore,
+} from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
 import { MockEngine } from './mock/engine';
 import { MOCK_ACTION_CONFIGS, MOCK_PIPELINES, getMockInitialStates } from './mock/actions';
@@ -22,6 +27,7 @@ export const App: React.FC = () => {
 
   const { setActionConfigs, setPipelines, setActionState } = useActionStore();
   const { setInsightDetail, setFileDiagnostics } = useInsightStore();
+  const { setSelectedPackage, setAvailablePackages } = usePackageStore();
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -97,6 +103,24 @@ export const App: React.FC = () => {
     setResetKey((k) => k + 1);
   };
 
+  const MOCK_PACKAGES = [
+    '@shiftspace/renderer',
+    '@shiftspace/renderer-core',
+    '@shiftspace/renderer-grove',
+    '@shiftspace/renderer-inspection',
+    '@shiftspace/ui',
+    '@shiftspace/preview',
+    '@shiftspace/vscode-ext',
+  ];
+
+  const handleSetPackage = (packageName: string) => {
+    setSelectedPackage(packageName);
+  };
+
+  const handleDetectPackages = () => {
+    setAvailablePackages(MOCK_PACKAGES);
+  };
+
   const handleAddWorktree = () => {
     const id = engineRef.current?.addPresetWorktree(worktreeIds.length);
     if (id) setWorktreeIds((ids) => [...ids, id]);
@@ -118,6 +142,8 @@ export const App: React.FC = () => {
         onStopAction={handleStopAction}
         onRunPipeline={handleRunPipeline}
         onRecheckInsights={handleRecheckInsights}
+        onSetPackage={handleSetPackage}
+        onDetectPackages={handleDetectPackages}
       />
       <ControlPanel
         engine={engineRef.current}
