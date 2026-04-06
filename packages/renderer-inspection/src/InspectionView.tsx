@@ -153,7 +153,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
         />
       )}
 
-      <div className="flex-1 min-h-0 flex flex-col min-[600px]:flex-row">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto min-[600px]:overflow-hidden min-[600px]:flex-row">
         <FileListPanel
           wt={wt}
           searchQuery={searchQuery}
@@ -166,7 +166,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
           onHoverFile={setHoveredFilePath}
         />
 
-        <div className="flex-1 min-h-0 min-w-0 relative">
+        <div className="hidden min-[600px]:block flex-1 min-h-0 min-w-0 relative">
           <ErrorBoundary
             resetKey={wt}
             fallback={(retry) => (

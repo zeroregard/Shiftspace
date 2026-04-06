@@ -2,11 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InspectionSession } from '../../src/insights/InspectionSession';
 import type { InspectionDeps } from '../../src/insights/InspectionSession';
 
+const DUMMY_FILE = {
+  path: 'src/index.ts',
+  status: 'modified' as const,
+  staged: false,
+  linesAdded: 5,
+  linesRemoved: 2,
+  lastChangedAt: Date.now(),
+};
+
 function makeDeps(overrides?: Partial<InspectionDeps>): InspectionDeps {
   return {
     postMessage: vi.fn(),
     getWorktrees: () => [{ id: 'wt-1', path: '/repo', branch: 'main' }],
-    getWorktreeFiles: () => [],
+    getWorktreeFiles: () => [DUMMY_FILE],
     getCurrentGitRoot: () => '/repo',
     getSmellRules: () => [],
     ...overrides,
@@ -17,6 +26,7 @@ function makeInsightRunner(result = { summaries: [], details: [] }) {
   return {
     analyzeWorktree: vi.fn(async () => result),
     clearCache: vi.fn(),
+    hasCacheEntry: vi.fn(() => false),
   };
 }
 
@@ -72,7 +82,7 @@ describe('InspectionSession — enter / exit', () => {
     );
 
     session.enter('wt-1');
-    expect(collector.startInspection).toHaveBeenCalledWith('wt-1', '/repo', []);
+    expect(collector.startInspection).toHaveBeenCalledWith('wt-1', '/repo', [DUMMY_FILE]);
   });
 
   it('does not call startInspection if worktree not found', () => {
@@ -207,6 +217,7 @@ describe('InspectionSession — insights', () => {
         };
       }),
       clearCache: vi.fn(),
+      hasCacheEntry: vi.fn(() => false),
     };
     const postMessage = vi.fn();
     const session = new InspectionSession(runner as never, makeDiagnosticCollector() as never, {
@@ -231,6 +242,7 @@ describe('InspectionSession — insights', () => {
         throw new Error('analysis failed');
       }),
       clearCache: vi.fn(),
+      hasCacheEntry: vi.fn(() => false),
     };
     const session = new InspectionSession(
       runner as never,
@@ -278,22 +290,21 @@ describe('InspectionSession — onFileChange', () => {
     await vi.runAllTimersAsync();
     runner.analyzeWorktree.mockClear();
     runner.clearCache.mockClear();
+    // Simulate no cache entry so onFileChange schedules an insight re-run
+    runner.hasCacheEntry.mockReturnValue(false);
 
     session.onFileChange('wt-1');
-    expect(runner.clearCache).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(2000);
-    expect(runner.clearCache).toHaveBeenCalledWith('wt-1');
     expect(runner.analyzeWorktree).toHaveBeenCalled();
   });
 
   it('debounces diagnostic re-collection', async () => {
     const collector = makeDiagnosticCollector();
-    const session = new InspectionSession(
-      makeInsightRunner() as never,
-      collector as never,
-      makeDeps()
-    );
+    const runner = makeInsightRunner();
+    // hasCacheEntry returns true so only the diagnostic debounce fires
+    runner.hasCacheEntry.mockReturnValue(true);
+    const session = new InspectionSession(runner as never, collector as never, makeDeps());
 
     session.enter('wt-1');
     await vi.runAllTimersAsync();

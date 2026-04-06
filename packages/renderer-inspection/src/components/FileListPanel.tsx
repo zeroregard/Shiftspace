@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
 import type {
@@ -44,7 +44,7 @@ function InspectionFileRow({ file, worktreeId, onFileClick, onHoverFile }: Inspe
     <DiffPopover file={file} worktreeId={worktreeId}>
       <button
         className={clsx(
-          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors',
+          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-left transition-colors min-w-16',
           'hover:bg-node-file-pulse',
           onFileClick ? 'cursor-pointer' : 'cursor-default'
         )}
@@ -230,6 +230,72 @@ interface FileListPanelProps {
   onHoverFile: (filePath: string | null) => void;
 }
 
+// ---------------------------------------------------------------------------
+// Resizable panel width (persisted to localStorage)
+// ---------------------------------------------------------------------------
+
+const STORAGE_KEY = 'shiftspace:file-list-width';
+const MIN_WIDTH = 180;
+const MAX_WIDTH = 600;
+const DEFAULT_WIDTH = 280;
+
+function loadPersistedWidth(): number {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const n = Number(stored);
+      if (n >= MIN_WIDTH && n <= MAX_WIDTH) return n;
+    }
+  } catch {
+    // localStorage unavailable — use default
+  }
+  return DEFAULT_WIDTH;
+}
+
+function persistWidth(width: number): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(Math.round(width)));
+  } catch {
+    // ignore
+  }
+}
+
+function useResizableWidth() {
+  const [width, setWidth] = useState(loadPersistedWidth);
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      dragging.current = true;
+      startX.current = e.clientX;
+      startWidth.current = width;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [width]
+  );
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const delta = e.clientX - startX.current;
+    const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
+    setWidth(next);
+  }, []);
+
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    const delta = e.clientX - startX.current;
+    const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
+    persistWidth(next);
+  }, []);
+
+  return { width, onPointerDown, onPointerMove, onPointerUp };
+}
+
 export function FileListPanel({
   wt,
   searchQuery,
@@ -300,6 +366,8 @@ export function FileListPanel({
     return result;
   }, [filteredCommitted, filteredStaged, filteredUnstaged, wt.diffMode.type]);
 
+  const resize = useResizableWidth();
+
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => scrollRef.current,
@@ -311,8 +379,16 @@ export function FileListPanel({
   return (
     <div
       data-testid="file-list-panel"
-      className="min-[600px]:w-[35%] min-[600px]:max-w-sm border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col shrink-0"
+      className="grow min-[600px]:grow-0 relative border-b min-[600px]:border-b-0 min-[600px]:border-r border-border-dashed flex flex-col w-full min-[600px]:w-(--panel-w) min-[600px]:min-w-0 shrink-0 overflow-hidden"
+      style={{ '--panel-w': `${resize.width}px` } as React.CSSProperties}
     >
+      {/* Drag handle */}
+      <div
+        className="hidden min-[600px]:block absolute top-0 right-0 w-1 h-full cursor-col-resize z-10 hover:bg-teal/30 active:bg-teal/40 transition-colors"
+        onPointerDown={resize.onPointerDown}
+        onPointerMove={resize.onPointerMove}
+        onPointerUp={resize.onPointerUp}
+      />
       <SearchInput
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}

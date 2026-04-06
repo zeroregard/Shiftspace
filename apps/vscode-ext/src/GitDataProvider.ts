@@ -117,6 +117,7 @@ export class GitDataProvider implements vscode.Disposable {
       } else {
         wt.diffMode = { type: 'branch', branch: this.defaultBranch };
       }
+      log.info(`[diffMode] init: ${wt.branch} → ${JSON.stringify(wt.diffMode)}`);
     }
 
     await this.loadAllFileChanges();
@@ -406,10 +407,18 @@ export class GitDataProvider implements vscode.Disposable {
         });
 
         freshWt.defaultBranch = this.defaultBranch;
+        // Preserve "repo" (All files) mode across branch changes — the user
+        // explicitly chose it and a branch switch shouldn't override that.
+        const prevDiffMode = prevWt.diffMode;
+        log.info(
+          `[diffMode] branch changed: ${prevWt.branch} → ${freshWt.branch}, prev diffMode=${JSON.stringify(prevDiffMode)}`
+        );
         freshWt.diffMode =
-          freshWt.branch === this.defaultBranch
-            ? { type: 'working' }
-            : { type: 'branch', branch: this.defaultBranch };
+          prevDiffMode.type === 'repo'
+            ? prevDiffMode
+            : freshWt.branch === this.defaultBranch
+              ? { type: 'working' }
+              : { type: 'branch', branch: this.defaultBranch };
         try {
           const { files, branchFiles } = await this.getFilesForMode(freshWt);
           freshWt.files = files;
@@ -420,17 +429,28 @@ export class GitDataProvider implements vscode.Disposable {
         }
         this.fileStates.set(freshWt.id, freshWt.files);
 
+        log.info(
+          `[diffMode] re-adding worktree after branch change: ${freshWt.branch} diffMode=${JSON.stringify(freshWt.diffMode)}`
+        );
         this.postMessage({ type: 'event', event: { type: 'worktree-added', worktree: freshWt } });
         this.onFileChange?.(freshWt.id);
       }
 
-      // Preserve user-set diffMode for worktrees whose branch hasn't changed.
+      // Preserve user-set diffMode for existing worktrees.
       // detectWorktrees() always returns diffMode: { type: 'working' } — without
-      // this, any 15-second poll would silently reset a "vs main" diff mode back
-      // to working changes.
+      // this, any poll would silently reset a "vs main" or "All files" diff mode.
+      // Branch-changed worktrees are already handled above with their own logic.
       for (const freshWt of fresh) {
         const prevWt = this.worktrees.find((wt) => wt.id === freshWt.id);
         if (prevWt && prevWt.branch === freshWt.branch) {
+          freshWt.diffMode = prevWt.diffMode;
+        } else if (prevWt && prevWt.diffMode.type === 'repo') {
+          log.info(
+            `[diffMode] preserving repo mode despite branch mismatch: prev=${prevWt.branch} fresh=${freshWt.branch}`
+          );
+          // Preserve "All files" mode even across branch changes — the user
+          // explicitly chose it and shouldn't have to re-select after a
+          // transient branch name glitch from concurrent git operations.
           freshWt.diffMode = prevWt.diffMode;
         }
       }
@@ -446,6 +466,7 @@ export class GitDataProvider implements vscode.Disposable {
     const wt = this.worktrees.find((w) => w.id === worktreeId);
     if (!wt) return;
 
+    log.info(`[diffMode] handleSetDiffMode: ${wt.branch} → ${JSON.stringify(diffMode)}`);
     wt.diffMode = diffMode;
 
     try {
@@ -460,6 +481,8 @@ export class GitDataProvider implements vscode.Disposable {
         diffMode,
         branchFiles,
       });
+      // Notify so insights re-run against the new file set
+      this.onFileChange?.(worktreeId);
     } catch (err) {
       log.error('handleSetDiffMode error:', err);
       // Send back empty to clear loading state
@@ -715,6 +738,7 @@ export class GitDataProvider implements vscode.Disposable {
       ) {
         continue;
       }
+      log.info(`[diffMode] applyOverride: ${wt.branch} → ${JSON.stringify(override)}`);
       wt.diffMode = override;
       // Re-fetch files for the new mode (fire-and-forget; init message
       // already includes the files from the initial load, and the

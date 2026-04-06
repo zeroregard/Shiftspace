@@ -31,6 +31,7 @@ function buildIconIndex(iconMap: IconMap): IconIndex {
 }
 
 interface WorktreeStore {
+  initialized: boolean;
   worktrees: Map<string, WorktreeState>;
   branchLists: Map<string, string[]>;
   diffModeLoading: Set<string>;
@@ -57,6 +58,7 @@ interface WorktreeStore {
 }
 
 export const useWorktreeStore = create<WorktreeStore>((set) => ({
+  initialized: false,
   worktrees: new Map(),
   branchLists: new Map(),
   diffModeLoading: new Set(),
@@ -68,7 +70,8 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
 
   applyEvent: (event) => set((state) => ({ worktrees: applyEventReducer(state.worktrees, event) })),
 
-  setWorktrees: (worktrees) => set({ worktrees: new Map(worktrees.map((wt) => [wt.id, wt])) }),
+  setWorktrees: (worktrees) =>
+    set({ initialized: true, worktrees: new Map(worktrees.map((wt) => [wt.id, wt])) }),
 
   setDiffMode: (worktreeId, diffMode) =>
     set((state) => {
