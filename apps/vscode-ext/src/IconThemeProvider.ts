@@ -164,7 +164,6 @@ export class IconThemeProvider implements vscode.Disposable {
   private _buildExtToLangIdMap(): void {
     this._extToLangId.clear();
     for (const ext of vscode.extensions.all) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const langs = ext.packageJSON?.contributes?.languages as
         | Array<{ id: string; extensions?: string[] }>
         | undefined;
@@ -201,7 +200,6 @@ export class IconThemeProvider implements vscode.Disposable {
     themeId: string
   ): { extensionPath: string; themePath: string } | null {
     for (const ext of vscode.extensions.all) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const themes = ext.packageJSON?.contributes?.iconThemes as
         | Array<{ id: string; path: string }>
         | undefined;

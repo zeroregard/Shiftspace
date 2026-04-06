@@ -64,7 +64,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
   useEffect(() => {
     if (initialWorktrees.length > 0) setWorktrees(initialWorktrees);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!onEvent) return;

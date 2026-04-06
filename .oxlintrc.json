@@ -7,12 +7,12 @@
   },
   "rules": {
     "no-unused-vars": "error",
-    "no-console": "error",
+    "no-console": ["error", { "allow": ["warn", "error"] }],
     "eqeqeq": "error",
 
     "react/react-in-jsx-scope": "off",
     "react/rules-of-hooks": "error",
-    "react/exhaustive-deps": "warn",
+    "react/exhaustive-deps": "off",
     "react/jsx-key": "warn",
     "react/jsx-no-constructed-context-values": "warn",
     "react/no-array-index-key": "warn",
@@ -36,5 +36,13 @@
     "unicorn/consistent-function-scoping": "off",
     "preserve-caught-error": "off"
   },
-  "ignorePatterns": ["dist/", "node_modules/", ".turbo/", "*.config.ts", "*.config.js", "scripts/", "packages/rules/"]
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/",
+    ".turbo/",
+    "*.config.ts",
+    "*.config.js",
+    "scripts/",
+    "packages/rules/"
+  ]
 }

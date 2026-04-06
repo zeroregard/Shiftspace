@@ -122,7 +122,7 @@ export const ControlPanel: React.FC<Props> = ({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fixed bottom-3 left-3 bg-debug-bg border border-border-default rounded-lg px-2.5 py-1.5 text-text-muted text-10 cursor-pointer z-1000 backdrop-blur-[8px] hover:text-text-primary transition-colors"
+        className="fixed bottom-3 left-3 bg-debug-bg border border-border-default rounded-lg px-2.5 py-1.5 text-text-muted text-10 cursor-pointer z-1000 backdrop-blur-sm hover:text-text-primary transition-colors"
       >
         Controls
       </button>
@@ -130,7 +130,7 @@ export const ControlPanel: React.FC<Props> = ({
   }
 
   return (
-    <div className="fixed bottom-3 left-3 bg-debug-bg border border-border-default rounded-xl px-3 py-2.5 w-65 text-text-muted text-11 z-1000 backdrop-blur-[8px]">
+    <div className="fixed bottom-3 left-3 bg-debug-bg border border-border-default rounded-xl px-3 py-2.5 w-65 text-text-muted text-11 z-1000 backdrop-blur-sm">
       {/* Header with badge, theme toggle, and collapse button */}
       <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-border-default">
         <div className="flex items-center gap-1.5">

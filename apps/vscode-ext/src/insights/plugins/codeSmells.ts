@@ -62,6 +62,7 @@ const codeSmellsPlugin: InsightPlugin = {
 
     for (const file of files) {
       if (signal?.aborted) break;
+      if (file.path === '.shiftspace.json') continue;
 
       const ext = path.extname(file.path).toLowerCase();
       const applicable = compiledRules.filter(({ rule }) => {

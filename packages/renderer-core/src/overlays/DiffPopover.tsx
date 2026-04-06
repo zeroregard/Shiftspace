@@ -157,7 +157,6 @@ export function DiffPopover({
   const cursorX = useDiffPopoverState((s) => s.cursorX);
   const cursorY = useDiffPopoverState((s) => s.cursorY);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time global setup, no deps needed
   React.useEffect(ensureGlobalListeners, []);
 
   const isMe = activeKey === myKey;

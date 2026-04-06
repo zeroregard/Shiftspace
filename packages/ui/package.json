@@ -43,10 +43,6 @@
       "import": "./src/spinner.tsx",
       "types": "./src/spinner.tsx"
     },
-    "./status-dot": {
-      "import": "./src/status-dot.tsx",
-      "types": "./src/status-dot.tsx"
-    },
     "./tooltip": {
       "import": "./src/tooltip.tsx",
       "types": "./src/tooltip.tsx"

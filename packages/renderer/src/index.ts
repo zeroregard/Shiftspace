@@ -49,7 +49,6 @@ export {
   ListItem,
   SectionLabel,
   Spinner,
-  StatusDot,
   ActionsProvider,
   useActions,
   type ShiftspaceActions,
