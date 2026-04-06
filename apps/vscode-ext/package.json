@@ -1,12 +1,17 @@
 {
   "name": "shiftspace",
   "displayName": "Shiftspace",
-  "description": "Visual workspace command center — spatial node graph of your git changes across worktrees",
+  "description": "Worktree manager and code review tool — inspect branches, spot code smells, and run checks before you open a PR",
+  "preview": true,
   "version": "0.1.34",
   "publisher": "shiftspace",
   "repository": {
     "type": "git",
     "url": "https://github.com/zeroregard/shiftspace"
+  },
+  "homepage": "https://github.com/zeroregard/Shiftspace#readme",
+  "bugs": {
+    "url": "https://github.com/zeroregard/Shiftspace/issues"
   },
   "license": "MIT",
   "engines": {
@@ -14,16 +19,25 @@
   },
   "categories": [
     "SCM Providers",
-    "Visualization"
+    "Visualization",
+    "Other"
   ],
   "keywords": [
     "git",
     "worktree",
-    "graph",
     "diff",
     "source control",
-    "spatial",
-    "visualization"
+    "code review",
+    "code smells",
+    "agent",
+    "AI",
+    "worktree management",
+    "monorepo",
+    "checks",
+    "lint",
+    "ci",
+    "MCP",
+    "inspection"
   ],
   "galleryBanner": {
     "color": "#1e1e2e",

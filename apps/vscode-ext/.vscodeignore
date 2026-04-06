@@ -1,0 +1,13 @@
+**/*.ts
+**/*.tsx
+**/tsconfig*.json
+**/vite.config.ts
+**/vitest.config.ts
+src/**
+tests/**
+node_modules/**
+.gitignore
+.prettierrc*
+.oxlintrc*
+**/*.map
+dist/meta-*.json
