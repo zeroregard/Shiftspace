@@ -63,6 +63,7 @@ html, body, #root {
 /* ── Sidebar-specific overrides ─────────────────────────────────── */
 #root[data-mode="sidebar"] {
   --color-canvas: var(--vscode-sideBar-background);
+  --color-cluster-alpha: var(--vscode-editorWidget-background);
   background: var(--vscode-sideBar-background);
   border-right: 1px solid var(--vscode-sideBar-border, transparent);
   box-sizing: border-box;
