@@ -3,6 +3,7 @@ import { getWebviewHtml } from './webview/html';
 import { GitDataProvider } from './GitDataProvider';
 import { RepoTracker } from './git/RepoTracker';
 import { ShiftspacePanel } from './ShiftspacePanel';
+import { log } from './logger';
 
 /**
  * Renders a slim grove view (SidebarView) inside the activity-bar sidebar.
@@ -39,16 +40,47 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 
     // Listen for messages from the sidebar webview
     webviewView.webview.onDidReceiveMessage(
-      (message: { type: string; worktreeId?: string }) => {
-        switch (message.type) {
-          case 'ready':
-            void this.onReady();
-            break;
-          case 'worktree-click':
-            if (message.worktreeId) {
-              ShiftspacePanel.openInspection(this._context, message.worktreeId);
-            }
-            break;
+      (message: { type: string; worktreeId?: string; branch?: string; newName?: string }) => {
+        try {
+          switch (message.type) {
+            case 'ready':
+              void this.onReady();
+              break;
+            case 'worktree-click':
+              if (message.worktreeId) {
+                ShiftspacePanel.openInspection(this._context, message.worktreeId);
+              }
+              break;
+            case 'get-branch-list':
+              if (message.worktreeId)
+                void this._gitProvider?.handleGetBranchList(message.worktreeId);
+              break;
+            case 'checkout-branch':
+              if (message.worktreeId && message.branch)
+                void this._gitProvider?.handleCheckoutBranch(message.worktreeId, message.branch);
+              break;
+            case 'fetch-branches':
+              if (message.worktreeId)
+                void this._gitProvider?.handleFetchBranches(message.worktreeId);
+              break;
+            case 'rename-worktree':
+              if (message.worktreeId && message.newName)
+                void this._gitProvider?.handleRenameWorktree(message.worktreeId, message.newName);
+              break;
+            case 'remove-worktree':
+              if (message.worktreeId)
+                void this._gitProvider?.handleRemoveWorktree(message.worktreeId);
+              break;
+            case 'swap-branches':
+              if (message.worktreeId)
+                void this._gitProvider?.handleSwapBranches(message.worktreeId);
+              break;
+            default:
+              log.warn(`Sidebar: unhandled message type "${message.type}"`);
+              break;
+          }
+        } catch (err) {
+          log.error(`Sidebar: error handling message "${message.type}"`, err);
         }
       },
       null,

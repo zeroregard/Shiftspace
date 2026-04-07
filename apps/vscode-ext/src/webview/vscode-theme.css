@@ -59,3 +59,11 @@
 html, body, #root {
   background: var(--vscode-editor-background);
 }
+
+/* ── Sidebar-specific overrides ─────────────────────────────────── */
+#root[data-mode="sidebar"] {
+  --color-canvas: var(--vscode-sideBar-background);
+  background: var(--vscode-sideBar-background);
+  border-right: 1px solid var(--vscode-sideBar-border, transparent);
+  box-sizing: border-box;
+}
