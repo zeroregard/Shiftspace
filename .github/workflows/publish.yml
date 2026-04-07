@@ -152,12 +152,15 @@ jobs:
 
       - name: Publish to Open VSX Registry
         if: ${{ inputs.dry-run != true }}
+        # NOTE: The "shiftspace" namespace must be created on open-vsx.org before this
+        # step will succeed. Run: npx ovsx create-namespace shiftspace -p <PAT>
+        # Until then, this step will fail with "Unknown publisher: shiftspace".
+        continue-on-error: true
         run: |
           cd apps/vscode-ext
           npx ovsx publish ${{ env.vsix_file }} -p ${{ secrets.OVSX_PAT }}
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        continue-on-error: true # Don't fail the whole workflow if Open VSX is down
 
       # --- Manual dispatch only: commit version bump + tag + GH release ---
       - name: Commit version bump
@@ -168,6 +171,7 @@ jobs:
           git add apps/vscode-ext/package.json
           git commit -m "chore: release v${{ steps.version.outputs.value }}"
           git tag "v${{ steps.version.outputs.value }}"
+          git pull --rebase origin main
           git push origin main --follow-tags
 
       - name: Create GitHub Release
