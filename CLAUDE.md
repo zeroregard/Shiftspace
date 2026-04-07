@@ -343,6 +343,12 @@ Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `perf`
 
 ---
 
+## CI Hygiene
+
+If CI is failing — even on checks unrelated to your changes — fix it. Do not dismiss failures as "pre-existing" or "not our fault." A green CI pipeline is everyone's responsibility. If you encounter a formatting issue, lint warning, or flaky test that predates your branch, fix it in your PR. Leaving broken windows makes the next person's job harder.
+
+---
+
 ## Open Questions
 
 1. **Filesystem watcher debounce tuning:** 500ms is a starting point. Too short = thrashing git commands. Too long = feels laggy.

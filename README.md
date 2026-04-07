@@ -49,18 +49,24 @@ Shiftspace gives you two views:
     { "id": "verify", "label": "Verify", "steps": ["lint", "test"], "stopOnFailure": true }
   ],
   "smells": [
-    { "id": "eslint-disable", "label": "ESLint Disable", "pattern": "eslint-disable", "threshold": 1, "fileTypes": [".ts", ".tsx"] }
+    {
+      "id": "eslint-disable",
+      "label": "ESLint Disable",
+      "pattern": "eslint-disable",
+      "threshold": 1,
+      "fileTypes": [".ts", ".tsx"]
+    }
   ]
 }
 ```
 
 ## Configuration
 
-| Setting | Description |
-|---|---|
-| `shiftspace.ignorePatterns` | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`) |
-| `shiftspace.additionalActions` | Personal action buttons beyond what `.shiftspace.json` defines |
-| `shiftspace.insights.codeSmells.enabled` | Enable/disable code smell detection (default: on) |
+| Setting                                   | Description                                                        |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`) |
+| `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines     |
+| `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                  |
 | `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on) |
 
 ## Requirements

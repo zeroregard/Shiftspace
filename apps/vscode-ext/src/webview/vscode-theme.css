@@ -11,36 +11,36 @@
  */
 
 :root {
-  --color-canvas:          var(--vscode-editor-background);
-  --color-text-primary:    var(--vscode-editor-foreground);
-  --color-text-secondary:  var(--vscode-descriptionForeground);
-  --color-text-muted:      var(--vscode-disabledForeground);
-  --color-text-dim:        var(--vscode-disabledForeground);
-  --color-text-faint:      var(--vscode-textBlockQuote-border);
-  --color-border-default:  var(--vscode-panel-border);
-  --color-border-dashed:   var(--vscode-panel-border);
-  --color-border-staged:   var(--vscode-gitDecoration-stageModifiedResourceForeground);
-  --color-node-file:       var(--vscode-editorWidget-background);
+  --color-canvas: var(--vscode-editor-background);
+  --color-text-primary: var(--vscode-editor-foreground);
+  --color-text-secondary: var(--vscode-descriptionForeground);
+  --color-text-muted: var(--vscode-disabledForeground);
+  --color-text-dim: var(--vscode-disabledForeground);
+  --color-text-faint: var(--vscode-textBlockQuote-border);
+  --color-border-default: var(--vscode-panel-border);
+  --color-border-dashed: var(--vscode-panel-border);
+  --color-border-staged: var(--vscode-gitDecoration-stageModifiedResourceForeground);
+  --color-node-file: var(--vscode-editorWidget-background);
   --color-node-file-pulse: var(--vscode-editorWidget-background);
-  --color-node-folder:     var(--vscode-sideBar-background);
-  --color-cluster:         var(--vscode-editorGroupHeader-tabsBackground);
-  --color-cluster-alpha:   var(--vscode-editorGroupHeader-tabsBackground);
-  --color-process-badge:   var(--vscode-statusBar-background);
-  --color-handle:          var(--vscode-panel-border);
-  --color-status-added:    var(--vscode-gitDecoration-addedResourceForeground);
+  --color-node-folder: var(--vscode-sideBar-background);
+  --color-cluster: var(--vscode-editorGroupHeader-tabsBackground);
+  --color-cluster-alpha: var(--vscode-editorGroupHeader-tabsBackground);
+  --color-process-badge: var(--vscode-statusBar-background);
+  --color-handle: var(--vscode-panel-border);
+  --color-status-added: var(--vscode-gitDecoration-addedResourceForeground);
   --color-status-modified: var(--vscode-gitDecoration-modifiedResourceForeground);
-  --color-status-deleted:  var(--vscode-gitDecoration-deletedResourceForeground);
-  --color-teal:            var(--vscode-terminal-ansiCyan);
-  --color-grid-dot:        var(--vscode-editorIndentGuide-background);
-  --color-diff-added-bg:   var(--vscode-diffEditor-insertedLineBackground);
+  --color-status-deleted: var(--vscode-gitDecoration-deletedResourceForeground);
+  --color-teal: var(--vscode-terminal-ansiCyan);
+  --color-grid-dot: var(--vscode-editorIndentGuide-background);
+  --color-diff-added-bg: var(--vscode-diffEditor-insertedLineBackground);
   --color-diff-removed-bg: var(--vscode-diffEditor-removedLineBackground);
-  --color-diff-hunk-bg:    var(--vscode-diffEditor-diagonalFill);
+  --color-diff-hunk-bg: var(--vscode-diffEditor-diagonalFill);
 
   /* pulse overlay has no direct VSCode equivalent — keep the green glow */
   --color-pulse-overlay: rgba(78, 201, 78, 0.06);
 
   /* Hover background for list/menu items */
-  --color-item-hover:    var(--vscode-list-hoverBackground);
+  --color-item-hover: var(--vscode-list-hoverBackground);
 
   /* @pierre/diffs theme integration */
   --diffs-bg: var(--vscode-editor-background);
@@ -56,6 +56,17 @@
 }
 
 /* Ensure the body background follows the canvas token */
-html, body, #root {
+html,
+body,
+#root {
   background: var(--vscode-editor-background);
+}
+
+/* ── Sidebar-specific overrides ─────────────────────────────────── */
+#root[data-mode='sidebar'] {
+  --color-canvas: var(--vscode-sideBar-background);
+  --color-cluster-alpha: var(--vscode-editorWidget-background);
+  background: var(--vscode-sideBar-background);
+  border-right: 1px solid var(--vscode-sideBar-border, transparent);
+  box-sizing: border-box;
 }

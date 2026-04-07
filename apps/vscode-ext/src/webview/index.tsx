@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import {
   ShiftspaceRenderer,
   SidebarView,
+  ActionsProvider,
   useWorktreeStore,
   useActionStore,
   useInsightStore,
@@ -355,6 +356,30 @@ const SidebarApp: React.FC = () => {
     vscode?.postMessage({ type: 'worktree-click', worktreeId });
   };
 
+  const handleRequestBranchList = (worktreeId: string) => {
+    vscode?.postMessage({ type: 'get-branch-list', worktreeId });
+  };
+
+  const handleCheckoutBranch = (worktreeId: string, branch: string) => {
+    vscode?.postMessage({ type: 'checkout-branch', worktreeId, branch });
+  };
+
+  const handleFetchBranches = (worktreeId: string) => {
+    vscode?.postMessage({ type: 'fetch-branches', worktreeId });
+  };
+
+  const handleRenameWorktree = (worktreeId: string, newName: string) => {
+    vscode?.postMessage({ type: 'rename-worktree', worktreeId, newName });
+  };
+
+  const handleRemoveWorktree = (worktreeId: string) => {
+    vscode?.postMessage({ type: 'remove-worktree', worktreeId });
+  };
+
+  const handleSwapBranches = (worktreeId: string) => {
+    vscode?.postMessage({ type: 'swap-branches', worktreeId });
+  };
+
   if (errorMessage) {
     return (
       <div
@@ -381,7 +406,18 @@ const SidebarApp: React.FC = () => {
     return nameA.localeCompare(nameB);
   });
 
-  return <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />;
+  return (
+    <ActionsProvider
+      onRequestBranchList={handleRequestBranchList}
+      onCheckoutBranch={handleCheckoutBranch}
+      onFetchBranches={handleFetchBranches}
+      onRenameWorktree={handleRenameWorktree}
+      onRemoveWorktree={handleRemoveWorktree}
+      onSwapBranches={handleSwapBranches}
+    >
+      <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />
+    </ActionsProvider>
+  );
 };
 
 const container = document.getElementById('root');

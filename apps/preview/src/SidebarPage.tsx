@@ -110,7 +110,7 @@ export const SidebarPage: React.FC = () => {
       onRecheckInsights={handleRecheckInsights}
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
-        <div className="w-80 h-screen bg-canvas">
+        <div className="w-80 h-screen bg-canvas" data-mode="sidebar">
           <SidebarView
             worktrees={wtArray}
             onWorktreeClick={() => {
