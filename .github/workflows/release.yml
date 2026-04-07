@@ -12,6 +12,7 @@ on:
       - '.github/**'
       - 'apps/preview/e2e/**'
       - 'apps/preview/playwright.config.ts'
+  workflow_dispatch:
 
 # Prevent concurrent releases
 concurrency:
