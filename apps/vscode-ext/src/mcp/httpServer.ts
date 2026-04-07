@@ -129,9 +129,9 @@ export class ShiftspaceMcpHttpServer {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      console.error('[MCP HTTP] Tool handler error:', err);
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: message }));
+      res.end(JSON.stringify({ error: 'Internal server error' }));
     }
   }
 
