@@ -1,5 +1,5 @@
 import type { WorktreeState } from '@shiftspace/renderer-core';
-import { useWorktreeStore } from '@shiftspace/renderer-core';
+import { useWorktreeStore, useActions } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/WorktreeCard';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { Loader } from '@shiftspace/ui/loader';
@@ -20,6 +20,7 @@ function WorktreeCardError() {
 
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
+  const actions = useActions();
 
   if (!initialized) {
     return (
@@ -43,6 +44,14 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
             ))}
           </div>
         )}
+        <button
+          className="w-full mt-3 h-8 flex items-center justify-center rounded-xl border-2 border-dashed border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default bg-transparent cursor-pointer transition-colors"
+          onClick={() => actions.addWorktree()}
+          aria-label="Add worktree"
+          data-testid="add-worktree"
+        >
+          <i className="codicon codicon-add" style={{ fontSize: 14 }} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

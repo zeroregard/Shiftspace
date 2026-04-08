@@ -18,7 +18,7 @@ import {
 import { getFileChanges, getBranchDiffFileChanges, getRepoFiles } from './git/status';
 import { diffFileChanges } from './git/eventDiff';
 import { filterIgnoredFiles } from './git/ignoreFilter';
-import { gitQueue } from './git/gitUtils';
+import { gitQueue, gitWrite } from './git/gitUtils';
 
 type PostMessage = (msg: object) => void;
 type OnFileChange = (worktreeId: string) => void;
@@ -596,6 +596,35 @@ export class GitDataProvider implements vscode.Disposable {
         }
       }
     );
+  }
+
+  /** Add a new worktree with an auto-generated name: {repoName}-wt{index}. */
+  async handleAddWorktree(): Promise<void> {
+    if (!this.currentRoot) return;
+
+    const repoName = path.basename(this.currentRoot);
+    const existingNames = new Set(this.worktrees.map((wt) => path.basename(wt.path)));
+
+    // Primary worktree is wt0; find the next available index starting at 1.
+    let index = 1;
+    while (existingNames.has(`${repoName}-wt${index}`)) {
+      index++;
+    }
+
+    const wtName = `${repoName}-wt${index}`;
+    const parentDir = path.dirname(this.currentRoot);
+    const wtPath = path.join(parentDir, wtName);
+
+    try {
+      await gitWrite(['worktree', 'add', '-b', wtName, wtPath], {
+        cwd: this.currentRoot!,
+        timeout: 30_000,
+      });
+      await this.checkForWorktreeChanges();
+    } catch (err) {
+      log.error('handleAddWorktree error:', err);
+      void vscode.window.showErrorMessage(`Failed to add worktree: ${(err as Error).message}`);
+    }
   }
 
   /** Remove a linked (non-primary) worktree. */

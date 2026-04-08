@@ -1,4 +1,5 @@
 import type { WorktreeState } from '@shiftspace/renderer-core';
+import { useActions } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/WorktreeCard';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 
@@ -15,6 +16,8 @@ function WorktreeCardError() {
 }
 
 export function GroveView({ worktrees }: GroveViewProps) {
+  const actions = useActions();
+
   return (
     <div className="w-full h-full overflow-auto">
       <div className="p-6">
@@ -27,6 +30,14 @@ export function GroveView({ worktrees }: GroveViewProps) {
                 <WorktreeCard worktree={wt} />
               </ErrorBoundary>
             ))}
+            <button
+              className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-dashed border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default bg-transparent cursor-pointer transition-colors self-center shrink-0"
+              onClick={() => actions.addWorktree()}
+              aria-label="Add worktree"
+              data-testid="add-worktree"
+            >
+              <i className="codicon codicon-add" style={{ fontSize: 14 }} aria-hidden="true" />
+            </button>
           </div>
         )}
       </div>

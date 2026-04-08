@@ -67,6 +67,9 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               if (message.worktreeId && message.newName)
                 void this._gitProvider?.handleRenameWorktree(message.worktreeId, message.newName);
               break;
+            case 'add-worktree':
+              void this._gitProvider?.handleAddWorktree();
+              break;
             case 'remove-worktree':
               if (message.worktreeId)
                 void this._gitProvider?.handleRemoveWorktree(message.worktreeId);

@@ -144,6 +144,8 @@ export const App: React.FC = () => {
         onRecheckInsights={handleRecheckInsights}
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
+        onAddWorktree={handleAddWorktree}
+        onRemoveWorktree={handleRemoveWorktree}
       />
       <ControlPanel
         engine={engineRef.current}

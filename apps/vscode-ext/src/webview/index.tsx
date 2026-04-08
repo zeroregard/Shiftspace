@@ -261,6 +261,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'swap-branches', worktreeId });
   };
 
+  const handleAddWorktree = () => {
+    vscode?.postMessage({ type: 'add-worktree' });
+  };
+
   const handleRemoveWorktree = (worktreeId: string) => {
     vscode?.postMessage({ type: 'remove-worktree', worktreeId });
   };
@@ -324,6 +328,7 @@ const App: React.FC = () => {
         onRunAction={handleRunAction}
         onStopAction={handleStopAction}
         onSwapBranches={handleSwapBranches}
+        onAddWorktree={handleAddWorktree}
         onRemoveWorktree={handleRemoveWorktree}
         onRenameWorktree={handleRenameWorktree}
         onRunPipeline={handleRunPipeline}
@@ -381,6 +386,10 @@ const SidebarApp: React.FC = () => {
     vscode?.postMessage({ type: 'swap-branches', worktreeId });
   };
 
+  const handleAddWorktreeSidebar = () => {
+    vscode?.postMessage({ type: 'add-worktree' });
+  };
+
   if (errorMessage) {
     return (
       <div
@@ -415,6 +424,7 @@ const SidebarApp: React.FC = () => {
       onRenameWorktree={handleRenameWorktree}
       onRemoveWorktree={handleRemoveWorktree}
       onSwapBranches={handleSwapBranches}
+      onAddWorktree={handleAddWorktreeSidebar}
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
         <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />
