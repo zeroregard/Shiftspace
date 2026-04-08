@@ -71,7 +71,7 @@ async function startMcpServer(context: vscode.ExtensionContext): Promise<void> {
   }
 }
 
-const MCP_CONFIGURED_KEY = 'shiftspace.mcpConfigured';
+const MCP_CONFIGURED_KEY = 'mcpConfigured';
 
 async function promptMcpConfiguration(): Promise<void> {
   // Only prompt once per workspace

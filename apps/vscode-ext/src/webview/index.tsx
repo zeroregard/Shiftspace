@@ -4,6 +4,7 @@ import {
   ShiftspaceRenderer,
   SidebarView,
   ActionsProvider,
+  TooltipProvider,
   useWorktreeStore,
   useActionStore,
   useInsightStore,
@@ -415,7 +416,9 @@ const SidebarApp: React.FC = () => {
       onRemoveWorktree={handleRemoveWorktree}
       onSwapBranches={handleSwapBranches}
     >
-      <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />
+      <TooltipProvider delayDuration={0} skipDelayDuration={0}>
+        <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />
+      </TooltipProvider>
     </ActionsProvider>
   );
 };
