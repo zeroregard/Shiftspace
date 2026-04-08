@@ -1,24 +1,25 @@
 import * as vscode from 'vscode';
 import { getWebviewHtml } from './webview/html';
-import { GitDataProvider } from './GitDataProvider';
-import { RepoTracker } from './git/RepoTracker';
+import { SharedGitProvider } from './SharedGitProvider';
 import { ShiftspacePanel } from './ShiftspacePanel';
 import { log } from './logger';
+
+const VIEW_ID = 'sidebar';
 
 /**
  * Renders a slim grove view (SidebarView) inside the activity-bar sidebar.
  *
- * The sidebar has its own GitDataProvider so it can show worktree cards even
- * when the main editor tab is closed. Clicking a worktree card opens the
- * full Shiftspace tab focused on that worktree.
+ * Uses the shared GitDataProvider (via SharedGitProvider) so that worktree
+ * mutations in either view are reflected instantly in both.
  */
 export class SidebarViewProvider implements vscode.WebviewViewProvider {
   private _view: vscode.WebviewView | undefined;
-  private _gitProvider: GitDataProvider | undefined;
-  private _repoTracker: RepoTracker | undefined;
   private _disposables: vscode.Disposable[] = [];
 
-  constructor(private readonly _context: vscode.ExtensionContext) {}
+  constructor(
+    private readonly _context: vscode.ExtensionContext,
+    private readonly _sharedGit: SharedGitProvider
+  ) {}
 
   resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -42,6 +43,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(
       (message: { type: string; worktreeId?: string; branch?: string; newName?: string }) => {
         try {
+          const provider = this._sharedGit.provider;
           switch (message.type) {
             case 'ready':
               void this.onReady();
@@ -52,28 +54,24 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               }
               break;
             case 'get-branch-list':
-              if (message.worktreeId)
-                void this._gitProvider?.handleGetBranchList(message.worktreeId);
+              if (message.worktreeId) void provider?.handleGetBranchList(message.worktreeId);
               break;
             case 'checkout-branch':
               if (message.worktreeId && message.branch)
-                void this._gitProvider?.handleCheckoutBranch(message.worktreeId, message.branch);
+                void provider?.handleCheckoutBranch(message.worktreeId, message.branch);
               break;
             case 'fetch-branches':
-              if (message.worktreeId)
-                void this._gitProvider?.handleFetchBranches(message.worktreeId);
+              if (message.worktreeId) void provider?.handleFetchBranches(message.worktreeId);
               break;
             case 'rename-worktree':
               if (message.worktreeId && message.newName)
-                void this._gitProvider?.handleRenameWorktree(message.worktreeId, message.newName);
+                void provider?.handleRenameWorktree(message.worktreeId, message.newName);
               break;
             case 'remove-worktree':
-              if (message.worktreeId)
-                void this._gitProvider?.handleRemoveWorktree(message.worktreeId);
+              if (message.worktreeId) void provider?.handleRemoveWorktree(message.worktreeId);
               break;
             case 'swap-branches':
-              if (message.worktreeId)
-                void this._gitProvider?.handleSwapBranches(message.worktreeId);
+              if (message.worktreeId) void provider?.handleSwapBranches(message.worktreeId);
               break;
             default:
               log.warn(`Sidebar: unhandled message type "${message.type}"`);
@@ -91,35 +89,22 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async onReady(): Promise<void> {
-    // Dispose previous providers if re-initializing
-    this._gitProvider?.dispose();
-    this._repoTracker?.dispose();
-
     const postMessage = (msg: object) => {
       void this._view?.webview.postMessage(msg);
     };
 
-    this._repoTracker = new RepoTracker();
-    this._gitProvider = new GitDataProvider(postMessage);
+    // Re-register on every "ready" (the webview reference may have changed)
+    this._sharedGit.registerView(VIEW_ID, postMessage);
 
-    this._repoTracker.startWatching(async (newRoot) => {
-      await this._gitProvider?.switchRepo(newRoot);
-    });
-
-    const gitRoot = await this._repoTracker.detectInitialGitRoot();
+    // Ensure the shared git provider is initialized (no-ops if already done)
+    const gitRoot = await this._sharedGit.ensureInitialized();
     if (!gitRoot) {
       postMessage({ type: 'error', message: 'No git repository found' });
-      return;
     }
-
-    await this._gitProvider.switchRepo(gitRoot);
   }
 
   private tearDown(): void {
-    this._gitProvider?.dispose();
-    this._gitProvider = undefined;
-    this._repoTracker?.dispose();
-    this._repoTracker = undefined;
+    this._sharedGit.unregisterView(VIEW_ID);
     for (const d of this._disposables) d.dispose();
     this._disposables = [];
     this._view = undefined;
