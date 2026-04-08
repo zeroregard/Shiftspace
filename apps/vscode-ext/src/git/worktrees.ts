@@ -42,12 +42,12 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
     // Detached HEAD: use short commit hash as branch name
     const branchName = branch || headCommit || 'HEAD';
 
-    // Use branch as stable ID — git guarantees a branch is checked out in at
-    // most one worktree, so it survives renames/moves.  The old index-based
-    // `wt-${i}` shifted when git reordered its porcelain output after a path
-    // change, breaking layout animations and worktree matching.
-    // For detached HEAD, fall back to the short commit hash.
-    const stableId = branchName;
+    // Use path as stable ID.
+    // - Unique per worktree
+    // - Stable across git output reordering
+    // - Works for detached HEAD and duplicate branches
+    const stableId = path;
+
     worktrees.push({
       id: stableId,
       path,
