@@ -6,9 +6,9 @@ installSeededRandom();
 import './styles.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { App } from './App';
-import { SidebarPage } from './SidebarPage';
-import { LoaderPage } from './LoaderPage';
+import { App } from './app';
+import { SidebarPage } from './sidebar-page';
+import { LoaderPage } from './loader-page';
 
 const route = window.location.pathname;
 

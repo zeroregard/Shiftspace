@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { ShiftspacePanel } from './ShiftspacePanel';
-import { SidebarViewProvider } from './SidebarViewProvider';
+import { ShiftspacePanel } from './shiftspace-panel';
+import { SidebarViewProvider } from './sidebar-view-provider';
 import { runDetectActionsCommand } from './actions/detect';
-import { ShiftspaceMcpHttpServer } from './mcp/httpServer';
-import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/autoConfig';
+import { ShiftspaceMcpHttpServer } from './mcp/http-server';
+import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/auto-config';
 import { initLogger, log } from './logger';
 
 const mcpHttpServer = new ShiftspaceMcpHttpServer();

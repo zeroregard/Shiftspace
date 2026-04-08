@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { InsightRegistry } from '../../src/insights/registry';
 import { InsightRunner } from '../../src/insights/runner';
-import { isInsightEnabled, getInsightSettings } from '../../src/insights/settingsLoader';
+import { isInsightEnabled, getInsightSettings } from '../../src/insights/settings-loader';
 import type { InsightPlugin } from '../../src/insights/types';
 import type { FileChange } from '@shiftspace/renderer';
 
@@ -124,7 +124,7 @@ describe('InsightRunner', () => {
     insightRegistry.getAll = () => [plugin];
 
     // Mock settingsLoader
-    vi.mock('../../src/insights/settingsLoader', () => ({
+    vi.mock('../../src/insights/settings-loader', () => ({
       isInsightEnabled: () => true,
       getInsightSettings: (_id: string, defaults: Record<string, unknown>) => ({ ...defaults }),
     }));
@@ -154,7 +154,7 @@ describe('InsightRunner', () => {
     insightRegistry.getAll = () => [plugin];
 
     // Re-mock to disable
-    vi.doMock('../../src/insights/settingsLoader', () => ({
+    vi.doMock('../../src/insights/settings-loader', () => ({
       isInsightEnabled: () => false,
       getInsightSettings: (_id: string, defaults: Record<string, unknown>) => ({ ...defaults }),
     }));
