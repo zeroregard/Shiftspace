@@ -391,6 +391,15 @@ export class GitDataProvider implements vscode.Disposable {
     if (!this.currentRoot) return;
     try {
       const fresh = await detectWorktrees(this.currentRoot);
+
+      // Guard: if detection returns empty but we already have worktrees, this is
+      // almost certainly a transient git error (e.g. lock file during a rename/move).
+      // Skip this cycle to avoid flashing "No worktrees".
+      if (fresh.length === 0 && this.worktrees.length > 0) {
+        log.info('checkForWorktreeChanges: detectWorktrees returned empty, skipping');
+        return;
+      }
+
       const prevIds = new Set(this.worktrees.map((wt) => wt.id));
       const freshIds = new Set(fresh.map((wt) => wt.id));
 
@@ -423,44 +432,55 @@ export class GitDataProvider implements vscode.Disposable {
         }
       }
 
-      // Branch changed for an existing worktree (e.g. `git checkout <branch>` in terminal)
+      // Branch or path changed for an existing worktree
       for (const freshWt of fresh) {
         if (!prevIds.has(freshWt.id)) continue; // already handled as new above
         const prevWt = this.worktrees.find((wt) => wt.id === freshWt.id);
-        if (!prevWt || prevWt.branch === freshWt.branch) continue;
+        if (!prevWt) continue;
 
-        // Emit remove then re-add with updated branch + files so the UI refreshes cleanly
-        this.postMessage({
-          type: 'event',
-          event: { type: 'worktree-removed', worktreeId: prevWt.id },
-        });
+        const branchChanged = prevWt.branch !== freshWt.branch;
+        const pathChanged = prevWt.path !== freshWt.path;
+
+        if (!branchChanged && !pathChanged) continue;
 
         freshWt.defaultBranch = this.defaultBranch;
-        // Preserve "repo" (All files) mode across branch changes — the user
-        // explicitly chose it and a branch switch shouldn't override that.
-        const prevDiffMode = prevWt.diffMode;
-        log.info(
-          `[diffMode] branch changed: ${prevWt.branch} → ${freshWt.branch}, prev diffMode=${JSON.stringify(prevDiffMode)}`
-        );
-        freshWt.diffMode =
-          prevDiffMode.type === 'repo'
-            ? prevDiffMode
-            : freshWt.branch === this.defaultBranch
-              ? { type: 'working' }
-              : { type: 'branch', branch: this.defaultBranch };
-        try {
-          const { files, branchFiles } = await this.getFilesForMode(freshWt);
-          freshWt.files = files;
-          freshWt.branchFiles = branchFiles;
-        } catch (err) {
-          log.error('getFileChanges error after branch change', freshWt.path, err);
-          freshWt.files = [];
-        }
-        this.fileStates.set(freshWt.id, freshWt.files);
 
-        log.info(
-          `[diffMode] re-adding worktree after branch change: ${freshWt.branch} diffMode=${JSON.stringify(freshWt.diffMode)}`
-        );
+        if (branchChanged) {
+          // Preserve "repo" (All files) mode across branch changes — the user
+          // explicitly chose it and a branch switch shouldn't override that.
+          const prevDiffMode = prevWt.diffMode;
+          log.info(
+            `[diffMode] branch changed: ${prevWt.branch} → ${freshWt.branch}, prev diffMode=${JSON.stringify(prevDiffMode)}`
+          );
+          freshWt.diffMode =
+            prevDiffMode.type === 'repo'
+              ? prevDiffMode
+              : freshWt.branch === this.defaultBranch
+                ? { type: 'working' }
+                : { type: 'branch', branch: this.defaultBranch };
+          try {
+            const { files, branchFiles } = await this.getFilesForMode(freshWt);
+            freshWt.files = files;
+            freshWt.branchFiles = branchFiles;
+          } catch (err) {
+            log.error('getFileChanges error after branch change', freshWt.path, err);
+            freshWt.files = [];
+          }
+          this.fileStates.set(freshWt.id, freshWt.files);
+
+          log.info(
+            `[diffMode] re-adding worktree after branch change: ${freshWt.branch} diffMode=${JSON.stringify(freshWt.diffMode)}`
+          );
+        } else {
+          // Path changed only (rename/move) — preserve diffMode and files
+          freshWt.diffMode = prevWt.diffMode;
+          freshWt.files = prevWt.files;
+          freshWt.branchFiles = prevWt.branchFiles;
+          this.fileStates.set(freshWt.id, freshWt.files);
+          log.info(`[path] worktree path changed: ${prevWt.path} → ${freshWt.path}`);
+        }
+
+        // Send a worktree-added (upsert) — no remove needed since the ID is the same.
         this.postMessage({ type: 'event', event: { type: 'worktree-added', worktree: freshWt } });
         this.onFileChange?.(freshWt.id);
       }
@@ -689,8 +709,15 @@ export class GitDataProvider implements vscode.Disposable {
     const newPath = path.join(parentDir, newName);
 
     try {
-      await moveWorktree(wt.path, newPath);
-      // Re-detect worktrees to update the UI
+      await moveWorktree(wt.path, newPath, this.currentRoot!);
+      // Immediately update the cached worktree and notify the webview so the
+      // rename is reflected without waiting for the next polling cycle.
+      wt.path = newPath;
+      this.postMessage({
+        type: 'event',
+        event: { type: 'worktree-added', worktree: wt },
+      });
+      // Re-detect in the background for any other side-effects.
       await this.checkForWorktreeChanges();
     } catch (err) {
       log.error('handleRenameWorktree error:', err);

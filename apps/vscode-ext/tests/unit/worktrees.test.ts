@@ -16,7 +16,7 @@ describe('parseWorktreeOutput', () => {
     const worktrees = parseWorktreeOutput(output);
     expect(worktrees).toHaveLength(1);
     expect(worktrees[0]).toMatchObject({
-      id: 'wt-0',
+      id: '/home/user/project',
       path: '/home/user/project',
       branch: 'main',
       files: [],
