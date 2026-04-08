@@ -1,5 +1,15 @@
-# Automated release: builds, packages .vsix, and creates a GitHub Release on push to main.
-# For publishing to the VS Code Marketplace, use the manual "Publish" workflow instead.
+# Release pipeline: builds on every push to main, then waits for manual approval
+# before bumping the version, tagging, and creating a GitHub Release.
+#
+# How it works:
+#   1. Push to main → "build" job runs automatically (validates build + packages .vsix)
+#   2. Workflow pauses at the "release" job, waiting for approval in the GitHub UI
+#   3. You approve → version bump, tag, GitHub Release, and the Publish workflow triggers
+#   4. You don't approve, and a new push arrives → this run is cancelled, the new run
+#      becomes the one waiting for approval (with all accumulated commits)
+#
+# Setup: create a "release" environment in GitHub repo settings with yourself as
+# a required reviewer. (Settings → Environments → New → "release" → Required reviewers)
 
 name: 🚀 Release
 
@@ -14,25 +24,22 @@ on:
       - 'apps/preview/playwright.config.ts'
   workflow_dispatch:
 
-# Prevent concurrent releases
+# When a new push arrives, cancel any run still waiting for approval so only
+# the latest commit set is pending. This is the key to "accumulating" commits.
 concurrency:
   group: release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  release:
+  # ── Job 1: Build (automatic) ────────────────────────────────────────────
+  build:
     runs-on: ubuntu-latest
-    # Skip if the commit was made by this workflow (version bump commit)
     if: "!contains(github.event.head_commit.message, 'chore: bump version')"
-
-    permissions:
-      contents: write # needed for pushing tags and creating releases
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Bun
@@ -67,19 +74,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Bump patch version
-        id: bump
-        run: |
-          cd apps/vscode-ext
-          # Read current version
-          CURRENT=$(node -p "require('./package.json').version")
-          # Bump patch
-          NEW=$(node -p "const [ma,mi,pa] = '${CURRENT}'.split('.').map(Number); \`\${ma}.\${mi}.\${pa+1}\`")
-          # Write new version
-          node -e "const p=require('./package.json'); p.version='${NEW}'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n')"
-          echo "version=${NEW}" >> $GITHUB_OUTPUT
-          echo "Bumped ${CURRENT} → ${NEW}"
-
       - name: Build
         run: npx nx run-many -t build
 
@@ -87,7 +81,44 @@ jobs:
         run: |
           cd apps/vscode-ext
           npx @vscode/vsce package --no-dependencies
-          echo "vsix_file=$(ls *.vsix)" >> $GITHUB_ENV
+
+      - name: Upload .vsix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: apps/vscode-ext/*.vsix
+          retention-days: 30
+
+  # ── Job 2: Release (requires manual approval) ───────────────────────────
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          cd apps/vscode-ext
+          CURRENT=$(node -p "require('./package.json').version")
+          NEW=$(node -p "const [ma,mi,pa] = '${CURRENT}'.split('.').map(Number); \`\${ma}.\${mi}.\${pa+1}\`")
+          node -e "const p=require('./package.json'); p.version='${NEW}'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n')"
+          echo "version=${NEW}" >> $GITHUB_OUTPUT
+          echo "Bumped ${CURRENT} → ${NEW}"
 
       - name: Commit version bump
         run: |
@@ -100,6 +131,12 @@ jobs:
         run: |
           git tag "v${{ steps.bump.outputs.version }}"
           git push origin main --follow-tags
+
+      - name: Download .vsix artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix
+          path: artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -114,5 +151,5 @@ jobs:
             ```
             code --install-extension shiftspace-${{ steps.bump.outputs.version }}.vsix
             ```
-          files: apps/vscode-ext/${{ env.vsix_file }}
+          files: artifacts/*.vsix
           generate_release_notes: true
