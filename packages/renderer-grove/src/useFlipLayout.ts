@@ -1,8 +1,5 @@
 import { useRef, useLayoutEffect } from 'react';
 
-const FLIP_BUILD = 2;
-console.log('[FLIP] module loaded, build:', FLIP_BUILD);
-
 export function useFlipLayout<T extends HTMLElement = HTMLDivElement>(
   deps: unknown[],
   duration = 350,
@@ -14,7 +11,6 @@ export function useFlipLayout<T extends HTMLElement = HTMLDivElement>(
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) {
-      console.log('[FLIP] no container ref');
       return;
     }
 
@@ -28,9 +24,6 @@ export function useFlipLayout<T extends HTMLElement = HTMLDivElement>(
       if (id) newRects.set(id, el.getBoundingClientRect());
     }
 
-    console.log('[FLIP] prevRects:', prevRects.size, 'newRects:', newRects.size, 'deps:', JSON.stringify(deps));
-
-    let animatedCount = 0;
     for (let i = 0; i < children.length; i++) {
       const el = children[i] as HTMLElement;
       const id = el.dataset.flipId;
@@ -44,9 +37,6 @@ export function useFlipLayout<T extends HTMLElement = HTMLDivElement>(
       const dy = prev.top - curr.top;
 
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-
-      animatedCount++;
-      console.log('[FLIP] animating', id, 'dy:', dy);
 
       el.style.transform = `translate(${dx}px, ${dy}px)`;
       el.style.transition = 'none';
@@ -63,10 +53,7 @@ export function useFlipLayout<T extends HTMLElement = HTMLDivElement>(
       });
     }
 
-    if (animatedCount > 0) console.log('[FLIP] animated', animatedCount, 'elements');
-
     rectsRef.current = newRects;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   return containerRef;
