@@ -1,7 +1,7 @@
 **/*.ts
 **/*.tsx
 **/tsconfig*.json
-**/vite.config.ts
+**/vite.config.mts
 **/vitest.config.ts
 src/**
 tests/**

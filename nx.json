@@ -13,7 +13,7 @@
     "e2eShared": [
       "{workspaceRoot}/apps/preview/playwright.config.ts",
       "{workspaceRoot}/apps/preview/index.html",
-      "{workspaceRoot}/apps/preview/vite.config.ts",
+      "{workspaceRoot}/apps/preview/vite.config.mts",
       "{workspaceRoot}/apps/preview/src/App.tsx",
       "{workspaceRoot}/apps/preview/src/main.tsx",
       "{workspaceRoot}/apps/preview/src/styles.css",

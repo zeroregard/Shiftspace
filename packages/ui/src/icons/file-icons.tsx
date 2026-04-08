@@ -120,6 +120,7 @@ const FILENAME_MAP: Record<string, FileConfig> = {
   'tsconfig.json': { color: '#3178C6', abbrev: 'TS' },
   'tsconfig.base.json': { color: '#3178C6', abbrev: 'TS' },
   'vite.config.ts': { color: '#646CFF' },
+  'vite.config.mts': { color: '#646CFF' },
   'vite.config.js': { color: '#646CFF' },
   'next.config.ts': { color: '#888888' },
   'next.config.js': { color: '#888888' },
