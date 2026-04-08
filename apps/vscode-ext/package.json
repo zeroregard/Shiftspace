@@ -3,7 +3,7 @@
   "displayName": "Shiftspace",
   "description": "Worktree manager and code review tool — inspect branches, spot code smells, and run checks before you open a PR",
   "preview": true,
-  "version": "0.1.38",
+  "version": "0.1.39",
   "publisher": "shiftspace",
   "repository": {
     "type": "git",
