@@ -127,6 +127,16 @@ function handleCoreMessage(
   }
 }
 
+/** Validate message origin using URL protocol parsing instead of substring matching. */
+function isAllowedOrigin(origin: string): boolean {
+  if (!origin) return true;
+  try {
+    return new URL(origin).protocol === 'vscode-webview:';
+  } catch {
+    return false;
+  }
+}
+
 function handleActionMessage(msg: HostMessage): boolean {
   switch (msg.type) {
     case 'actions-config-v2': {
@@ -214,7 +224,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
-      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
+      if (!isAllowedOrigin(e.origin)) return;
       handleHostMessage(e.data, setErrorMessage);
     };
 
@@ -343,7 +353,7 @@ const SidebarApp: React.FC = () => {
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
-      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
+      if (!isAllowedOrigin(e.origin)) return;
       handleCoreMessage(e.data, setErrorMessage);
     };
 
