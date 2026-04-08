@@ -37,7 +37,11 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
         ) : (
           <div className="flex flex-col gap-3">
             {worktrees.map((wt) => (
-              <ErrorBoundary key={wt.id} fallback={<WorktreeCardError />}>
+              <ErrorBoundary
+                key={wt.id}
+                resetKey={`${wt.branch}:${wt.path}`}
+                fallback={<WorktreeCardError />}
+              >
                 <WorktreeCard worktree={wt} variant="slim" onWorktreeClick={onWorktreeClick} />
               </ErrorBoundary>
             ))}

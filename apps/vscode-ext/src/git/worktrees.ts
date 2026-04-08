@@ -491,7 +491,9 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     });
 
     // ── Step 5: Delete temp branch ────────────────────────────────────────
-    await gitWrite(['branch', '-d', tempBranch], {
+    // Use -D (force) because the temp branch was created at an arbitrary point
+    // and is never merged — soft delete (-d) will fail with "not fully merged".
+    await gitWrite(['branch', '-D', tempBranch], {
       cwd: worktreeAPath,
       timeout: 10_000,
     });

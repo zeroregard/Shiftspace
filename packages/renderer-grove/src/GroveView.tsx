@@ -23,7 +23,11 @@ export function GroveView({ worktrees }: GroveViewProps) {
         ) : (
           <div className="flex flex-row flex-wrap gap-4 items-start">
             {worktrees.map((wt) => (
-              <ErrorBoundary key={wt.id} fallback={<WorktreeCardError />}>
+              <ErrorBoundary
+                key={wt.id}
+                resetKey={`${wt.branch}:${wt.path}`}
+                fallback={<WorktreeCardError />}
+              >
                 <WorktreeCard worktree={wt} />
               </ErrorBoundary>
             ))}
