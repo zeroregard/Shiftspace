@@ -19,7 +19,6 @@
   "dependencies": {
     "@shiftspace/renderer-core": "workspace:*",
     "@shiftspace/ui": "workspace:*",
-    "motion": "^12.38.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

@@ -4,6 +4,33 @@ import { promisify } from 'util';
 const execFileAsync = promisify(execFile);
 
 /**
+ * Resolved path to the git binary. Falls back to plain 'git' (relies on PATH).
+ * Set once at activation via `initGitPath()`.
+ */
+let gitBinary = 'git';
+
+/** Discover the git binary path from VSCode's built-in git extension or PATH. */
+export function initGitPath(): void {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const vscode = require('vscode') as typeof import('vscode');
+    const gitExt = vscode.extensions.getExtension('vscode.git')?.exports;
+    const apiPath = (gitExt as any)?.getAPI?.(1)?.git?.path as string | undefined;
+    if (apiPath) {
+      gitBinary = apiPath;
+      return;
+    }
+    // Fallback: check VSCode setting
+    const configured = vscode.workspace.getConfiguration('git').get<string>('path');
+    if (configured) {
+      gitBinary = configured;
+    }
+  } catch {
+    // Running outside VSCode (tests) — keep default 'git'
+  }
+}
+
+/**
  * Serializes write git operations so they never run concurrently against the
  * same repo. All `gitWrite` calls are enqueued here.
  */
@@ -56,7 +83,7 @@ export async function gitReadOnly(
   const maxRetries = 2;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await execFileAsync('git', ['--no-optional-locks', ...args], {
+      return await execFileAsync(gitBinary, ['--no-optional-locks', ...args], {
         ...options,
         timeout: options.timeout ?? 10_000,
       });
@@ -86,7 +113,7 @@ export async function gitWrite(
   options: { cwd: string; timeout?: number }
 ): Promise<{ stdout: string; stderr: string }> {
   return gitQueue.enqueue(() =>
-    execFileAsync('git', args, {
+    execFileAsync(gitBinary, args, {
       ...options,
       timeout: options.timeout ?? 30_000,
     })
