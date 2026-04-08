@@ -1,9 +1,9 @@
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
 import { useWorktreeStore } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/WorktreeCard';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { Loader } from '@shiftspace/ui/loader';
-import { useFlipLayout } from './useFlipLayout';
 
 interface SidebarViewProps {
   worktrees: WorktreeState[];
@@ -21,8 +21,6 @@ function WorktreeCardError() {
 
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
-  const orderKey = worktrees.map((wt) => wt.id).join(',');
-  const flipRef = useFlipLayout([orderKey]);
 
   if (!initialized) {
     return (
@@ -38,18 +36,34 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
         {worktrees.length === 0 ? (
           <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
         ) : (
-          <div ref={flipRef} className="flex flex-col gap-3">
-            {worktrees.map((wt) => (
-              <div key={wt.id} data-flip-id={wt.id}>
-                <ErrorBoundary
-                  resetKey={`${wt.branch}:${wt.path}`}
-                  fallback={<WorktreeCardError />}
-                >
-                  <WorktreeCard worktree={wt} variant="slim" onWorktreeClick={onWorktreeClick} />
-                </ErrorBoundary>
-              </div>
-            ))}
-          </div>
+          <LayoutGroup>
+            <div className="flex flex-col gap-3">
+              <AnimatePresence>
+                {worktrees.map((wt) => (
+                  <motion.div
+                    key={wt.id}
+                    layout
+                    layoutId={wt.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  >
+                    <ErrorBoundary
+                      resetKey={`${wt.branch}:${wt.path}`}
+                      fallback={<WorktreeCardError />}
+                    >
+                      <WorktreeCard
+                        worktree={wt}
+                        variant="slim"
+                        onWorktreeClick={onWorktreeClick}
+                      />
+                    </ErrorBoundary>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </LayoutGroup>
         )}
       </div>
     </div>
