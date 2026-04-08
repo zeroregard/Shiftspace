@@ -38,6 +38,7 @@ export const SidebarPage: React.FC = () => {
     handleStopAction,
     handleRunPipeline,
     handleRecheckInsights,
+    handleRenameWorktree,
     cleanupSimulations,
   } = useSimulationHandlers(engineRef);
 
@@ -108,6 +109,7 @@ export const SidebarPage: React.FC = () => {
       onStopAction={handleStopAction}
       onRunPipeline={handleRunPipeline}
       onRecheckInsights={handleRecheckInsights}
+      onRenameWorktree={handleRenameWorktree}
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
         <div className="w-80 h-screen bg-canvas" data-mode="sidebar">

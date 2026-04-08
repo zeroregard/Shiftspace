@@ -665,7 +665,7 @@ export class GitDataProvider implements vscode.Disposable {
     const newPath = path.join(parentDir, newName);
 
     try {
-      await moveWorktree(wt.path, newPath);
+      await moveWorktree(wt.path, newPath, this.currentRoot!);
       // Immediately update the cached worktree and notify the webview so the
       // rename is reflected without waiting for the next polling cycle.
       wt.path = newPath;

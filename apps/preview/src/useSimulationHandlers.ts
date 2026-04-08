@@ -88,6 +88,16 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
     }, 600);
   };
 
+  const handleRenameWorktree = (worktreeId: string, newName: string) => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    const wt = engine.getWorktrees().find((w) => w.id === worktreeId);
+    if (!wt) return;
+    const parentDir = wt.path.split('/').slice(0, -1).join('/');
+    const newPath = parentDir + '/' + newName;
+    engine.renameWorktree(worktreeId, newPath);
+  };
+
   const cleanupSimulations = () => {
     for (const cancel of activeSimulations.current.values()) cancel();
     activeSimulations.current.clear();
@@ -101,6 +111,7 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
     handleStopAction,
     handleRunPipeline,
     handleRecheckInsights,
+    handleRenameWorktree,
     cleanupSimulations,
   };
 }

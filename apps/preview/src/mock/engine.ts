@@ -274,6 +274,14 @@ export class MockEngine {
     this.emit({ type: 'worktree-removed', worktreeId: id });
   }
 
+  renameWorktree(id: string, newPath: string) {
+    const wt = this.worktrees.get(id);
+    if (!wt) return;
+    const updated = { ...wt, path: newPath };
+    this.worktrees.set(id, updated);
+    this.emit({ type: 'worktree-added', worktree: updated });
+  }
+
   /** Generate mock files for a working diff (staged + unstaged mix). */
   getMockWorkingFiles(worktreeId: string): FileChange[] {
     const templateKey = this.templateMap.get(worktreeId) ?? 'nextjs';

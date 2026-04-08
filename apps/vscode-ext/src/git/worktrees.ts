@@ -548,12 +548,13 @@ export async function removeWorktree(worktreePath: string, force = false): Promi
  * Move/rename a worktree to a new path.
  * Uses `git worktree move <old-path> <new-path>`.
  */
-export async function moveWorktree(oldPath: string, newPath: string): Promise<void> {
-  // Use the parent directory as cwd — the old path is about to be moved,
-  // so it may not exist as a valid cwd by the time the process finishes.
-  const parentDir = path.dirname(oldPath);
+export async function moveWorktree(
+  oldPath: string,
+  newPath: string,
+  gitRoot: string
+): Promise<void> {
   await gitWrite(['worktree', 'move', oldPath, newPath], {
-    cwd: parentDir,
+    cwd: gitRoot,
     timeout: 10_000,
   });
 }
