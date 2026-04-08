@@ -666,7 +666,14 @@ export class GitDataProvider implements vscode.Disposable {
 
     try {
       await moveWorktree(wt.path, newPath);
-      // Re-detect worktrees to update the UI
+      // Immediately update the cached worktree and notify the webview so the
+      // rename is reflected without waiting for the next polling cycle.
+      wt.path = newPath;
+      this.postMessage({
+        type: 'event',
+        event: { type: 'worktree-added', worktree: wt },
+      });
+      // Also re-detect in the background for any other side-effects.
       await this.checkForWorktreeChanges();
     } catch (err) {
       log.error('handleRenameWorktree error:', err);
