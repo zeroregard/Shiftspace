@@ -673,6 +673,8 @@ export class GitDataProvider implements vscode.Disposable {
         type: 'event',
         event: { type: 'worktree-added', worktree: wt },
       });
+      // Re-detect in the background for any other side-effects.
+      await this.checkForWorktreeChanges();
     } catch (err) {
       log.error('handleRenameWorktree error:', err);
       void vscode.window.showErrorMessage(`Failed to rename worktree: ${(err as Error).message}`);

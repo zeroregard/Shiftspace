@@ -3,6 +3,7 @@ import { useWorktreeStore } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/WorktreeCard';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { Loader } from '@shiftspace/ui/loader';
+import { useFlipLayout } from './useFlipLayout';
 
 interface SidebarViewProps {
   worktrees: WorktreeState[];
@@ -20,6 +21,8 @@ function WorktreeCardError() {
 
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
+  const orderKey = worktrees.map((wt) => wt.id).join(',');
+  const flipRef = useFlipLayout([orderKey]);
 
   if (!initialized) {
     return (
@@ -35,9 +38,9 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
         {worktrees.length === 0 ? (
           <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div ref={flipRef} className="flex flex-col gap-3">
             {worktrees.map((wt) => (
-              <div key={wt.id}>
+              <div key={wt.id} data-flip-id={wt.id}>
                 <ErrorBoundary
                   resetKey={`${wt.branch}:${wt.path}`}
                   fallback={<WorktreeCardError />}
