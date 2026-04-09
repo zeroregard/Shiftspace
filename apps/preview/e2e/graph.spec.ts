@@ -22,7 +22,7 @@ test.describe('Graph rendering', () => {
     await expect(page).toHaveScreenshot('initial-state.png');
   });
 
-  test('add a worktree', async ({ page }) => {
+  test('add a worktree via control panel', async ({ page }) => {
     await page.goto('/');
     await page.locator('.bg-canvas').waitFor();
 
@@ -32,6 +32,19 @@ test.describe('Graph rendering', () => {
     await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot('added-worktree.png');
+  });
+
+  test('add a worktree via plus button', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(500);
+
+    // Click the in-grove "+" button
+    await page.getByTestId('add-worktree').click();
+    // Wait for the new worktree card to appear
+    await page.waitForTimeout(500);
+
+    await expect(page).toHaveScreenshot('added-worktree-via-plus.png');
   });
 
   test('agent activity generates file nodes', async ({ page }) => {

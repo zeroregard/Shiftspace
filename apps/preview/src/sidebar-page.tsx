@@ -101,6 +101,11 @@ export const SidebarPage: React.FC = () => {
     return nameA.localeCompare(nameB);
   });
 
+  const handleAddWorktree = () => {
+    const id = engineRef.current?.addPresetWorktree(wtArray.length);
+    if (id) setWorktreeIds((ids) => [...ids, id]);
+  };
+
   return (
     <ActionsProvider
       onDiffModeChange={handleDiffModeChange}
@@ -110,6 +115,7 @@ export const SidebarPage: React.FC = () => {
       onRunPipeline={handleRunPipeline}
       onRecheckInsights={handleRecheckInsights}
       onRenameWorktree={handleRenameWorktree}
+      onAddWorktree={handleAddWorktree}
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
         <div className="w-80 h-screen bg-canvas" data-mode="sidebar">

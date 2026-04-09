@@ -3,6 +3,7 @@ import type { WorktreeState } from '@shiftspace/renderer-core';
 import { useActions } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
+import { IconButton } from '@shiftspace/ui/icon-button';
 
 interface GroveViewProps {
   worktrees: WorktreeState[];
@@ -47,14 +48,15 @@ export function GroveView({ worktrees }: GroveViewProps) {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              <button
-                className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-dashed border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default bg-transparent cursor-pointer transition-colors self-center shrink-0"
+              <IconButton
+                icon="add"
+                label="Add worktree"
+                size="md"
+                className="self-center shrink-0 !w-10 !h-10 !rounded-xl !border-2 !border-dashed !border-border-dashed hover:!border-border-default"
+                iconSize={14}
                 onClick={() => actions.addWorktree()}
-                aria-label="Add worktree"
                 data-testid="add-worktree"
-              >
-                <i className="codicon codicon-add" style={{ fontSize: 14 }} aria-hidden="true" />
-              </button>
+              />
             </div>
           </LayoutGroup>
         )}
