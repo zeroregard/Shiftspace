@@ -2,13 +2,13 @@ import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
-import type { ConfigLoader } from '../actions/configLoader';
-import type { StateManager } from '../actions/stateManager';
+import type { ConfigLoader } from '../actions/config-loader';
+import type { StateManager } from '../actions/state-manager';
 import type { CheckResult, ShiftspaceActionConfig, SmellRule } from '../actions/types';
 import type { InsightRunner } from '../insights/runner';
-import { resolveCommand } from '../actions/commandResolver';
+import { resolveCommand } from '../actions/command-resolver';
 import { runCheck } from '../actions/runner';
-import { runPipeline } from '../actions/pipelineRunner';
+import { runPipeline } from '../actions/pipeline-runner';
 import { log } from '../logger';
 
 export interface WorktreeProvider {
@@ -186,9 +186,9 @@ export class McpToolHandlers {
     try {
       result = await runCheck(command, checkId, { cwd: wt.path });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      console.error('[MCP] run_check "%s" error:', checkId, err);
       this.deps.stateManager.set(wt.id, checkId, { type: 'check', status: 'failed' });
-      return { check: checkId, status: 'failed', error: message };
+      return { check: checkId, status: 'failed', error: 'Check execution failed' };
     }
 
     this.deps.stateManager.set(wt.id, checkId, {

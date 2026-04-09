@@ -1,7 +1,7 @@
 import type { FileChange } from '@shiftspace/renderer';
 import type { InsightSummary, InsightDetail } from './types';
 import { insightRegistry } from './registry';
-import { isInsightEnabled, getInsightSettings } from './settingsLoader';
+import { isInsightEnabled, getInsightSettings } from './settings-loader';
 import { log } from '../logger';
 
 interface CacheEntry {

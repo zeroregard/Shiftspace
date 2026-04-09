@@ -57,7 +57,7 @@ jobs:
 
           # --- package-level groups ---
           E2E_SHARED=false
-          has_changes '^apps/preview/(playwright\.config\.ts|index\.html|vite\.config\.ts|src/(App\.tsx|main\.tsx|styles\.css))' && E2E_SHARED=true
+          has_changes '^apps/preview/(playwright\.config\.ts|index\.html|vite\.config\.ts|src/(app\.tsx|main\.tsx|styles\.css))' && E2E_SHARED=true
           has_changes '^tsconfig\.base\.json' && E2E_SHARED=true
 
           CORE=false
@@ -75,14 +75,14 @@ jobs:
 
           # controls: core + grove + preview controls/mock
           if has_changes '^apps/preview/e2e/controls\.spec\.ts' \
-             || has_changes '^apps/preview/src/(controls|mock)/|^apps/preview/src/useSimulationHandlers\.ts' \
+             || has_changes '^apps/preview/src/(controls|mock)/|^apps/preview/src/use-simulation-handlers\.ts' \
              || $E2E_SHARED || $CORE || $GROVE; then
             add_spec controls
           fi
 
           # diagnostics: core + inspection + preview mock/mockData
           if has_changes '^apps/preview/e2e/diagnostics\.spec\.ts' \
-             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || has_changes '^apps/preview/src/(mock-data\.ts|mock/)' \
              || $E2E_SHARED || $CORE || $INSPECTION; then
             add_spec diagnostics
           fi
@@ -96,14 +96,14 @@ jobs:
 
           # inspector-file-categories: core + inspection + preview mock/mockData
           if has_changes '^apps/preview/e2e/inspector-file-categories\.spec\.ts' \
-             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || has_changes '^apps/preview/src/(mock-data\.ts|mock/)' \
              || $E2E_SHARED || $CORE || $INSPECTION; then
             add_spec inspector-file-categories
           fi
 
           # hover-tooltips: core + inspection + preview mock/mockData
           if has_changes '^apps/preview/e2e/hover-tooltips\.spec\.ts' \
-             || has_changes '^apps/preview/src/(mockData\.ts|mock/)' \
+             || has_changes '^apps/preview/src/(mock-data\.ts|mock/)' \
              || $E2E_SHARED || $CORE || $INSPECTION; then
             add_spec hover-tooltips
           fi
@@ -117,7 +117,7 @@ jobs:
 
           # sidebar: core + grove + preview SidebarPage/mock
           if has_changes '^apps/preview/e2e/sidebar\.spec\.ts' \
-             || has_changes '^apps/preview/src/(SidebarPage\.tsx|mock/)' \
+             || has_changes '^apps/preview/src/(sidebar-page\.tsx|mock/)' \
              || $E2E_SHARED || $CORE || $GROVE; then
             add_spec sidebar
           fi

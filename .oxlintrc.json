@@ -34,6 +34,7 @@
     "no-new": "off",
     "unicorn/no-array-sort": "off",
     "unicorn/consistent-function-scoping": "off",
+    "unicorn/filename-case": ["error", { "case": "kebabCase" }],
     "preserve-caught-error": "off"
   },
   "ignorePatterns": [
