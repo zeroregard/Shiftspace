@@ -172,9 +172,11 @@ async function main(): Promise<void> {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      console.error('[MCP stdio] Tool call error:', err);
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify({ error: message }) }],
+        content: [
+          { type: 'text' as const, text: JSON.stringify({ error: 'Internal server error' }) },
+        ],
         isError: true,
       };
     }
