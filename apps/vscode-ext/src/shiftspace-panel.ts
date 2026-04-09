@@ -203,11 +203,12 @@ export class ShiftspacePanel {
     });
 
     // Watch for repo switching on editor change
-    this._repoTracker.startWatching(async (newRoot) => {
-      await this._gitProvider?.switchRepo(newRoot);
-      await this._actionCoordinator?.initialize(newRoot, this._viewSettings?.get().selectedPackage);
-      this.syncWorktreesToCoordinator();
-    });
+    this._repoTracker.startWatching((newRoot) => this.handleRepoSwitch(newRoot));
+
+    // React to repoDiscovery setting changes
+    this._disposables.push(
+      this._repoTracker.watchSettings((newRoot) => this.handleRepoSwitch(newRoot))
+    );
 
     // Detect git root and initialize
     const gitRoot = await this._repoTracker.detectInitialGitRoot();
@@ -368,6 +369,12 @@ export class ShiftspacePanel {
     const filePaths = this._gitProvider.getAllFilePaths();
     const iconMap = await this._iconProvider.resolveForFiles(filePaths);
     await this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
+  }
+
+  private async handleRepoSwitch(newRoot: string): Promise<void> {
+    await this._gitProvider?.switchRepo(newRoot);
+    await this._actionCoordinator?.initialize(newRoot, this._viewSettings?.get().selectedPackage);
+    this.syncWorktreesToCoordinator();
   }
 
   private syncWorktreesToCoordinator(): void {
