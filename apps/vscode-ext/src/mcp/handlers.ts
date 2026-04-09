@@ -131,7 +131,7 @@ export class McpToolHandlers {
     try {
       result = await runCheck(command, checkId, { cwd: wt.path });
     } catch (err: unknown) {
-      console.error(`[MCP] run_check "${checkId}" error:`, err);
+      console.error('[MCP] run_check "%s" error:', checkId, err);
       this.deps.stateManager.set(wt.id, checkId, { type: 'check', status: 'failed' });
       return { check: checkId, status: 'failed', error: 'Check execution failed' };
     }
