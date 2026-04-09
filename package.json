@@ -21,6 +21,7 @@
     "analyze": "ANALYZE=1 nx run-many -t build",
     "analyze:preview": "ANALYZE=1 nx run @shiftspace/preview:build",
     "bundle-sizes": "bun run scripts/bundle-sizes.ts",
+    "changelog": "node scripts/generate-changelog.mjs",
     "install-ext": "rm -rf packages/renderer/dist apps/vscode-ext/dist/webview && nx run-many -t build --skip-nx-cache && bun run --filter shiftspace local-install",
     "prepare": "husky"
   },

@@ -120,11 +120,33 @@ jobs:
           echo "version=${NEW}" >> $GITHUB_OUTPUT
           echo "Bumped ${CURRENT} → ${NEW}"
 
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Find the most recent version bump commit (before this run's changes)
+          PREV_BUMP=$(git log --oneline --format="%H %s" | grep -E "chore: (bump version|release)" | head -1 | cut -d' ' -f1)
+          VERSION="${{ steps.bump.outputs.version }}"
+
+          # Generate and prepend to CHANGELOG.md
+          node scripts/generate-changelog.mjs \
+            --from "$PREV_BUMP" --to HEAD \
+            --version "$VERSION" \
+            --prepend apps/vscode-ext/CHANGELOG.md
+
+          # Also generate release body for GitHub Release
+          BODY=$(node scripts/generate-changelog.mjs \
+            --from "$PREV_BUMP" --to HEAD \
+            --format release-body)
+
+          echo "body<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
+
       - name: Commit version bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/vscode-ext/package.json
+          git add apps/vscode-ext/package.json apps/vscode-ext/CHANGELOG.md
           git commit -m "chore: bump version to v${{ steps.bump.outputs.version }}"
 
       - name: Tag and push
@@ -146,10 +168,11 @@ jobs:
           body: |
             ## Shiftspace v${{ steps.bump.outputs.version }}
 
+            ${{ steps.changelog.outputs.body }}
+
             ### Install
             Download the `.vsix` file below and install:
             ```
             code --install-extension shiftspace-${{ steps.bump.outputs.version }}.vsix
             ```
           files: artifacts/*.vsix
-          generate_release_notes: true
