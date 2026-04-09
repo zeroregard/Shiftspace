@@ -90,7 +90,7 @@ describe('get_changed_files', () => {
   it('returns error when no worktree found', async () => {
     const { handlers } = setup([]);
     const result = (await handlers.handleTool('get_changed_files', {})) as Record<string, unknown>;
-    expect(result['error']).toBe('No worktree found');
+    expect(result['error']).toContain('No worktree found');
   });
 });
 

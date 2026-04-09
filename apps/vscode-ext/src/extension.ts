@@ -5,11 +5,13 @@ import { runDetectActionsCommand } from './actions/detect';
 import { ShiftspaceMcpHttpServer } from './mcp/http-server';
 import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/auto-config';
 import { initLogger, log } from './logger';
+import { initGitPath } from './git/git-utils';
 
 const mcpHttpServer = new ShiftspaceMcpHttpServer();
 
 export function activate(context: vscode.ExtensionContext) {
   initLogger(context);
+  initGitPath();
 
   // Restore any Shiftspace tabs that were open before a window reload.
   // Must be registered synchronously at activation time.

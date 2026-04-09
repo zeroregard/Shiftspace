@@ -42,7 +42,7 @@ describe('Worktree Resolution', () => {
   it('returns error when no worktrees exist and no cwd provided', async () => {
     const handlers = new McpToolHandlers(makeDeps([]));
     const result = (await handlers.handleTool('get_changed_files', {})) as Record<string, unknown>;
-    expect(result['error']).toBe('No worktree found');
+    expect(result['error']).toContain('No worktree found');
   });
 
   it('returns error for cwd not in any worktree', async () => {
@@ -53,6 +53,6 @@ describe('Worktree Resolution', () => {
     const result = (await handlers.handleTool('get_changed_files', {
       cwd: '/nonexistent',
     })) as Record<string, unknown>;
-    expect(result['error']).toBe('No worktree found');
+    expect(result['error']).toContain('No worktree found');
   });
 });

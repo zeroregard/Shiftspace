@@ -42,8 +42,14 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
     // Detached HEAD: use short commit hash as branch name
     const branchName = branch || headCommit || 'HEAD';
 
+    // Use path as stable ID.
+    // - Unique per worktree
+    // - Stable across git output reordering
+    // - Works for detached HEAD and duplicate branches
+    const stableId = path;
+
     worktrees.push({
-      id: `wt-${i}`,
+      id: stableId,
       path,
       branch: branchName,
       files: [],
@@ -491,7 +497,9 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
     });
 
     // ── Step 5: Delete temp branch ────────────────────────────────────────
-    await gitWrite(['branch', '-d', tempBranch], {
+    // Use -D (force) because the temp branch was created at an arbitrary point
+    // and is never merged — soft delete (-d) will fail with "not fully merged".
+    await gitWrite(['branch', '-D', tempBranch], {
       cwd: worktreeAPath,
       timeout: 10_000,
     });
@@ -546,9 +554,13 @@ export async function removeWorktree(worktreePath: string, force = false): Promi
  * Move/rename a worktree to a new path.
  * Uses `git worktree move <old-path> <new-path>`.
  */
-export async function moveWorktree(oldPath: string, newPath: string): Promise<void> {
+export async function moveWorktree(
+  oldPath: string,
+  newPath: string,
+  gitRoot: string
+): Promise<void> {
   await gitWrite(['worktree', 'move', oldPath, newPath], {
-    cwd: oldPath,
+    cwd: gitRoot,
     timeout: 10_000,
   });
 }

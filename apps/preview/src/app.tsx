@@ -40,6 +40,7 @@ export const App: React.FC = () => {
     handleStopAction,
     handleRunPipeline,
     handleRecheckInsights,
+    handleRenameWorktree,
     cleanupSimulations,
   } = useSimulationHandlers(engineRef);
 
@@ -142,6 +143,7 @@ export const App: React.FC = () => {
         onStopAction={handleStopAction}
         onRunPipeline={handleRunPipeline}
         onRecheckInsights={handleRecheckInsights}
+        onRenameWorktree={handleRenameWorktree}
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
       />

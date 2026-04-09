@@ -157,7 +157,7 @@ describe('swapBranches — clean swap', () => {
     expect(j.find((c) => c.startsWith('checkout -b _shiftspace_temp_swap'))).toBeDefined();
     expect(j).toContain('checkout feature/auth');
     expect(j).toContain('checkout main');
-    expect(j.find((c) => c.startsWith('branch -d _shiftspace_temp_swap'))).toBeDefined();
+    expect(j.find((c) => c.startsWith('branch -D _shiftspace_temp_swap'))).toBeDefined();
     expect(j.some((c) => c.startsWith('stash push'))).toBe(false);
     expect(j.some((c) => c.startsWith('stash pop'))).toBe(false);
   });
