@@ -71,24 +71,24 @@ jobs:
           SPECS=""
           add_spec() { SPECS="${SPECS} src/$1.spec.tsx"; }
 
-          # FolderNode, FileNode, ActionBar, DiffPopover, UnifiedHeader: core only
-          for spec in FolderNode FileNode ActionBar DiffPopover UnifiedHeader; do
+          # folder-node, file-node, action-bar, diff-popover, unified-header: core only
+          for spec in folder-node file-node action-bar diff-popover unified-header; do
             if has_changes "^packages/renderer-browser-tests/src/${spec}\\.spec\\.tsx" \
                || $CT_SHARED || $CORE; then
               add_spec "$spec"
             fi
           done
 
-          # FileListPanel: core + inspection
-          if has_changes '^packages/renderer-browser-tests/src/FileListPanel\.spec\.tsx' \
+          # file-list-panel: core + inspection
+          if has_changes '^packages/renderer-browser-tests/src/file-list-panel\.spec\.tsx' \
              || $CT_SHARED || $CORE || $INSPECTION; then
-            add_spec FileListPanel
+            add_spec file-list-panel
           fi
 
-          # WorktreeCard: core + grove
-          if has_changes '^packages/renderer-browser-tests/src/WorktreeCard\.spec\.tsx' \
+          # worktree-card: core + grove
+          if has_changes '^packages/renderer-browser-tests/src/worktree-card\.spec\.tsx' \
              || $CT_SHARED || $CORE || $GROVE; then
-            add_spec WorktreeCard
+            add_spec worktree-card
           fi
 
           # Deduplicate

@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
-import { gitReadOnly, gitWrite } from './gitUtils';
+import { gitReadOnly, gitWrite } from './git-utils';
 import { log } from '../logger';
 
 /**

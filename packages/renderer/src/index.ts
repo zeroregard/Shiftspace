@@ -1,4 +1,4 @@
-export { ShiftspaceRenderer, type PanZoomConfig } from './ShiftspaceRenderer';
+export { ShiftspaceRenderer, type PanZoomConfig } from './shiftspace-renderer';
 
 // Re-export everything from sub-packages for backwards compatibility
 export {

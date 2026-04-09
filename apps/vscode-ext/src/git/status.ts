@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { FileChange, DiffHunk, DiffLine } from '@shiftspace/renderer';
-import { gitReadOnly } from './gitUtils';
+import { gitReadOnly } from './git-utils';
 
 interface ParsedStatus {
   status: FileChange['status'];

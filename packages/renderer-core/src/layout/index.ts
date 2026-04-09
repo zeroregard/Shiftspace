@@ -1,5 +1,5 @@
 import type { WorktreeState } from '../types';
-import type { LayoutNode, LayoutEdge } from '../TreeCanvas';
+import type { LayoutNode, LayoutEdge } from '../tree-canvas';
 import { buildTree } from './tree';
 import { layoutWorktreeContents } from './algorithm';
 import { flattenRect } from './flatten';

@@ -2,13 +2,13 @@ import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
-import type { ConfigLoader } from '../actions/configLoader';
-import type { StateManager } from '../actions/stateManager';
+import type { ConfigLoader } from '../actions/config-loader';
+import type { StateManager } from '../actions/state-manager';
 import type { CheckResult, ShiftspaceActionConfig, SmellRule } from '../actions/types';
 import type { InsightRunner } from '../insights/runner';
-import { resolveCommand } from '../actions/commandResolver';
+import { resolveCommand } from '../actions/command-resolver';
 import { runCheck } from '../actions/runner';
-import { runPipeline } from '../actions/pipelineRunner';
+import { runPipeline } from '../actions/pipeline-runner';
 import { log } from '../logger';
 
 export interface WorktreeProvider {
