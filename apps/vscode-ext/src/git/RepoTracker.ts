@@ -2,6 +2,14 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { getGitRoot } from './worktrees';
 
+type RepoDiscoveryMode = 'followActiveEditor' | 'workspaceOnly';
+
+function getRepoDiscoveryMode(): RepoDiscoveryMode {
+  return vscode.workspace
+    .getConfiguration('shiftspace')
+    .get<RepoDiscoveryMode>('repoDiscovery', 'followActiveEditor');
+}
+
 export class RepoTracker implements vscode.Disposable {
   private _gitRootCache = new Map<string, string>();
   private _currentGitRoot: string | undefined;
@@ -13,19 +21,23 @@ export class RepoTracker implements vscode.Disposable {
   }
 
   async detectInitialGitRoot(): Promise<string | null> {
-    const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
+    const mode = getRepoDiscoveryMode();
 
-    const fromExtension = this.getGitRootFromVscodeExtension(activeFile);
-    if (fromExtension) {
-      this._currentGitRoot = fromExtension;
-      return fromExtension;
-    }
+    if (mode === 'followActiveEditor') {
+      const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
 
-    if (activeFile) {
-      const root = await this.resolveGitRoot(activeFile);
-      if (root) {
-        this._currentGitRoot = root;
-        return root;
+      const fromExtension = this.getGitRootFromVscodeExtension(activeFile);
+      if (fromExtension) {
+        this._currentGitRoot = fromExtension;
+        return fromExtension;
+      }
+
+      if (activeFile) {
+        const root = await this.resolveGitRoot(activeFile);
+        if (root) {
+          this._currentGitRoot = root;
+          return root;
+        }
       }
     }
 
@@ -58,13 +70,41 @@ export class RepoTracker implements vscode.Disposable {
     return this._editorChangeDisposable;
   }
 
+  watchSettings(onSwitch: (newRoot: string) => Promise<void>): vscode.Disposable {
+    return vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('shiftspace.repoDiscovery')) {
+        const previousRoot = this._currentGitRoot;
+        void this.detectInitialGitRoot().then((root) => {
+          if (root && root !== previousRoot) void onSwitch(root);
+        });
+      }
+    });
+  }
+
   private async maybeSwitch(
     filePath: string,
     onSwitch: (newRoot: string) => Promise<void>
   ): Promise<void> {
+    const mode = getRepoDiscoveryMode();
+
+    if (mode === 'workspaceOnly') {
+      const inWorkspace = (vscode.workspace.workspaceFolders ?? []).some((f) =>
+        filePath.startsWith(f.uri.fsPath)
+      );
+      if (!inWorkspace) return;
+    }
+
     const gitRoot = await this.resolveGitRoot(filePath);
     if (!gitRoot) return;
     if (gitRoot === this._currentGitRoot) return;
+
+    if (mode === 'workspaceOnly') {
+      const reachable = (vscode.workspace.workspaceFolders ?? []).some(
+        (f) => gitRoot.startsWith(f.uri.fsPath) || f.uri.fsPath.startsWith(gitRoot)
+      );
+      if (!reachable) return;
+    }
+
     this._currentGitRoot = gitRoot;
     await onSwitch(gitRoot);
   }

@@ -120,6 +120,20 @@
     "configuration": {
       "title": "Shiftspace",
       "properties": {
+        "shiftspace.repoDiscovery": {
+          "type": "string",
+          "enum": [
+            "followActiveEditor",
+            "workspaceOnly"
+          ],
+          "default": "followActiveEditor",
+          "enumDescriptions": [
+            "Discover repos from VSCode's git extension and follow the active editor across repositories.",
+            "Only discover repos from workspace folders. Shiftspace will not switch to repos outside the workspace."
+          ],
+          "description": "Controls how Shiftspace discovers git repositories.",
+          "scope": "resource"
+        },
         "shiftspace.ignorePatterns": {
           "type": "array",
           "items": {

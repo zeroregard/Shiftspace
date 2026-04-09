@@ -106,6 +106,12 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
       await this._gitProvider?.switchRepo(newRoot);
     });
 
+    this._disposables.push(
+      this._repoTracker.watchSettings(async (newRoot) => {
+        await this._gitProvider?.switchRepo(newRoot);
+      })
+    );
+
     const gitRoot = await this._repoTracker.detectInitialGitRoot();
     if (!gitRoot) {
       postMessage({ type: 'error', message: 'No git repository found' });
