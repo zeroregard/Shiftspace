@@ -1,7 +1,7 @@
-import { useWorktreeStore } from '@shiftspace/renderer-core/src/store/worktreeStore.ts';
-import { useInspectionStore } from '@shiftspace/renderer-core/src/store/inspectionStore.ts';
-import { useInsightStore } from '@shiftspace/renderer-core/src/store/insightStore.ts';
-import { useActionStore } from '@shiftspace/renderer-core/src/store/actionStore.ts';
+import { useWorktreeStore } from '@shiftspace/renderer-core/src/store/worktree-store.ts';
+import { useInspectionStore } from '@shiftspace/renderer-core/src/store/inspection-store.ts';
+import { useInsightStore } from '@shiftspace/renderer-core/src/store/insight-store.ts';
+import { useActionStore } from '@shiftspace/renderer-core/src/store/action-store.ts';
 import type {
   WorktreeState,
   ActionConfig,
