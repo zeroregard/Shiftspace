@@ -1,12 +1,15 @@
 import { execFileSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
-import type { ConfigLoader } from '../actions/configLoader';
-import type { StateManager } from '../actions/stateManager';
+import type { ConfigLoader } from '../actions/config-loader';
+import type { StateManager } from '../actions/state-manager';
 import type { CheckResult, ShiftspaceActionConfig, SmellRule } from '../actions/types';
 import type { InsightRunner } from '../insights/runner';
-import { resolveCommand } from '../actions/commandResolver';
+import { resolveCommand } from '../actions/command-resolver';
 import { runCheck } from '../actions/runner';
-import { runPipeline } from '../actions/pipelineRunner';
+import { runPipeline } from '../actions/pipeline-runner';
+import { log } from '../logger';
 
 export interface WorktreeProvider {
   getWorktrees(): WorktreeState[];
@@ -21,6 +24,16 @@ export interface McpHandlerDeps {
   collectDiagnostics?: (files: FileChange[], worktreeRoot: string) => FileDiagnosticSummary[];
   insightRunner?: InsightRunner;
   getSmellRules?: () => SmellRule[];
+}
+
+/** Normalize a path by resolving symlinks and removing trailing slashes. */
+function normalizePath(p: string): string {
+  try {
+    return fs.realpathSync(p).replace(/\/+$/, '');
+  } catch {
+    // Path may not exist (e.g. stale worktree) — fall back to basic normalization.
+    return path.resolve(p).replace(/\/+$/, '');
+  }
 }
 
 export class McpToolHandlers {
@@ -45,8 +58,33 @@ export class McpToolHandlers {
     }
   }
 
+  private noWorktreeError(cwd?: string): object {
+    const worktrees = this.deps.worktreeProvider.getWorktrees();
+    const detail: Record<string, unknown> = {
+      error: 'No worktree found',
+      cwd: cwd ?? '(none — used first worktree fallback)',
+      availableWorktrees: worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch })),
+    };
+    if (cwd) {
+      try {
+        detail.resolvedGitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+          cwd,
+          encoding: 'utf-8',
+          timeout: 5000,
+        }).trim();
+      } catch {
+        detail.resolvedGitRoot = '(git rev-parse failed)';
+      }
+    }
+    return detail;
+  }
+
   private resolveWorktree(cwd?: string): WorktreeState | null {
     const worktrees = this.deps.worktreeProvider.getWorktrees();
+    if (worktrees.length === 0) {
+      log.warn('[MCP] resolveWorktree: no worktrees available');
+      return null;
+    }
     if (!cwd) {
       return worktrees[0] ?? null;
     }
@@ -57,15 +95,30 @@ export class McpToolHandlers {
         encoding: 'utf-8',
         timeout: 5000,
       }).trim();
-    } catch {
+    } catch (err) {
+      log.warn(`[MCP] resolveWorktree: git rev-parse failed for cwd="${cwd}":`, err);
       return null;
     }
-    return worktrees.find((wt) => wt.path === gitRoot) ?? null;
+
+    // Resolve symlinks so that paths like /var/... and /private/var/... match on macOS.
+    const resolvedGitRoot = normalizePath(gitRoot);
+    const wtPaths = worktrees.map((wt) => wt.path);
+
+    const match = worktrees.find((wt) => normalizePath(wt.path) === resolvedGitRoot) ?? null;
+
+    if (!match) {
+      log.warn(
+        `[MCP] resolveWorktree: no match for cwd="${cwd}" (gitRoot="${gitRoot}", resolved="${resolvedGitRoot}"). ` +
+          `Known worktree paths: ${JSON.stringify(wtPaths)}`
+      );
+    }
+    return match;
   }
 
   private handleGetInsights(params: Record<string, unknown>): object {
-    const wt = this.resolveWorktree(params['cwd'] as string | undefined);
-    if (!wt) return { error: 'No worktree found' };
+    const cwd = params['cwd'] as string | undefined;
+    const wt = this.resolveWorktree(cwd);
+    if (!wt) return this.noWorktreeError(cwd);
 
     const diagnostics = this.deps.collectDiagnostics?.(wt.files, wt.path) ?? [];
 
@@ -81,8 +134,9 @@ export class McpToolHandlers {
   }
 
   private handleGetCheckStatus(params: Record<string, unknown>): object {
-    const wt = this.resolveWorktree(params['cwd'] as string | undefined);
-    if (!wt) return { error: 'No worktree found' };
+    const cwd = params['cwd'] as string | undefined;
+    const wt = this.resolveWorktree(cwd);
+    if (!wt) return this.noWorktreeError(cwd);
 
     const states = this.deps.stateManager.getWorktreeStates(wt.id);
     const actions = this.deps.configLoader.config.actions;
@@ -112,8 +166,9 @@ export class McpToolHandlers {
     const checkId = params['check_id'] as string | undefined;
     if (!checkId) return { error: 'Missing required parameter: check_id' };
 
-    const wt = this.resolveWorktree(params['cwd'] as string | undefined);
-    if (!wt) return { error: 'No worktree found' };
+    const cwd = params['cwd'] as string | undefined;
+    const wt = this.resolveWorktree(cwd);
+    if (!wt) return this.noWorktreeError(cwd);
 
     const config = this.deps.configLoader.config.actions.find((a) => a.id === checkId);
     if (!config) return { error: `Unknown check: ${checkId}` };
@@ -131,9 +186,9 @@ export class McpToolHandlers {
     try {
       result = await runCheck(command, checkId, { cwd: wt.path });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      console.error('[MCP] run_check "%s" error:', checkId, err);
       this.deps.stateManager.set(wt.id, checkId, { type: 'check', status: 'failed' });
-      return { check: checkId, status: 'failed', error: message };
+      return { check: checkId, status: 'failed', error: 'Check execution failed' };
     }
 
     this.deps.stateManager.set(wt.id, checkId, {
@@ -157,8 +212,9 @@ export class McpToolHandlers {
     const pipelineId = params['pipeline_id'] as string | undefined;
     if (!pipelineId) return { error: 'Missing required parameter: pipeline_id' };
 
-    const wt = this.resolveWorktree(params['cwd'] as string | undefined);
-    if (!wt) return { error: 'No worktree found' };
+    const cwd = params['cwd'] as string | undefined;
+    const wt = this.resolveWorktree(cwd);
+    if (!wt) return this.noWorktreeError(cwd);
 
     const pipelines = this.deps.configLoader.config.pipelines;
     const pipeline = pipelines?.[pipelineId];
@@ -208,8 +264,9 @@ export class McpToolHandlers {
   }
 
   private handleGetChangedFiles(params: Record<string, unknown>): object {
-    const wt = this.resolveWorktree(params['cwd'] as string | undefined);
-    if (!wt) return { error: 'No worktree found' };
+    const cwd = params['cwd'] as string | undefined;
+    const wt = this.resolveWorktree(cwd);
+    if (!wt) return this.noWorktreeError(cwd);
 
     return {
       worktree: { id: wt.id, branch: wt.branch },
@@ -229,8 +286,9 @@ export class McpToolHandlers {
     const getRules = this.deps.getSmellRules;
     if (!runner || !getRules) return { error: 'Smell analysis not available' };
 
-    const wt = this.resolveWorktree(params['cwd'] as string | undefined);
-    if (!wt) return { error: 'No worktree found' };
+    const cwd = params['cwd'] as string | undefined;
+    const wt = this.resolveWorktree(cwd);
+    if (!wt) return this.noWorktreeError(cwd);
 
     const smellRules = getRules();
     if (smellRules.length === 0) {

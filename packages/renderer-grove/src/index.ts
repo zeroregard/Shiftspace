@@ -1,3 +1,3 @@
-export { GroveView } from './GroveView';
-export { WorktreeCard } from './components/WorktreeCard';
-export { SidebarView } from './SidebarView';
+export { GroveView } from './grove-view';
+export { WorktreeCard } from './components/worktree-card';
+export { SidebarView } from './sidebar-view';

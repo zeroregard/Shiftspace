@@ -1,10 +1,10 @@
-export { WorktreeNode } from './WorktreeNode';
-export { FolderNode } from './FolderNode';
-export { FileNode } from './FileNode';
+export { WorktreeNode } from './worktree-node';
+export { FolderNode } from './folder-node';
+export { FileNode } from './file-node';
 
-import { WorktreeNode } from './WorktreeNode';
-import { FolderNode } from './FolderNode';
-import { FileNode } from './FileNode';
+import { WorktreeNode } from './worktree-node';
+import { FolderNode } from './folder-node';
+import { FileNode } from './file-node';
 
 export const NODE_TYPES: Record<string, React.ComponentType<any>> = {
   worktreeNode: WorktreeNode,

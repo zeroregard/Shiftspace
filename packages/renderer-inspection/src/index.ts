@@ -1,1 +1,1 @@
-export { InspectionView } from './InspectionView';
+export { InspectionView } from './inspection-view';
