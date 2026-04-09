@@ -4,6 +4,7 @@ import { useWorktreeStore } from '../store';
 import { BranchPicker } from '../overlays/branch-picker';
 import { filterCheckoutableBranches } from '../utils/worktree-utils';
 import { useActions } from '../ui/actions-context';
+import { useRelativeTime } from '../hooks/use-relative-time';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { Spinner } from '@shiftspace/ui/spinner';
@@ -29,6 +30,8 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
 
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
+  const lastChanged = wt.files.reduce((max, f) => Math.max(max, f.lastChangedAt), 0);
+  const relativeTime = useRelativeTime(lastChanged);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
   const pathPart = !isSingle && !wt.isMainWorktree ? folderName : null;
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
@@ -102,6 +105,7 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
             {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
             <span className="text-status-added">+{totalAdded}</span>{' '}
             <span className="text-status-deleted">-{totalRemoved}</span>
+            {relativeTime && <span className="text-text-faint"> · {relativeTime}</span>}
           </div>
         </div>
       </div>
