@@ -1,7 +1,9 @@
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
+import { useActions } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
+import { IconButton } from '@shiftspace/ui/icon-button';
 
 interface GroveViewProps {
   worktrees: WorktreeState[];
@@ -16,6 +18,8 @@ function WorktreeCardError() {
 }
 
 export function GroveView({ worktrees }: GroveViewProps) {
+  const actions = useActions();
+
   return (
     <div className="w-full h-full overflow-auto">
       <div className="p-6">
@@ -44,6 +48,15 @@ export function GroveView({ worktrees }: GroveViewProps) {
                   </motion.div>
                 ))}
               </AnimatePresence>
+              <IconButton
+                icon="add"
+                label="Add worktree"
+                size="md"
+                className="self-center shrink-0 !w-10 !h-10 !rounded-xl !border-2 !border-dashed !border-border-dashed hover:!border-border-default"
+                iconSize={14}
+                onClick={() => actions.addWorktree()}
+                data-testid="add-worktree"
+              />
             </div>
           </LayoutGroup>
         )}

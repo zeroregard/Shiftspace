@@ -281,6 +281,9 @@ export class ShiftspacePanel {
     this._router.on('swap-branches', (m) => {
       if (m.worktreeId) void this._gitProvider?.handleSwapBranches(m.worktreeId);
     });
+    this._router.on('add-worktree', () => {
+      void this._gitProvider?.handleAddWorktree();
+    });
     this._router.on('remove-worktree', (m) => {
       if (m.worktreeId) void this._gitProvider?.handleRemoveWorktree(m.worktreeId);
     });

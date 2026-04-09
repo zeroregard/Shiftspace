@@ -1,8 +1,9 @@
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
-import { useWorktreeStore } from '@shiftspace/renderer-core';
+import { useWorktreeStore, useActions } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
+import { IconButton } from '@shiftspace/ui/icon-button';
 import { Loader } from '@shiftspace/ui/loader';
 
 interface SidebarViewProps {
@@ -21,6 +22,7 @@ function WorktreeCardError() {
 
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
+  const actions = useActions();
 
   if (!initialized) {
     return (
@@ -65,6 +67,15 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
             </div>
           </LayoutGroup>
         )}
+        <IconButton
+          icon="add"
+          label="Add worktree"
+          size="md"
+          className="!w-full mt-3 !h-8 !rounded-xl !border-2 !border-dashed !border-border-dashed hover:!border-border-default"
+          iconSize={14}
+          onClick={() => actions.addWorktree()}
+          data-testid="add-worktree"
+        />
       </div>
     </div>
   );

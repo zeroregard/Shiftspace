@@ -146,6 +146,8 @@ export const App: React.FC = () => {
         onRenameWorktree={handleRenameWorktree}
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
+        onAddWorktree={handleAddWorktree}
+        onRemoveWorktree={handleRemoveWorktree}
       />
       <ControlPanel
         engine={engineRef.current}

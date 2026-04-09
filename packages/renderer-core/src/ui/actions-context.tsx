@@ -18,6 +18,7 @@ export interface ShiftspaceActions {
   checkoutBranch: (worktreeId: string, branch: string) => void;
   fetchBranches: (worktreeId: string) => void;
   swapBranches: (worktreeId: string) => void;
+  addWorktree: () => void;
   removeWorktree: (worktreeId: string) => void;
   renameWorktree: (worktreeId: string, newName: string) => void;
   runAction: (worktreeId: string, actionId: string) => void;
@@ -37,6 +38,7 @@ const DEFAULT_ACTIONS: ShiftspaceActions = {
   checkoutBranch: () => {},
   fetchBranches: () => {},
   swapBranches: () => {},
+  addWorktree: () => {},
   removeWorktree: () => {},
   renameWorktree: () => {},
   runAction: () => {},
@@ -66,6 +68,7 @@ interface ActionsProviderProps {
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
   onFetchBranches?: (worktreeId: string) => void;
   onSwapBranches?: (worktreeId: string) => void;
+  onAddWorktree?: () => void;
   onRemoveWorktree?: (worktreeId: string) => void;
   onRenameWorktree?: (worktreeId: string, newName: string) => void;
   onRunAction?: (worktreeId: string, actionId: string) => void;
@@ -94,6 +97,7 @@ export function ActionsProvider({
   onCheckoutBranch,
   onFetchBranches,
   onSwapBranches,
+  onAddWorktree,
   onRemoveWorktree,
   onRenameWorktree,
   onRunAction,
@@ -114,6 +118,7 @@ export function ActionsProvider({
       checkoutBranch: (a, b) => onCheckoutBranch?.(a, b),
       fetchBranches: (a) => onFetchBranches?.(a),
       swapBranches: (a) => onSwapBranches?.(a),
+      addWorktree: () => onAddWorktree?.(),
       removeWorktree: (a) => onRemoveWorktree?.(a),
       renameWorktree: (a, b) => onRenameWorktree?.(a, b),
       runAction: (a, b) => onRunAction?.(a, b),
@@ -132,6 +137,7 @@ export function ActionsProvider({
       onCheckoutBranch,
       onFetchBranches,
       onSwapBranches,
+      onAddWorktree,
       onRemoveWorktree,
       onRenameWorktree,
       onRunAction,

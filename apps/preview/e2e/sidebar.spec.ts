@@ -8,4 +8,16 @@ test.describe('Sidebar view', () => {
 
     await expect(page).toHaveScreenshot('sidebar-initial.png');
   });
+
+  test('add worktree via plus button', async ({ page }) => {
+    await page.goto('/sidebar');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(500);
+
+    // Click the sidebar "+" button
+    await page.getByTestId('add-worktree').click();
+    await page.waitForTimeout(500);
+
+    await expect(page).toHaveScreenshot('sidebar-added-worktree.png');
+  });
 });

@@ -25,6 +25,7 @@ interface Props {
   onRunAction?: (worktreeId: string, actionId: string) => void;
   onStopAction?: (worktreeId: string, actionId: string) => void;
   onSwapBranches?: (worktreeId: string) => void;
+  onAddWorktree?: () => void;
   onRemoveWorktree?: (worktreeId: string) => void;
   onRenameWorktree?: (worktreeId: string, newName: string) => void;
   onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
@@ -51,6 +52,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onRunAction,
   onStopAction,
   onSwapBranches,
+  onAddWorktree,
   onRemoveWorktree,
   onRenameWorktree,
   onRunPipeline,
@@ -80,6 +82,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       onCheckoutBranch={onCheckoutBranch}
       onFetchBranches={onFetchBranches}
       onSwapBranches={onSwapBranches}
+      onAddWorktree={onAddWorktree}
       onRemoveWorktree={onRemoveWorktree}
       onRenameWorktree={onRenameWorktree}
       onRunAction={onRunAction}
