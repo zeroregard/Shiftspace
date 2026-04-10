@@ -26,6 +26,7 @@ export interface ShiftspaceActions {
   runPipeline: (worktreeId: string, pipelineId: string) => void;
   getLog: (worktreeId: string, actionId: string) => void;
   recheckInsights: (worktreeId: string) => void;
+  cancelInsights: (worktreeId: string) => void;
   setPackage: (packageName: string) => void;
   detectPackages: () => void;
 }
@@ -46,6 +47,7 @@ const DEFAULT_ACTIONS: ShiftspaceActions = {
   runPipeline: () => {},
   getLog: () => {},
   recheckInsights: () => {},
+  cancelInsights: () => {},
   setPackage: () => {},
   detectPackages: () => {},
 };
@@ -76,6 +78,7 @@ interface ActionsProviderProps {
   onRunPipeline?: (worktreeId: string, pipelineId: string) => void;
   onGetLog?: (worktreeId: string, actionId: string) => void;
   onRecheckInsights?: (worktreeId: string) => void;
+  onCancelInsights?: (worktreeId: string) => void;
   onSetPackage?: (packageName: string) => void;
   onDetectPackages?: () => void;
   children: ReactNode;
@@ -105,6 +108,7 @@ export function ActionsProvider({
   onRunPipeline,
   onGetLog,
   onRecheckInsights,
+  onCancelInsights,
   onSetPackage,
   onDetectPackages,
   children,
@@ -126,6 +130,7 @@ export function ActionsProvider({
       runPipeline: (a, b) => onRunPipeline?.(a, b),
       getLog: (a, b) => onGetLog?.(a, b),
       recheckInsights: (a) => onRecheckInsights?.(a),
+      cancelInsights: (a) => onCancelInsights?.(a),
       setPackage: (a) => onSetPackage?.(a),
       detectPackages: () => onDetectPackages?.(),
     }),
@@ -145,6 +150,7 @@ export function ActionsProvider({
       onRunPipeline,
       onGetLog,
       onRecheckInsights,
+      onCancelInsights,
       onSetPackage,
       onDetectPackages,
     ]

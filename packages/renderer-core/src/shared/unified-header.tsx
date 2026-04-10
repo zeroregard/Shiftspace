@@ -1,5 +1,5 @@
 import { useShallow } from 'zustand/react/shallow';
-import { useWorktreeStore, useInspectionStore } from '../store';
+import { useWorktreeStore, useInspectionStore, useInsightStore } from '../store';
 import type { DiffMode } from '../types';
 import { BranchPicker } from '../overlays/branch-picker';
 import { IconButton } from '@shiftspace/ui/icon-button';
@@ -43,6 +43,7 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
   const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
   );
+  const insightsRunning = useInsightStore((s) => s.insightsRunning);
 
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const diffMode: DiffMode = wt?.diffMode ?? { type: 'working' };
@@ -136,6 +137,21 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
             </BranchPicker.Content>
           </BranchPicker>
         </>
+      )}
+
+      {/* Insight status — cancel when running, recheck when idle */}
+      {isInspecting && worktreeId && (
+        <IconButton
+          icon={insightsRunning ? 'sync~spin' : 'sync'}
+          label={insightsRunning ? 'Cancel analysis' : 'Recheck code smells'}
+          iconSize={14}
+          className="text-text-faint hover:text-text-primary"
+          onClick={() =>
+            insightsRunning
+              ? actions.cancelInsights(worktreeId)
+              : actions.recheckInsights(worktreeId)
+          }
+        />
       )}
 
       {/* Spacer */}

@@ -331,6 +331,9 @@ export class ShiftspacePanel {
     this._router.on('recheck-insights', (m) => {
       if (m.worktreeId) this._inspection?.recheck(m.worktreeId);
     });
+    this._router.on('cancel-insights', () => {
+      this._inspection?.cancel();
+    });
     this._router.on('exit-inspection', () => {
       this._viewSettings!.save({ mode: { type: 'grove' } });
       this._inspection?.exit();
