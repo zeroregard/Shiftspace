@@ -155,6 +155,9 @@ function prependToChangelog(filePath, entry) {
     content = '# Changelog\n\nAll notable changes to Shiftspace will be documented in this file.\n';
   }
 
+  // Remove any existing [Unreleased] section — those commits are now in the versioned entry
+  content = content.replace(/## \[Unreleased\]\n[\s\S]*?(?=\n## \[|$)/, '');
+
   // Insert after the header block (# Changelog + optional description line)
   const headerRe = /^# Changelog\n(?:\n[^\n#][^\n]*\n)?/;
   const match = content.match(headerRe);
