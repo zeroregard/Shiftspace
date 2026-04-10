@@ -99,6 +99,20 @@
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/sidebar.spec.ts"]
     },
+    "e2e:tree-sorting": {
+      "command": "playwright test e2e/tree-sorting.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/tree-sorting.spec.ts",
+        "{projectRoot}/src/sidebar-page.tsx",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/tree-sorting.spec.ts"]
+    },
     "test:e2e": {
       "dependsOn": [
         "e2e:controls",
@@ -107,7 +121,8 @@
         "e2e:hover-tooltips",
         "e2e:inspector-file-categories",
         "e2e:search-filter",
-        "e2e:sidebar"
+        "e2e:sidebar",
+        "e2e:tree-sorting"
       ],
       "command": "echo 'All E2E specs completed'",
       "cache": false

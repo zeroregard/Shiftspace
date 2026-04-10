@@ -116,13 +116,7 @@ function ShiftspaceContent({ showPackageSwitcher, panZoomConfig }: ContentProps)
   const worktrees = useWorktreeStore(useShallow((s) => s.worktrees));
   const mode = useInspectionStore((s) => s.mode);
 
-  const wtArray = Array.from(worktrees.values()).sort((a, b) => {
-    if (a.isMainWorktree && !b.isMainWorktree) return -1;
-    if (!a.isMainWorktree && b.isMainWorktree) return 1;
-    const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
-    const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
+  const wtArray = Array.from(worktrees.values());
 
   return (
     <div className="w-full h-full bg-canvas flex flex-col relative">

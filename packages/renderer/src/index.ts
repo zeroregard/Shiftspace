@@ -13,6 +13,7 @@ export {
   type ActionConfig,
   type ActionState,
   type ActionStatus,
+  type WorktreeSortMode,
   type AppMode,
   type IconEntry,
   type IconMap,
@@ -40,6 +41,8 @@ export {
   UnifiedHeader,
   ThemedFileIcon,
   PackageSwitcher,
+  SortPicker,
+  sortWorktrees,
   // UI
   AnnotationBadges,
   Badge,

@@ -58,6 +58,8 @@ export type ShiftspaceEvent =
   | { type: 'process-started'; worktreeId: string; port: number; command: string }
   | { type: 'process-stopped'; worktreeId: string };
 
+export type WorktreeSortMode = 'last-updated' | 'name' | 'branch';
+
 export type LODLevel = 'worktree' | 'directory' | 'file';
 
 export type AppMode = { type: 'grove' } | { type: 'inspection'; worktreeId: string };
