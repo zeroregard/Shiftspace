@@ -96,7 +96,7 @@ export class McpToolHandlers {
         timeout: 5000,
       }).trim();
     } catch (err) {
-      log.warn(`[MCP] resolveWorktree: git rev-parse failed for cwd="${cwd}":`, err);
+      log.warn('[MCP] resolveWorktree: git rev-parse failed for cwd="%s":', cwd, err);
       return null;
     }
 
@@ -108,8 +108,11 @@ export class McpToolHandlers {
 
     if (!match) {
       log.warn(
-        `[MCP] resolveWorktree: no match for cwd="${cwd}" (gitRoot="${gitRoot}", resolved="${resolvedGitRoot}"). ` +
-          `Known worktree paths: ${JSON.stringify(wtPaths)}`
+        '[MCP] resolveWorktree: no match for cwd="%s" (gitRoot="%s", resolved="%s"). Known worktree paths: %s',
+        cwd,
+        gitRoot,
+        resolvedGitRoot,
+        JSON.stringify(wtPaths)
       );
     }
     return match;
