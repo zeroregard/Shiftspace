@@ -1,16 +1,18 @@
 import * as vscode from 'vscode';
-import { ShiftspacePanel } from './ShiftspacePanel';
-import { SidebarViewProvider } from './SidebarViewProvider';
-import { SharedGitProvider } from './SharedGitProvider';
+import { ShiftspacePanel } from './shiftspace-panel';
+import { SidebarViewProvider } from './sidebar-view-provider';
+import { SharedGitProvider } from './shared-git-provider';
 import { runDetectActionsCommand } from './actions/detect';
-import { ShiftspaceMcpHttpServer } from './mcp/httpServer';
-import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/autoConfig';
+import { ShiftspaceMcpHttpServer } from './mcp/http-server';
+import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/auto-config';
 import { initLogger, log } from './logger';
+import { initGitPath } from './git/git-utils';
 
 const mcpHttpServer = new ShiftspaceMcpHttpServer();
 
 export function activate(context: vscode.ExtensionContext) {
   initLogger(context);
+  initGitPath();
 
   // Single shared git provider — both sidebar and tab subscribe to the same
   // GitDataProvider so mutations (rename, checkout, swap) are reflected

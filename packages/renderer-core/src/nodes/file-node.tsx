@@ -1,0 +1,218 @@
+import React from 'react';
+import clsx from 'clsx';
+import type { NodeComponentProps } from '../tree-canvas';
+import type { FileChange, InsightFinding, FileDiagnosticSummary } from '../types';
+import { DiffPopover } from '../overlays/diff-popover';
+import { ThemedFileIcon } from '../shared/themed-file-icon';
+import { useInspectionHover } from '../shared/inspection-hover-context';
+import { useFileAnnotations } from '../hooks/use-file-annotations';
+import { useActions } from '../ui/actions-context';
+import { Codicon } from '@shiftspace/ui/codicon';
+import { ShiftIcon } from '@shiftspace/ui/shift-icon';
+import { SmellIcon } from '@shiftspace/ui/smell-icon';
+import { Tooltip } from '@shiftspace/ui/tooltip';
+import { DiagnosticTooltipContent, FindingTooltipContent } from '../ui/diagnostic-tooltip-content';
+
+interface FileNodeData {
+  file: FileChange;
+  worktreeId: string;
+  [key: string]: unknown;
+}
+
+function getChangeTint(file: FileChange): string {
+  if (file.status === 'deleted') return 'var(--color-tint-deleted)';
+  const total = file.linesAdded + file.linesRemoved;
+  if (total === 0) return 'transparent';
+  const ratio = file.linesAdded / total;
+  if (ratio > 0.66) return 'var(--color-tint-added)';
+  if (ratio < 0.33) return 'var(--color-tint-removed)';
+  return 'var(--color-tint-mixed)';
+}
+
+// ---------------------------------------------------------------------------
+// Annotation rows (extracted to keep FileNode under the linter line limit)
+// ---------------------------------------------------------------------------
+
+interface FileNodeAnnotationsProps {
+  file: FileChange;
+  errors: number;
+  warnings: number;
+  findings: InsightFinding[];
+  diagnostics: FileDiagnosticSummary | undefined;
+  onLineClick: (line: number, e: React.MouseEvent) => void;
+}
+
+function FileNodeAnnotations({
+  file,
+  errors,
+  warnings,
+  findings,
+  diagnostics,
+  onLineClick,
+}: FileNodeAnnotationsProps) {
+  const firstErrorLine = diagnostics?.details.find((d) => d.severity === 'error')?.line;
+  const firstWarningLine = diagnostics?.details.find((d) => d.severity === 'warning')?.line;
+
+  return (
+    <div className="mt-1 pt-1 border-border-default/40">
+      {errors > 0 && (
+        <Tooltip
+          content={
+            <DiagnosticTooltipContent
+              details={diagnostics!.details.filter((d) => d.severity === 'error')}
+              diffHunks={file.diff}
+            />
+          }
+          delayDuration={0}
+        >
+          <div
+            data-testid="badge-error"
+            className={clsx(
+              'flex items-center gap-0.5 py-0.5 text-status-deleted',
+              firstErrorLine !== undefined && 'cursor-pointer'
+            )}
+            onClick={
+              firstErrorLine !== undefined ? (e) => onLineClick(firstErrorLine, e) : undefined
+            }
+          >
+            <Codicon name="error" size={16} />
+            <span className="text-11 ml-0.5 mt-px">{errors}</span>
+            <span className="text-11 truncate mt-px">{errors === 1 ? 'error' : 'errors'}</span>
+          </div>
+        </Tooltip>
+      )}
+      {warnings > 0 && (
+        <Tooltip
+          content={
+            <DiagnosticTooltipContent
+              details={diagnostics!.details.filter((d) => d.severity === 'warning')}
+              diffHunks={file.diff}
+            />
+          }
+          delayDuration={0}
+        >
+          <div
+            data-testid="badge-warning"
+            className={clsx(
+              'flex items-center gap-0.5 py-0.5 text-status-modified',
+              firstWarningLine !== undefined && 'cursor-pointer'
+            )}
+            onClick={
+              firstWarningLine !== undefined ? (e) => onLineClick(firstWarningLine, e) : undefined
+            }
+          >
+            <Codicon name="warning" size={16} />
+            <span className="text-11 ml-0.5 mt-px">{warnings}</span>
+            <span className="text-11 truncate mt-px">
+              {warnings === 1 ? 'warning' : 'warnings'}
+            </span>
+          </div>
+        </Tooltip>
+      )}
+      {findings.map((f) => (
+        <Tooltip
+          key={f.ruleId}
+          content={<FindingTooltipContent findings={[f]} />}
+          delayDuration={0}
+        >
+          <div
+            className={clsx(
+              'flex items-center gap-0.5 py-0.5 text-purple-400',
+              f.firstLine !== undefined && 'cursor-pointer'
+            )}
+            onClick={f.firstLine !== undefined ? (e) => onLineClick(f.firstLine!, e) : undefined}
+          >
+            <SmellIcon width={16} height={16} />
+            <span className="text-11 ml-0.5 mt-px">{f.count}</span>
+            <span className="text-11 truncate mt-px">{f.ruleLabel}</span>
+          </div>
+        </Tooltip>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FileNode
+// ---------------------------------------------------------------------------
+
+export const FileNode = React.memo(function FileNode({ data }: NodeComponentProps<FileNodeData>) {
+  const { file, worktreeId } = data;
+  const { fileClick } = useActions();
+  const { hoveredFilePath } = useInspectionHover();
+  const [isNodeHovered, setIsNodeHovered] = React.useState(false);
+  const fileName = file.path.split('/').pop() ?? file.path;
+  const isPulsing = Date.now() - file.lastChangedAt < 3000;
+  const isDeleted = file.status === 'deleted';
+  const isHovered = hoveredFilePath === file.path;
+
+  const { errors, warnings, findings, hasAnnotations, diagnostics } = useFileAnnotations(
+    worktreeId,
+    file.path
+  );
+
+  const handleAnnotationClick = (line: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    fileClick(worktreeId, file.path, line);
+  };
+
+  return (
+    <DiffPopover file={file} worktreeId={worktreeId}>
+      <div
+        className={clsx(
+          'group w-full h-full border border-border-default rounded-md text-text-secondary transition-[background,opacity,border-color] duration-300',
+          isHovered
+            ? 'bg-node-file-pulse border-border-staged'
+            : isPulsing
+              ? 'bg-node-file-pulse'
+              : 'bg-node-file'
+        )}
+        style={{ background: isHovered ? undefined : getChangeTint(file) }}
+        onMouseEnter={() => setIsNodeHovered(true)}
+        onMouseLeave={() => setIsNodeHovered(false)}
+      >
+        <button
+          className={clsx(
+            'w-full h-full px-2 py-1.5 text-left transition-[background] duration-300',
+            'cursor-pointer',
+            isPulsing ? 'bg-pulse-overlay' : 'bg-transparent'
+          )}
+          onClick={() => fileClick(worktreeId, file.path)}
+        >
+          <div className="flex items-center gap-1">
+            <span className="shrink-0 flex items-center">
+              <ThemedFileIcon filePath={file.path} size={12} />
+            </span>
+            <span
+              className={clsx(
+                'text-11 overflow-hidden text-ellipsis whitespace-nowrap flex-1',
+                isDeleted ? 'text-status-deleted line-through' : 'text-text-primary'
+              )}
+            >
+              {fileName}
+            </span>
+
+            <span
+              className={clsx(
+                'shrink-0 text-text-muted ml-auto transition-all duration-300 opacity-0',
+                isNodeHovered && 'opacity-100'
+              )}
+            >
+              <ShiftIcon width={12} height={12} />
+            </span>
+          </div>
+          {hasAnnotations && (
+            <FileNodeAnnotations
+              file={file}
+              errors={errors}
+              warnings={warnings}
+              findings={findings}
+              diagnostics={diagnostics}
+              onLineClick={handleAnnotationClick}
+            />
+          )}
+        </button>
+      </div>
+    </DiffPopover>
+  );
+});

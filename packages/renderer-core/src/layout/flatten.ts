@@ -1,5 +1,5 @@
 import type { LayoutRect } from './algorithm';
-import type { LayoutNode, LayoutEdge } from '../TreeCanvas';
+import type { LayoutNode, LayoutEdge } from '../tree-canvas';
 import type { FileChange } from '../types';
 import { FILE_NODE_W, FILE_NODE_BASE_H, FOLDER_NODE_W, FOLDER_NODE_H } from './config';
 

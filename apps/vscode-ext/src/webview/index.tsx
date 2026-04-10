@@ -127,6 +127,16 @@ function handleCoreMessage(
   }
 }
 
+/** Validate message origin using URL protocol parsing instead of substring matching. */
+function isAllowedOrigin(origin: string): boolean {
+  if (!origin) return true;
+  try {
+    return new URL(origin).protocol === 'vscode-webview:';
+  } catch {
+    return false;
+  }
+}
+
 function handleActionMessage(msg: HostMessage): boolean {
   switch (msg.type) {
     case 'actions-config-v2': {
@@ -214,7 +224,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
-      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
+      if (!isAllowedOrigin(e.origin)) return;
       handleHostMessage(e.data, setErrorMessage);
     };
 
@@ -261,6 +271,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'swap-branches', worktreeId });
   };
 
+  const handleAddWorktree = () => {
+    vscode?.postMessage({ type: 'add-worktree' });
+  };
+
   const handleRemoveWorktree = (worktreeId: string) => {
     vscode?.postMessage({ type: 'remove-worktree', worktreeId });
   };
@@ -287,6 +301,10 @@ const App: React.FC = () => {
 
   const handleRecheckInsights = (worktreeId: string) => {
     vscode?.postMessage({ type: 'recheck-insights', worktreeId });
+  };
+
+  const handleCancelInsights = (worktreeId: string) => {
+    vscode?.postMessage({ type: 'cancel-insights', worktreeId });
   };
 
   if (errorMessage) {
@@ -324,6 +342,7 @@ const App: React.FC = () => {
         onRunAction={handleRunAction}
         onStopAction={handleStopAction}
         onSwapBranches={handleSwapBranches}
+        onAddWorktree={handleAddWorktree}
         onRemoveWorktree={handleRemoveWorktree}
         onRenameWorktree={handleRenameWorktree}
         onRunPipeline={handleRunPipeline}
@@ -331,6 +350,7 @@ const App: React.FC = () => {
         onDetectPackages={handleDetectPackages}
         onGetLog={handleGetLog}
         onRecheckInsights={handleRecheckInsights}
+        onCancelInsights={handleCancelInsights}
         panZoomConfig={panZoomConfig}
       />
     </div>
@@ -343,7 +363,7 @@ const SidebarApp: React.FC = () => {
 
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
-      if (e.origin && !e.origin.startsWith('vscode-webview://')) return;
+      if (!isAllowedOrigin(e.origin)) return;
       handleCoreMessage(e.data, setErrorMessage);
     };
 
@@ -381,6 +401,10 @@ const SidebarApp: React.FC = () => {
     vscode?.postMessage({ type: 'swap-branches', worktreeId });
   };
 
+  const handleAddWorktreeSidebar = () => {
+    vscode?.postMessage({ type: 'add-worktree' });
+  };
+
   if (errorMessage) {
     return (
       <div
@@ -415,6 +439,7 @@ const SidebarApp: React.FC = () => {
       onRenameWorktree={handleRenameWorktree}
       onRemoveWorktree={handleRemoveWorktree}
       onSwapBranches={handleSwapBranches}
+      onAddWorktree={handleAddWorktreeSidebar}
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
         <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />

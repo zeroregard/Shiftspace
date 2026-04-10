@@ -3,7 +3,7 @@
   "displayName": "Shiftspace",
   "description": "Worktree manager and code review tool — inspect branches, spot code smells, and run checks before you open a PR",
   "preview": true,
-  "version": "0.1.39",
+  "version": "0.1.41",
   "publisher": "shiftspace",
   "repository": {
     "type": "git",
@@ -120,6 +120,20 @@
     "configuration": {
       "title": "Shiftspace",
       "properties": {
+        "shiftspace.repoDiscovery": {
+          "type": "string",
+          "enum": [
+            "followActiveEditor",
+            "workspaceOnly"
+          ],
+          "default": "followActiveEditor",
+          "enumDescriptions": [
+            "Discover repos from VSCode's git extension and follow the active editor across repositories.",
+            "Only discover repos from workspace folders. Shiftspace will not switch to repos outside the workspace."
+          ],
+          "description": "Controls how Shiftspace discovers git repositories.",
+          "scope": "resource"
+        },
         "shiftspace.ignorePatterns": {
           "type": "array",
           "items": {

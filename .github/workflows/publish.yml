@@ -159,13 +159,33 @@ jobs:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         continue-on-error: true # Don't fail the whole workflow if Open VSX is down
 
-      # --- Manual dispatch only: commit version bump + tag + GH release ---
+      # --- Manual dispatch only: changelog + commit version bump + tag + GH release ---
+      - name: Generate changelog (manual)
+        if: steps.mode.outputs.auto == 'false' && inputs.dry-run != true
+        id: changelog
+        run: |
+          PREV_BUMP=$(git log --oneline --format="%H %s" | grep -E "chore: (bump version|release)" | head -1 | cut -d' ' -f1)
+          VERSION="${{ steps.version.outputs.value }}"
+
+          node scripts/generate-changelog.mjs \
+            --from "$PREV_BUMP" --to HEAD \
+            --version "$VERSION" \
+            --prepend apps/vscode-ext/CHANGELOG.md
+
+          BODY=$(node scripts/generate-changelog.mjs \
+            --from "$PREV_BUMP" --to HEAD \
+            --format release-body)
+
+          echo "body<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
+
       - name: Commit version bump
         if: steps.mode.outputs.auto == 'false' && inputs.dry-run != true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/vscode-ext/package.json
+          git add apps/vscode-ext/package.json apps/vscode-ext/CHANGELOG.md
           git commit -m "chore: release v${{ steps.version.outputs.value }}"
           git tag "v${{ steps.version.outputs.value }}"
           git push origin main --follow-tags
@@ -179,6 +199,8 @@ jobs:
           body: |
             ## Shiftspace v${{ steps.version.outputs.value }}
 
+            ${{ steps.changelog.outputs.body }}
+
             Published to the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace).
 
             ### Manual install
@@ -187,7 +209,6 @@ jobs:
             code --install-extension shiftspace-${{ steps.version.outputs.value }}.vsix
             ```
           files: apps/vscode-ext/${{ env.vsix_file }}
-          generate_release_notes: true
 
       - name: Upload .vsix artifact (dry run)
         if: ${{ inputs.dry-run == true }}

@@ -22,8 +22,8 @@ export type {
 } from './types';
 
 // Canvas
-export { TreeCanvas, type LayoutNode, type LayoutEdge, type PanZoomConfig } from './TreeCanvas';
-export type { NodeComponentProps } from './TreeCanvas';
+export { TreeCanvas, type LayoutNode, type LayoutEdge, type PanZoomConfig } from './tree-canvas';
+export type { NodeComponentProps } from './tree-canvas';
 
 // Store
 export {
@@ -42,11 +42,12 @@ export { WorktreeNode, FolderNode, FileNode, NODE_TYPES } from './nodes';
 export { computeSingleWorktreeLayout, computeFullLayout } from './layout';
 
 // Shared
-export { UnifiedHeader } from './shared/UnifiedHeader';
-export { ThemedFileIcon } from './shared/ThemedFileIcon';
-export { PackageSwitcher } from './shared/PackageSwitcher';
-export { InspectionHoverContext, useInspectionHover } from './shared/InspectionHoverContext';
-export { FileRowButton } from './shared/FileRowButton';
+export { UnifiedHeader } from './shared/unified-header';
+export { ThemedFileIcon } from './shared/themed-file-icon';
+export { PackageSwitcher } from './shared/package-switcher';
+export { InspectionHoverContext, useInspectionHover } from './shared/inspection-hover-context';
+export { FileRowButton } from './shared/file-row-button';
+export { AnimatedTimestamp } from './shared/animated-timestamp';
 
 // UI
 export {
@@ -64,17 +65,18 @@ export {
 } from './ui';
 
 // Hooks
-export { useFileAnnotations, type FileAnnotations } from './hooks/useFileAnnotations';
-export { useWorktreeRename } from './hooks/useWorktreeRename';
+export { useFileAnnotations, type FileAnnotations } from './hooks/use-file-annotations';
+export { useWorktreeRename } from './hooks/use-worktree-rename';
+export { useRelativeTime } from './hooks/use-relative-time';
 
 // Overlays
-export { DiffPopover } from './overlays/DiffPopover';
-export { BranchPicker, type StaticOption } from './overlays/BranchPicker';
+export { DiffPopover } from './overlays/diff-popover';
+export { BranchPicker, type StaticOption } from './overlays/branch-picker';
 
 // Utils
-export { storeKey, storeKeyPrefix } from './utils/storeKeys';
-export { filterCheckoutableBranches } from './utils/worktreeUtils';
-export { deriveActionType, statusIcon, statusColor } from './utils/actionUtils';
+export { storeKey, storeKeyPrefix } from './utils/store-keys';
+export { filterCheckoutableBranches } from './utils/worktree-utils';
+export { deriveActionType, statusIcon, statusColor } from './utils/action-utils';
 export {
   partitionFiles,
   matchesFileFilter,
@@ -83,11 +85,12 @@ export {
   filterFilesByProblems,
   fileHasProblems,
   getAllFilteredFiles,
-} from './utils/listSections';
-export { getSourceLineFromHunks } from './utils/diffLineLookup';
+} from './utils/list-sections';
+export { getSourceLineFromHunks } from './utils/diff-line-lookup';
+export { formatRelativeTime, TICK_INTERVAL } from './utils/relative-time';
 
 // UI (additional)
-export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/DiagnosticTooltipContent';
+export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/diagnostic-tooltip-content';
 
 // Components (shared between views)
-export { ActionBar } from './components/ActionBar';
+export { ActionBar } from './components/action-bar';
