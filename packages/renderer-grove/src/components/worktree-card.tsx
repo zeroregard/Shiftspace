@@ -9,6 +9,7 @@ import {
   useActions,
   useWorktreeRename,
   useRelativeTime,
+  AnimatedTimestamp,
 } from '@shiftspace/renderer-core';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Input } from '@shiftspace/ui/input';
@@ -210,7 +211,7 @@ export function WorktreeCard({
         <span className="flex items-center gap-1.5">
           <span className="text-status-added">+{totalAdded}</span>
           <span className="text-status-deleted">-{totalRemoved}</span>
-          {relativeTime && <span className="text-text-faint">· {relativeTime}</span>}
+          <AnimatedTimestamp value={relativeTime} />
         </span>
       </div>
     </div>

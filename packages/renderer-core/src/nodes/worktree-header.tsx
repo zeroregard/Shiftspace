@@ -5,6 +5,7 @@ import { BranchPicker } from '../overlays/branch-picker';
 import { filterCheckoutableBranches } from '../utils/worktree-utils';
 import { useActions } from '../ui/actions-context';
 import { useRelativeTime } from '../hooks/use-relative-time';
+import { AnimatedTimestamp } from '../shared/animated-timestamp';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { Spinner } from '@shiftspace/ui/spinner';
@@ -104,8 +105,8 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
           <div className="ml-2 text-11 text-text-muted">
             {wt.files.length} file{wt.files.length !== 1 ? 's' : ''} ·{' '}
             <span className="text-status-added">+{totalAdded}</span>{' '}
-            <span className="text-status-deleted">-{totalRemoved}</span>
-            {relativeTime && <span className="text-text-faint"> · {relativeTime}</span>}
+            <span className="text-status-deleted">-{totalRemoved}</span>{' '}
+            <AnimatedTimestamp value={relativeTime} />
           </div>
         </div>
       </div>

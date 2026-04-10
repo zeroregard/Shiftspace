@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { formatRelativeTime, getTickInterval } from './relative-time';
+import { formatRelativeTime, TICK_INTERVAL } from './relative-time';
 
 describe('formatRelativeTime', () => {
   afterEach(() => {
@@ -52,27 +52,8 @@ describe('formatRelativeTime', () => {
   });
 });
 
-describe('getTickInterval', () => {
-  function atAge(ageMs: number): number {
-    return Date.now() - ageMs;
-  }
-
-  it('returns 60s for 0 timestamp', () => {
-    expect(getTickInterval(0)).toBe(60_000);
-  });
-
-  it('returns 10s for ages under 1 minute', () => {
-    expect(getTickInterval(atAge(5_000))).toBe(10_000);
-    expect(getTickInterval(atAge(50_000))).toBe(10_000);
-  });
-
-  it('returns 30s for ages under 1 hour', () => {
-    expect(getTickInterval(atAge(2 * 60_000))).toBe(30_000);
-    expect(getTickInterval(atAge(30 * 60_000))).toBe(30_000);
-  });
-
-  it('returns 60s for ages 1 hour and above', () => {
-    expect(getTickInterval(atAge(60 * 60_000))).toBe(60_000);
-    expect(getTickInterval(atAge(5 * 60 * 60_000))).toBe(60_000);
+describe('TICK_INTERVAL', () => {
+  it('is 10 seconds', () => {
+    expect(TICK_INTERVAL).toBe(10_000);
   });
 });

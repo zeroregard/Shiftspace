@@ -22,18 +22,5 @@ export function formatRelativeTime(timestamp: number): string | null {
   return `${Math.floor(age / WEEK)}w`;
 }
 
-/**
- * Return the appropriate setInterval tick (ms) based on age.
- * Keeps re-renders infrequent for older timestamps.
- *
- * - age < 60 s  → tick every 10 s
- * - age < 1 h   → tick every 30 s
- * - age ≥ 1 h   → tick every 60 s
- */
-export function getTickInterval(timestamp: number): number {
-  if (!timestamp) return 60 * SECOND;
-  const age = Date.now() - timestamp;
-  if (age < MINUTE) return 10 * SECOND;
-  if (age < HOUR) return 30 * SECOND;
-  return 60 * SECOND;
-}
+/** Fixed tick interval for the useRelativeTime hook (10 seconds). */
+export const TICK_INTERVAL = 10 * SECOND;
