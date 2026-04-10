@@ -27,6 +27,7 @@ function makeInsightRunner(result = { summaries: [], details: [] }) {
     analyzeWorktree: vi.fn(async () => result),
     clearCache: vi.fn(),
     hasCacheEntry: vi.fn(() => false),
+    markEmpty: vi.fn(),
   };
 }
 
@@ -218,6 +219,7 @@ describe('InspectionSession — insights', () => {
       }),
       clearCache: vi.fn(),
       hasCacheEntry: vi.fn(() => false),
+      markEmpty: vi.fn(),
     };
     const postMessage = vi.fn();
     const session = new InspectionSession(runner as never, makeDiagnosticCollector() as never, {
@@ -243,6 +245,7 @@ describe('InspectionSession — insights', () => {
       }),
       clearCache: vi.fn(),
       hasCacheEntry: vi.fn(() => false),
+      markEmpty: vi.fn(),
     };
     const session = new InspectionSession(
       runner as never,
@@ -338,5 +341,112 @@ describe('InspectionSession — dispose', () => {
 
     expect(session.currentWorktreeId).toBeUndefined();
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('InspectionSession — 0-files handling', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('marks empty cache and posts insights-status false when 0 files', async () => {
+    const runner = makeInsightRunner();
+    const postMessage = vi.fn();
+    const session = new InspectionSession(runner as never, makeDiagnosticCollector() as never, {
+      ...makeDeps(),
+      getWorktreeFiles: () => [],
+      postMessage,
+    });
+
+    session.enter('wt-1');
+    await vi.runAllTimersAsync();
+
+    expect(runner.markEmpty).toHaveBeenCalledWith('wt-1');
+    expect(runner.analyzeWorktree).not.toHaveBeenCalled();
+    const statusCalls = postMessage.mock.calls
+      .map(([msg]: [{ type: string }]) => msg)
+      .filter((msg: { type: string }) => msg.type === 'insights-status');
+    expect(statusCalls).toEqual([{ type: 'insights-status', running: false }]);
+  });
+
+  it('does not re-schedule runInsights via onFileChange after 0-files skip', async () => {
+    const runner = makeInsightRunner();
+    // After markEmpty is called, hasCacheEntry should return true
+    runner.markEmpty.mockImplementation(() => {
+      runner.hasCacheEntry.mockReturnValue(true);
+    });
+    const session = new InspectionSession(runner as never, makeDiagnosticCollector() as never, {
+      ...makeDeps(),
+      getWorktreeFiles: () => [],
+    });
+
+    session.enter('wt-1');
+    await vi.runAllTimersAsync();
+    runner.analyzeWorktree.mockClear();
+
+    // Simulate file change ticks — should NOT trigger re-analysis
+    session.onFileChange('wt-1');
+    session.onFileChange('wt-1');
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(runner.analyzeWorktree).not.toHaveBeenCalled();
+  });
+});
+
+describe('InspectionSession — cancel', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('aborts in-flight analysis and posts insights-status false', async () => {
+    const runner = {
+      analyzeWorktree: vi.fn(async ({ signal }: { signal?: AbortSignal }) => {
+        // Simulate a long-running analysis
+        await new Promise((r) => setTimeout(r, 10000));
+        if (signal?.aborted) return { summaries: [], details: [] };
+        return { summaries: [], details: [] };
+      }),
+      clearCache: vi.fn(),
+      hasCacheEntry: vi.fn(() => false),
+      markEmpty: vi.fn(),
+    };
+    const postMessage = vi.fn();
+    const session = new InspectionSession(runner as never, makeDiagnosticCollector() as never, {
+      ...makeDeps(),
+      postMessage,
+    });
+
+    session.enter('wt-1');
+    // Let the analysis start (but not finish)
+    await vi.advanceTimersByTimeAsync(100);
+
+    session.cancel();
+
+    const statusCalls = postMessage.mock.calls
+      .map(([msg]: [{ type: string }]) => msg)
+      .filter((msg: { type: string }) => msg.type === 'insights-status');
+    // Should have: running=true (from enter), then running=false (from cancel)
+    expect(statusCalls).toEqual([
+      { type: 'insights-status', running: true },
+      { type: 'insights-status', running: false },
+    ]);
+  });
+
+  it('preserves currentWorktreeId after cancel (unlike exit)', () => {
+    const session = new InspectionSession(
+      makeInsightRunner() as never,
+      makeDiagnosticCollector() as never,
+      makeDeps()
+    );
+
+    session.enter('wt-1');
+    session.cancel();
+    expect(session.currentWorktreeId).toBe('wt-1');
   });
 });

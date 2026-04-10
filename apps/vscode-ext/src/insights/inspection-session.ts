@@ -47,6 +47,14 @@ export class InspectionSession {
     this._diagnosticCollector.stopInspection();
   }
 
+  /** Cancel any in-flight analysis without leaving inspection mode. */
+  cancel(): void {
+    this.clearTimers();
+    this._insightAbortController?.abort();
+    this._insightAbortController = undefined;
+    this._deps.postMessage({ type: 'insights-status', running: false });
+  }
+
   recheck(worktreeId: string): void {
     // Cancel any pending debounced runs so they don't abort this one
     this.clearTimers();
@@ -104,25 +112,32 @@ export class InspectionSession {
     const wt = this._deps.getWorktrees().find((w) => w.id === worktreeId);
     if (!wt) return;
 
+    const files = this._deps.getWorktreeFiles(worktreeId);
+    const smellRules = this._deps.getSmellRules();
+
+    log.info(
+      `[insights] runInsights start: ${worktreeId} (${wt.branch}), ${files.length} files, ${smellRules.length} rules`
+    );
+
+    // Guard: if the file list is empty, skip — this is almost certainly a
+    // transient state (e.g. git ls-files returned empty during a concurrent
+    // git operation). Mark a sentinel cache entry so onFileChange() doesn't
+    // keep re-scheduling, and clear any lingering spinner.
+    if (files.length === 0) {
+      log.info(`[insights] runInsights skipped: ${worktreeId} (${wt.branch}), 0 files`);
+      this._insightRunner.markEmpty(worktreeId);
+      this._deps.postMessage({ type: 'insights-status', running: false });
+      return;
+    }
+
     // Cancel any in-flight insight run so stale results never overwrite fresh ones
     const hadPrevious = !!this._insightAbortController;
     this._insightAbortController?.abort();
     const controller = new AbortController();
     this._insightAbortController = controller;
 
-    const files = this._deps.getWorktreeFiles(worktreeId);
-    const smellRules = this._deps.getSmellRules();
-
-    log.info(
-      `[insights] runInsights start: ${files.length} files, ${smellRules.length} rules, abortedPrevious=${hadPrevious}`
-    );
-
-    // Guard: if the file list is empty, skip — this is almost certainly a
-    // transient state (e.g. git ls-files returned empty during a concurrent
-    // git operation). Sending an empty detail would wipe existing findings.
-    if (files.length === 0) {
-      log.info('[insights] runInsights skipped: 0 files (transient)');
-      return;
+    if (hadPrevious) {
+      log.info(`[insights] aborted previous run for ${worktreeId} (${wt.branch})`);
     }
 
     const extraSettings: Record<string, Record<string, unknown>> = {
@@ -142,7 +157,7 @@ export class InspectionSession {
       });
 
       if (controller.signal.aborted) {
-        log.info('[insights] runInsights aborted after analysis');
+        log.info(`[insights] runInsights aborted after analysis: ${worktreeId} (${wt.branch})`);
         return;
       }
 
@@ -155,19 +170,19 @@ export class InspectionSession {
           ) ?? 0;
         totalFindings += count;
         log.info(
-          `[insights] sending detail: ${detail.insightId}, ${detail.fileInsights?.length ?? 0} files, ${count} findings`
+          `[insights] sending detail: ${worktreeId} (${wt.branch}), ${detail.insightId}, ${detail.fileInsights?.length ?? 0} files, ${count} findings`
         );
         this._deps.postMessage({ type: 'insight-detail', detail });
       }
       log.info(
-        `[insights] runInsights done: ${details.length} details, ${totalFindings} total findings`
+        `[insights] runInsights done: ${worktreeId} (${wt.branch}), ${details.length} details, ${totalFindings} total findings`
       );
     } catch (err) {
       if (controller.signal.aborted) {
-        log.info('[insights] runInsights aborted in catch');
+        log.info(`[insights] runInsights aborted in catch: ${worktreeId} (${wt.branch})`);
         return;
       }
-      log.error('runInsights error:', err);
+      log.error(`[insights] runInsights error (${worktreeId}):`, err);
     } finally {
       if (!controller.signal.aborted) {
         this._deps.postMessage({ type: 'insights-status', running: false });

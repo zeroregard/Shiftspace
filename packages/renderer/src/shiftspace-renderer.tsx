@@ -33,6 +33,7 @@ interface Props {
   onDetectPackages?: () => void;
   onGetLog?: (worktreeId: string, actionId: string) => void;
   onRecheckInsights?: (worktreeId: string) => void;
+  onCancelInsights?: (worktreeId: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -60,6 +61,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onDetectPackages,
   onGetLog,
   onRecheckInsights,
+  onCancelInsights,
   panZoomConfig,
 }) => {
   const { setWorktrees, applyEvent } = useWorktreeStore();
@@ -90,6 +92,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       onRunPipeline={onRunPipeline}
       onGetLog={onGetLog}
       onRecheckInsights={onRecheckInsights}
+      onCancelInsights={onCancelInsights}
       onSetPackage={onSetPackage}
       onDetectPackages={onDetectPackages}
     >

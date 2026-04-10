@@ -105,4 +105,14 @@ export class InsightRunner {
   hasCacheEntry(worktreeId: string): boolean {
     return this.cache.has(worktreeId);
   }
+
+  /** Set a sentinel cache entry for a worktree with no files, preventing re-scheduling. */
+  markEmpty(worktreeId: string): void {
+    this.cache.set(worktreeId, {
+      filesCacheKey: '',
+      extraSettingsKey: '',
+      summaries: [],
+      details: [],
+    });
+  }
 }
