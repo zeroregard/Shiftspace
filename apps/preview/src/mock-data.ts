@@ -5,19 +5,20 @@ import type { InsightDetail, FileDiagnosticSummary } from '@shiftspace/renderer'
 
 function smellDetail(
   worktreeId: string,
-  entries: Array<[string, Array<[string, string, number, number, number?]>]>
+  entries: Array<[string, Array<[string, string, number, number, number?, string?]>]>
 ): InsightDetail {
   return {
     insightId: 'codeSmells',
     worktreeId,
     fileInsights: entries.map(([filePath, findings]) => ({
       filePath,
-      findings: findings.map(([ruleId, ruleLabel, count, threshold, firstLine]) => ({
+      findings: findings.map(([ruleId, ruleLabel, count, threshold, firstLine, hint]) => ({
         ruleId,
         ruleLabel,
         count,
         threshold,
         ...(firstLine !== undefined ? { firstLine } : {}),
+        ...(hint !== undefined ? { hint } : {}),
       })),
     })),
   };
@@ -25,18 +26,54 @@ function smellDetail(
 
 // nextjs template — wt-0
 export const MOCK_CODE_SMELL_DETAIL_WT0 = smellDetail('wt-0', [
-  ['src/app/page.tsx', [['console-log', 'Console Log', 2, 1, 12]]],
-  ['src/components/Header.tsx', [['eslint-disable', 'ESLint Disable', 1, 1, 1]]],
+  [
+    'src/app/page.tsx',
+    [
+      [
+        'console-log',
+        'Console Log',
+        2,
+        1,
+        12,
+        'Remove console.log before merging. Use a proper logger if runtime logging is needed.',
+      ],
+    ],
+  ],
+  [
+    'src/components/Header.tsx',
+    [
+      [
+        'eslint-disable',
+        'ESLint Disable',
+        1,
+        1,
+        1,
+        'Find another way to handle this rather than disabling the rule.',
+      ],
+    ],
+  ],
   ['src/components/Button.tsx', [['console-log', 'Console Log', 1, 1, 8]]],
   ['src/lib/api.ts', [['console-log', 'Console Log', 3, 1, 5]]],
   [
     'src/lib/utils.ts',
     [
-      ['todo-comment', 'TODO Comment', 4, 3, 3],
+      ['todo-comment', 'TODO Comment', 4, 3, 3, 'Resolve or file a ticket for TODO comments.'],
       ['console-log', 'Console Log', 1, 1, 22],
     ],
   ],
-  ['src/hooks/useData.ts', [['use-effect-overuse', 'useEffect Overuse', 6, 5, 7]]],
+  [
+    'src/hooks/useData.ts',
+    [
+      [
+        'use-effect-overuse',
+        'useEffect Overuse',
+        6,
+        5,
+        7,
+        'Too many useEffect hooks in one component. Consider extracting logic into custom hooks.',
+      ],
+    ],
+  ],
   ['src/hooks/useAuth.ts', [['console-log', 'Console Log', 1, 1, 15]]],
 ]);
 

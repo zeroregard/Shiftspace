@@ -40,7 +40,12 @@ function findingsArrayEqual(a: InsightFinding[], b: InsightFinding[]): boolean {
     const fa = a[i];
     const fb = b[i];
     if (fa === fb) continue;
-    if (fa.ruleId !== fb.ruleId || fa.count !== fb.count || fa.threshold !== fb.threshold) {
+    if (
+      fa.ruleId !== fb.ruleId ||
+      fa.count !== fb.count ||
+      fa.threshold !== fb.threshold ||
+      fa.hint !== fb.hint
+    ) {
       return false;
     }
   }

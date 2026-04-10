@@ -116,6 +116,8 @@ export interface InsightFinding {
   threshold: number;
   /** 1-indexed line number of the first match (for jump-to-line). */
   firstLine?: number;
+  /** Guidance on how to fix this smell. Shown in tooltips and MCP responses. */
+  hint?: string;
 }
 
 /** All findings for a single file from one insight plugin. */

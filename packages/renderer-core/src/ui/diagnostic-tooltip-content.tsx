@@ -69,10 +69,18 @@ export function FindingTooltipContent({ findings }: FindingTooltipContentProps) 
     <div className="flex flex-col gap-1 max-w-[320px]">
       {findings.map((f) => (
         <div key={f.ruleId} className="flex flex-col gap-0.5">
-          <span className="text-10 text-text-primary">{f.ruleLabel}</span>
-          <span className="text-9 text-text-faint">
-            {f.count} found (threshold: {f.threshold})
+          <span className="text-10 text-text-primary">
+            {f.ruleLabel}: {f.count} found
+            {f.threshold > 1 && (
+              <span className="text-text-faint">
+                {' '}
+                ({f.count} occurrences, threshold: {f.threshold})
+              </span>
+            )}
           </span>
+          {f.hint && (
+            <span className="text-9 text-text-muted leading-snug line-clamp-2">→ {f.hint}</span>
+          )}
         </div>
       ))}
     </div>

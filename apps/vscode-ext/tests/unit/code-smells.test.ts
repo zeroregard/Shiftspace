@@ -242,6 +242,92 @@ describe('codeSmellsPlugin — missing file', () => {
   });
 });
 
+describe('codeSmellsPlugin — negativePattern', () => {
+  it('excludes lines matching both pattern and negativePattern', async () => {
+    writeFile(
+      'src/justified.ts',
+      [
+        '// eslint-disable-next-line no-console -- needed for debugging',
+        '// eslint-disable-next-line no-console',
+        '// eslint-disable',
+      ].join('\n')
+    );
+    const rule = makeRule({
+      id: 'eslint-disable',
+      pattern: '//\\s*eslint-disable',
+      negativePattern: '--\\s*\\S',
+      threshold: 1,
+    });
+    const { detail } = await analyze([makeFile('src/justified.ts')], [rule]);
+    // Line 1 matches both pattern AND negativePattern → excluded
+    // Lines 2-3 match pattern only → counted
+    expect(detail.fileInsights).toHaveLength(1);
+    expect(detail.fileInsights[0]!.findings[0]!.count).toBe(2);
+  });
+
+  it('counts all matches when negativePattern is not set', async () => {
+    writeFile('src/no-neg.ts', ['// eslint-disable -- justified', '// eslint-disable'].join('\n'));
+    const rule = makeRule({
+      id: 'eslint-disable',
+      pattern: '//\\s*eslint-disable',
+      threshold: 1,
+    });
+    const { detail } = await analyze([makeFile('src/no-neg.ts')], [rule]);
+    expect(detail.fileInsights[0]!.findings[0]!.count).toBe(2);
+  });
+
+  it('ignores invalid negativePattern with warning (no crash)', async () => {
+    writeFile('src/bad-neg.ts', 'console.log("hi")');
+    const rule = makeRule({
+      negativePattern: '(invalid[',
+    });
+    const { detail } = await analyze([makeFile('src/bad-neg.ts')], [rule]);
+    // Should still scan with the main pattern despite invalid negativePattern
+    expect(detail.fileInsights).toHaveLength(1);
+    expect(detail.fileInsights[0]!.findings[0]!.count).toBe(1);
+  });
+});
+
+describe('codeSmellsPlugin — hint passthrough', () => {
+  it('includes hint in finding when rule has a hint', async () => {
+    writeFile('src/hinted.ts', 'console.log("x")');
+    const rule = makeRule({ hint: 'Remove console.log before merging.' });
+    const { detail } = await analyze([makeFile('src/hinted.ts')], [rule]);
+    expect(detail.fileInsights[0]!.findings[0]!.hint).toBe('Remove console.log before merging.');
+  });
+
+  it('omits hint from finding when rule has no hint', async () => {
+    writeFile('src/no-hint.ts', 'console.log("x")');
+    const rule = makeRule();
+    const { detail } = await analyze([makeFile('src/no-hint.ts')], [rule]);
+    expect(detail.fileInsights[0]!.findings[0]!.hint).toBeUndefined();
+  });
+});
+
+describe('codeSmellsPlugin — excludePatterns', () => {
+  it('skips test files when excludePatterns includes *.test.ts', async () => {
+    writeFile('src/util.test.ts', 'console.log("test")');
+    const rule = makeRule({ excludePatterns: ['*.test.ts'] });
+    const { detail } = await analyze([makeFile('src/util.test.ts')], [rule]);
+    expect(detail.fileInsights).toHaveLength(0);
+  });
+});
+
+describe('codeSmellsPlugin — invalid regex', () => {
+  it('skips rules with invalid pattern (no crash)', async () => {
+    writeFile('src/ok.ts', 'console.log("x")');
+    const rules: SmellRule[] = [
+      makeRule({ id: 'bad', pattern: '(invalid[' }),
+      makeRule({ id: 'good', pattern: 'console\\.log' }),
+    ];
+    const { detail } = await analyze([makeFile('src/ok.ts')], rules);
+    // Bad rule is skipped, good rule still runs
+    expect(detail.fileInsights).toHaveLength(1);
+    expect(detail.fileInsights[0]!.findings).toHaveLength(1);
+    expect(detail.fileInsights[0]!.findings[0]!.ruleId).toBe('good');
+  });
+});
+
 describe('codeSmellsPlugin — insight metadata', () => {
   it('insightId is codeSmells', async () => {
     writeFile('src/m.ts', 'console.log("x")');

@@ -17,12 +17,16 @@ export interface SmellRule {
   label: string;
   /** JavaScript regex pattern, matched per line. */
   pattern: string;
+  /** Optional regex. Lines matching BOTH pattern AND negativePattern are excluded (not counted). */
+  negativePattern?: string;
   /** Minimum matches in a file to flag it (>= 1). */
   threshold: number;
   /** File extensions this rule applies to (e.g. ['.ts', '.tsx']). Omit to apply to all. */
   fileTypes?: string[];
   /** Glob patterns to exclude (matched against the relative file path, e.g. '*.test.ts'). */
   excludePatterns?: string[];
+  /** Guidance on how to fix this smell. Shown in UI tooltips and MCP responses. */
+  hint?: string;
 }
 
 export interface ShiftspaceConfig {

@@ -47,40 +47,55 @@
       "id": "eslint-disable",
       "label": "ESLint Disable",
       "pattern": "//\\s*eslint-disable",
+      "negativePattern": "--\\s*\\S",
       "threshold": 1,
       "fileTypes": [".jsx", ".ts", ".tsx"],
-      "excludePatterns": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"]
+      "excludePatterns": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
+      "hint": "Find another way to handle this rather than disabling the rule. If you are 100% certain this is the best approach, add a comment explaining why using the -- convention: // eslint-disable-next-line rule-name -- reason here"
     },
     {
       "id": "llm-comment",
       "label": "LLM Comment",
       "pattern": "// ---------------------------------------------------------------------------",
-      "threshold": "1"
+      "threshold": 1,
+      "hint": "Remove LLM-generated separator comments. They add noise without value."
     },
     {
       "id": "use-effect-overuse",
       "label": "useEffect Overuse",
       "pattern": "useEffect\\s*\\(",
       "threshold": 5,
-      "fileTypes": [".jsx", ".tsx"]
+      "fileTypes": [".jsx", ".tsx"],
+      "hint": "Too many useEffect hooks in one component. Consider extracting logic into custom hooks, using useMemo/useCallback, or restructuring the component."
+    },
+    {
+      "id": "console-log",
+      "label": "Console Log",
+      "pattern": "console\\.log",
+      "threshold": 1,
+      "fileTypes": [".js", ".jsx", ".ts", ".tsx"],
+      "hint": "Remove console.log before merging. Use a proper logger if runtime logging is needed."
     },
     {
       "id": "todo-comment",
       "label": "TODO Comment",
       "pattern": "//\\s*TODO",
-      "threshold": 1
+      "threshold": 1,
+      "hint": "Resolve or file a ticket for TODO comments before merging."
     },
     {
       "id": "legacy",
       "label": "Legacy",
       "pattern": "Legacy",
-      "threshold": "1"
+      "threshold": 1,
+      "hint": "References to legacy code or patterns — consider migrating or removing."
     },
     {
       "id": "backwards",
-      "label": "Backwards compatability",
+      "label": "Backwards Compatibility",
       "pattern": "Backwards",
-      "threshold": "1"
+      "threshold": 1,
+      "hint": "Backwards-compatibility shims should be temporary. Remove when no longer needed."
     }
   ]
 }
