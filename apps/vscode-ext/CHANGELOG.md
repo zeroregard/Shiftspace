@@ -19,21 +19,6 @@ All notable changes to Shiftspace will be documented in this file.
 
 - resolve code scanning alerts #17 and #18 (#97)
 
-## [Unreleased]
-
-### Added
-
-- add worktree plus button to grove and sidebar views (#99) _(renderer-grove)_
-- add repoDiscovery setting to control cross-repo tracking (#100) _(vscode-ext)_
-
-### Changed
-
-- enforce kebab-case filenames via oxlint unicorn/filename-case (#98)
-
-### Fixed
-
-- resolve code scanning alerts #17 and #18 (#97)
-
 ## [0.1.40] — 2026-04-08
 
 ### Added
