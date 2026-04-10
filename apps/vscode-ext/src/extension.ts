@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ShiftspacePanel } from './shiftspace-panel';
 import { SidebarViewProvider } from './sidebar-view-provider';
+import { SharedGitProvider } from './shared-git-provider';
 import { runDetectActionsCommand } from './actions/detect';
 import { ShiftspaceMcpHttpServer } from './mcp/http-server';
 import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/auto-config';
@@ -13,6 +14,12 @@ export function activate(context: vscode.ExtensionContext) {
   initLogger(context);
   initGitPath();
 
+  // Single shared git provider — both sidebar and tab subscribe to the same
+  // GitDataProvider so mutations (rename, checkout, swap) are reflected
+  // instantly across all views.
+  const sharedGit = new SharedGitProvider();
+  context.subscriptions.push(sharedGit);
+
   // Restore any Shiftspace tabs that were open before a window reload.
   // Must be registered synchronously at activation time.
   ShiftspacePanel.registerSerializer(context);
@@ -24,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       'shiftspace.sidebar',
-      new SidebarViewProvider(context),
+      new SidebarViewProvider(context, sharedGit),
       { webviewOptions: { retainContextWhenHidden: true } }
     )
   );
@@ -53,8 +60,9 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Expose the MCP HTTP server so ShiftspacePanel can register handlers
+  // Expose the MCP HTTP server and shared git provider so ShiftspacePanel can use them
   ShiftspacePanel.setMcpHttpServer(mcpHttpServer);
+  ShiftspacePanel.setSharedGitProvider(sharedGit);
 
   context.subscriptions.push({ dispose: () => void mcpHttpServer.stop() });
 }

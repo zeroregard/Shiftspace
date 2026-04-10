@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { getWebviewHtml } from './webview/html';
 import { MessageRouter } from './webview/message-router';
 import type { WebviewMessage } from './webview/message-router';
-import { GitDataProvider } from './git-data-provider';
+import { SharedGitProvider } from './shared-git-provider';
 import { ActionCoordinator } from './actions/action-coordinator';
 import { IconThemeProvider } from './icon-theme-provider';
 import { InsightRunner } from './insights/runner';
@@ -10,37 +10,43 @@ import { DiagnosticCollector, collectDiagnostics } from './insights/plugins/diag
 import { InspectionSession } from './insights/inspection-session';
 import { ViewSettingsStore } from './view-settings-store';
 import type { PersistedViewSettings } from './view-settings-store';
-import { RepoTracker } from './git/repo-tracker';
 // Register built-in insight plugins (side-effect import)
 import './insights/plugins/code-smells';
 import type { DiffMode, AppMode, WorktreeState } from '@shiftspace/renderer';
 import type { ShiftspaceMcpHttpServer } from './mcp/http-server';
 import { McpToolHandlers } from './mcp/handlers';
 
+const VIEW_ID = 'panel';
+
 export class ShiftspacePanel {
   private static currentPanel: ShiftspacePanel | undefined;
   private static mcpHttpServer: ShiftspaceMcpHttpServer | undefined;
+  private static sharedGit: SharedGitProvider | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _context: vscode.ExtensionContext;
   private readonly _router = new MessageRouter();
   private _disposables: vscode.Disposable[] = [];
 
-  private _gitProvider: GitDataProvider | undefined;
   private _actionCoordinator: ActionCoordinator | undefined;
   private _iconProvider: IconThemeProvider | undefined;
   private _viewSettings: ViewSettingsStore | undefined;
-  private _repoTracker: RepoTracker | undefined;
   private _inspection: InspectionSession | undefined;
   private _insightRunner: InsightRunner | undefined;
 
   private _iconDebounceTimer: ReturnType<typeof setTimeout> | undefined;
   private _settingsChangeDisposable: vscode.Disposable | undefined;
   private _insightStatusBar: vscode.StatusBarItem | undefined;
+  private _removeFileChangeListener: (() => void) | undefined;
+  private _removeRepoChangeListener: (() => void) | undefined;
 
   // Static API (consumed by extension.ts)
 
   static setMcpHttpServer(server: ShiftspaceMcpHttpServer): void {
     ShiftspacePanel.mcpHttpServer = server;
+  }
+
+  static setSharedGitProvider(shared: SharedGitProvider): void {
+    ShiftspacePanel.sharedGit = shared;
   }
 
   static toggle(context: vscode.ExtensionContext) {
@@ -68,8 +74,9 @@ export class ShiftspacePanel {
   static recheckInsights(): void {
     const panel = ShiftspacePanel.currentPanel;
     if (!panel) return;
+    const sharedGit = ShiftspacePanel.sharedGit;
     // Prefer current inspection worktree, fall back to first available
-    const wt = panel._inspection?.currentWorktreeId ?? panel._gitProvider?.getWorktrees()[0]?.id;
+    const wt = panel._inspection?.currentWorktreeId ?? sharedGit?.provider?.getWorktrees()[0]?.id;
     if (wt) {
       // Show spinner immediately (don't rely on the async postMessage round-trip)
       panel.updateInsightStatusBar(true);
@@ -140,6 +147,9 @@ export class ShiftspacePanel {
   // Initialization (called when webview sends "ready")
 
   private async onReady(): Promise<void> {
+    const sharedGit = ShiftspacePanel.sharedGit;
+    if (!sharedGit) return;
+
     const postMessage = (msg: object) => {
       void this._panel.webview.postMessage(msg);
       // Mirror insight status to the VS Code status bar
@@ -148,28 +158,33 @@ export class ShiftspacePanel {
       }
     };
 
-    // Dispose previous providers
-    this._gitProvider?.dispose();
+    // Dispose previous panel-specific providers
     this._actionCoordinator?.dispose();
     this._iconProvider?.dispose();
     this._inspection?.dispose();
-    this._repoTracker?.dispose();
     this._settingsChangeDisposable?.dispose();
+    this._removeFileChangeListener?.();
+    this._removeRepoChangeListener?.();
     if (this._iconDebounceTimer !== undefined) {
       clearTimeout(this._iconDebounceTimer);
       this._iconDebounceTimer = undefined;
     }
 
-    // Create helpers
+    // Register this panel's postMessage with the shared git provider.
+    // (Re-registers on every "ready" since the webview reference may change.)
+    sharedGit.registerView(VIEW_ID, postMessage);
+
+    // Create panel-specific helpers
     this._viewSettings = new ViewSettingsStore(this._context.workspaceState);
-    this._repoTracker = new RepoTracker();
     this._iconProvider = new IconThemeProvider();
 
     this._insightRunner = new InsightRunner();
     const diagnosticCollector = new DiagnosticCollector(postMessage);
 
-    // Create providers
-    this._gitProvider = new GitDataProvider(postMessage, (worktreeId) => {
+    this._actionCoordinator = new ActionCoordinator(postMessage);
+
+    // Subscribe to per-worktree file changes for actions/icons/insights
+    this._removeFileChangeListener = sharedGit.addFileChangeListener((worktreeId) => {
       this._actionCoordinator?.markAllStale(worktreeId);
       // Debounce icon resolution for new/changed files
       if (this._iconDebounceTimer !== undefined) clearTimeout(this._iconDebounceTimer);
@@ -181,14 +196,18 @@ export class ShiftspacePanel {
       this._inspection?.onFileChange(worktreeId);
     });
 
-    this._actionCoordinator = new ActionCoordinator(postMessage);
+    // Subscribe to repo switches for action coordinator re-init
+    this._removeRepoChangeListener = sharedGit.addRepoChangeListener(async (newRoot) => {
+      await this._actionCoordinator?.initialize(newRoot, this._viewSettings?.get().selectedPackage);
+      this.syncWorktreesToCoordinator();
+    });
 
     // Create inspection session (needs providers to be ready)
     this._inspection = new InspectionSession(this._insightRunner, diagnosticCollector, {
       postMessage,
-      getWorktrees: () => this._gitProvider?.getWorktrees() ?? [],
-      getWorktreeFiles: (id) => this._gitProvider?.getWorktreeFiles(id) ?? [],
-      getCurrentGitRoot: () => this._repoTracker?.currentGitRoot,
+      getWorktrees: () => sharedGit.provider?.getWorktrees() ?? [],
+      getWorktreeFiles: (id) => sharedGit.provider?.getWorktreeFiles(id) ?? [],
+      getCurrentGitRoot: () => sharedGit.currentGitRoot,
       getSmellRules: () => this._actionCoordinator?.getSmellRules() ?? [],
     });
 
@@ -202,16 +221,8 @@ export class ShiftspacePanel {
       }
     });
 
-    // Watch for repo switching on editor change
-    this._repoTracker.startWatching((newRoot) => this.handleRepoSwitch(newRoot));
-
-    // React to repoDiscovery setting changes
-    this._disposables.push(
-      this._repoTracker.watchSettings((newRoot) => this.handleRepoSwitch(newRoot))
-    );
-
-    // Detect git root and initialize
-    const gitRoot = await this._repoTracker.detectInitialGitRoot();
+    // Ensure the shared git provider is initialized (no-ops if already done)
+    const gitRoot = await sharedGit.ensureInitialized();
 
     if (!gitRoot) {
       const hasSomething =
@@ -223,11 +234,9 @@ export class ShiftspacePanel {
       return;
     }
 
-    await this._gitProvider.switchRepo(gitRoot);
-
     // Apply persisted diff mode overrides before the webview renders
     const viewSettings = this._viewSettings.get();
-    this._gitProvider.applyDiffModeOverrides(viewSettings.diffModeOverrides);
+    sharedGit.provider?.applyDiffModeOverrides(viewSettings.diffModeOverrides);
 
     await this._actionCoordinator.initialize(gitRoot, viewSettings.selectedPackage);
     this.syncWorktreesToCoordinator();
@@ -241,13 +250,16 @@ export class ShiftspacePanel {
   // Message handler registration
 
   private registerHandlers(): void {
+    const sharedGit = ShiftspacePanel.sharedGit;
+    if (!sharedGit) return;
+
     this._router.clear();
 
     this._router.on('ready', () => void this.onReady());
 
-    // Git provider handlers
+    // Git provider handlers — delegate to the shared GitDataProvider
     this._router.on('file-click', (m) => {
-      void this._gitProvider?.handleFileClick(
+      void sharedGit.provider?.handleFileClick(
         m.worktreeId ?? '',
         m.filePath ?? '',
         typeof m.line === 'number' ? m.line : undefined
@@ -256,40 +268,40 @@ export class ShiftspacePanel {
     this._router.on('set-diff-mode', (m) => {
       if (!m.worktreeId || !m.diffMode) return;
       const diffMode = m.diffMode as DiffMode;
-      const wt = this._gitProvider?.getWorktrees().find((w) => w.id === m.worktreeId);
+      const wt = sharedGit.provider?.getWorktrees().find((w) => w.id === m.worktreeId);
       if (wt) {
         const settings = this._viewSettings!.get();
         settings.diffModeOverrides[wt.branch] = diffMode;
         this._viewSettings!.save({ diffModeOverrides: settings.diffModeOverrides });
       }
-      void this._gitProvider?.handleSetDiffMode(m.worktreeId, diffMode);
+      void sharedGit.provider?.handleSetDiffMode(m.worktreeId, diffMode);
     });
     this._router.on('get-branch-list', (m) => {
-      if (m.worktreeId) void this._gitProvider?.handleGetBranchList(m.worktreeId);
+      if (m.worktreeId) void sharedGit.provider?.handleGetBranchList(m.worktreeId);
     });
     this._router.on('checkout-branch', (m) => {
       if (m.worktreeId && m.branch)
-        void this._gitProvider?.handleCheckoutBranch(m.worktreeId, m.branch);
+        void sharedGit.provider?.handleCheckoutBranch(m.worktreeId, m.branch);
     });
     this._router.on('folder-click', (m) => {
       if (m.worktreeId && m.folderPath)
-        void this._gitProvider?.handleFolderClick(m.worktreeId, m.folderPath);
+        void sharedGit.provider?.handleFolderClick(m.worktreeId, m.folderPath);
     });
     this._router.on('fetch-branches', (m) => {
-      if (m.worktreeId) void this._gitProvider?.handleFetchBranches(m.worktreeId);
+      if (m.worktreeId) void sharedGit.provider?.handleFetchBranches(m.worktreeId);
     });
     this._router.on('swap-branches', (m) => {
-      if (m.worktreeId) void this._gitProvider?.handleSwapBranches(m.worktreeId);
+      if (m.worktreeId) void sharedGit.provider?.handleSwapBranches(m.worktreeId);
     });
     this._router.on('add-worktree', () => {
-      void this._gitProvider?.handleAddWorktree();
+      void sharedGit.provider?.handleAddWorktree();
     });
     this._router.on('remove-worktree', (m) => {
-      if (m.worktreeId) void this._gitProvider?.handleRemoveWorktree(m.worktreeId);
+      if (m.worktreeId) void sharedGit.provider?.handleRemoveWorktree(m.worktreeId);
     });
     this._router.on('rename-worktree', (m) => {
       if (m.worktreeId && m.newName)
-        void this._gitProvider?.handleRenameWorktree(m.worktreeId, m.newName);
+        void sharedGit.provider?.handleRenameWorktree(m.worktreeId, m.newName);
     });
 
     // Action coordinator handlers
@@ -322,7 +334,7 @@ export class ShiftspacePanel {
     // Inspection handlers
     this._router.on('enter-inspection', (m) => {
       if (!m.worktreeId) return;
-      const wt = this._gitProvider?.getWorktrees().find((w) => w.id === m.worktreeId);
+      const wt = sharedGit.provider?.getWorktrees().find((w) => w.id === m.worktreeId);
       if (wt) {
         this._viewSettings!.save({ mode: { type: 'inspection', branch: wt.branch } });
       }
@@ -343,7 +355,7 @@ export class ShiftspacePanel {
   // Small helpers (stay inline — not worth extracting)
 
   private restoreViewSettings(settings: PersistedViewSettings): void {
-    const worktrees = this._gitProvider?.getWorktrees() ?? [];
+    const worktrees = ShiftspacePanel.sharedGit?.provider?.getWorktrees() ?? [];
 
     let mode: AppMode = { type: 'grove' };
     const savedMode = settings.mode;
@@ -362,30 +374,27 @@ export class ShiftspacePanel {
   }
 
   private async reloadIcons(): Promise<void> {
-    if (!this._iconProvider || !this._gitProvider) return;
+    const gitProvider = ShiftspacePanel.sharedGit?.provider;
+    if (!this._iconProvider || !gitProvider) return;
     const loaded = await this._iconProvider.load();
     if (!loaded) return;
-    const filePaths = this._gitProvider.getAllFilePaths();
+    const filePaths = gitProvider.getAllFilePaths();
     const iconMap = await this._iconProvider.resolveForFiles(filePaths);
     await this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
   }
 
   private async updateIcons(): Promise<void> {
-    if (!this._iconProvider?.isLoaded || !this._gitProvider) return;
-    const filePaths = this._gitProvider.getAllFilePaths();
+    const gitProvider = ShiftspacePanel.sharedGit?.provider;
+    if (!this._iconProvider?.isLoaded || !gitProvider) return;
+    const filePaths = gitProvider.getAllFilePaths();
     const iconMap = await this._iconProvider.resolveForFiles(filePaths);
     await this._panel.webview.postMessage({ type: 'icon-theme', payload: iconMap });
   }
 
-  private async handleRepoSwitch(newRoot: string): Promise<void> {
-    await this._gitProvider?.switchRepo(newRoot);
-    await this._actionCoordinator?.initialize(newRoot, this._viewSettings?.get().selectedPackage);
-    this.syncWorktreesToCoordinator();
-  }
-
   private syncWorktreesToCoordinator(): void {
-    if (!this._gitProvider || !this._actionCoordinator) return;
-    const worktrees = this._gitProvider.getWorktrees();
+    const gitProvider = ShiftspacePanel.sharedGit?.provider;
+    if (!gitProvider || !this._actionCoordinator) return;
+    const worktrees = gitProvider.getWorktrees();
     this._actionCoordinator.updateWorktrees(
       worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch }))
     );
@@ -393,9 +402,9 @@ export class ShiftspacePanel {
 
   private registerMcpHandlers(repoRoot: string): void {
     const server = ShiftspacePanel.mcpHttpServer;
-    if (!server || !this._gitProvider || !this._actionCoordinator) return;
+    const gitProvider = ShiftspacePanel.sharedGit?.provider;
+    if (!server || !gitProvider || !this._actionCoordinator) return;
 
-    const gitProvider = this._gitProvider;
     const coordinator = this._actionCoordinator;
 
     const handlers = new McpToolHandlers({
@@ -451,6 +460,13 @@ export class ShiftspacePanel {
   private dispose() {
     ShiftspacePanel.currentPanel = undefined;
 
+    // Unregister from shared provider (do NOT dispose the shared provider itself)
+    ShiftspacePanel.sharedGit?.unregisterView(VIEW_ID);
+    this._removeFileChangeListener?.();
+    this._removeFileChangeListener = undefined;
+    this._removeRepoChangeListener?.();
+    this._removeRepoChangeListener = undefined;
+
     if (this._iconDebounceTimer !== undefined) {
       clearTimeout(this._iconDebounceTimer);
       this._iconDebounceTimer = undefined;
@@ -462,10 +478,6 @@ export class ShiftspacePanel {
     this._insightStatusBar = undefined;
     this._inspection?.dispose();
     this._inspection = undefined;
-    this._repoTracker?.dispose();
-    this._repoTracker = undefined;
-    this._gitProvider?.dispose();
-    this._gitProvider = undefined;
     this._actionCoordinator?.dispose();
     this._actionCoordinator = undefined;
     this._iconProvider?.dispose();

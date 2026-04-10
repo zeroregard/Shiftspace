@@ -877,6 +877,11 @@ export class GitDataProvider implements vscode.Disposable {
     return this.worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch }));
   }
 
+  /** Returns the full WorktreeState array (used to initialize late-joining views). */
+  getFullWorktrees(): WorktreeState[] {
+    return this.worktrees;
+  }
+
   /** Returns the current FileChange list for a worktree (both files and branchFiles merged). */
   getWorktreeFiles(worktreeId: string): import('@shiftspace/renderer').FileChange[] {
     const wt = this.worktrees.find((w) => w.id === worktreeId);
