@@ -2,6 +2,23 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.1.41] — 2026-04-10
+
+### Added
+
+- auto-generate marketplace changelogs from conventional commits (#102)
+- add worktree plus button to grove and sidebar views (#99) _(renderer-grove)_
+- add repoDiscovery setting to control cross-repo tracking (#100) _(vscode-ext)_
+
+### Changed
+
+- Add relative time formatting with auto-updating hook
+- enforce kebab-case filenames via oxlint unicorn/filename-case (#98)
+
+### Fixed
+
+- resolve code scanning alerts #17 and #18 (#97)
+
 ## [Unreleased]
 
 ### Added
