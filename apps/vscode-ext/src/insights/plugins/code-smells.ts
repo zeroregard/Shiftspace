@@ -44,11 +44,22 @@ const codeSmellsPlugin: InsightPlugin = {
 
     if (rules.length === 0) return empty;
 
-    // Pre-compile regexes once (gap 6: perf) with per-rule error handling (gap 7: resilience)
-    const compiledRules: Array<{ rule: SmellRule; regex: RegExp }> = [];
+    // Pre-compile regexes once with per-rule error handling
+    const compiledRules: Array<{ rule: SmellRule; regex: RegExp; negRegex: RegExp | null }> = [];
     for (const rule of rules) {
       try {
-        compiledRules.push({ rule, regex: new RegExp(rule.pattern, 'g') });
+        const regex = new RegExp(rule.pattern, 'g');
+        let negRegex: RegExp | null = null;
+        if (rule.negativePattern) {
+          try {
+            negRegex = new RegExp(rule.negativePattern);
+          } catch (err) {
+            log.warn(
+              `Code smell rule "${rule.id}" has invalid negativePattern "${rule.negativePattern}", ignoring: ${err}`
+            );
+          }
+        }
+        compiledRules.push({ rule, regex, negRegex });
       } catch (err) {
         log.warn(
           `Code smell rule "${rule.id}" has invalid pattern "${rule.pattern}", skipping: ${err}`
@@ -78,12 +89,14 @@ const codeSmellsPlugin: InsightPlugin = {
       const lines = content.split('\n');
       const findings: InsightFinding[] = [];
 
-      for (const { rule, regex } of applicable) {
+      for (const { rule, regex, negRegex } of applicable) {
         let count = 0;
         let firstLine: number | undefined;
         for (let i = 0; i < lines.length; i++) {
           const matches = lines[i].match(regex);
           if (matches) {
+            // If negativePattern is set, skip lines that ALSO match it
+            if (negRegex && negRegex.test(lines[i])) continue;
             count += matches.length;
             if (firstLine === undefined) firstLine = i + 1; // 1-indexed
           }
@@ -95,6 +108,7 @@ const codeSmellsPlugin: InsightPlugin = {
             count,
             threshold: rule.threshold,
             firstLine,
+            ...(rule.hint ? { hint: rule.hint } : {}),
           });
         }
       }
