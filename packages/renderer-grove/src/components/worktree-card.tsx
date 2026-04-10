@@ -8,6 +8,8 @@ import {
   filterCheckoutableBranches,
   useActions,
   useWorktreeRename,
+  useRelativeTime,
+  AnimatedTimestamp,
 } from '@shiftspace/renderer-core';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Input } from '@shiftspace/ui/input';
@@ -95,6 +97,8 @@ export function WorktreeCard({
 
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
+  const lastChanged = wt.files.reduce((max, f) => Math.max(max, f.lastChangedAt), 0);
+  const relativeTime = useRelativeTime(lastChanged);
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
 
@@ -207,6 +211,7 @@ export function WorktreeCard({
         <span className="flex items-center gap-1.5">
           <span className="text-status-added">+{totalAdded}</span>
           <span className="text-status-deleted">-{totalRemoved}</span>
+          <AnimatedTimestamp value={relativeTime} />
         </span>
       </div>
     </div>

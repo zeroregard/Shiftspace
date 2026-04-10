@@ -47,6 +47,7 @@ export { ThemedFileIcon } from './shared/themed-file-icon';
 export { PackageSwitcher } from './shared/package-switcher';
 export { InspectionHoverContext, useInspectionHover } from './shared/inspection-hover-context';
 export { FileRowButton } from './shared/file-row-button';
+export { AnimatedTimestamp } from './shared/animated-timestamp';
 
 // UI
 export {
@@ -66,6 +67,7 @@ export {
 // Hooks
 export { useFileAnnotations, type FileAnnotations } from './hooks/use-file-annotations';
 export { useWorktreeRename } from './hooks/use-worktree-rename';
+export { useRelativeTime } from './hooks/use-relative-time';
 
 // Overlays
 export { DiffPopover } from './overlays/diff-popover';
@@ -85,6 +87,7 @@ export {
   getAllFilteredFiles,
 } from './utils/list-sections';
 export { getSourceLineFromHunks } from './utils/diff-line-lookup';
+export { formatRelativeTime, TICK_INTERVAL } from './utils/relative-time';
 
 // UI (additional)
 export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/diagnostic-tooltip-content';
