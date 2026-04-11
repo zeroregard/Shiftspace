@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO: decompose in a follow-up PR */
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { log } from './logger';

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO: decompose in a follow-up PR */
 import type {
   WorktreeState,
   FileChange,

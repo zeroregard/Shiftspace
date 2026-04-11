@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO: decompose in a follow-up PR */
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';

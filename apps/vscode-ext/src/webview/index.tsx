@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO: decompose in a follow-up PR */
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
