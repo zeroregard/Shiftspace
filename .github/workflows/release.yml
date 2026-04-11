@@ -1,45 +1,56 @@
-# Release pipeline: builds on every push to main, then waits for manual approval
-# before bumping the version, tagging, and creating a GitHub Release.
+# Release pipeline: bump version, build, publish, and create a GitHub Release.
 #
 # How it works:
-#   1. Push to main → "build" job runs automatically (validates build + packages .vsix)
-#   2. Workflow pauses at the "release" job, waiting for approval in the GitHub UI
-#   3. You approve → version bump, tag, GitHub Release, and the Publish workflow triggers
-#   4. You don't approve, and a new push arrives → this run is cancelled, the new run
-#      becomes the one waiting for approval (with all accumulated commits)
+#   1. Trigger manually from the Actions tab (workflow_dispatch)
+#   2. Pick the version bump type (patch / minor / major) and optional dry-run
+#   3. The workflow bumps the version, generates a changelog entry, builds the
+#      extension, publishes to VS Code Marketplace + Open VSX, commits the
+#      version bump, tags, and creates a GitHub Release with the .vsix attached
 #
-# Setup: create a "release" environment in GitHub repo settings with yourself as
-# a required reviewer. (Settings → Environments → New → "release" → Required reviewers)
+# Secrets required:
+#   - VSCE_PAT: Personal access token for the VS Code Marketplace
+#   - OVSX_PAT: Personal access token for the Open VSX Registry
 
-name: 🚀 Release
+name: "\U0001F680 Release"
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'LICENSE'
-      - '.github/**'
-      - 'apps/preview/e2e/**'
-      - 'apps/preview/playwright.config.ts'
   workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      dry-run:
+        description: "Dry run (build + package only, skip publish and tagging)"
+        required: false
+        type: boolean
+        default: false
 
-# When a new push arrives, cancel any run still waiting for approval so only
-# the latest commit set is pending. This is the key to "accumulating" commits.
+# Prevent concurrent releases
 concurrency:
   group: release
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  # ── Job 1: Build (automatic) ────────────────────────────────────────────
-  build:
+  release:
+    name: Release
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'chore: bump version')"
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: write
 
     steps:
+      # ── Setup ─────────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Bun
@@ -50,7 +61,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Restore node_modules cache
         uses: actions/cache@v4
@@ -74,66 +85,46 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build
-        run: npx nx run-many -t build
-
-      - name: Package extension
-        run: |
-          cd apps/vscode-ext
-          npx @vscode/vsce package --no-dependencies
-
-      - name: Upload .vsix artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: vsix
-          path: apps/vscode-ext/*.vsix
-          retention-days: 30
-
-  # ── Job 2: Release (requires manual approval) ───────────────────────────
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: release
-
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Bump patch version
+      # ── Version bump ──────────────────────────────────────────────────────
+      - name: Bump version
         id: bump
         run: |
           cd apps/vscode-ext
           CURRENT=$(node -p "require('./package.json').version")
-          NEW=$(node -p "const [ma,mi,pa] = '${CURRENT}'.split('.').map(Number); \`\${ma}.\${mi}.\${pa+1}\`")
-          node -e "const p=require('./package.json'); p.version='${NEW}'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n')"
+          BUMP_TYPE="${{ inputs.bump }}"
+          NEW=$(node -e "
+            const [ma, mi, pa] = '${CURRENT}'.split('.').map(Number);
+            const v = {
+              major: \`\${ma+1}.0.0\`,
+              minor: \`\${ma}.\${mi+1}.0\`,
+              patch: \`\${ma}.\${mi}.\${pa+1}\`
+            }['${BUMP_TYPE}'];
+            process.stdout.write(v);
+          ")
+          node -e "
+            const p = require('./package.json');
+            p.version = '${NEW}';
+            require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
           echo "version=${NEW}" >> $GITHUB_OUTPUT
-          echo "Bumped ${CURRENT} → ${NEW}"
+          echo "previous=${CURRENT}" >> $GITHUB_OUTPUT
+          echo "::notice::Version bump: ${CURRENT} → ${NEW} (${BUMP_TYPE})"
 
+      # ── Changelog ─────────────────────────────────────────────────────────
       - name: Generate changelog
         id: changelog
         run: |
-          # Find the most recent version bump commit (before this run's changes)
+          # Find the most recent version bump commit
           PREV_BUMP=$(git log --oneline --format="%H %s" | grep -E "chore: (bump version|release)" | head -1 | cut -d' ' -f1)
           VERSION="${{ steps.bump.outputs.version }}"
 
-          # Generate and prepend to CHANGELOG.md
+          # Prepend versioned entry to CHANGELOG.md
           node scripts/generate-changelog.mjs \
             --from "$PREV_BUMP" --to HEAD \
             --version "$VERSION" \
             --prepend apps/vscode-ext/CHANGELOG.md
 
-          # Also generate release body for GitHub Release
+          # Generate release body for GitHub Release
           BODY=$(node scripts/generate-changelog.mjs \
             --from "$PREV_BUMP" --to HEAD \
             --format release-body)
@@ -142,25 +133,55 @@ jobs:
           echo "$BODY" >> $GITHUB_OUTPUT
           echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
 
+      # ── Build + Package ───────────────────────────────────────────────────
+      - name: Build
+        run: npx nx run-many -t build
+
+      - name: Package extension
+        id: package
+        run: |
+          cd apps/vscode-ext
+          npx @vscode/vsce package --no-dependencies
+          VSIX=$(ls *.vsix)
+          echo "vsix_file=${VSIX}" >> $GITHUB_OUTPUT
+          echo "::notice::Packaged ${VSIX}"
+
+      # ── Publish (skipped on dry-run) ──────────────────────────────────────
+      - name: Publish to VS Code Marketplace
+        if: inputs.dry-run != true
+        run: |
+          cd apps/vscode-ext
+          npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }} --no-dependencies
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish to Open VSX Registry
+        if: inputs.dry-run != true
+        run: |
+          cd apps/vscode-ext
+          npx ovsx publish ${{ steps.package.outputs.vsix_file }} -p ${{ secrets.OVSX_PAT }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        continue-on-error: true
+
+      # ── Commit, tag, push (skipped on dry-run) ───────────────────────────
       - name: Commit version bump
+        if: inputs.dry-run != true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apps/vscode-ext/package.json apps/vscode-ext/CHANGELOG.md
-          git commit -m "chore: bump version to v${{ steps.bump.outputs.version }}"
+          git commit -m "chore: release v${{ steps.bump.outputs.version }}"
 
       - name: Tag and push
+        if: inputs.dry-run != true
         run: |
           git tag "v${{ steps.bump.outputs.version }}"
           git push origin main --follow-tags
 
-      - name: Download .vsix artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: vsix
-          path: artifacts
-
+      # ── GitHub Release (skipped on dry-run) ──────────────────────────────
       - name: Create GitHub Release
+        if: inputs.dry-run != true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ steps.bump.outputs.version }}"
@@ -170,9 +191,36 @@ jobs:
 
             ${{ steps.changelog.outputs.body }}
 
+            Published to the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace).
+
             ### Install
             Download the `.vsix` file below and install:
             ```
             code --install-extension shiftspace-${{ steps.bump.outputs.version }}.vsix
             ```
-          files: artifacts/*.vsix
+          files: apps/vscode-ext/${{ steps.package.outputs.vsix_file }}
+
+      # ── Dry-run artifact upload ───────────────────────────────────────────
+      - name: Upload .vsix artifact (dry run)
+        if: inputs.dry-run == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: shiftspace-${{ steps.bump.outputs.version }}.vsix
+          path: apps/vscode-ext/${{ steps.package.outputs.vsix_file }}
+          retention-days: 7
+
+      # ── Summary ───────────────────────────────────────────────────────────
+      - name: Summary
+        run: |
+          echo "## \U0001F680 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | \`v${{ steps.bump.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Bump** | ${{ inputs.bump }} (\`${{ steps.bump.outputs.previous }}\` → \`${{ steps.bump.outputs.version }}\`) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Dry run** | ${{ inputs.dry-run }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Package** | \`${{ steps.package.outputs.vsix_file }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.dry-run }}" != "true" ]; then
+            echo "| **Tag** | \`v${{ steps.bump.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Marketplace** | [shiftspace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace) |" >> $GITHUB_STEP_SUMMARY
+          fi
