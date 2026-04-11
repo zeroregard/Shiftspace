@@ -25,7 +25,7 @@ export function SortPicker() {
             aria-label="Sort worktrees"
             data-testid="sort-worktrees"
           >
-            <Codicon name="arrow-swap" size={12} />
+            <Codicon name="three-bars" size={12} />
           </button>
         </Popover.Trigger>
       </Tooltip>

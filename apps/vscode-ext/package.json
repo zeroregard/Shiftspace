@@ -95,7 +95,7 @@
         "command": "shiftspace.sortWorktrees",
         "title": "Sort Worktrees",
         "category": "Shiftspace",
-        "icon": "$(arrow-swap)"
+        "icon": "$(three-bars)"
       }
     ],
     "menus": {

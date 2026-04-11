@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
-import { useActions, useWorktreeStore, SortPicker, sortWorktrees } from '@shiftspace/renderer-core';
+import { useActions, useWorktreeStore, sortWorktrees } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { IconButton } from '@shiftspace/ui/icon-button';
@@ -12,7 +12,7 @@ interface GroveViewProps {
 
 function WorktreeCardError() {
   return (
-    <div className="w-[32rem] flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-status-deleted/30 text-text-faint text-11">
+    <div className="w-lg flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-status-deleted/30 text-text-faint text-11">
       Failed to render worktree
     </div>
   );
@@ -30,9 +30,6 @@ export function GroveView({ worktrees }: GroveViewProps) {
           <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
         ) : (
           <LayoutGroup>
-            <div className="flex items-center gap-1 mb-3">
-              <SortPicker />
-            </div>
             <div className="flex flex-row flex-wrap gap-4 items-start">
               <AnimatePresence>
                 {sorted.map((wt) => (

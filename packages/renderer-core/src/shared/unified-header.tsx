@@ -4,6 +4,7 @@ import type { DiffMode } from '../types';
 import { BranchPicker } from '../overlays/branch-picker';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { PackageSwitcher } from './package-switcher';
+import { SortPicker } from './sort-picker';
 import { useActions } from '../ui/actions-context';
 import { filterCheckoutableBranches } from '../utils/worktree-utils';
 
@@ -87,6 +88,9 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
+      {/* Grove controls (left side) */}
+      {!isInspecting && <SortPicker />}
+
       {/* Inspection controls (left side) */}
       {isInspecting && wt && (
         <>

@@ -205,14 +205,14 @@ export function WorktreeCard({
 
       {/* Stats */}
       <div className="flex items-center justify-between text-11">
-        <span className="text-text-muted">
-          {wt.files.length} file{wt.files.length !== 1 ? 's' : ''}
-        </span>
         <span className="flex items-center gap-1.5">
+          <span className="text-text-muted">
+            {wt.files.length} file{wt.files.length !== 1 ? 's' : ''}
+          </span>
           <span className="text-status-added">+{totalAdded}</span>
           <span className="text-status-deleted">-{totalRemoved}</span>
-          <AnimatedTimestamp value={relativeTime} />
         </span>
+        <AnimatedTimestamp value={relativeTime} />
       </div>
     </div>
   );
