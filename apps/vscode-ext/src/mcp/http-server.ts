@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import type { McpToolHandlers } from './handlers';
+import { reportError } from '../telemetry';
 
 interface McpLock {
   port: number;
@@ -130,6 +131,7 @@ export class ShiftspaceMcpHttpServer {
       res.end(JSON.stringify(result));
     } catch (err: unknown) {
       console.error('[MCP HTTP] Tool handler error:', err);
+      reportError(err as Error, { context: 'mcpHttpServer', tool });
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Internal server error' }));
     }

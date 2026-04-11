@@ -4,6 +4,7 @@ import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
 import { gitReadOnly, gitWrite } from './git-utils';
 import { log } from '../logger';
+import { reportError } from '../telemetry';
 
 /**
  * Parse the output of `git worktree list --porcelain` into WorktreeState[].
@@ -71,7 +72,8 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
       timeout: 5000,
     });
     return parseWorktreeOutput(stdout);
-  } catch {
+  } catch (err) {
+    reportError(err as Error, { context: 'detectWorktrees', root: repoRoot });
     return [];
   }
 }
