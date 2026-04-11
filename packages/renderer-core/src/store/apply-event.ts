@@ -20,6 +20,12 @@ export function applyEventReducer(
       next.delete(event.worktreeId);
       return next;
     }
+    case 'worktree-renamed': {
+      const next = new Map(worktrees);
+      next.delete(event.oldWorktreeId);
+      next.set(event.worktree.id, event.worktree);
+      return next;
+    }
     case 'file-changed': {
       const wt = worktrees.get(event.worktreeId);
       if (!wt) return worktrees;

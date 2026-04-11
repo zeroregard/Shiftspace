@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
-import { useWorktreeStore, useActions } from '@shiftspace/renderer-core';
+import { useWorktreeStore, useActions, SortPicker, sortWorktrees } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { IconButton } from '@shiftspace/ui/icon-button';
@@ -22,7 +23,9 @@ function WorktreeCardError() {
 
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
+  const sortMode = useWorktreeStore((s) => s.sortMode);
   const actions = useActions();
+  const sorted = useMemo(() => sortWorktrees(worktrees, sortMode), [worktrees, sortMode]);
 
   if (!initialized) {
     return (
@@ -39,13 +42,16 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
           <div className="text-text-faint text-13 text-center py-8">No worktrees</div>
         ) : (
           <LayoutGroup>
+            <div className="flex items-center gap-1 mb-2">
+              <SortPicker />
+            </div>
             <div className="flex flex-col gap-3">
               <AnimatePresence>
-                {worktrees.map((wt) => (
+                {sorted.map((wt) => (
                   <motion.div
-                    key={wt.id}
+                    key={wt.branch}
                     layout
-                    layoutId={wt.id}
+                    layoutId={wt.branch}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}

@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
-import { useActions } from '@shiftspace/renderer-core';
+import { useActions, useWorktreeStore, sortWorktrees } from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { IconButton } from '@shiftspace/ui/icon-button';
@@ -11,7 +12,7 @@ interface GroveViewProps {
 
 function WorktreeCardError() {
   return (
-    <div className="w-[32rem] flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-status-deleted/30 text-text-faint text-11">
+    <div className="w-lg flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-status-deleted/30 text-text-faint text-11">
       Failed to render worktree
     </div>
   );
@@ -19,6 +20,8 @@ function WorktreeCardError() {
 
 export function GroveView({ worktrees }: GroveViewProps) {
   const actions = useActions();
+  const sortMode = useWorktreeStore((s) => s.sortMode);
+  const sorted = useMemo(() => sortWorktrees(worktrees, sortMode), [worktrees, sortMode]);
 
   return (
     <div className="w-full h-full overflow-auto">
@@ -29,11 +32,11 @@ export function GroveView({ worktrees }: GroveViewProps) {
           <LayoutGroup>
             <div className="flex flex-row flex-wrap gap-4 items-start">
               <AnimatePresence>
-                {worktrees.map((wt) => (
+                {sorted.map((wt) => (
                   <motion.div
-                    key={wt.id}
+                    key={wt.branch}
                     layout
-                    layoutId={wt.id}
+                    layoutId={wt.branch}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}

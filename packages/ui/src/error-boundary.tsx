@@ -1,10 +1,28 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
+/**
+ * Global error reporter — set this to forward component errors to an external
+ * system (e.g. VSCode Output channel). Defaults to no-op.
+ */
+export let onComponentError: (error: Error, componentStack: string | undefined) => void = () => {};
+
+/**
+ * Set the global component error reporter.
+ * Call this once at app startup (e.g. in the webview entry point).
+ */
+export function setComponentErrorReporter(
+  reporter: (error: Error, componentStack: string | undefined) => void
+): void {
+  onComponentError = reporter;
+}
+
 interface ErrorBoundaryProps {
   /** Fallback UI shown when a child throws. Receives a retry callback. */
   fallback: ReactNode | ((retry: () => void) => ReactNode);
   /** When this value changes, the error state is automatically cleared. */
   resetKey?: unknown;
+  /** Called when an error is caught — use to report errors to external systems. */
+  onError?: (error: Error, componentStack: string | undefined) => void;
   children: ReactNode;
 }
 
@@ -39,7 +57,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[Shiftspace] Component error:', error, info.componentStack);
+    const stack = info.componentStack ?? undefined;
+    console.error('[Shiftspace] Component error:', error, stack);
+    this.props.onError?.(error, stack);
+    onComponentError(error, stack);
   }
 
   private handleRetry = () => {

@@ -118,8 +118,6 @@ export class ShiftspacePanel {
     ShiftspacePanel.currentPanel = new ShiftspacePanel(panel, context);
   }
 
-  // Constructor
-
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
     this._panel = panel;
     this._context = context;

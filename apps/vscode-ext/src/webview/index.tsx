@@ -11,6 +11,7 @@ import {
   useInsightStore,
   useInspectionStore,
   usePackageStore,
+  setComponentErrorReporter,
 } from '@shiftspace/renderer';
 import type {
   WorktreeState,
@@ -41,6 +42,27 @@ const vscode = (function () {
     return undefined;
   }
 })();
+
+/** Report errors to the extension host so they appear in the Output channel. */
+function reportError(label: string, error: unknown): void {
+  const message = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+  console.error(`[Shiftspace] ${label}:`, error);
+  vscode?.postMessage({ type: 'webview-error', error: `${label}: ${message}` });
+}
+
+// Catch unhandled errors so they surface in the Output channel
+window.addEventListener('error', (e) => {
+  reportError('Uncaught error', e.error ?? e.message);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  reportError('Unhandled promise rejection', e.reason);
+});
+
+// Forward React ErrorBoundary catches to the Output channel
+setComponentErrorReporter((error, componentStack) => {
+  const detail = componentStack ? `${error.message}\n${componentStack}` : error.message;
+  reportError('Component error', detail);
+});
 
 type HostMessage =
   | { type: 'init'; worktrees: WorktreeState[] }
@@ -88,7 +110,8 @@ type HostMessage =
   | { type: 'insights-status'; running: boolean }
   | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
   | { type: 'diagnostics-remove'; worktreeId: string; filePaths: string[] }
-  | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string };
+  | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string }
+  | { type: 'set-sort-mode'; mode: 'last-updated' | 'name' | 'branch' };
 
 function handleCoreMessage(
   msg: HostMessage,
@@ -122,6 +145,9 @@ function handleCoreMessage(
       return true;
     case 'swap-loading':
       wt.setSwapLoading(msg.worktreeId, msg.loading);
+      return true;
+    case 'set-sort-mode':
+      wt.setSortMode(msg.mode);
       return true;
     default:
       return false;
@@ -352,6 +378,7 @@ const App: React.FC = () => {
         onGetLog={handleGetLog}
         onRecheckInsights={handleRecheckInsights}
         onCancelInsights={handleCancelInsights}
+        onSortChange={(mode) => vscode?.postMessage({ type: 'set-sort-mode', mode })}
         panZoomConfig={panZoomConfig}
       />
     </div>
@@ -424,13 +451,7 @@ const SidebarApp: React.FC = () => {
     );
   }
 
-  const wtArray = Array.from(worktrees.values()).sort((a, b) => {
-    if (a.isMainWorktree && !b.isMainWorktree) return -1;
-    if (!a.isMainWorktree && b.isMainWorktree) return 1;
-    const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
-    const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
+  const wtArray = Array.from(worktrees.values());
 
   return (
     <ActionsProvider

@@ -4,6 +4,7 @@ import type { ActionCoordinator } from './actions/action-coordinator';
 import type { ViewSettingsStore } from './view-settings-store';
 import type { InspectionSession } from './insights/inspection-session';
 import type { DiffMode } from '@shiftspace/renderer';
+import { log } from './logger';
 
 export interface PanelHandlerDeps {
   sharedGit: SharedGitProvider;
@@ -114,5 +115,14 @@ export function registerPanelHandlers(
   router.on('exit-inspection', () => {
     viewSettings!.save({ mode: { type: 'grove' } });
     inspection?.exit();
+  });
+
+  // Miscellaneous handlers
+  router.on('set-sort-mode', (m) => {
+    if (m.mode) sharedGit.broadcast({ type: 'set-sort-mode', mode: m.mode });
+  });
+
+  router.on('webview-error', (m) => {
+    log.error(`[Webview/Panel] ${m.error ?? 'Unknown error'}`);
   });
 }

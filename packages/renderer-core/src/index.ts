@@ -7,6 +7,7 @@ export type {
   DiffLine,
   DiffHunk,
   DiffMode,
+  WorktreeSortMode,
   ActionConfig,
   ActionState,
   ActionStatus,
@@ -45,6 +46,7 @@ export { computeSingleWorktreeLayout, computeFullLayout } from './layout';
 export { UnifiedHeader } from './shared/unified-header';
 export { ThemedFileIcon } from './shared/themed-file-icon';
 export { PackageSwitcher } from './shared/package-switcher';
+export { SortPicker } from './shared/sort-picker';
 export { InspectionHoverContext, useInspectionHover } from './shared/inspection-hover-context';
 export { FileRowButton } from './shared/file-row-button';
 export { AnimatedTimestamp } from './shared/animated-timestamp';
@@ -87,6 +89,7 @@ export {
   getAllFilteredFiles,
 } from './utils/list-sections';
 export { getSourceLineFromHunks } from './utils/diff-line-lookup';
+export { sortWorktrees } from './utils/sort-worktrees';
 export { formatRelativeTime, TICK_INTERVAL } from './utils/relative-time';
 
 // UI (additional)
