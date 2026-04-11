@@ -2,6 +2,25 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.1.42] — 2026-04-11
+
+### Added
+
+- add negativePattern, hint fields to code smells insight (#105) _(vscode-ext)_
+
+### Changed
+
+- Add Sentry-based error telemetry with opt-in consent
+- decompose ShiftspacePanel and add max-lines lint rule (#109) _(vscode-ext)_
+- Add worktree sorting functionality with multiple sort modes
+- share GitDataProvider between sidebar and tab views (#96) _(vscode-ext)_
+
+### Fixed
+
+- prevent externally-controlled format string in MCP log calls (CWE-134) (#106) _(shiftspace)_
+- break 0-files insight loop and add cancel button (#104) _(vscode-ext)_
+- strip stale [Unreleased] section when prepending versioned changelog entry (#103)
+
 ## [0.1.41] — 2026-04-10
 
 ### Added
