@@ -46,9 +46,9 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
               <AnimatePresence>
                 {sorted.map((wt) => (
                   <motion.div
-                    key={wt.id}
+                    key={wt.branch}
                     layout
-                    layoutId={wt.id}
+                    layoutId={wt.branch}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}

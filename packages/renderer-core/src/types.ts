@@ -55,6 +55,7 @@ export type ShiftspaceEvent =
   | { type: 'file-staged'; worktreeId: string; filePath: string }
   | { type: 'worktree-added'; worktree: WorktreeState }
   | { type: 'worktree-removed'; worktreeId: string }
+  | { type: 'worktree-renamed'; oldWorktreeId: string; worktree: WorktreeState }
   | { type: 'process-started'; worktreeId: string; port: number; command: string }
   | { type: 'process-stopped'; worktreeId: string };
 
