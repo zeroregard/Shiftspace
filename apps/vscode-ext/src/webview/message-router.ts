@@ -11,6 +11,8 @@ export interface WebviewMessage {
   newName?: string;
   /** 1-indexed line number for jump-to-line on file-click. */
   line?: number;
+  /** Error details forwarded from the webview (used by webview-error). */
+  error?: string;
 }
 
 type Handler = (msg: WebviewMessage) => void;

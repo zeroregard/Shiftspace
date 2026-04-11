@@ -10,6 +10,7 @@ import {
   useInsightStore,
   useInspectionStore,
   usePackageStore,
+  setComponentErrorReporter,
 } from '@shiftspace/renderer';
 import type {
   WorktreeState,
@@ -40,6 +41,27 @@ const vscode = (function () {
     return undefined;
   }
 })();
+
+/** Report errors to the extension host so they appear in the Output channel. */
+function reportError(label: string, error: unknown): void {
+  const message = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+  console.error(`[Shiftspace] ${label}:`, error);
+  vscode?.postMessage({ type: 'webview-error', error: `${label}: ${message}` });
+}
+
+// Catch unhandled errors so they surface in the Output channel
+window.addEventListener('error', (e) => {
+  reportError('Uncaught error', e.error ?? e.message);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  reportError('Unhandled promise rejection', e.reason);
+});
+
+// Forward React ErrorBoundary catches to the Output channel
+setComponentErrorReporter((error, componentStack) => {
+  const detail = componentStack ? `${error.message}\n${componentStack}` : error.message;
+  reportError('Component error', detail);
+});
 
 type HostMessage =
   | { type: 'init'; worktrees: WorktreeState[] }

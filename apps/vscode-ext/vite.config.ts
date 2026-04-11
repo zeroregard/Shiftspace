@@ -10,24 +10,17 @@ async function analyzePlugins(): Promise<PluginOption[]> {
 }
 
 export default defineConfig(async () => ({
-  plugins: [
-    tailwindcss(),
-    react({
-      babel: {
-        plugins: ['babel-plugin-react-compiler'],
-      },
-    }),
-    ...(await analyzePlugins()),
-  ],
+  plugins: [tailwindcss(), react(), ...(await analyzePlugins())],
   // Webview runs in a sandboxed browser iframe — no Node globals.
   // Replace process.env.NODE_ENV at bundle time so React and other
   // libraries that guard on it don't crash with "process is not defined".
   define: {
-    'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env.NODE_ENV': JSON.stringify('development'),
   },
   build: {
     outDir: 'dist/webview',
     emptyOutDir: true,
+    sourcemap: true,
     lib: {
       entry: resolve(__dirname, 'src/webview/index.tsx'),
       formats: ['iife'],

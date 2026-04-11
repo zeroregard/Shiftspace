@@ -101,6 +101,11 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             case 'swap-branches':
               if (message.worktreeId) void provider?.handleSwapBranches(message.worktreeId);
               break;
+            case 'webview-error':
+              log.error(
+                `[Webview/Sidebar] ${(message as { error?: string }).error ?? 'Unknown error'}`
+              );
+              break;
             default:
               log.warn(`Sidebar: unhandled message type "${message.type}"`);
               break;

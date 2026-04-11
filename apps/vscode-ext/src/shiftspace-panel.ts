@@ -8,6 +8,7 @@ import { IconThemeProvider } from './icon-theme-provider';
 import { InsightRunner } from './insights/runner';
 import { DiagnosticCollector, collectDiagnostics } from './insights/plugins/diagnostics';
 import { InspectionSession } from './insights/inspection-session';
+import { log } from './logger';
 import { ViewSettingsStore } from './view-settings-store';
 import type { PersistedViewSettings } from './view-settings-store';
 // Register built-in insight plugins (side-effect import)
@@ -118,8 +119,6 @@ export class ShiftspacePanel {
 
     ShiftspacePanel.currentPanel = new ShiftspacePanel(panel, context);
   }
-
-  // Constructor
 
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
     this._panel = panel;
@@ -265,6 +264,7 @@ export class ShiftspacePanel {
         typeof m.line === 'number' ? m.line : undefined
       );
     });
+
     this._router.on('set-diff-mode', (m) => {
       if (!m.worktreeId || !m.diffMode) return;
       const diffMode = m.diffMode as DiffMode;
@@ -276,62 +276,74 @@ export class ShiftspacePanel {
       }
       void sharedGit.provider?.handleSetDiffMode(m.worktreeId, diffMode);
     });
+
     this._router.on('get-branch-list', (m) => {
       if (m.worktreeId) void sharedGit.provider?.handleGetBranchList(m.worktreeId);
     });
+
     this._router.on('checkout-branch', (m) => {
       if (m.worktreeId && m.branch)
         void sharedGit.provider?.handleCheckoutBranch(m.worktreeId, m.branch);
     });
+
     this._router.on('folder-click', (m) => {
       if (m.worktreeId && m.folderPath)
         void sharedGit.provider?.handleFolderClick(m.worktreeId, m.folderPath);
     });
+
     this._router.on('fetch-branches', (m) => {
       if (m.worktreeId) void sharedGit.provider?.handleFetchBranches(m.worktreeId);
     });
+
     this._router.on('swap-branches', (m) => {
       if (m.worktreeId) void sharedGit.provider?.handleSwapBranches(m.worktreeId);
     });
+
     this._router.on('add-worktree', () => {
       void sharedGit.provider?.handleAddWorktree();
     });
+
     this._router.on('remove-worktree', (m) => {
       if (m.worktreeId) void sharedGit.provider?.handleRemoveWorktree(m.worktreeId);
     });
+
     this._router.on('rename-worktree', (m) => {
       if (m.worktreeId && m.newName)
         void sharedGit.provider?.handleRenameWorktree(m.worktreeId, m.newName);
     });
 
-    // Action coordinator handlers
     this._router.on('run-action', (m) => {
       if (m.worktreeId && m.actionId)
         void this._actionCoordinator?.runAction(m.worktreeId, m.actionId);
     });
+
     this._router.on('stop-action', (m) => {
       if (m.worktreeId && m.actionId) this._actionCoordinator?.stopAction(m.worktreeId, m.actionId);
     });
+
     this._router.on('run-pipeline', (m) => {
       if (m.worktreeId && m.pipelineId)
         void this._actionCoordinator?.runPipeline(m.worktreeId, m.pipelineId);
     });
+
     this._router.on('cancel-pipeline', (m) => {
       if (m.worktreeId) this._actionCoordinator?.cancelPipeline(m.worktreeId);
     });
+
     this._router.on('get-log', (m) => {
       if (m.worktreeId && m.actionId) this._actionCoordinator?.getLog(m.worktreeId, m.actionId);
     });
+
     this._router.on('set-package', (m) => {
       if (m.packageName === undefined) return;
       this._viewSettings!.save({ selectedPackage: m.packageName });
       void this._actionCoordinator?.setPackage(m.packageName);
     });
+
     this._router.on('detect-packages', () => {
       void this._actionCoordinator?.detectAndSendPackages();
     });
 
-    // Inspection handlers
     this._router.on('enter-inspection', (m) => {
       if (!m.worktreeId) return;
       const wt = sharedGit.provider?.getWorktrees().find((w) => w.id === m.worktreeId);
@@ -340,15 +352,22 @@ export class ShiftspacePanel {
       }
       this._inspection?.enter(m.worktreeId);
     });
+
     this._router.on('recheck-insights', (m) => {
       if (m.worktreeId) this._inspection?.recheck(m.worktreeId);
     });
+
     this._router.on('cancel-insights', () => {
       this._inspection?.cancel();
     });
+
     this._router.on('exit-inspection', () => {
       this._viewSettings!.save({ mode: { type: 'grove' } });
       this._inspection?.exit();
+    });
+
+    this._router.on('webview-error', (m) => {
+      log.error(`[Webview/Panel] ${m.error ?? 'Unknown error'}`);
     });
   }
 
