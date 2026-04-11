@@ -18,9 +18,10 @@ function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
 
 interface UnifiedHeaderProps {
   showPackageSwitcher: boolean;
+  onSortChange?: (mode: import('../types').WorktreeSortMode) => void;
 }
 
-export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
+export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHeaderProps) {
   const actions = useActions();
   const mode = useInspectionStore((s) => s.mode);
   const exitInspection = useInspectionStore((s) => s.exitInspection);
@@ -89,7 +90,7 @@ export function UnifiedHeader({ showPackageSwitcher }: UnifiedHeaderProps) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
       {/* Grove controls (left side) */}
-      {!isInspecting && <SortPicker />}
+      {!isInspecting && <SortPicker onSortChange={onSortChange} />}
 
       {/* Inspection controls (left side) */}
       {isInspecting && wt && (

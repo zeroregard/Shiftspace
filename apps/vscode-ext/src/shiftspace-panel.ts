@@ -366,6 +366,10 @@ export class ShiftspacePanel {
       this._inspection?.exit();
     });
 
+    this._router.on('set-sort-mode', (m) => {
+      if (m.mode) sharedGit.broadcast({ type: 'set-sort-mode', mode: m.mode });
+    });
+
     this._router.on('webview-error', (m) => {
       log.error(`[Webview/Panel] ${m.error ?? 'Unknown error'}`);
     });

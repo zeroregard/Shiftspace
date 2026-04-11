@@ -145,6 +145,9 @@ function handleCoreMessage(
     case 'swap-loading':
       wt.setSwapLoading(msg.worktreeId, msg.loading);
       return true;
+    case 'set-sort-mode':
+      wt.setSortMode(msg.mode);
+      return true;
     default:
       return false;
   }
@@ -374,6 +377,7 @@ const App: React.FC = () => {
         onGetLog={handleGetLog}
         onRecheckInsights={handleRecheckInsights}
         onCancelInsights={handleCancelInsights}
+        onSortChange={(mode) => vscode?.postMessage({ type: 'set-sort-mode', mode })}
         panZoomConfig={panZoomConfig}
       />
     </div>
@@ -387,10 +391,6 @@ const SidebarApp: React.FC = () => {
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
       if (!isAllowedOrigin(e.origin)) return;
-      if (e.data.type === 'set-sort-mode') {
-        useWorktreeStore.getState().setSortMode(e.data.mode);
-        return;
-      }
       handleCoreMessage(e.data, setErrorMessage);
     };
 

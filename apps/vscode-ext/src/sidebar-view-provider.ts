@@ -42,7 +42,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
       );
       if (!picked) return;
       this._currentSortMode = picked.value;
-      this._view?.webview.postMessage({ type: 'set-sort-mode', mode: picked.value });
+      this._sharedGit.broadcast({ type: 'set-sort-mode', mode: picked.value });
     });
   }
 

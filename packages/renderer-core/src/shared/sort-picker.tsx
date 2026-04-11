@@ -11,7 +11,12 @@ const SORT_OPTIONS: Array<{ value: WorktreeSortMode; label: string }> = [
   { value: 'branch', label: 'Branch (A\u2013Z)' },
 ];
 
-export function SortPicker() {
+interface SortPickerProps {
+  /** Called when the user picks a sort mode — use to broadcast to other views. */
+  onSortChange?: (mode: WorktreeSortMode) => void;
+}
+
+export function SortPicker({ onSortChange }: SortPickerProps = {}) {
   const [open, setOpen] = useState(false);
   const sortMode = useWorktreeStore((s) => s.sortMode);
   const setSortMode = useWorktreeStore((s) => s.setSortMode);
@@ -43,6 +48,7 @@ export function SortPicker() {
               data-testid={`sort-${opt.value}`}
               onClick={() => {
                 setSortMode(opt.value);
+                onSortChange?.(opt.value);
                 setOpen(false);
               }}
             >
