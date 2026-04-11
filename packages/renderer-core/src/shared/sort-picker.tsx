@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { Tooltip } from '@shiftspace/ui/tooltip';
@@ -16,7 +16,9 @@ interface SortPickerProps {
   onSortChange?: (mode: WorktreeSortMode) => void;
 }
 
-export function SortPicker({ onSortChange }: SortPickerProps = {}) {
+export const SortPicker = React.memo(function SortPicker({
+  onSortChange,
+}: SortPickerProps = {}) {
   const [open, setOpen] = useState(false);
   const sortMode = useWorktreeStore((s) => s.sortMode);
   const setSortMode = useWorktreeStore((s) => s.setSortMode);
@@ -62,4 +64,4 @@ export function SortPicker({ onSortChange }: SortPickerProps = {}) {
       </Popover.Portal>
     </Popover.Root>
   );
-}
+});
