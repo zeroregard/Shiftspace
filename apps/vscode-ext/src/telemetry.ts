@@ -3,16 +3,7 @@ import * as vscode from 'vscode';
 
 let initialized = false;
 
-// TODO: Replace '__SENTRY_DSN__' with the actual DSN from:
-// 1. Go to sentry.io, create a free account
-// 2. Create a new project: platform = Node.js
-// 3. Copy the DSN string (looks like https://xxx@xxx.ingest.sentry.io/xxx)
-// 4. Enable the GitHub integration: Settings > Integrations > GitHub
-//    This lets you create GitHub issues directly from Sentry error reports
-// 5. Set up source maps upload (optional, improves stack traces):
-//    pnpm add -D @sentry/cli
-//    Add to build script: sentry-cli sourcemaps upload ./dist
-const SENTRY_DSN = '__SENTRY_DSN__';
+const SENTRY_DSN = 'https://1d35874d3c7a6560caaa4204c86842de@o4511201332035584.ingest.de.sentry.io/4511201335509072';
 
 /**
  * Initialize Sentry error reporting.
