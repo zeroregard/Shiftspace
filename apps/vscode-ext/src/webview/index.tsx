@@ -87,7 +87,8 @@ type HostMessage =
   | { type: 'insights-status'; running: boolean }
   | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
   | { type: 'diagnostics-remove'; worktreeId: string; filePaths: string[] }
-  | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string };
+  | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string }
+  | { type: 'set-sort-mode'; mode: 'last-updated' | 'name' | 'branch' };
 
 function handleCoreMessage(
   msg: HostMessage,
@@ -364,6 +365,10 @@ const SidebarApp: React.FC = () => {
   useEffect(() => {
     const handler = (e: MessageEvent<HostMessage>) => {
       if (!isAllowedOrigin(e.origin)) return;
+      if (e.data.type === 'set-sort-mode') {
+        useWorktreeStore.getState().setSortMode(e.data.mode);
+        return;
+      }
       handleCoreMessage(e.data, setErrorMessage);
     };
 
@@ -423,13 +428,7 @@ const SidebarApp: React.FC = () => {
     );
   }
 
-  const wtArray = Array.from(worktrees.values()).sort((a, b) => {
-    if (a.isMainWorktree && !b.isMainWorktree) return -1;
-    if (!a.isMainWorktree && b.isMainWorktree) return 1;
-    const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
-    const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
+  const wtArray = Array.from(worktrees.values());
 
   return (
     <ActionsProvider

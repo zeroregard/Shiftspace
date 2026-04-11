@@ -678,9 +678,10 @@ export class GitDataProvider implements vscode.Disposable {
     const wtName = `${repoName}-wt${index}`;
     const parentDir = path.dirname(this.currentRoot);
     const wtPath = path.join(parentDir, wtName);
+    const branchName = `${wtName}-${Date.now().toString(36)}`;
 
     try {
-      await gitWrite(['worktree', 'add', '-b', wtName, wtPath], {
+      await gitWrite(['worktree', 'add', '-b', branchName, wtPath], {
         cwd: this.currentRoot!,
         timeout: 30_000,
       });

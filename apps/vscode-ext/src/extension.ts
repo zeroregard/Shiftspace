@@ -28,13 +28,13 @@ export function activate(context: vscode.ExtensionContext) {
   void startMcpServer(context);
 
   // Activity bar sidebar: renders slim grove view with worktree cards
+  const sidebarProvider = new SidebarViewProvider(context, sharedGit);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(
-      'shiftspace.sidebar',
-      new SidebarViewProvider(context, sharedGit),
-      { webviewOptions: { retainContextWhenHidden: true } }
-    )
+    vscode.window.registerWebviewViewProvider('shiftspace.sidebar', sidebarProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    })
   );
+  context.subscriptions.push(sidebarProvider.registerSortCommand());
 
   context.subscriptions.push(
     vscode.commands.registerCommand('shiftspace.toggle', () => {
