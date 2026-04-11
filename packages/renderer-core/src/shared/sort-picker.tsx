@@ -16,9 +16,7 @@ interface SortPickerProps {
   onSortChange?: (mode: WorktreeSortMode) => void;
 }
 
-export const SortPicker = React.memo(function SortPicker({
-  onSortChange,
-}: SortPickerProps = {}) {
+export const SortPicker = React.memo(function SortPicker({ onSortChange }: SortPickerProps = {}) {
   const [open, setOpen] = useState(false);
   const sortMode = useWorktreeStore((s) => s.sortMode);
   const setSortMode = useWorktreeStore((s) => s.setSortMode);
