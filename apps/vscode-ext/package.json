@@ -202,6 +202,16 @@
           "default": true,
           "description": "Show compiler errors and lint warnings from VSCode diagnostics on file nodes in Inspection mode",
           "scope": "resource"
+        },
+        "shiftspace.telemetry.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Send anonymous error reports to help improve Shiftspace. No personal data or code content is ever sent.",
+          "scope": "application",
+          "tags": [
+            "telemetry",
+            "usesOnlineServices"
+          ]
         }
       }
     }
@@ -223,6 +233,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@sentry/node": "^10.48.0",
     "minimatch": "^10.0.1"
   },
   "devDependencies": {

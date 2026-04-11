@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { ShiftspaceConfig, ShiftspaceActionConfig } from './types';
 import { log } from '../logger';
+import { reportError } from '../telemetry';
 
 /** Parse .shiftspace.json content string. Throws on invalid JSON. */
 export function parseShiftspaceConfig(content: string): ShiftspaceConfig {
@@ -111,7 +112,19 @@ export function readShiftspaceConfigFile(repoRoot: string): ShiftspaceConfig | n
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     return parseShiftspaceConfig(content);
-  } catch {
+  } catch (err) {
+    // ENOENT is expected when .shiftspace.json doesn't exist — only report real errors
+    const isNotFound =
+      err &&
+      typeof err === 'object' &&
+      'code' in err &&
+      (err as NodeJS.ErrnoException).code === 'ENOENT';
+    if (!isNotFound) {
+      reportError(err instanceof Error ? err : new Error(String(err)), {
+        context: 'loadConfig',
+        repoRoot,
+      });
+    }
     return null;
   }
 }

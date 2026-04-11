@@ -15,6 +15,7 @@ import './insights/plugins/code-smells';
 import type { DiffMode, AppMode, WorktreeState } from '@shiftspace/renderer';
 import type { ShiftspaceMcpHttpServer } from './mcp/http-server';
 import { McpToolHandlers } from './mcp/handlers';
+import { reportError } from './telemetry';
 
 const VIEW_ID = 'panel';
 
@@ -136,7 +137,13 @@ export class ShiftspacePanel {
     this._router.on('ready', () => void this.onReady());
 
     this._panel.webview.onDidReceiveMessage(
-      (message: WebviewMessage) => this._router.dispatch(message),
+      (message: WebviewMessage) => {
+        try {
+          this._router.dispatch(message);
+        } catch (err) {
+          reportError(err as Error, { context: 'webviewMessage', messageType: message.type });
+        }
+      },
       null,
       this._disposables
     );

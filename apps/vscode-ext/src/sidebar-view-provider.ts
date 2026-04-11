@@ -3,6 +3,7 @@ import { getWebviewHtml } from './webview/html';
 import { SharedGitProvider } from './shared-git-provider';
 import { ShiftspacePanel } from './shiftspace-panel';
 import { log } from './logger';
+import { reportError } from './telemetry';
 
 const VIEW_ID = 'sidebar';
 
@@ -82,6 +83,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           }
         } catch (err) {
           log.error(`Sidebar: error handling message "${message.type}"`, err);
+          reportError(err as Error, { context: 'webviewMessage', messageType: message.type });
         }
       },
       null,
