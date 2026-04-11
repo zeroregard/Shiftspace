@@ -678,9 +678,10 @@ export class GitDataProvider implements vscode.Disposable {
     const wtName = `${repoName}-wt${index}`;
     const parentDir = path.dirname(this.currentRoot);
     const wtPath = path.join(parentDir, wtName);
+    const branchName = `${wtName}-${Date.now().toString(36)}`;
 
     try {
-      await gitWrite(['worktree', 'add', '-b', wtName, wtPath], {
+      await gitWrite(['worktree', 'add', '-b', branchName, wtPath], {
         cwd: this.currentRoot!,
         timeout: 30_000,
       });
@@ -738,16 +739,29 @@ export class GitDataProvider implements vscode.Disposable {
     const newPath = path.join(parentDir, newName);
 
     try {
+      const oldId = wt.id;
       await moveWorktree(wt.path, newPath, this.currentRoot!);
-      // Immediately update the cached worktree and notify the webview so the
-      // rename is reflected without waiting for the next polling cycle.
+
+      // Update cached worktree identity in-place
+      wt.id = newPath;
       wt.path = newPath;
+
+      // Migrate fileStates to the new key
+      const prevFiles = this.fileStates.get(oldId);
+      if (prevFiles) {
+        this.fileStates.delete(oldId);
+        this.fileStates.set(wt.id, prevFiles);
+      }
+
+      // Send a rename event so the renderer swaps IDs atomically (no exit+enter animation)
       this.postMessage({
         type: 'event',
-        event: { type: 'worktree-added', worktree: wt },
+        event: { type: 'worktree-renamed', oldWorktreeId: oldId, worktree: wt },
       });
-      // Re-detect in the background for any other side-effects.
-      await this.checkForWorktreeChanges();
+
+      // Refresh the file watcher for the new path (skip full re-detect to avoid
+      // the remove+add detection that causes a duplicate animation)
+      this.setupFileWatcher();
     } catch (err) {
       log.error('handleRenameWorktree error:', err);
       void vscode.window.showErrorMessage(`Failed to rename worktree: ${(err as Error).message}`);

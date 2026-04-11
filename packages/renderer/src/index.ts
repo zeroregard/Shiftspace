@@ -13,6 +13,7 @@ export {
   type ActionConfig,
   type ActionState,
   type ActionStatus,
+  type WorktreeSortMode,
   type AppMode,
   type IconEntry,
   type IconMap,
@@ -40,6 +41,8 @@ export {
   UnifiedHeader,
   ThemedFileIcon,
   PackageSwitcher,
+  SortPicker,
+  sortWorktrees,
   // UI
   AnnotationBadges,
   Badge,
@@ -63,4 +66,5 @@ export {
 
 export { GroveView, SidebarView, WorktreeCard } from '@shiftspace/renderer-grove';
 export { TooltipProvider } from '@shiftspace/ui/tooltip';
+export { setComponentErrorReporter } from '@shiftspace/ui/error-boundary';
 export { InspectionView } from '@shiftspace/renderer-inspection';

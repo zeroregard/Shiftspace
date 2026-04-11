@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import type { WorktreeState, ShiftspaceEvent, DiffMode, FileChange, IconMap } from '../types';
+import type {
+  WorktreeState,
+  ShiftspaceEvent,
+  DiffMode,
+  FileChange,
+  IconMap,
+  WorktreeSortMode,
+} from '../types';
 import { applyEventReducer } from './apply-event';
 
 /**
@@ -38,6 +45,7 @@ interface WorktreeStore {
   fetchLoading: Set<string>;
   swapLoading: Set<string>;
   lastFetchAt: Map<string, number>;
+  sortMode: WorktreeSortMode;
   iconMap: IconMap;
   iconIndex: IconIndex;
   applyEvent: (event: ShiftspaceEvent) => void;
@@ -54,6 +62,7 @@ interface WorktreeStore {
   setFetchLoading: (worktreeId: string, loading: boolean) => void;
   setSwapLoading: (worktreeId: string, loading: boolean) => void;
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
+  setSortMode: (mode: WorktreeSortMode) => void;
   setIconMap: (map: IconMap) => void;
 }
 
@@ -65,6 +74,7 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
   fetchLoading: new Set(),
   swapLoading: new Set(),
   lastFetchAt: new Map(),
+  sortMode: 'name',
   iconMap: {},
   iconIndex: { byName: new Map(), byExt: new Map() },
 
@@ -141,6 +151,8 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
       lastFetchAt.set(worktreeId, timestamp);
       return { lastFetchAt };
     }),
+
+  setSortMode: (mode) => set({ sortMode: mode }),
 
   setIconMap: (map) =>
     set((state) => {

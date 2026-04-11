@@ -34,6 +34,7 @@ interface Props {
   onGetLog?: (worktreeId: string, actionId: string) => void;
   onRecheckInsights?: (worktreeId: string) => void;
   onCancelInsights?: (worktreeId: string) => void;
+  onSortChange?: (mode: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
@@ -62,6 +63,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onGetLog,
   onRecheckInsights,
   onCancelInsights,
+  onSortChange,
   panZoomConfig,
 }) => {
   const { setWorktrees, applyEvent } = useWorktreeStore();
@@ -97,7 +99,11 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       onDetectPackages={onDetectPackages}
     >
       <RadixTooltip.Provider delayDuration={0} skipDelayDuration={0}>
-        <ShiftspaceContent showPackageSwitcher={!!onSetPackage} panZoomConfig={panZoomConfig} />
+        <ShiftspaceContent
+          showPackageSwitcher={!!onSetPackage}
+          onSortChange={onSortChange}
+          panZoomConfig={panZoomConfig}
+        />
       </RadixTooltip.Provider>
     </ActionsProvider>
   );
@@ -107,26 +113,21 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
 
 interface ContentProps {
   showPackageSwitcher: boolean;
+  onSortChange?: (mode: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
 
-function ShiftspaceContent({ showPackageSwitcher, panZoomConfig }: ContentProps) {
+function ShiftspaceContent({ showPackageSwitcher, onSortChange, panZoomConfig }: ContentProps) {
   // useShallow compares Map entries by reference — only re-renders when a
   // worktree is actually added, removed, or replaced (not on every event).
   const worktrees = useWorktreeStore(useShallow((s) => s.worktrees));
   const mode = useInspectionStore((s) => s.mode);
 
-  const wtArray = Array.from(worktrees.values()).sort((a, b) => {
-    if (a.isMainWorktree && !b.isMainWorktree) return -1;
-    if (!a.isMainWorktree && b.isMainWorktree) return 1;
-    const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
-    const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
+  const wtArray = Array.from(worktrees.values());
 
   return (
     <div className="w-full h-full bg-canvas flex flex-col relative">
-      <UnifiedHeader showPackageSwitcher={showPackageSwitcher} />
+      <UnifiedHeader showPackageSwitcher={showPackageSwitcher} onSortChange={onSortChange} />
       <div className="flex-1 min-h-0">
         {mode.type === 'grove' ? (
           <GroveView worktrees={wtArray} />

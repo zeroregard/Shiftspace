@@ -31,7 +31,8 @@ export class SharedGitProvider implements vscode.Disposable {
 
   // ── Broadcast ────────────────────────────────────────────────────────────
 
-  private broadcast = (msg: object): void => {
+  /** Send a message to all registered views. */
+  broadcast = (msg: object): void => {
     for (const post of this._views.values()) {
       post(msg);
     }

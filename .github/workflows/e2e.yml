@@ -122,6 +122,13 @@ jobs:
             add_spec sidebar
           fi
 
+          # tree-sorting: core + grove + preview SidebarPage/mock
+          if has_changes '^apps/preview/e2e/tree-sorting\.spec\.ts' \
+             || has_changes '^apps/preview/src/(sidebar-page\.tsx|mock/)' \
+             || $E2E_SHARED || $CORE || $GROVE; then
+            add_spec tree-sorting
+          fi
+
           # Deduplicate
           SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
 

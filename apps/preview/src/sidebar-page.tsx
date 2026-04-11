@@ -93,13 +93,7 @@ export const SidebarPage: React.FC = () => {
   }, [cleanupSimulations]);
 
   const worktrees = useWorktreeStore((s) => s.worktrees);
-  const wtArray = Array.from(worktrees.values()).sort((a, b) => {
-    if (a.isMainWorktree && !b.isMainWorktree) return -1;
-    if (!a.isMainWorktree && b.isMainWorktree) return 1;
-    const nameA = (a.path.split('/').filter(Boolean).pop() ?? a.path).toLowerCase();
-    const nameB = (b.path.split('/').filter(Boolean).pop() ?? b.path).toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
+  const wtArray = Array.from(worktrees.values());
 
   const handleAddWorktree = () => {
     const id = engineRef.current?.addPresetWorktree(wtArray.length);
