@@ -168,7 +168,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
-            git commit -m "chore: update CT snapshots [skip ci]"
+            git commit -m "chore: update CT snapshots"
             git push -u origin ${{ github.head_ref }}
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "new_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT

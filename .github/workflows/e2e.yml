@@ -225,7 +225,7 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "No screenshot changes to commit."
           else
-            git commit -m "chore: update e2e snapshots [skip ci]"
+            git commit -m "chore: update e2e snapshots"
             git push -u origin ${{ github.head_ref }}
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "new_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
