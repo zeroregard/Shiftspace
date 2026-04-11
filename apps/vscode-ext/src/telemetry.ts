@@ -3,7 +3,8 @@ import * as vscode from 'vscode';
 
 let initialized = false;
 
-const SENTRY_DSN = 'https://1d35874d3c7a6560caaa4204c86842de@o4511201332035584.ingest.de.sentry.io/4511201335509072';
+const SENTRY_DSN =
+  'https://1d35874d3c7a6560caaa4204c86842de@o4511201332035584.ingest.de.sentry.io/4511201335509072';
 
 /**
  * Initialize Sentry error reporting.
