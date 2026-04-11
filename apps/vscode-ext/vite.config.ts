@@ -15,7 +15,7 @@ export default defineConfig(async () => ({
   // Replace process.env.NODE_ENV at bundle time so React and other
   // libraries that guard on it don't crash with "process is not defined".
   define: {
-    'process.env.NODE_ENV': JSON.stringify('development'),
+    'process.env.NODE_ENV': JSON.stringify('production'),
   },
   build: {
     outDir: 'dist/webview',
