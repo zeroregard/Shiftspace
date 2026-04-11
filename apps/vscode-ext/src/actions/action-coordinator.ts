@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { ConfigLoader } from './config-loader';
 import { resolveCommand } from './command-resolver';
-import { runCheck, startService } from './runner';
-import type { ServiceHandle } from './runner';
+import { runCheck } from './runner';
 import { runPipeline } from './pipeline-runner';
 import { StateManager } from './state-manager';
 import { LogStore } from './log-store';
+import { ServiceManager } from './service-manager';
 import { detectPackages } from './package-detector';
 import type {
   ShiftspaceActionConfig,
@@ -39,7 +39,7 @@ export class ActionCoordinator implements vscode.Disposable {
   private logStore = new LogStore();
 
   private activeChecks = new Map<string, AbortController>(); // `${worktreeId}:${actionId}`
-  private activeServices = new Map<string, ServiceHandle>(); // `${worktreeId}:${actionId}`
+  private serviceManager: ServiceManager;
   private activePipelines = new Map<string, AbortController>(); // `${worktreeId}`
 
   private worktrees = new Map<string, WorktreeInfo>(); // worktreeId → info
@@ -47,7 +47,9 @@ export class ActionCoordinator implements vscode.Disposable {
   private repoRoot: string | undefined;
   private disposables: vscode.Disposable[] = [];
 
-  constructor(private readonly postMessage: PostMessage) {}
+  constructor(private readonly postMessage: PostMessage) {
+    this.serviceManager = new ServiceManager(this.stateManager, this.logStore, postMessage);
+  }
 
   async initialize(repoRoot: string, selectedPackage = ''): Promise<void> {
     this.repoRoot = repoRoot;
@@ -112,7 +114,7 @@ export class ActionCoordinator implements vscode.Disposable {
     }
 
     if (action.type === 'service') {
-      this.runService({ worktreeId, actionId, action, command: resolved, cwd: wt.path });
+      this.serviceManager.run({ worktreeId, actionId, action, command: resolved, cwd: wt.path });
     } else {
       await this.runCheckAction(worktreeId, actionId, resolved, wt.path);
     }
@@ -179,66 +181,11 @@ export class ActionCoordinator implements vscode.Disposable {
     }
   }
 
-  private runService(opts: {
-    worktreeId: string;
-    actionId: string;
-    action: ShiftspaceActionConfig;
-    command: string;
-    cwd: string;
-  }): void {
-    const { worktreeId, actionId, command, cwd } = opts;
-    const key = `${worktreeId}:${actionId}`;
-
-    // If already running, do nothing
-    if (this.activeServices.has(key)) return;
-
-    this.logStore.clear(worktreeId, actionId);
-    this.stateManager.set(worktreeId, actionId, { type: 'service', status: 'running' });
-
-    const handle = startService(command, {
-      cwd,
-      onStdout: (chunk) => {
-        this.logStore.append(worktreeId, actionId, chunk);
-        this.postMessage({
-          type: 'action-log-chunk',
-          worktreeId,
-          actionId,
-          chunk,
-          isStderr: false,
-        });
-      },
-      onStderr: (chunk) => {
-        this.logStore.append(worktreeId, actionId, chunk);
-        this.postMessage({ type: 'action-log-chunk', worktreeId, actionId, chunk, isStderr: true });
-      },
-    });
-
-    handle.onPort = (port) => {
-      this.stateManager.set(worktreeId, actionId, { type: 'service', status: 'running', port });
-    };
-
-    handle.onExit = (code) => {
-      this.activeServices.delete(key);
-      const status = code === 0 ? 'stopped' : 'failed';
-      this.stateManager.set(worktreeId, actionId, { type: 'service', status });
-    };
-
-    this.activeServices.set(key, handle);
-  }
-
   stopAction(worktreeId: string, actionId: string): void {
-    const key = `${worktreeId}:${actionId}`;
-
-    // Stop service
-    const service = this.activeServices.get(key);
-    if (service) {
-      service.stop();
-      this.activeServices.delete(key);
-      this.stateManager.set(worktreeId, actionId, { type: 'service', status: 'stopped' });
-      return;
-    }
+    if (this.serviceManager.stop(worktreeId, actionId)) return;
 
     // Cancel check
+    const key = `${worktreeId}:${actionId}`;
     this.activeChecks.get(key)?.abort();
     this.activeChecks.delete(key);
     this.stateManager.set(worktreeId, actionId, { type: 'check', status: 'idle' });
@@ -362,11 +309,7 @@ export class ActionCoordinator implements vscode.Disposable {
   }
 
   dispose(): void {
-    // Stop all services
-    for (const [, handle] of this.activeServices) {
-      handle.stop();
-    }
-    this.activeServices.clear();
+    this.serviceManager.stopAll();
 
     // Cancel all checks
     for (const [, controller] of this.activeChecks) {

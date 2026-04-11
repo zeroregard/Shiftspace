@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO: decompose in a follow-up PR */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
