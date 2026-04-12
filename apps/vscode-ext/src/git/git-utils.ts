@@ -34,7 +34,7 @@ let gitBinary = 'git';
 /** Discover the git binary path from VSCode's built-in git extension or PATH. */
 export function initGitPath(): void {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require (not static import) so this module stays loadable in unit tests where 'vscode' isn't resolvable; failure is swallowed by the surrounding catch
     const vscode = require('vscode') as typeof import('vscode');
     const gitExt = vscode.extensions.getExtension('vscode.git')?.exports;
     const apiPath = (gitExt as any)?.getAPI?.(1)?.git?.path as string | undefined;
