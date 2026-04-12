@@ -19,7 +19,7 @@ import {
 import { getFileChanges, getBranchDiffFileChanges, getRepoFiles } from './git/status';
 import { diffFileChanges } from './git/event-diff';
 import { filterIgnoredFiles } from './git/ignore-filter';
-import { gitQueue, gitWrite } from './git/git-utils';
+import { gitQueue, gitWrite, isGitUnavailable } from './git/git-utils';
 
 type PostMessage = (msg: object) => void;
 type OnFileChange = (worktreeId: string) => void;
@@ -358,6 +358,10 @@ export class GitDataProvider implements vscode.Disposable {
     // quickly. The HEAD watcher is unreliable on some platforms because git
     // uses atomic lock-file renames that VSCode's file watcher can miss.
     this.worktreePollingTimer = setInterval(() => {
+      if (isGitUnavailable()) {
+        this.handleGitUnavailable();
+        return;
+      }
       void this.checkForWorktreeChanges();
     }, 3_000);
   }
@@ -369,6 +373,12 @@ export class GitDataProvider implements vscode.Disposable {
    */
   private startStatusPolling(): void {
     this.statusPollingTimer = setInterval(() => {
+      // Stop polling immediately if the git binary has gone missing — continuing
+      // would flood the process with ENOENT spawn errors every 2 seconds.
+      if (isGitUnavailable()) {
+        this.handleGitUnavailable();
+        return;
+      }
       // Skip poll tick entirely while a write operation is queued/running.
       if (gitQueue.isActive()) return;
       // Skip if the previous poll cycle hasn't finished yet — prevents
@@ -386,6 +396,17 @@ export class GitDataProvider implements vscode.Disposable {
         }
       })();
     }, 2_000);
+  }
+
+  /**
+   * Called when the git binary cannot be found (ENOENT).
+   * Tears down all polling and file watchers to stop the cascade of failing
+   * spawn calls, then notifies the webview so the user sees an actionable error.
+   */
+  private handleGitUnavailable(): void {
+    log.error('Git binary not found — stopping all polling and watchers');
+    this.tearDownWatchers();
+    this.postMessage({ type: 'error', message: 'Git is not available on this system. Please install git and reload VS Code.' });
   }
 
   private async checkForWorktreeChanges(): Promise<void> {
