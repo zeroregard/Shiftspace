@@ -2,6 +2,21 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.2.0] — 2026-04-12
+
+### Added
+
+- expand telemetry with invariants + unexpected-state reporting (#125) _(vscode-ext)_
+
+### Changed
+
+- Fix initialization state handling in renderer and git provider
+- consolidate release + publish into single workflow (#111) _(ci)_
+
+### Fixed
+
+- remove [skip ci] from auto-commit messages to prevent release skips (#110) _(ci)_
+
 ## [0.1.42] — 2026-04-11
 
 ### Added
