@@ -68,6 +68,11 @@ Shiftspace gives you two views:
 | `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines     |
 | `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                  |
 | `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on) |
+| `shiftspace.telemetry.enabled`            | Send anonymous error reports to help improve Shiftspace (default: off, opt-in on first run) |
+
+## Privacy & telemetry
+
+Shiftspace ships with **optional, opt-in** anonymous error reporting (via Sentry). It is **off by default**. On first activation you'll see a one-time prompt asking whether to enable it — pick "No thanks" and you'll never be asked again. No code content, file contents, or personally identifiable information is ever sent. You can toggle it any time via the `shiftspace.telemetry.enabled` setting, and VS Code's global `telemetry.telemetryLevel` always takes precedence.
 
 ## Requirements
 
