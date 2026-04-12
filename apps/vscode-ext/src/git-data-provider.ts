@@ -312,6 +312,7 @@ export class GitDataProvider implements vscode.Disposable {
       wt.id,
       setTimeout(() => {
         this.debounceTimers.delete(wt.id);
+        if (isGitUnavailable()) return;
         // If a write operation is in flight, reschedule instead of dropping.
         // The write will trigger another FS event when it completes, but
         // FSEvents may drop that event (the exact bug we're fixing), so we

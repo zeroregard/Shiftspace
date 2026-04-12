@@ -2,7 +2,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
-import { gitReadOnly, gitWrite } from './git-utils';
+import { gitReadOnly, gitWrite, isGitUnavailable } from './git-utils';
 import { log } from '../logger';
 import { reportError } from '../telemetry';
 
@@ -66,6 +66,7 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
 
 /** Detect all worktrees for the repo rooted at `repoRoot`. */
 export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]> {
+  if (isGitUnavailable()) return [];
   try {
     const { stdout } = await gitReadOnly(['worktree', 'list', '--porcelain'], {
       cwd: repoRoot,
