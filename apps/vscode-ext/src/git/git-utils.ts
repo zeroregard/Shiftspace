@@ -1,7 +1,29 @@
 import { execFile } from 'child_process';
+import { existsSync } from 'fs';
 import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Wrap low-level spawn errors (ENOENT, EACCES, etc.) with a message that
+ * actually names the binary and the cause, instead of Node's opaque
+ * "A system error occurred".
+ */
+function rethrowGitError(err: unknown): never {
+  const e = err as NodeJS.ErrnoException & { stderr?: string; stdout?: string };
+  if (e?.code === 'ENOENT') {
+    throw new Error(
+      `git binary not found at "${gitBinary}". Install git or set "git.path" in VSCode settings (e.g. "/opt/homebrew/bin/git").`
+    );
+  }
+  if (e?.code === 'EACCES') {
+    throw new Error(`git binary at "${gitBinary}" is not executable (EACCES).`);
+  }
+  if (e?.stderr?.trim()) {
+    throw new Error(e.stderr.trim());
+  }
+  throw err;
+}
 
 /**
  * Resolved path to the git binary. Falls back to plain 'git' (relies on PATH).
@@ -12,19 +34,22 @@ let gitBinary = 'git';
 /** Discover the git binary path from VSCode's built-in git extension or PATH. */
 export function initGitPath(): void {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require (not static import) so this module stays loadable in unit tests where 'vscode' isn't resolvable; failure is swallowed by the surrounding catch
     const vscode = require('vscode') as typeof import('vscode');
     const gitExt = vscode.extensions.getExtension('vscode.git')?.exports;
     const apiPath = (gitExt as any)?.getAPI?.(1)?.git?.path as string | undefined;
-    if (apiPath) {
+    if (apiPath && existsSync(apiPath)) {
       gitBinary = apiPath;
       return;
     }
     // Fallback: check VSCode setting
     const configured = vscode.workspace.getConfiguration('git').get<string>('path');
-    if (configured) {
+    if (configured && existsSync(configured)) {
       gitBinary = configured;
+      return;
     }
+    // Last resort: plain 'git' — relies on PATH resolution (e.g. /opt/homebrew/bin/git)
+    gitBinary = 'git';
   } catch {
     // Running outside VSCode (tests) — keep default 'git'
   }
@@ -97,7 +122,7 @@ export async function gitReadOnly(
         await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
         continue;
       }
-      throw err;
+      rethrowGitError(err);
     }
   }
   // Unreachable — loop always returns or throws
@@ -112,10 +137,14 @@ export async function gitWrite(
   args: string[],
   options: { cwd: string; timeout?: number }
 ): Promise<{ stdout: string; stderr: string }> {
-  return gitQueue.enqueue(() =>
-    execFileAsync(gitBinary, args, {
-      ...options,
-      timeout: options.timeout ?? 30_000,
-    })
-  );
+  return gitQueue.enqueue(async () => {
+    try {
+      return await execFileAsync(gitBinary, args, {
+        ...options,
+        timeout: options.timeout ?? 30_000,
+      });
+    } catch (err) {
+      rethrowGitError(err);
+    }
+  });
 }
