@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { log } from '../logger';
+import { reportError } from '../telemetry';
 
 const MCP_SERVER_PATH = path.join(os.homedir(), '.shiftspace', 'mcp-server.mjs');
 
@@ -24,6 +25,9 @@ export async function installMcpServerBinary(extensionPath: string): Promise<voi
     await fs.promises.copyFile(source, MCP_SERVER_PATH);
   } catch (err) {
     log.warn('Failed to install MCP server binary:', err);
+    reportError(err instanceof Error ? err : new Error(String(err)), {
+      context: 'installMcpServerBinary',
+    });
   }
 }
 

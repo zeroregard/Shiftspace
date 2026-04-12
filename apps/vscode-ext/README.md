@@ -62,12 +62,12 @@ Shiftspace gives you two views:
 
 ## Configuration
 
-| Setting                                   | Description                                                        |
-| ----------------------------------------- | ------------------------------------------------------------------ |
-| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`) |
-| `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines     |
-| `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                  |
-| `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on) |
+| Setting                                   | Description                                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`)                          |
+| `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines                              |
+| `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                                           |
+| `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on)                          |
 | `shiftspace.telemetry.enabled`            | Send anonymous error reports to help improve Shiftspace (default: off, opt-in on first run) |
 
 ## Privacy & telemetry

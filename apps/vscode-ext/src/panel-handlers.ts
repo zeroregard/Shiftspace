@@ -5,6 +5,7 @@ import type { ViewSettingsStore } from './view-settings-store';
 import type { InspectionSession } from './insights/inspection-session';
 import type { DiffMode } from '@shiftspace/renderer';
 import { log } from './logger';
+import { reportUnexpectedState } from './telemetry';
 
 export interface PanelHandlerDeps {
   sharedGit: SharedGitProvider;
@@ -124,5 +125,8 @@ export function registerPanelHandlers(
 
   router.on('webview-error', (m) => {
     log.error(`[Webview/Panel] ${m.error ?? 'Unknown error'}`);
+    reportUnexpectedState('webview.panel.errorReport', {
+      preview: (m.error ?? '').slice(0, 120),
+    });
   });
 }

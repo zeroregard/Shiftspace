@@ -20,6 +20,7 @@ import { getFileChanges, getBranchDiffFileChanges, getRepoFiles } from './git/st
 import { diffFileChanges } from './git/event-diff';
 import { filterIgnoredFiles } from './git/ignore-filter';
 import { gitQueue, gitWrite } from './git/git-utils';
+import { reportError, reportUnexpectedState } from './telemetry';
 
 type PostMessage = (msg: object) => void;
 type OnFileChange = (worktreeId: string) => void;
@@ -144,6 +145,7 @@ export class GitDataProvider implements vscode.Disposable {
           this.fileStates.set(wt.id, files);
         } catch (err) {
           log.error('loadAllFileChanges error for', wt.path, err);
+          reportError(err as Error, { context: 'loadAllFileChanges', branch: wt.branch });
         }
       })
     );
@@ -294,6 +296,7 @@ export class GitDataProvider implements vscode.Disposable {
         }
       } catch (err) {
         log.error('reloadAllWithFilter error for', wt.path, err);
+        reportError(err as Error, { context: 'reloadAllWithFilter', branch: wt.branch });
       }
     }
   }
@@ -350,6 +353,7 @@ export class GitDataProvider implements vscode.Disposable {
       }
     } catch (err) {
       log.error('refreshWorktree error for', wt.path, err);
+      reportError(err as Error, { context: 'refreshWorktree', branch: wt.branch });
     }
   }
 
@@ -398,6 +402,11 @@ export class GitDataProvider implements vscode.Disposable {
       // Skip this cycle to avoid flashing "No worktrees".
       if (fresh.length === 0 && this.worktrees.length > 0) {
         log.info('checkForWorktreeChanges: detectWorktrees returned empty, skipping');
+        // Surface this as a recoverable unexpected state — we'd like to know
+        // how often the porcelain output is flaky during normal usage.
+        reportUnexpectedState('git.detectWorktrees.transientEmpty', {
+          previousCount: String(this.worktrees.length),
+        });
         return;
       }
 
@@ -427,6 +436,10 @@ export class GitDataProvider implements vscode.Disposable {
             wt.branchFiles = branchFiles;
           } catch (err) {
             log.error('getFileChanges error for new worktree', wt.path, err);
+            reportError(err as Error, {
+              context: 'getFileChanges.newWorktree',
+              branch: wt.branch,
+            });
           }
           const event: ShiftspaceEvent = { type: 'worktree-added', worktree: wt };
           this.postMessage({ type: 'event', event });
@@ -465,6 +478,10 @@ export class GitDataProvider implements vscode.Disposable {
             freshWt.branchFiles = branchFiles;
           } catch (err) {
             log.error('getFileChanges error after branch change', freshWt.path, err);
+            reportError(err as Error, {
+              context: 'getFileChanges.branchChanged',
+              branch: freshWt.branch,
+            });
             freshWt.files = [];
           }
           this.fileStates.set(freshWt.id, freshWt.files);
@@ -523,6 +540,7 @@ export class GitDataProvider implements vscode.Disposable {
       }
     } catch (err) {
       log.error('checkForWorktreeChanges error:', err);
+      reportError(err as Error, { context: 'checkForWorktreeChanges' });
     }
   }
 
@@ -550,6 +568,11 @@ export class GitDataProvider implements vscode.Disposable {
       this.onFileChange?.(worktreeId);
     } catch (err) {
       log.error('handleSetDiffMode error:', err);
+      reportError(err as Error, {
+        context: 'handleSetDiffMode',
+        branch: wt.branch,
+        mode: diffMode.type,
+      });
       // Send back empty to clear loading state
       this.postMessage({ type: 'worktree-files-updated', worktreeId, files: [], diffMode });
     }
@@ -565,6 +588,7 @@ export class GitDataProvider implements vscode.Disposable {
       this.postMessage({ type: 'fetch-done', worktreeId, timestamp: Date.now(), branches });
     } catch (err) {
       log.error('handleFetchBranches error:', err);
+      reportError(err as Error, { context: 'handleFetchBranches' });
       this.postMessage({ type: 'fetch-loading', worktreeId, loading: false });
     }
   }
@@ -577,6 +601,7 @@ export class GitDataProvider implements vscode.Disposable {
       this.postMessage({ type: 'branch-list', worktreeId, branches });
     } catch (err) {
       log.error('handleGetBranchList error:', err);
+      reportError(err as Error, { context: 'handleGetBranchList' });
     }
   }
 
@@ -590,6 +615,11 @@ export class GitDataProvider implements vscode.Disposable {
       await this.initialize();
     } catch (err) {
       log.error('handleCheckoutBranch error:', err);
+      reportError(err as Error, {
+        context: 'handleCheckoutBranch',
+        fromBranch: wt.branch,
+        toBranch: branch,
+      });
       void vscode.window.showErrorMessage(
         `Failed to checkout "${branch}": ${(err as Error).message}`
       );
@@ -652,6 +682,11 @@ export class GitDataProvider implements vscode.Disposable {
           await this.initialize();
         } catch (err) {
           log.error('handleSwapBranches error:', err);
+          reportError(err as Error, {
+            context: 'handleSwapBranches',
+            branchA: linkedWt.branch,
+            branchB: mainWt.branch,
+          });
           void vscode.window.showErrorMessage(
             `Branch swap failed: ${(err as Error).message}. Check git stash list for any stashed changes.`
           );
@@ -689,6 +724,7 @@ export class GitDataProvider implements vscode.Disposable {
       await this.checkForWorktreeChanges();
     } catch (err) {
       log.error('handleAddWorktree error:', err);
+      reportError(err as Error, { context: 'handleAddWorktree' });
       void vscode.window.showErrorMessage(`Failed to add worktree: ${(err as Error).message}`);
     }
   }
@@ -722,6 +758,7 @@ export class GitDataProvider implements vscode.Disposable {
       await this.checkForWorktreeChanges();
     } catch (err) {
       log.error('handleRemoveWorktree error:', err);
+      reportError(err as Error, { context: 'handleRemoveWorktree', branch: wt.branch });
       void vscode.window.showErrorMessage(`Failed to remove worktree: ${(err as Error).message}`);
     }
   }
@@ -765,6 +802,7 @@ export class GitDataProvider implements vscode.Disposable {
       this.setupFileWatcher();
     } catch (err) {
       log.error('handleRenameWorktree error:', err);
+      reportError(err as Error, { context: 'handleRenameWorktree', branch: wt.branch });
       void vscode.window.showErrorMessage(`Failed to rename worktree: ${(err as Error).message}`);
     }
   }
@@ -811,6 +849,7 @@ export class GitDataProvider implements vscode.Disposable {
       }
     } catch (err) {
       log.error('handleFileClick error:', err);
+      reportError(err as Error, { context: 'handleFileClick' });
     }
   }
 

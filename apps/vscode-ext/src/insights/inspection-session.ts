@@ -3,6 +3,7 @@ import type { InsightRunner } from './runner';
 import type { DiagnosticCollector } from './plugins/diagnostics';
 import type { SmellRule } from '../actions/types';
 import { log } from '../logger';
+import { reportError } from '../telemetry';
 
 export interface InspectionDeps {
   postMessage: (msg: object) => void;
@@ -183,6 +184,10 @@ export class InspectionSession {
         return;
       }
       log.error(`[insights] runInsights error (${worktreeId}):`, err);
+      reportError(err instanceof Error ? err : new Error(String(err)), {
+        context: 'runInsights',
+        branch: wt.branch,
+      });
     } finally {
       if (!controller.signal.aborted) {
         this._deps.postMessage({ type: 'insights-status', running: false });
