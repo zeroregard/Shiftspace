@@ -10,7 +10,7 @@ import { resolveCommand } from '../actions/command-resolver';
 import { runCheck } from '../actions/runner';
 import { runPipeline } from '../actions/pipeline-runner';
 import { log } from '../logger';
-import { reportError } from '../telemetry';
+import { reportError, reportUnexpectedState } from '../telemetry';
 
 export interface WorktreeProvider {
   getWorktrees(): WorktreeState[];
@@ -84,6 +84,9 @@ export class McpToolHandlers {
     const worktrees = this.deps.worktreeProvider.getWorktrees();
     if (worktrees.length === 0) {
       log.warn('[MCP] resolveWorktree: no worktrees available');
+      reportUnexpectedState('mcp.resolveWorktree.noWorktrees', {
+        hasCwd: String(Boolean(cwd)),
+      });
       return null;
     }
     if (!cwd) {
@@ -98,6 +101,9 @@ export class McpToolHandlers {
       }).trim();
     } catch (err) {
       log.warn('[MCP] resolveWorktree: git rev-parse failed for cwd="%s":', cwd, err);
+      reportUnexpectedState('mcp.resolveWorktree.revParseFailed', {
+        errorName: err instanceof Error ? err.name : 'unknown',
+      });
       return null;
     }
 
@@ -115,6 +121,9 @@ export class McpToolHandlers {
         resolvedGitRoot,
         JSON.stringify(wtPaths)
       );
+      reportUnexpectedState('mcp.resolveWorktree.noMatchForCwd', {
+        worktreeCount: String(worktrees.length),
+      });
     }
     return match;
   }
