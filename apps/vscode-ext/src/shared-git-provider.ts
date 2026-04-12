@@ -55,9 +55,7 @@ export class SharedGitProvider implements vscode.Disposable {
     this._views.set(id, postMessage);
     if (this._provider && this._initialized) {
       const worktrees = this._provider.getFullWorktrees();
-      if (worktrees.length > 0) {
-        postMessage({ type: 'init', worktrees });
-      }
+      postMessage({ type: 'init', worktrees });
     }
   }
 

@@ -121,6 +121,7 @@ function ShiftspaceContent({ showPackageSwitcher, onSortChange, panZoomConfig }:
   // useShallow compares Map entries by reference — only re-renders when a
   // worktree is actually added, removed, or replaced (not on every event).
   const worktrees = useWorktreeStore(useShallow((s) => s.worktrees));
+  const initialized = useWorktreeStore((s) => s.initialized);
   const mode = useInspectionStore((s) => s.mode);
 
   const wtArray = Array.from(worktrees.values());
@@ -129,7 +130,9 @@ function ShiftspaceContent({ showPackageSwitcher, onSortChange, panZoomConfig }:
     <div className="w-full h-full bg-canvas flex flex-col relative">
       <UnifiedHeader showPackageSwitcher={showPackageSwitcher} onSortChange={onSortChange} />
       <div className="flex-1 min-h-0">
-        {mode.type === 'grove' ? (
+        {!initialized ? (
+          <Loader />
+        ) : mode.type === 'grove' ? (
           <GroveView worktrees={wtArray} />
         ) : (
           <Suspense fallback={<Loader />}>
