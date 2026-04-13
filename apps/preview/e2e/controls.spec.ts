@@ -54,7 +54,7 @@ test.describe('Control panel', () => {
     await expect(page).toHaveScreenshot('delete-popover-open.png');
   });
 
-  test('trash popover cancel dismisses without removing', async ({ page }) => {
+  test('trash popover dismisses on escape without removing', async ({ page }) => {
     await page.goto('/');
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(500);
@@ -64,8 +64,8 @@ test.describe('Control panel', () => {
     await page.getByTestId('remove-worktree-wt-1').click();
     await page.waitForTimeout(200);
 
-    // Click Cancel — worktree should remain
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    // Press Escape — worktree should remain
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
 
     await expect(page).toHaveScreenshot('delete-popover-cancelled.png');

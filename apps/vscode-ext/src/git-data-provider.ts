@@ -683,13 +683,19 @@ export class GitDataProvider implements vscode.Disposable {
       return;
     }
 
-    // Confirmation dialog
-    const answer = await vscode.window.showInformationMessage(
-      `Swap branches? This worktree (${linkedWt.branch}) will get ${mainWt.branch}'s branch, and primary worktree will get ${linkedWt.branch}. Uncommitted changes will be stashed and restored.`,
-      { modal: true },
-      'Yes'
-    );
-    if (answer !== 'Yes') return;
+    // Only prompt when there are unstaged changes that will be stashed/restored.
+    // A clean swap (or one with only staged/committed changes) is safe enough to
+    // execute without interrupting the user.
+    const hasUnstagedChanges = (wt: WorktreeState) =>
+      wt.files.some((f) => !f.staged || f.partiallyStaged);
+    if (hasUnstagedChanges(linkedWt) || hasUnstagedChanges(mainWt)) {
+      const answer = await vscode.window.showInformationMessage(
+        `Swap branches? This worktree (${linkedWt.branch}) will get ${mainWt.branch}'s branch, and primary worktree will get ${linkedWt.branch}. Uncommitted changes will be stashed and restored.`,
+        { modal: true },
+        'Yes'
+      );
+      if (answer !== 'Yes') return;
+    }
 
     // Signal loading state to both worktrees before starting
     this.postMessage({ type: 'swap-loading', worktreeId: linkedWt.id, loading: true });

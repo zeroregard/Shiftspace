@@ -5,8 +5,6 @@
  * user's focus stays in the workspace.
  *
  *   <ConfirmPopover
- *     title="Delete worktree foo?"
- *     description="Uncommitted changes will be lost."
  *     confirmLabel="Delete"
  *     confirmIcon="trash"
  *     danger
@@ -22,12 +20,14 @@ import { Button } from '@shiftspace/ui/button';
 interface ConfirmPopoverProps {
   /** The trigger element (rendered via Popover.Trigger asChild). */
   children: ReactNode;
-  title: ReactNode;
+  title?: ReactNode;
   description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   confirmIcon?: string;
   danger?: boolean;
+  /** Hide the cancel button — dismiss the popover by clicking outside. */
+  hideCancel?: boolean;
   onConfirm: () => void;
   align?: 'start' | 'center' | 'end';
 }
@@ -40,28 +40,32 @@ export function ConfirmPopover({
   cancelLabel = 'Cancel',
   confirmIcon,
   danger = false,
+  hideCancel = false,
   onConfirm,
   align = 'end',
 }: ConfirmPopoverProps) {
   const [open, setOpen] = useState(false);
+  const hasText = title || description;
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>{children}</Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="z-50 w-64 rounded-lg border border-border-default bg-node-file p-3 shadow-lg animate-popover-open flex flex-col gap-2"
+          className={`z-50 animate-popover-open flex flex-col gap-2 ${hasText ? 'w-64 rounded-lg border border-border-default bg-node-file p-3 shadow-lg' : ''}`}
           align={align}
           sideOffset={4}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="text-12 text-text-primary">{title}</div>
+          {title && <div className="text-12 text-text-primary">{title}</div>}
           {description && <div className="text-11 text-text-muted">{description}</div>}
-          <div className="flex justify-end gap-1.5 mt-1">
-            <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
-              {cancelLabel}
-            </Button>
+          <div className={`flex justify-end gap-1.5 ${hasText ? 'mt-1' : ''}`}>
+            {!hideCancel && (
+              <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+                {cancelLabel}
+              </Button>
+            )}
             <Button
               size="sm"
               variant={danger ? 'danger' : 'primary'}
