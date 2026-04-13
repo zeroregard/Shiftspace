@@ -74,6 +74,7 @@ export { useRelativeTime } from './hooks/use-relative-time';
 // Overlays
 export { DiffPopover } from './overlays/diff-popover';
 export { BranchPicker, type StaticOption } from './overlays/branch-picker';
+export { ConfirmPopover } from './overlays/confirm-popover';
 
 // Utils
 export { storeKey, storeKeyPrefix } from './utils/store-keys';

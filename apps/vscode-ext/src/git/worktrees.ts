@@ -562,11 +562,19 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
 /**
  * Remove a linked (non-primary) worktree.
  * Uses `git worktree remove` with optional `--force` for worktrees with modifications.
+ *
+ * Runs from the primary repo root rather than the worktree being removed —
+ * running git inside a directory that's about to be deleted is wasteful and
+ * can interact poorly with filesystem watchers.
  */
-export async function removeWorktree(worktreePath: string, force = false): Promise<void> {
+export async function removeWorktree(
+  worktreePath: string,
+  gitRoot: string,
+  force = false
+): Promise<void> {
   const args = ['worktree', 'remove', worktreePath];
   if (force) args.push('--force');
-  await gitWrite(args, { cwd: worktreePath, timeout: 30_000 });
+  await gitWrite(args, { cwd: gitRoot, timeout: 30_000 });
 }
 
 /**

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/experimental-ct-react';
 import { WorktreeCard } from '@shiftspace/renderer-grove/src/components/worktree-card';
 import { createMockWorktreeWithFiles } from './fixtures/mock-worktree';
 import { createMockFile, createStagedFile, createAddedFile } from './fixtures/mock-files';
+import { useWorktreeStore } from '@shiftspace/renderer-core/src/store/worktree-store.ts';
 import {
   resetAllStores,
   seedWorktree,
@@ -71,6 +72,46 @@ test.describe('WorktreeCard', () => {
       </Wrapper>
     );
     await expect(component).toHaveScreenshot('worktree-card-service-running.png');
+  });
+
+  test('removing state shows spinner and greyed-out card', async ({ mount }) => {
+    const wt = createMockWorktreeWithFiles([createMockFile({ path: 'src/App.tsx' })], {
+      id: 'wt-0',
+      branch: 'feature/to-delete',
+      path: '/projects/myapp-to-delete',
+    });
+    seedWorktree(wt);
+    useWorktreeStore.setState({ removingWorktrees: new Set(['wt-0']) });
+
+    const component = await mount(
+      <Wrapper>
+        <WorktreeCard worktree={wt} />
+      </Wrapper>
+    );
+    await expect(component).toHaveScreenshot('worktree-card-removing.png');
+  });
+
+  test('delete confirm popover opens on trash click', async ({ mount, page }) => {
+    const wt = createMockWorktreeWithFiles([createMockFile({ path: 'src/App.tsx' })], {
+      id: 'wt-0',
+      branch: 'feature/auth',
+      path: '/projects/myapp-auth',
+    });
+    seedWorktree(wt);
+
+    const component = await mount(
+      <Wrapper>
+        <WorktreeCard worktree={wt} />
+      </Wrapper>
+    );
+
+    // Hover to reveal group-visible buttons, then click trash to open popover
+    await component.hover();
+    await component.getByTestId('remove-worktree-wt-0').click();
+    await page.waitForTimeout(100);
+
+    // Popover portals to document.body — take a full page screenshot
+    await expect(page).toHaveScreenshot('worktree-card-delete-popover.png');
   });
 
   test('with action checks', async ({ mount }) => {

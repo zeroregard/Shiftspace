@@ -762,7 +762,11 @@ export class GitDataProvider implements vscode.Disposable {
     }
   }
 
-  /** Remove a linked (non-primary) worktree. */
+  /**
+   * Remove a linked (non-primary) worktree. Confirmation happens inline in
+   * the renderer (popover on the trash icon), so this handler assumes the
+   * user has already consented.
+   */
   async handleRemoveWorktree(worktreeId: string): Promise<void> {
     const wt = this.worktrees.find((w) => w.id === worktreeId);
     if (!wt) return;
@@ -772,26 +776,35 @@ export class GitDataProvider implements vscode.Disposable {
       return;
     }
 
-    const wtName = wt.path.split('/').pop() ?? wt.path;
-    const answer = await vscode.window.showWarningMessage(
-      `Delete worktree "${wtName}" (${wt.branch})? This will remove the worktree directory. Uncommitted changes will be lost.`,
-      { modal: true },
-      'Delete'
-    );
-    if (answer !== 'Delete') return;
+    // Instant feedback: the card greys out / shows a spinner before the
+    // (potentially queued) git command runs.
+    this.postMessage({
+      type: 'event',
+      event: { type: 'worktree-removal-pending', worktreeId: wt.id },
+    });
 
     try {
       try {
-        await removeWorktree(wt.path, false);
+        await removeWorktree(wt.path, this.currentRoot!, false);
       } catch {
         // Retry with --force if normal remove fails (e.g. uncommitted changes)
-        await removeWorktree(wt.path, true);
+        await removeWorktree(wt.path, this.currentRoot!, true);
       }
-      // Re-detect worktrees to update the UI
-      await this.checkForWorktreeChanges();
+      // Broadcast removal immediately so the card disappears without waiting
+      // for the next full worktree re-poll.
+      this.postMessage({
+        type: 'event',
+        event: { type: 'worktree-removed', worktreeId: wt.id },
+      });
+      // Reconcile authoritative worktree list in the background.
+      void this.checkForWorktreeChanges();
     } catch (err) {
       log.error('handleRemoveWorktree error:', err);
       reportError(err as Error, { context: 'handleRemoveWorktree', branch: wt.branch });
+      this.postMessage({
+        type: 'event',
+        event: { type: 'worktree-removal-failed', worktreeId: wt.id },
+      });
       void vscode.window.showErrorMessage(`Failed to remove worktree: ${(err as Error).message}`);
     }
   }

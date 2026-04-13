@@ -40,4 +40,34 @@ test.describe('Control panel', () => {
 
     await expect(page).toHaveScreenshot('worktree-removed.png');
   });
+
+  test('trash button shows inline confirm popover', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(500);
+
+    // Hover to reveal group-visible buttons, then click trash on wt-1
+    await page.getByTestId('remove-worktree-wt-1').hover();
+    await page.getByTestId('remove-worktree-wt-1').click();
+    await page.waitForTimeout(200);
+
+    await expect(page).toHaveScreenshot('delete-popover-open.png');
+  });
+
+  test('trash popover cancel dismisses without removing', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(500);
+
+    // Open delete popover on wt-1
+    await page.getByTestId('remove-worktree-wt-1').hover();
+    await page.getByTestId('remove-worktree-wt-1').click();
+    await page.waitForTimeout(200);
+
+    // Click Cancel — worktree should remain
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.waitForTimeout(300);
+
+    await expect(page).toHaveScreenshot('delete-popover-cancelled.png');
+  });
 });

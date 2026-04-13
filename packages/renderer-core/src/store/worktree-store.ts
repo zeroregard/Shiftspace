@@ -44,6 +44,7 @@ interface WorktreeStore {
   diffModeLoading: Set<string>;
   fetchLoading: Set<string>;
   swapLoading: Set<string>;
+  removingWorktrees: Set<string>;
   lastFetchAt: Map<string, number>;
   sortMode: WorktreeSortMode;
   iconMap: IconMap;
@@ -61,6 +62,7 @@ interface WorktreeStore {
   ) => void;
   setFetchLoading: (worktreeId: string, loading: boolean) => void;
   setSwapLoading: (worktreeId: string, loading: boolean) => void;
+  setRemoving: (worktreeId: string, removing: boolean) => void;
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
   setSortMode: (mode: WorktreeSortMode) => void;
   setIconMap: (map: IconMap) => void;
@@ -73,12 +75,37 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
   diffModeLoading: new Set(),
   fetchLoading: new Set(),
   swapLoading: new Set(),
+  removingWorktrees: new Set(),
   lastFetchAt: new Map(),
   sortMode: 'name',
   iconMap: {},
   iconIndex: { byName: new Map(), byExt: new Map() },
 
-  applyEvent: (event) => set((state) => ({ worktrees: applyEventReducer(state.worktrees, event) })),
+  applyEvent: (event) =>
+    set((state) => {
+      // Removal lifecycle events toggle the removingWorktrees set; terminal
+      // 'worktree-removed' clears it too (defensive cleanup).
+      if (event.type === 'worktree-removal-pending') {
+        if (state.removingWorktrees.has(event.worktreeId)) return state;
+        const removingWorktrees = new Set(state.removingWorktrees);
+        removingWorktrees.add(event.worktreeId);
+        return { removingWorktrees };
+      }
+      if (event.type === 'worktree-removal-failed') {
+        if (!state.removingWorktrees.has(event.worktreeId)) return state;
+        const removingWorktrees = new Set(state.removingWorktrees);
+        removingWorktrees.delete(event.worktreeId);
+        return { removingWorktrees };
+      }
+      const nextWorktrees = applyEventReducer(state.worktrees, event);
+      if (event.type === 'worktree-removed' && state.removingWorktrees.has(event.worktreeId)) {
+        const removingWorktrees = new Set(state.removingWorktrees);
+        removingWorktrees.delete(event.worktreeId);
+        return { worktrees: nextWorktrees, removingWorktrees };
+      }
+      if (nextWorktrees === state.worktrees) return state;
+      return { worktrees: nextWorktrees };
+    }),
 
   setWorktrees: (worktrees) =>
     set({ initialized: true, worktrees: new Map(worktrees.map((wt) => [wt.id, wt])) }),
@@ -143,6 +170,17 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
       if (loading) swapLoading.add(worktreeId);
       else swapLoading.delete(worktreeId);
       return { swapLoading };
+    }),
+
+  setRemoving: (worktreeId, removing) =>
+    set((state) => {
+      const has = state.removingWorktrees.has(worktreeId);
+      if (removing && has) return state;
+      if (!removing && !has) return state;
+      const removingWorktrees = new Set(state.removingWorktrees);
+      if (removing) removingWorktrees.add(worktreeId);
+      else removingWorktrees.delete(worktreeId);
+      return { removingWorktrees };
     }),
 
   setLastFetchAt: (worktreeId, timestamp) =>
