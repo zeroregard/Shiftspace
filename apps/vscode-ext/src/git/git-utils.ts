@@ -12,12 +12,18 @@ const execFileAsync = promisify(execFile);
 function rethrowGitError(err: unknown): never {
   const e = err as NodeJS.ErrnoException & { stderr?: string; stdout?: string };
   if (e?.code === 'ENOENT') {
-    throw new Error(
+    const wrapped = new Error(
       `git binary not found at "${gitBinary}". Install git or set "git.path" in VSCode settings (e.g. "/opt/homebrew/bin/git").`
-    );
+    ) as NodeJS.ErrnoException;
+    wrapped.code = 'ENOENT';
+    throw wrapped;
   }
   if (e?.code === 'EACCES') {
-    throw new Error(`git binary at "${gitBinary}" is not executable (EACCES).`);
+    const wrapped = new Error(
+      `git binary at "${gitBinary}" is not executable (EACCES).`
+    ) as NodeJS.ErrnoException;
+    wrapped.code = 'EACCES';
+    throw wrapped;
   }
   if (e?.stderr?.trim()) {
     throw new Error(e.stderr.trim());
