@@ -204,7 +204,6 @@ export function WorktreeCard({
                       danger
                       tooltip={false}
                       data-testid={`remove-worktree-${wt.id}`}
-                      onClick={(e) => e.stopPropagation()}
                     />
                   </span>
                 </ConfirmPopover>
