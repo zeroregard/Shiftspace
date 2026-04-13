@@ -182,15 +182,9 @@ export function WorktreeCard({
                 />
               ) : (
                 <ConfirmPopover
-                  title={
-                    <>
-                      Delete worktree <span className="font-semibold">{folderName}</span>?
-                    </>
-                  }
-                  description="Uncommitted changes will be lost."
-                  confirmLabel="Delete"
                   confirmIcon="trash"
                   danger
+                  hideCancel
                   onConfirm={() => actions.removeWorktree(wt.id)}
                 >
                   <span>
