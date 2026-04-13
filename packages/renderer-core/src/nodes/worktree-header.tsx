@@ -31,8 +31,7 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
 
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
-  const lastChanged = wt.files.reduce((max, f) => Math.max(max, f.lastChangedAt), 0);
-  const relativeTime = useRelativeTime(lastChanged);
+  const relativeTime = useRelativeTime(wt.lastActivityAt);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
   const pathPart = !isSingle && !wt.isMainWorktree ? folderName : null;
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);

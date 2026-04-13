@@ -41,6 +41,7 @@ function wt(id: string, files: FileChange[]): WorktreeState {
     diffMode: { type: 'working' },
     defaultBranch: 'main',
     isMainWorktree: false,
+    lastActivityAt: 0,
   };
 }
 

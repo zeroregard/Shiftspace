@@ -58,6 +58,7 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
       diffMode: { type: 'working' },
       defaultBranch: 'main',
       isMainWorktree: i === 0,
+      lastActivityAt: Date.now(),
     });
   }
 

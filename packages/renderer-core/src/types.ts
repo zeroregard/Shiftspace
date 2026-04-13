@@ -19,6 +19,12 @@ export interface WorktreeState {
   defaultBranch: string;
   /** True for the main (non-linked) worktree — always the first entry from `git worktree list`. */
   isMainWorktree: boolean;
+  /**
+   * Timestamp of the most recent activity on this worktree — file change,
+   * commit, or branch/ref checkout. Always set (initialized to worktree
+   * creation/detection time). Used for the "last updated" display and sort.
+   */
+  lastActivityAt: number;
 }
 
 export interface DiffLine {
@@ -56,6 +62,7 @@ export type ShiftspaceEvent =
   | { type: 'worktree-added'; worktree: WorktreeState }
   | { type: 'worktree-removed'; worktreeId: string }
   | { type: 'worktree-renamed'; oldWorktreeId: string; worktree: WorktreeState }
+  | { type: 'worktree-activity'; worktreeId: string; timestamp: number }
   | { type: 'process-started'; worktreeId: string; port: number; command: string }
   | { type: 'process-stopped'; worktreeId: string };
 

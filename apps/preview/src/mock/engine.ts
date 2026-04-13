@@ -257,6 +257,7 @@ export class MockEngine {
       diffMode,
       defaultBranch: DEFAULT_BRANCH,
       isMainWorktree,
+      lastActivityAt: Date.now(),
     };
     this.worktrees.set(id, wt);
     this.emit({ type: 'worktree-added', worktree: wt });

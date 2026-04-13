@@ -21,9 +21,22 @@ export function applyEventReducer(
       return next;
     }
     case 'worktree-renamed': {
+      const prev = worktrees.get(event.oldWorktreeId);
       const next = new Map(worktrees);
       next.delete(event.oldWorktreeId);
-      next.set(event.worktree.id, event.worktree);
+      // Renames are not "activity" — preserve the previous lastActivityAt.
+      next.set(event.worktree.id, {
+        ...event.worktree,
+        lastActivityAt: prev?.lastActivityAt ?? event.worktree.lastActivityAt,
+      });
+      return next;
+    }
+    case 'worktree-activity': {
+      const wt = worktrees.get(event.worktreeId);
+      if (!wt) return worktrees;
+      if (wt.lastActivityAt >= event.timestamp) return worktrees;
+      const next = new Map(worktrees);
+      next.set(event.worktreeId, { ...wt, lastActivityAt: event.timestamp });
       return next;
     }
     case 'file-changed': {
@@ -35,7 +48,11 @@ export function applyEventReducer(
           ? [...wt.files.slice(0, idx), event.file, ...wt.files.slice(idx + 1)]
           : [...wt.files, event.file];
       const next = new Map(worktrees);
-      next.set(event.worktreeId, { ...wt, files });
+      next.set(event.worktreeId, {
+        ...wt,
+        files,
+        lastActivityAt: Math.max(wt.lastActivityAt, event.file.lastChangedAt),
+      });
       return next;
     }
     case 'file-removed': {
@@ -44,7 +61,7 @@ export function applyEventReducer(
       const files = wt.files.filter((f) => f.path !== event.filePath);
       if (files.length === wt.files.length) return worktrees;
       const next = new Map(worktrees);
-      next.set(event.worktreeId, { ...wt, files });
+      next.set(event.worktreeId, { ...wt, files, lastActivityAt: Date.now() });
       return next;
     }
     case 'file-staged': {
@@ -54,7 +71,7 @@ export function applyEventReducer(
       if (!target || target.staged) return worktrees;
       const files = wt.files.map((f) => (f.path === event.filePath ? { ...f, staged: true } : f));
       const next = new Map(worktrees);
-      next.set(event.worktreeId, { ...wt, files });
+      next.set(event.worktreeId, { ...wt, files, lastActivityAt: Date.now() });
       return next;
     }
     case 'process-started': {

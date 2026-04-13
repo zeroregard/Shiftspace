@@ -347,6 +347,25 @@ export class GitDataProvider implements vscode.Disposable {
         this.postMessage({ type: 'event', event });
       }
 
+      // branchFiles changed with no working-file events = commit happened.
+      // Surface it as worktree activity so the timestamp bumps even though
+      // the working tree is clean. File events already bump activity via
+      // the reducer, so we only emit here when events.length === 0.
+      if (branchChanged && events.length === 0) {
+        const now = Date.now();
+        wt.lastActivityAt = now;
+        this.postMessage({
+          type: 'event',
+          event: { type: 'worktree-activity', worktreeId: wt.id, timestamp: now },
+        });
+      } else if (events.length > 0) {
+        // Keep the provider's WorktreeState in sync with the reducer's rule
+        // (file events bump activity). Use the max file lastChangedAt.
+        let maxTs = wt.lastActivityAt;
+        for (const f of newFiles) if (f.lastChangedAt > maxTs) maxTs = f.lastChangedAt;
+        wt.lastActivityAt = maxTs;
+      }
+
       // Notify stale callback if working files or branch diff changed
       if (events.length > 0 || branchChanged) {
         this.onFileChange?.(wt.id);
@@ -485,15 +504,19 @@ export class GitDataProvider implements vscode.Disposable {
             freshWt.files = [];
           }
           this.fileStates.set(freshWt.id, freshWt.files);
+          // Checkout counts as activity.
+          freshWt.lastActivityAt = Date.now();
 
           log.info(
             `[diffMode] re-adding worktree after branch change: ${freshWt.branch} diffMode=${JSON.stringify(freshWt.diffMode)}`
           );
         } else {
-          // Path changed only (rename/move) — preserve diffMode and files
+          // Path changed only (rename/move) — preserve diffMode, files, and
+          // activity timestamp (renames aren't user-visible "activity").
           freshWt.diffMode = prevWt.diffMode;
           freshWt.files = prevWt.files;
           freshWt.branchFiles = prevWt.branchFiles;
+          freshWt.lastActivityAt = prevWt.lastActivityAt;
           this.fileStates.set(freshWt.id, freshWt.files);
           log.info(`[path] worktree path changed: ${prevWt.path} → ${freshWt.path}`);
         }
@@ -511,6 +534,10 @@ export class GitDataProvider implements vscode.Disposable {
         const prevWt = this.worktrees.find((wt) => wt.id === freshWt.id);
         if (prevWt && prevWt.branch === freshWt.branch) {
           freshWt.diffMode = prevWt.diffMode;
+          // Preserve activity timestamp across re-detection polls —
+          // detectWorktrees() stamps Date.now() on every call and would
+          // otherwise reset the timer on every 3-second poll.
+          freshWt.lastActivityAt = prevWt.lastActivityAt;
         } else if (prevWt && prevWt.diffMode.type === 'repo') {
           log.info(
             `[diffMode] preserving repo mode despite branch mismatch: prev=${prevWt.branch} fresh=${freshWt.branch}`

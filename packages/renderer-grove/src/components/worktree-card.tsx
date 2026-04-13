@@ -97,8 +97,7 @@ export function WorktreeCard({
 
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
-  const lastChanged = wt.files.reduce((max, f) => Math.max(max, f.lastChangedAt), 0);
-  const relativeTime = useRelativeTime(lastChanged);
+  const relativeTime = useRelativeTime(wt.lastActivityAt);
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
 
