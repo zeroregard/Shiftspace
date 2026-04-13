@@ -270,9 +270,17 @@ export class MockEngine {
   }
 
   removeWorktree(id: string) {
-    this.stopAgent(id);
-    this.worktrees.delete(id);
-    this.emit({ type: 'worktree-removed', worktreeId: id });
+    if (!this.worktrees.has(id)) return;
+    // Emit pending immediately so the card shows a spinner. Simulate a short
+    // latency (matches the real ~git worktree remove~ command) so the
+    // indicator is actually visible in the preview.
+    this.emit({ type: 'worktree-removal-pending', worktreeId: id });
+    setTimeout(() => {
+      if (!this.worktrees.has(id)) return;
+      this.stopAgent(id);
+      this.worktrees.delete(id);
+      this.emit({ type: 'worktree-removed', worktreeId: id });
+    }, 1500);
   }
 
   renameWorktree(id: string, newPath: string) {

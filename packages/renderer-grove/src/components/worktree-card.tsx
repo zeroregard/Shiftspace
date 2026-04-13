@@ -4,6 +4,7 @@ import {
   useWorktreeStore,
   useInspectionStore,
   BranchPicker,
+  ConfirmPopover,
   ActionBar,
   filterCheckoutableBranches,
   useActions,
@@ -90,6 +91,7 @@ export function WorktreeCard({
   const enterInspection = useInspectionStore((s) => s.enterInspection);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
   const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(wt.id));
+  const isRemoving = useWorktreeStore((s) => s.removingWorktrees.has(wt.id));
   const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
   const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
@@ -114,7 +116,8 @@ export function WorktreeCard({
 
   return (
     <div
-      className={`group ${variant === 'full' ? 'w-[32rem] gap-3 p-4' : 'w-full gap-2 p-3'} flex flex-col rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-colors`}
+      data-removing={isRemoving ? 'true' : undefined}
+      className={`group ${variant === 'full' ? 'w-[32rem] gap-3 p-4' : 'w-full gap-2 p-3'} flex flex-col rounded-xl border-2 border-dashed border-border-dashed bg-cluster-alpha text-text-primary transition-[opacity,colors] ${isRemoving ? 'opacity-60 pointer-events-none animate-pulse' : ''}`}
     >
       {/* Workspace name + branch picker */}
       <div className="flex flex-col gap-0.5">
@@ -163,24 +166,49 @@ export function WorktreeCard({
                 ghost
                 groupVisible
                 tooltip={false}
+                disabled={isRemoving}
                 onClick={(e) => {
                   e.stopPropagation();
                   startRename();
                 }}
               />
-              <IconButton
-                icon="trash"
-                label="Remove worktree"
-                size="sm"
-                ghost
-                groupVisible
-                danger
-                tooltip={false}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  actions.removeWorktree(wt.id);
-                }}
-              />
+              {isRemoving ? (
+                <IconButton
+                  icon="loading"
+                  label="Deleting worktree…"
+                  size="sm"
+                  ghost
+                  iconAnimation="spin 1s linear infinite"
+                  disabled
+                />
+              ) : (
+                <ConfirmPopover
+                  title={
+                    <>
+                      Delete worktree <span className="font-semibold">{folderName}</span>?
+                    </>
+                  }
+                  description="Uncommitted changes will be lost."
+                  confirmLabel="Delete"
+                  confirmIcon="trash"
+                  danger
+                  onConfirm={() => actions.removeWorktree(wt.id)}
+                >
+                  <span>
+                    <IconButton
+                      icon="trash"
+                      label="Remove worktree"
+                      size="sm"
+                      ghost
+                      groupVisible
+                      danger
+                      tooltip={false}
+                      data-testid={`remove-worktree-${wt.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </span>
+                </ConfirmPopover>
+              )}
             </>
           )}
         </div>
