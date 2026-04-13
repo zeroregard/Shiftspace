@@ -62,6 +62,11 @@ export {
   DiffPopover,
   BranchPicker,
   type StaticOption,
+  // Protocol
+  MessageRouter,
+  type WebviewMessage,
+  registerGitProviderHandlers,
+  type GitProviderHandlers,
 } from '@shiftspace/renderer-core';
 
 export { GroveView, SidebarView, WorktreeCard } from '@shiftspace/renderer-grove';

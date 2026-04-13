@@ -129,6 +129,16 @@ jobs:
             add_spec tree-sorting
           fi
 
+          # flows: core + grove + inspection + preview app/sidebar/mock/bridge.
+          # This spec exercises the full webview protocol end-to-end, so any
+          # change to a renderer package, the preview entry points, or the
+          # mock git provider / bridge must run it.
+          if has_changes '^apps/preview/e2e/flows\.spec\.ts' \
+             || has_changes '^apps/preview/src/(app\.tsx|sidebar-page\.tsx|mock/|use-simulation-handlers\.ts)' \
+             || $E2E_SHARED || $CORE || $GROVE || $INSPECTION; then
+            add_spec flows
+          fi
+
           # Deduplicate
           SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
 

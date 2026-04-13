@@ -313,13 +313,22 @@ A control panel overlay (visible on the preview app, not part of the renderer) w
 
 Each E2E spec has a corresponding Nx target in `apps/preview/project.json` with fine-grained `inputs` that map to specific renderer sub-packages. CI uses `git diff` to determine which packages changed and only runs the affected specs:
 
-| Spec                                | Depends on                | Triggered by                                           |
-| ----------------------------------- | ------------------------- | ------------------------------------------------------ |
-| `controls.spec.ts`                  | core + grove              | GroveView, WorktreeCard, layout, nodes, controls, mock |
-| `graph.spec.ts`                     | core + grove + inspection | Everything (integration test)                          |
-| `diagnostics.spec.ts`               | core + inspection         | InspectionView, FileListPanel, annotations, mockData   |
-| `inspector-file-categories.spec.ts` | core + inspection         | FileListPanel, listSections, mockData                  |
-| `search-filter.spec.ts`             | core + inspection         | FileListPanel, listSections, mock                      |
+| Spec                                | Depends on                | Triggered by                                                                                                                                                                                             |
+| ----------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controls.spec.ts`                  | core + grove              | GroveView, WorktreeCard, layout, nodes, controls, mock                                                                                                                                                   |
+| `graph.spec.ts`                     | core + grove + inspection | Everything (integration test)                                                                                                                                                                            |
+| `diagnostics.spec.ts`               | core + inspection         | InspectionView, FileListPanel, annotations, mockData                                                                                                                                                     |
+| `inspector-file-categories.spec.ts` | core + inspection         | FileListPanel, listSections, mockData                                                                                                                                                                    |
+| `search-filter.spec.ts`             | core + inspection         | FileListPanel, listSections, mock                                                                                                                                                                        |
+| `flows.spec.ts`                     | core + grove + inspection | `MockGitProvider`, `MockWebviewBridge`, preview entry points — asserts the full UI → webview message → provider → store round-trip. No screenshots; uses `window.__shiftspaceTest` to drive the harness. |
+
+**Integration flow testing (`flows.spec.ts`):**
+
+Screenshot-only tests couldn't catch the PR #131 worktree-deletion regression because the preview shortcut bypassed the webview protocol. `flows.spec.ts` plus the `MockGitProvider` + `MockWebviewBridge` harness force every router-dispatched flow through the same code the extension uses (`registerGitProviderHandlers` from `@shiftspace/renderer-core/protocol`). When adding a new webview-message flow:
+
+1. Add the handler method to `GitProviderHandlers` in `packages/renderer-core/src/protocol/git-provider-handlers.ts` and wire it in `registerGitProviderHandlers`.
+2. Implement the preview-side version in `apps/preview/src/mock/mock-git-provider.ts` (with a `failNextOp` hook for the failure path if the real flow emits a `-failed` event).
+3. Add a case to `apps/preview/e2e/flows.spec.ts` that clicks the UI trigger and asserts on `window.__shiftspaceTest.getCalls()` / `getPostedMessages()` and the resulting store state.
 
 **Adding a new E2E spec:**
 

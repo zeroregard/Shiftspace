@@ -98,3 +98,11 @@ export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/diagnostic
 
 // Components (shared between views)
 export { ActionBar } from './components/action-bar';
+
+// Protocol (shared between webview hosts and preview)
+export {
+  MessageRouter,
+  type WebviewMessage,
+  registerGitProviderHandlers,
+  type GitProviderHandlers,
+} from './protocol';

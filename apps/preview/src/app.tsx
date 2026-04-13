@@ -8,6 +8,8 @@ import {
 } from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
 import { MockEngine } from './mock/engine';
+import { MockGitProvider } from './mock/mock-git-provider';
+import { MockWebviewBridge } from './mock/mock-webview-bridge';
 import { MOCK_ACTION_CONFIGS, MOCK_PIPELINES, getMockInitialStates } from './mock/actions';
 import { ControlPanel } from './controls/control-panel';
 import {
@@ -21,6 +23,7 @@ import { useTheme } from './use-theme';
 
 export const App: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
+  const bridgeRef = useRef<MockWebviewBridge | null>(null);
   const [worktreeIds, setWorktreeIds] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState(0);
   const theme = useTheme();
@@ -32,17 +35,34 @@ export const App: React.FC = () => {
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
   }
+  if (!bridgeRef.current) {
+    // Route renderer callbacks through the same MessageRouter the extension
+    // uses, dispatching into a MockGitProvider. This ensures Playwright
+    // exercises the real message protocol, not a shortcut around it.
+    const provider = new MockGitProvider({ engine: engineRef.current });
+    bridgeRef.current = new MockWebviewBridge(provider);
+    bridgeRef.current.installTestHook();
+  }
 
   const {
     handleDiffModeChange,
-    handleRequestBranchList,
     handleRunAction,
     handleStopAction,
     handleRunPipeline,
     handleRecheckInsights,
-    handleRenameWorktree,
     cleanupSimulations,
   } = useSimulationHandlers(engineRef);
+
+  // Route renderer callbacks for flows that go through the webview protocol
+  // via the bridge → router → MockGitProvider chain. Everything else (action
+  // runner, insights, diff-mode file churn) is still driven by the
+  // simulation hook because those aren't pure-provider flows.
+  const handleRequestBranchList = (worktreeId: string) => {
+    bridgeRef.current?.postMessage({ type: 'get-branch-list', worktreeId });
+  };
+  const handleRenameWorktree = (worktreeId: string, newName: string) => {
+    bridgeRef.current?.postMessage({ type: 'rename-worktree', worktreeId, newName });
+  };
 
   // Initialize mock action configs and pipelines once on mount / reset
   useEffect(() => {
@@ -123,12 +143,11 @@ export const App: React.FC = () => {
   };
 
   const handleAddWorktree = () => {
-    const id = engineRef.current?.addPresetWorktree(worktreeIds.length);
-    if (id) setWorktreeIds((ids) => [...ids, id]);
+    bridgeRef.current?.postMessage({ type: 'add-worktree' });
   };
 
   const handleRemoveWorktree = (id: string) => {
-    engineRef.current?.removeWorktree(id);
+    bridgeRef.current?.postMessage({ type: 'remove-worktree', worktreeId: id });
   };
 
   return (
