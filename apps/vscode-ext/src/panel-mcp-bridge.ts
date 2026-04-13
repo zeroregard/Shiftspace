@@ -29,6 +29,7 @@ export function registerMcpHandlers(opts: McpBridgeOpts): void {
           diffMode: { type: 'working' as const },
           defaultBranch: 'main',
           isMainWorktree: false,
+          lastActivityAt: 0,
         }));
       },
     },

@@ -30,6 +30,7 @@ function makeWt(overrides: Partial<WorktreeState> = {}): WorktreeState {
     diffMode: { type: 'working' },
     defaultBranch: 'main',
     isMainWorktree: false,
+    lastActivityAt: 0,
     ...overrides,
   };
 }

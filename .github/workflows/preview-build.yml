@@ -63,7 +63,11 @@ jobs:
           CURRENT=$(node -p "require('./package.json').version")
           SHORT_SHA="${GITHUB_SHA:0:7}"
           PR_NUMBER="${{ github.event.pull_request.number }}"
-          PREVIEW_VERSION="${CURRENT}-pr.${PR_NUMBER}.sha.${SHORT_SHA}"
+          # Prefix the SHA with "g" (git convention) so the identifier is
+          # never purely numeric — SemVer forbids leading zeros on numeric
+          # identifiers, which vsce rejects when the short SHA happens to
+          # contain only digits (e.g. "0005431").
+          PREVIEW_VERSION="${CURRENT}-pr.${PR_NUMBER}.sha.g${SHORT_SHA}"
           node -e "
             const p = require('./package.json');
             p.version = '${PREVIEW_VERSION}';

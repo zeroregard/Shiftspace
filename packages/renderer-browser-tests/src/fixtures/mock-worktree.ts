@@ -9,6 +9,7 @@ export function createMockWorktree(overrides?: Partial<WorktreeState>): Worktree
     diffMode: { type: 'working' } as DiffMode,
     defaultBranch: 'main',
     isMainWorktree: false,
+    lastActivityAt: Date.now(),
     ...overrides,
   };
 }

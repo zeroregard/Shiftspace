@@ -26,6 +26,7 @@ const sampleWorktree: WorktreeState = {
   diffMode: { type: 'working' },
   defaultBranch: 'main',
   isMainWorktree: true,
+  lastActivityAt: 1_700_000_000_000,
 };
 
 describe('init message serialization', () => {

@@ -13,6 +13,7 @@ function makeWorktree(id: string, wtPath: string, branch: string): WorktreeState
     diffMode: { type: 'working' },
     defaultBranch: 'main',
     isMainWorktree: id === 'main',
+    lastActivityAt: 0,
   };
 }
 

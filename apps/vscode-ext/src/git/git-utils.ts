@@ -12,6 +12,8 @@ const execFileAsync = promisify(execFile);
 function rethrowGitError(err: unknown): never {
   const e = err as NodeJS.ErrnoException & { stderr?: string; stdout?: string };
   if (e?.code === 'ENOENT') {
+    // Preserve `code` so callers (e.g. checkGitAvailability) can still
+    // distinguish "git binary missing" from "command failed".
     const wrapped = new Error(
       `git binary not found at "${gitBinary}". Install git or set "git.path" in VSCode settings (e.g. "/opt/homebrew/bin/git").`
     ) as NodeJS.ErrnoException;
