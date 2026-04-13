@@ -38,9 +38,7 @@ const SENTRY_DSN =
 
 /**
  * Initialize Sentry error reporting.
- * Only sends data if:
- * 1. The user has opted in via shiftspace.telemetry.enabled
- * 2. VSCode's global telemetry level is not 'off'
+ * Only sends data if the user has opted in via shiftspace.telemetry.enabled.
  */
 export function initTelemetry(extensionVersion: string): void {
   if (initialized) return;
@@ -88,13 +86,16 @@ export function initTelemetry(extensionVersion: string): void {
 }
 
 /**
- * Check both Shiftspace setting AND VSCode global telemetry.
+ * Check our own explicit opt-in setting.
+ *
+ * We intentionally do NOT gate on `vscode.env.isTelemetryEnabled`: some VS Code
+ * forks (e.g. Cursor) hardcode `telemetryLevel=0` internally, which would make
+ * that flag always report `false` and silently disable our telemetry even for
+ * users who explicitly opted in via our first-run prompt. Shiftspace already
+ * has its own explicit consent flow (defaulting to `false`), so per VS Code's
+ * docs we're not required to also gate on the global telemetry level.
  */
 function shouldSendTelemetry(): boolean {
-  // Check VSCode's global telemetry level
-  if (!vscode.env.isTelemetryEnabled) return false;
-
-  // Check our own opt-in setting
   const config = vscode.workspace.getConfiguration('shiftspace');
   return config.get<boolean>('telemetry.enabled', false);
 }
