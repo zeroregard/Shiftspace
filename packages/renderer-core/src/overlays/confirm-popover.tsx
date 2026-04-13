@@ -52,7 +52,7 @@ export function ConfirmPopover({
       <Popover.Trigger asChild>{children}</Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className={`z-50 rounded-lg border border-border-default bg-node-file p-3 shadow-lg animate-popover-open flex flex-col gap-2 ${hasText ? 'w-64' : ''}`}
+          className={`z-50 animate-popover-open flex flex-col gap-2 ${hasText ? 'w-64 rounded-lg border border-border-default bg-node-file p-3 shadow-lg' : ''}`}
           align={align}
           sideOffset={4}
           onClick={(e) => e.stopPropagation()}
