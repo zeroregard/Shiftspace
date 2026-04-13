@@ -52,6 +52,15 @@ export function initTelemetry(extensionVersion: string): void {
     // Only send errors and crashes, no performance/transaction data
     tracesSampleRate: 0,
 
+    // Drop network breadcrumbs entirely — fetch/http breadcrumbs leak URLs,
+    // query params, and response metadata we don't need for debugging crashes.
+    beforeBreadcrumb(breadcrumb) {
+      if (breadcrumb.category === 'fetch' || breadcrumb.category === 'http') {
+        return null;
+      }
+      return breadcrumb;
+    },
+
     // Strip any potentially sensitive data
     beforeSend(event) {
       // Don't send if telemetry was disabled after init
