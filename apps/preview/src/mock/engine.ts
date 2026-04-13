@@ -271,16 +271,18 @@ export class MockEngine {
 
   removeWorktree(id: string) {
     if (!this.worktrees.has(id)) return;
-    // Emit pending immediately so the card shows a spinner. Simulate a short
-    // latency (matches the real ~git worktree remove~ command) so the
-    // indicator is actually visible in the preview.
+    // Emit pending immediately so the card shows a spinner. Keep the delay
+    // short (< the controls.spec.ts 500ms post-click wait) so the e2e
+    // snapshot captures the final "worktree gone" state deterministically
+    // — an animate-pulse/spinner frame would be non-deterministic between
+    // runs and fail the `maxDiffPixelRatio: 0.0001` threshold.
     this.emit({ type: 'worktree-removal-pending', worktreeId: id });
     setTimeout(() => {
       if (!this.worktrees.has(id)) return;
       this.stopAgent(id);
       this.worktrees.delete(id);
       this.emit({ type: 'worktree-removed', worktreeId: id });
-    }, 1500);
+    }, 250);
   }
 
   renameWorktree(id: string, newPath: string) {
