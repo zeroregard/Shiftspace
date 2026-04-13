@@ -213,6 +213,10 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
+        upstream: preset.upstream,
+        ahead: preset.ahead,
+        behind: preset.behind,
+        upstreamGone: preset.upstreamGone,
       });
     });
   }
@@ -238,8 +242,22 @@ export class MockEngine {
     path: string;
     template: TemplateKey;
     isMainWorktree?: boolean;
+    upstream?: string;
+    ahead?: number;
+    behind?: number;
+    upstreamGone?: boolean;
   }) {
-    const { id, branch, path, template, isMainWorktree = false } = opts;
+    const {
+      id,
+      branch,
+      path,
+      template,
+      isMainWorktree = false,
+      upstream,
+      ahead,
+      behind,
+      upstreamGone,
+    } = opts;
     const isDefault = branch === DEFAULT_BRANCH;
     const diffMode: DiffMode = isDefault
       ? { type: 'working' }
@@ -258,6 +276,10 @@ export class MockEngine {
       defaultBranch: DEFAULT_BRANCH,
       isMainWorktree,
       lastActivityAt: Date.now(),
+      upstream,
+      ahead,
+      behind,
+      upstreamGone,
     };
     this.worktrees.set(id, wt);
     this.emit({ type: 'worktree-added', worktree: wt });
@@ -266,7 +288,16 @@ export class MockEngine {
   addPresetWorktree(presetIndex: number) {
     const preset = WORKTREE_PRESETS[presetIndex % WORKTREE_PRESETS.length];
     const id = `wt-${Date.now()}`;
-    this.addWorktree({ id, branch: preset.branch, path: preset.path, template: preset.template });
+    this.addWorktree({
+      id,
+      branch: preset.branch,
+      path: preset.path,
+      template: preset.template,
+      upstream: preset.upstream,
+      ahead: preset.ahead,
+      behind: preset.behind,
+      upstreamGone: preset.upstreamGone,
+    });
     return id;
   }
 
@@ -551,6 +582,10 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
+        upstream: preset.upstream,
+        ahead: preset.ahead,
+        behind: preset.behind,
+        upstreamGone: preset.upstreamGone,
       });
     });
   }

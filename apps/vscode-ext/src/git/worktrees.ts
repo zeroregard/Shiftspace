@@ -65,6 +65,79 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
   return worktrees;
 }
 
+/**
+ * Parse the `%(upstream:track,nobracket)` field from `git for-each-ref`.
+ *
+ * Possible values:
+ *  - `""`              → in sync OR no upstream configured (caller distinguishes
+ *                        based on whether `upstream:short` is empty)
+ *  - `"ahead 3"`       → local has 3 commits not on upstream
+ *  - `"behind 2"`      → upstream has 2 commits not on local
+ *  - `"ahead 3, behind 2"` → diverged
+ *  - `"gone"`          → upstream configured but deleted on the remote
+ */
+export function parseSyncTrack(track: string): {
+  ahead?: number;
+  behind?: number;
+  upstreamGone?: boolean;
+} {
+  const trimmed = track.trim();
+  if (!trimmed) return {};
+  if (trimmed === 'gone') return { upstreamGone: true };
+
+  const result: { ahead?: number; behind?: number } = {};
+  const aheadMatch = trimmed.match(/ahead (\d+)/);
+  const behindMatch = trimmed.match(/behind (\d+)/);
+  if (aheadMatch) result.ahead = parseInt(aheadMatch[1]!, 10);
+  if (behindMatch) result.behind = parseInt(behindMatch[1]!, 10);
+  return result;
+}
+
+/**
+ * Query the upstream tracking status for a worktree's current branch.
+ *
+ * Returns ahead/behind counts, the short-form upstream ref (e.g. `origin/main`),
+ * and an `upstreamGone` flag when the remote branch has been deleted.
+ *
+ * Sync status is decorative — this function never throws. On any error
+ * (detached HEAD, no upstream, bad repo, etc.) an empty object is returned
+ * and the caller treats that as "no sync info available".
+ */
+export async function getSyncStatus(worktreePath: string): Promise<{
+  upstream?: string;
+  ahead?: number;
+  behind?: number;
+  upstreamGone?: boolean;
+}> {
+  try {
+    const { stdout: branchOut } = await gitReadOnly(['symbolic-ref', '--short', 'HEAD'], {
+      cwd: worktreePath,
+      timeout: 5000,
+    });
+    const branch = branchOut.trim();
+    if (!branch) return {};
+
+    const { stdout } = await gitReadOnly(
+      [
+        'for-each-ref',
+        '--format=%(upstream:short)%09%(upstream:track,nobracket)',
+        `refs/heads/${branch}`,
+      ],
+      { cwd: worktreePath, timeout: 5000 }
+    );
+
+    const line = stdout.split('\n').find((l) => l.length > 0) ?? '';
+    const [upstreamShort = '', track = ''] = line.split('\t');
+    const upstream = upstreamShort.trim() || undefined;
+    if (!upstream) return {};
+
+    return { upstream, ...parseSyncTrack(track) };
+  } catch {
+    // Detached HEAD, no upstream, or other transient git errors — silent no-op.
+    return {};
+  }
+}
+
 /** Detect all worktrees for the repo rooted at `repoRoot`. */
 export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]> {
   try {
@@ -72,7 +145,10 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
       cwd: repoRoot,
       timeout: 5000,
     });
-    return parseWorktreeOutput(stdout);
+    const worktrees = parseWorktreeOutput(stdout);
+    // Populate upstream/ahead/behind in parallel (decorative; never throws).
+    const syncStatuses = await Promise.all(worktrees.map((wt) => getSyncStatus(wt.path)));
+    return worktrees.map((wt, i) => ({ ...wt, ...syncStatuses[i] }));
   } catch (err) {
     reportError(err as Error, { context: 'detectWorktrees', root: repoRoot });
     return [];

@@ -25,6 +25,20 @@ export interface WorktreeState {
    * creation/detection time). Used for the "last updated" display and sort.
    */
   lastActivityAt: number;
+  /**
+   * Upstream tracking branch in short form (e.g. "origin/feature/foo").
+   * Undefined when the branch has no upstream configured.
+   */
+  upstream?: string;
+  /** Commits on the local branch that are not on upstream (push needed). */
+  ahead?: number;
+  /** Commits on upstream that are not on the local branch (pull needed). */
+  behind?: number;
+  /**
+   * True when an upstream is configured but no longer exists on the remote
+   * (git reports `[gone]` in `for-each-ref upstream:track`).
+   */
+  upstreamGone?: boolean;
 }
 
 export interface DiffLine {
