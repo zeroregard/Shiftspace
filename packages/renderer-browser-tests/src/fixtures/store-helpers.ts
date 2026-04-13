@@ -19,6 +19,7 @@ export function resetAllStores(): void {
     diffModeLoading: new Set(),
     fetchLoading: new Set(),
     swapLoading: new Set(),
+    removingWorktrees: new Set(),
     lastFetchAt: new Map(),
   });
   useInspectionStore.setState({
