@@ -25,6 +25,12 @@ import { reportError, reportUnexpectedState } from './telemetry';
 type PostMessage = (msg: object) => void;
 type OnFileChange = (worktreeId: string) => void;
 
+function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === 'branch' && b.type === 'branch') return a.branch === b.branch;
+  return true;
+}
+
 function getIgnorePatterns(): string[] {
   const config = vscode.workspace.getConfiguration('shiftspace');
   return config.get<string[]>('ignorePatterns', []);
@@ -924,7 +930,18 @@ export class GitDataProvider implements vscode.Disposable {
       // Re-fetch files for the new mode (fire-and-forget; init message
       // already includes the files from the initial load, and the
       // worktree-files-updated message will patch them once ready).
+      // Capture the target mode so we can detect mid-flight mutations and
+      // avoid broadcasting a payload whose `branchFiles` no longer matches
+      // the current diffMode (e.g. "repo"-fetched all-files leaking into
+      // a branch-mode update).
+      const targetMode = override;
       void this.getFilesForMode(wt).then(({ files, branchFiles }) => {
+        if (!isDiffModeEqual(wt.diffMode, targetMode)) {
+          log.info(
+            `[diffMode] applyOverride dropped (mode changed): ${wt.branch} target=${JSON.stringify(targetMode)} current=${JSON.stringify(wt.diffMode)}`
+          );
+          return;
+        }
         wt.files = files;
         wt.branchFiles = branchFiles;
         this.fileStates.set(wt.id, files);
@@ -932,7 +949,7 @@ export class GitDataProvider implements vscode.Disposable {
           type: 'worktree-files-updated',
           worktreeId: wt.id,
           files,
-          diffMode: wt.diffMode,
+          diffMode: targetMode,
           branchFiles,
         });
       });
