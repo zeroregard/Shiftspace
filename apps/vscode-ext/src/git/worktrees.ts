@@ -9,20 +9,21 @@ import { reportError, reportUnexpectedState } from '../telemetry';
 /** Relative path (from worktree root) of the optional per-worktree config file. */
 export const WORKTREE_CONFIG_FILENAME = '.shiftspace-worktree.json';
 
-const HEX_COLOR_RE = /^#[0-9a-fA-F]{3,8}$/;
+const VALID_COLORS = ['neutral', 'info', 'success', 'warning', 'danger'] as const;
+type ValidColor = (typeof VALID_COLORS)[number];
 
 /**
  * Read and validate the optional `.shiftspace-worktree.json` in a worktree
  * root. Returns the parsed badge, or undefined if the file doesn't exist, is
  * malformed, or doesn't contain a valid badge.
  *
- * Schema (v1):
- *   { "badge": { "icon": "clock", "label": "stale",
- *                "bgColor": "#7f1d1d", "fgColor": "#fecaca" } }
+ * Schema (v2):
+ *   { "badge": { "label": "stale", "color": "warning" } }
  *
- * - `icon` is a codicon name (no `codicon-` prefix).
- * - `bgColor` / `fgColor` are hex colors only — keeps v1 tight and avoids CSS
- *   injection in the webview.
+ * - `label` is free-form text.
+ * - `color` (optional) is one of: neutral, info, success, warning, danger.
+ *   Omitting it defaults to neutral. Constraining color to a semantic set
+ *   keeps badges theme-coherent and avoids CSS injection in the webview.
  */
 export async function readWorktreeBadge(worktreePath: string): Promise<WorktreeBadge | undefined> {
   const filePath = path.join(worktreePath, WORKTREE_CONFIG_FILENAME);
@@ -48,33 +49,28 @@ export async function readWorktreeBadge(worktreePath: string): Promise<WorktreeB
   if (typeof badge !== 'object' || badge === null) return undefined;
 
   const b = badge as Record<string, unknown>;
-  if (
-    typeof b['icon'] !== 'string' ||
-    typeof b['label'] !== 'string' ||
-    typeof b['bgColor'] !== 'string' ||
-    typeof b['fgColor'] !== 'string' ||
-    !HEX_COLOR_RE.test(b['bgColor']) ||
-    !HEX_COLOR_RE.test(b['fgColor'])
-  ) {
+  if (typeof b['label'] !== 'string') {
     log.warn(`readWorktreeBadge: invalid badge shape in ${filePath}`);
     return undefined;
   }
 
-  return {
-    icon: b['icon'],
-    label: b['label'],
-    bgColor: b['bgColor'],
-    fgColor: b['fgColor'],
-  };
+  let color: ValidColor | undefined;
+  if (b['color'] !== undefined) {
+    if (typeof b['color'] !== 'string' || !VALID_COLORS.includes(b['color'] as ValidColor)) {
+      log.warn(`readWorktreeBadge: invalid color in ${filePath}`);
+      return undefined;
+    }
+    color = b['color'] as ValidColor;
+  }
+
+  return { label: b['label'], ...(color ? { color } : {}) };
 }
 
 /** Deep equality check for two optional badges. */
 export function badgesEqual(a: WorktreeBadge | undefined, b: WorktreeBadge | undefined): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  return (
-    a.icon === b.icon && a.label === b.label && a.bgColor === b.bgColor && a.fgColor === b.fgColor
-  );
+  return a.label === b.label && a.color === b.color;
 }
 
 /**

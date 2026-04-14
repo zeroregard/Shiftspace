@@ -20,9 +20,9 @@ test.describe('WorktreeBadge', () => {
     // Sanity-check a few rows render so a failing screenshot is easy to diagnose.
     // Each row is keyed by its title testid; the badge label inside it is a
     // separate element, so this avoids strict-mode ambiguity with duplicate text.
-    await expect(page.getByTestId('badge-row-stale')).toBeVisible();
-    await expect(page.getByTestId('badge-row-in progress')).toBeVisible();
-    await expect(page.getByTestId('badge-row-in review')).toBeVisible();
+    await expect(page.getByTestId('badge-row-neutral')).toBeVisible();
+    await expect(page.getByTestId('badge-row-info')).toBeVisible();
+    await expect(page.getByTestId('badge-row-warning')).toBeVisible();
 
     await expect(page).toHaveScreenshot('badge-examples.png');
   });
