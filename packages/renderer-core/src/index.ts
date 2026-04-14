@@ -38,6 +38,7 @@ export {
 
 // Nodes
 export { WorktreeNode, FolderNode, FileNode, NODE_TYPES } from './nodes';
+export { SyncBadge } from './nodes/sync-badge';
 
 // Layout
 export { computeSingleWorktreeLayout, computeFullLayout } from './layout';

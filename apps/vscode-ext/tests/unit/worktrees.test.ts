@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
   parseWorktreeOutput,
+  parseSyncTrack,
   getDefaultBranch,
   getGitRoot,
   listBranches,
@@ -89,6 +90,34 @@ describe('parseWorktreeOutput', () => {
     const [wt] = parseWorktreeOutput(output);
     expect(wt!.diffMode).toEqual({ type: 'working' });
     expect(wt!.defaultBranch).toBe('main');
+  });
+});
+
+// parseSyncTrack
+describe('parseSyncTrack', () => {
+  it('returns empty for empty track string (in sync or no upstream)', () => {
+    expect(parseSyncTrack('')).toEqual({});
+    expect(parseSyncTrack('   ')).toEqual({});
+  });
+
+  it('parses ahead-only', () => {
+    expect(parseSyncTrack('ahead 3')).toEqual({ ahead: 3 });
+  });
+
+  it('parses behind-only', () => {
+    expect(parseSyncTrack('behind 2')).toEqual({ behind: 2 });
+  });
+
+  it('parses diverged (ahead + behind)', () => {
+    expect(parseSyncTrack('ahead 3, behind 2')).toEqual({ ahead: 3, behind: 2 });
+  });
+
+  it('flags upstreamGone when track is "gone"', () => {
+    expect(parseSyncTrack('gone')).toEqual({ upstreamGone: true });
+  });
+
+  it('ignores unknown tokens gracefully', () => {
+    expect(parseSyncTrack('something weird')).toEqual({});
   });
 });
 

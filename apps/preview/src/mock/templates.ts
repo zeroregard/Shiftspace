@@ -63,9 +63,39 @@ export const WORKTREE_PRESETS: Array<{
   branch: string;
   path: string;
   template: TemplateKey;
+  /** Upstream tracking branch in short form (e.g. "origin/main"). */
+  upstream?: string;
+  ahead?: number;
+  behind?: number;
+  upstreamGone?: boolean;
 }> = [
-  { branch: 'main', path: '/projects/myapp', template: 'nextjs' },
-  { branch: 'feature/auth', path: '/projects/myapp-auth', template: 'api' },
-  { branch: 'refactor/components', path: '/projects/myapp-refactor', template: 'deep' },
-  { branch: 'fix/perf-issues', path: '/projects/myapp-perf', template: 'monorepo' },
+  // In sync with remote — badge hidden.
+  { branch: 'main', path: '/projects/myapp', template: 'nextjs', upstream: 'origin/main' },
+  // Ahead only — local has unpushed commits.
+  {
+    branch: 'feature/auth',
+    path: '/projects/myapp-auth',
+    template: 'api',
+    upstream: 'origin/feature/auth',
+    ahead: 3,
+  },
+  // Behind only — remote has commits the local branch doesn't.
+  {
+    branch: 'refactor/components',
+    path: '/projects/myapp-refactor',
+    template: 'deep',
+    upstream: 'origin/refactor/components',
+    behind: 2,
+  },
+  // Diverged — both ahead and behind.
+  {
+    branch: 'fix/perf-issues',
+    path: '/projects/myapp-perf',
+    template: 'monorepo',
+    upstream: 'origin/fix/perf-issues',
+    ahead: 2,
+    behind: 4,
+  },
+  // No upstream — local-only branch.
+  { branch: 'experiment/wip', path: '/projects/myapp-wip', template: 'nextjs' },
 ];

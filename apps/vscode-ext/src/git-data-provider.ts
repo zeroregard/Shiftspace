@@ -15,6 +15,7 @@ import {
   removeWorktree,
   moveWorktree,
   recoverStuckTempBranch,
+  getSyncStatus,
 } from './git/worktrees';
 import { getFileChanges, getBranchDiffFileChanges, getRepoFiles } from './git/status';
 import { diffFileChanges } from './git/event-diff';
@@ -29,6 +30,16 @@ function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
   if (a.type !== b.type) return false;
   if (a.type === 'branch' && b.type === 'branch') return a.branch === b.branch;
   return true;
+}
+
+/** Shallow compare of upstream-tracking fields (upstream ref + ahead/behind counts + gone). */
+function isSyncStatusEqual(a: WorktreeState, b: WorktreeState): boolean {
+  return (
+    a.upstream === b.upstream &&
+    (a.ahead ?? 0) === (b.ahead ?? 0) &&
+    (a.behind ?? 0) === (b.behind ?? 0) &&
+    !!a.upstreamGone === !!b.upstreamGone
+  );
 }
 
 function getIgnorePatterns(): string[] {
@@ -382,6 +393,40 @@ export class GitDataProvider implements vscode.Disposable {
     }
   }
 
+  /**
+   * Re-query upstream tracking status for every worktree and emit upsert
+   * events for any whose ahead/behind/upstream changed. Called after an
+   * explicit `git fetch` (the remote tip may have moved).
+   */
+  private async refreshSyncStatus(): Promise<void> {
+    await Promise.all(
+      this.worktrees.map(async (wt) => {
+        try {
+          const sync = await getSyncStatus(wt.path);
+          const next: WorktreeState = {
+            ...wt,
+            upstream: sync.upstream,
+            ahead: sync.ahead,
+            behind: sync.behind,
+            upstreamGone: sync.upstreamGone,
+          };
+          if (isSyncStatusEqual(wt, next)) return;
+          wt.upstream = next.upstream;
+          wt.ahead = next.ahead;
+          wt.behind = next.behind;
+          wt.upstreamGone = next.upstreamGone;
+          this.postMessage({
+            type: 'event',
+            event: { type: 'worktree-added', worktree: next },
+          });
+        } catch (err) {
+          // Sync status is decorative — swallow errors.
+          log.info('refreshSyncStatus error for', wt.path, err);
+        }
+      })
+    );
+  }
+
   private startWorktreePolling(): void {
     // Poll every 3 seconds so branch switches (e.g. by agents) are reflected
     // quickly. The HEAD watcher is unreliable on some platforms because git
@@ -544,6 +589,23 @@ export class GitDataProvider implements vscode.Disposable {
           // detectWorktrees() stamps Date.now() on every call and would
           // otherwise reset the timer on every 3-second poll.
           freshWt.lastActivityAt = prevWt.lastActivityAt;
+          // If only the remote-tracking status changed (ahead/behind/upstream),
+          // emit a worktree-added upsert so the webview re-renders the badge.
+          // Merge sync fields onto the previous state so files and other
+          // preserved metadata survive the upsert.
+          if (!isSyncStatusEqual(prevWt, freshWt)) {
+            const merged: WorktreeState = {
+              ...prevWt,
+              upstream: freshWt.upstream,
+              ahead: freshWt.ahead,
+              behind: freshWt.behind,
+              upstreamGone: freshWt.upstreamGone,
+            };
+            this.postMessage({
+              type: 'event',
+              event: { type: 'worktree-added', worktree: merged },
+            });
+          }
         } else if (prevWt && prevWt.diffMode.type === 'repo') {
           log.info(
             `[diffMode] preserving repo mode despite branch mismatch: prev=${prevWt.branch} fresh=${freshWt.branch}`
@@ -619,6 +681,9 @@ export class GitDataProvider implements vscode.Disposable {
       await fetchRemote(this.currentRoot);
       const branches = await listBranches(this.currentRoot);
       this.postMessage({ type: 'fetch-done', worktreeId, timestamp: Date.now(), branches });
+      // Remote tip may have moved — refresh ahead/behind counts for every
+      // worktree and upsert any whose sync status changed.
+      await this.refreshSyncStatus();
     } catch (err) {
       log.error('handleFetchBranches error:', err);
       reportError(err as Error, { context: 'handleFetchBranches' });

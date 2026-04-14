@@ -9,6 +9,7 @@ import { AnimatedTimestamp } from '../shared/animated-timestamp';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { Spinner } from '@shiftspace/ui/spinner';
+import { SyncBadge } from './sync-badge';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -88,6 +89,7 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
             </BranchPicker.Content>
           </BranchPicker>
         )}
+        {!isSwapping && <SyncBadge worktree={wt} />}
       </div>
       <div className="flex gap-1 mt-1">
         <div className="flex items-center justify-between w-full">
