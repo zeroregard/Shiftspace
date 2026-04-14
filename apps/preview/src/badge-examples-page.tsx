@@ -45,8 +45,8 @@ const EXAMPLES: Example[] = [
 
 function Row({ title, badge }: Example) {
   return (
-    <div className="flex items-center gap-4 py-1">
-      <span className="text-text-muted text-11 w-40 shrink-0">{title}</span>
+    <div className="flex items-center gap-4 py-1" data-testid={`badge-row-${title}`}>
+      <span className="text-text-muted text-11 w-40 shrink-0">— {title} —</span>
       <WorktreeBadgeView
         icon={badge.icon}
         label={badge.label}
