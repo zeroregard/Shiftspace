@@ -578,6 +578,18 @@ export async function removeWorktree(
 }
 
 /**
+ * Prune stale worktree metadata from `.git/worktrees`. Fast — only touches
+ * git's bookkeeping, never scans the worktree directory contents.
+ *
+ * Used as part of the fast-delete path: we rename the worktree dir first
+ * (making it invisible to git) and then prune to clean the metadata, so the
+ * expensive recursive directory delete can happen off the critical path.
+ */
+export async function pruneWorktrees(gitRoot: string): Promise<void> {
+  await gitWrite(['worktree', 'prune'], { cwd: gitRoot, timeout: 10_000 });
+}
+
+/**
  * Move/rename a worktree to a new path.
  * Uses `git worktree move <old-path> <new-path>`.
  */

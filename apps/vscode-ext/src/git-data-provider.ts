@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { log } from './logger';
 import type { WorktreeState, ShiftspaceEvent, DiffMode, FileChange } from '@shiftspace/renderer';
+import * as fs from 'fs';
 import {
   detectWorktrees,
   checkGitAvailability,
@@ -13,6 +14,7 @@ import {
   checkWorktreeSafety,
   swapBranches,
   removeWorktree,
+  pruneWorktrees,
   moveWorktree,
   recoverStuckTempBranch,
 } from './git/worktrees';
@@ -69,8 +71,12 @@ export class GitDataProvider implements vscode.Disposable {
   /** True while a status poll cycle is in progress — prevents overlapping polls. */
   private statusPollingInFlight = false;
   private disposables: vscode.Disposable[] = [];
-  /** Separate tracking for per-worktree file watchers so they can be rebuilt independently. */
-  private fileWatcherDisposables: vscode.Disposable[] = [];
+  /**
+   * Per-worktree file watcher disposables, keyed by worktree id. Tracking
+   * them individually lets us dispose just one worktree's watcher on delete
+   * instead of tearing down and rebuilding every watcher.
+   */
+  private fileWatchersByWorktree = new Map<string, vscode.Disposable[]>();
   private currentRoot: string | undefined;
   private defaultBranch = 'main';
 
@@ -207,21 +213,36 @@ export class GitDataProvider implements vscode.Disposable {
    * Watchers are rebuilt automatically when the set of worktrees changes.
    */
   private setupFileWatcher(): void {
-    for (const d of this.fileWatcherDisposables) d.dispose();
-    this.fileWatcherDisposables = [];
-
-    const onChange = (uri: vscode.Uri) => this.onFileSystemChange(uri);
+    for (const [, disposables] of this.fileWatchersByWorktree) {
+      for (const d of disposables) d.dispose();
+    }
+    this.fileWatchersByWorktree.clear();
 
     for (const wt of this.worktrees) {
-      const pattern = new vscode.RelativePattern(vscode.Uri.file(wt.path), '**/*');
-      const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-      this.fileWatcherDisposables.push(
-        watcher,
-        watcher.onDidChange(onChange),
-        watcher.onDidCreate(onChange),
-        watcher.onDidDelete(onChange)
-      );
+      this.addFileWatcherForWorktree(wt);
     }
+  }
+
+  /** Create and register a file watcher for a single worktree. */
+  private addFileWatcherForWorktree(wt: WorktreeState): void {
+    if (this.fileWatchersByWorktree.has(wt.id)) return;
+    const onChange = (uri: vscode.Uri) => this.onFileSystemChange(uri);
+    const pattern = new vscode.RelativePattern(vscode.Uri.file(wt.path), '**/*');
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    this.fileWatchersByWorktree.set(wt.id, [
+      watcher,
+      watcher.onDidChange(onChange),
+      watcher.onDidCreate(onChange),
+      watcher.onDidDelete(onChange),
+    ]);
+  }
+
+  /** Dispose the file watcher for a single worktree. Safe to call for unknown ids. */
+  private disposeFileWatcherForWorktree(worktreeId: string): void {
+    const disposables = this.fileWatchersByWorktree.get(worktreeId);
+    if (!disposables) return;
+    for (const d of disposables) d.dispose();
+    this.fileWatchersByWorktree.delete(worktreeId);
   }
 
   /**
@@ -555,21 +576,24 @@ export class GitDataProvider implements vscode.Disposable {
         }
       }
 
-      // Rebuild per-worktree file watchers when the set of paths changes
-      // (worktrees added, removed, or moved).
-      const prevPaths = [...prevIds]
-        .map((id) => this.worktrees.find((wt) => wt.id === id)?.path)
-        .sort()
-        .join('\0');
-      const freshPaths = fresh
-        .map((wt) => wt.path)
-        .sort()
-        .join('\0');
+      // Reconcile per-worktree file watchers surgically: dispose watchers for
+      // removed/moved ids and create new ones for added/moved ids. A full
+      // setupFileWatcher() tears down every remaining watcher unnecessarily.
+      const prevById = new Map(this.worktrees.map((wt) => [wt.id, wt]));
+      for (const prevWt of this.worktrees) {
+        const freshWt = fresh.find((wt) => wt.id === prevWt.id);
+        if (!freshWt || freshWt.path !== prevWt.path) {
+          this.disposeFileWatcherForWorktree(prevWt.id);
+        }
+      }
 
       this.worktrees = fresh;
 
-      if (prevPaths !== freshPaths) {
-        this.setupFileWatcher();
+      for (const freshWt of fresh) {
+        const prevWt = prevById.get(freshWt.id);
+        if (!prevWt || prevWt.path !== freshWt.path) {
+          this.addFileWatcherForWorktree(freshWt);
+        }
       }
     } catch (err) {
       log.error('checkForWorktreeChanges error:', err);
@@ -755,6 +779,11 @@ export class GitDataProvider implements vscode.Disposable {
     const wtPath = path.join(parentDir, wtName);
     const branchName = `${wtName}-${Date.now().toString(36)}`;
 
+    // Instant feedback: tell the renderer we've started. The pending flag is
+    // cleared automatically when the `worktree-added` event arrives (success)
+    // or when we emit `worktree-add-failed` below.
+    this.postMessage({ type: 'event', event: { type: 'worktree-add-pending' } });
+
     try {
       await gitWrite(['worktree', 'add', '-b', branchName, wtPath], {
         cwd: this.currentRoot!,
@@ -764,6 +793,7 @@ export class GitDataProvider implements vscode.Disposable {
     } catch (err) {
       log.error('handleAddWorktree error:', err);
       reportError(err as Error, { context: 'handleAddWorktree' });
+      this.postMessage({ type: 'event', event: { type: 'worktree-add-failed' } });
       void vscode.window.showErrorMessage(`Failed to add worktree: ${(err as Error).message}`);
     }
   }
@@ -789,30 +819,75 @@ export class GitDataProvider implements vscode.Disposable {
       event: { type: 'worktree-removal-pending', worktreeId: wt.id },
     });
 
+    // Stop watching this worktree before any filesystem mutation so the
+    // subsequent rm -rf doesn't emit a flood of stale delete events.
+    this.disposeFileWatcherForWorktree(wt.id);
+
     try {
-      try {
-        await removeWorktree(wt.path, this.currentRoot!, false);
-      } catch {
-        // Retry with --force if normal remove fails (e.g. uncommitted changes)
-        await removeWorktree(wt.path, this.currentRoot!, true);
-      }
-      // Broadcast removal immediately so the card disappears without waiting
-      // for the next full worktree re-poll.
+      await this.fastRemoveWorktree(wt.path, this.currentRoot!);
+
+      // Local bookkeeping: drop this worktree from the cache and broadcast
+      // the removal. The worktree-removed event updates the renderer store;
+      // the 3s worktree poll is the safety net if anything drifted.
+      this.worktrees = this.worktrees.filter((w) => w.id !== wt.id);
+      this.fileStates.delete(wt.id);
+
       this.postMessage({
         type: 'event',
         event: { type: 'worktree-removed', worktreeId: wt.id },
       });
-      // Reconcile authoritative worktree list in the background.
-      void this.checkForWorktreeChanges();
     } catch (err) {
       log.error('handleRemoveWorktree error:', err);
       reportError(err as Error, { context: 'handleRemoveWorktree', branch: wt.branch });
+      // The worktree may still be live — re-arm its watcher so file events
+      // keep flowing.
+      this.addFileWatcherForWorktree(wt);
       this.postMessage({
         type: 'event',
         event: { type: 'worktree-removal-failed', worktreeId: wt.id },
       });
       void vscode.window.showErrorMessage(`Failed to remove worktree: ${(err as Error).message}`);
     }
+  }
+
+  /**
+   * Fast worktree removal:
+   *  1. Rename the worktree directory to a sibling `.deleting-<ts>` — atomic
+   *     on the same volume, so it returns in milliseconds regardless of how
+   *     large the tree is (node_modules, build artifacts, etc.).
+   *  2. `git worktree prune` from the primary root to clean up git metadata.
+   *  3. Fire-and-forget recursive delete of the renamed directory.
+   *
+   * Falls back to `git worktree remove --force` if the rename fails
+   * (cross-device, EACCES, non-existent path, etc.). The confirmation popover
+   * in the UI is the safety gate — we always pass `--force`.
+   */
+  private async fastRemoveWorktree(worktreePath: string, gitRoot: string): Promise<void> {
+    const tempPath = `${worktreePath}.deleting-${Date.now().toString(36)}`;
+    try {
+      await fs.promises.rename(worktreePath, tempPath);
+    } catch (err) {
+      log.info(
+        `fastRemoveWorktree: rename failed (${(err as Error).message}), falling back to git worktree remove --force`
+      );
+      await removeWorktree(worktreePath, gitRoot, true);
+      return;
+    }
+
+    try {
+      await pruneWorktrees(gitRoot);
+    } catch (pruneErr) {
+      // Best-effort: keep going. Worst case, the next `git worktree list` run
+      // will prune stale entries itself. We still want to delete the temp dir.
+      log.error('fastRemoveWorktree: prune failed', pruneErr);
+      reportError(pruneErr as Error, { context: 'fastRemoveWorktree.prune' });
+    }
+
+    // Background cleanup — no one is waiting on this.
+    void fs.promises.rm(tempPath, { recursive: true, force: true }).catch((rmErr) => {
+      log.error('fastRemoveWorktree: background rm failed', rmErr);
+      reportError(rmErr as Error, { context: 'fastRemoveWorktree.backgroundRm' });
+    });
   }
 
   /** Rename/move a worktree to a new path. */
@@ -931,8 +1006,10 @@ export class GitDataProvider implements vscode.Disposable {
     }
     for (const t of this.debounceTimers.values()) clearTimeout(t);
     this.debounceTimers.clear();
-    for (const d of this.fileWatcherDisposables) d.dispose();
-    this.fileWatcherDisposables = [];
+    for (const [, disposables] of this.fileWatchersByWorktree) {
+      for (const d of disposables) d.dispose();
+    }
+    this.fileWatchersByWorktree.clear();
     for (const d of this.disposables) d.dispose();
     this.disposables = [];
     this.worktrees = [];

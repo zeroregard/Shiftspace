@@ -21,6 +21,7 @@ function WorktreeCardError() {
 export function GroveView({ worktrees }: GroveViewProps) {
   const actions = useActions();
   const sortMode = useWorktreeStore((s) => s.sortMode);
+  const addingWorktree = useWorktreeStore((s) => s.addingWorktree);
   const sorted = useMemo(() => sortWorktrees(worktrees, sortMode), [worktrees, sortMode]);
 
   return (
@@ -51,15 +52,28 @@ export function GroveView({ worktrees }: GroveViewProps) {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              <IconButton
-                icon="add"
-                label="Add worktree"
-                size="md"
-                className="self-center shrink-0 !w-10 !h-10 !rounded-xl !border-2 !border-dashed !border-border-dashed hover:!border-border-default"
-                iconSize={14}
-                onClick={() => actions.addWorktree()}
-                data-testid="add-worktree"
-              />
+              {addingWorktree ? (
+                <IconButton
+                  icon="loading"
+                  label="Adding worktree…"
+                  size="md"
+                  className="self-center shrink-0 !w-10 !h-10 !rounded-xl !border-2 !border-dashed !border-border-dashed"
+                  iconSize={14}
+                  iconAnimation="spin 1s linear infinite"
+                  disabled
+                  data-testid="add-worktree"
+                />
+              ) : (
+                <IconButton
+                  icon="add"
+                  label="Add worktree"
+                  size="md"
+                  className="self-center shrink-0 !w-10 !h-10 !rounded-xl !border-2 !border-dashed !border-border-dashed hover:!border-border-default"
+                  iconSize={14}
+                  onClick={() => actions.addWorktree()}
+                  data-testid="add-worktree"
+                />
+              )}
             </div>
           </LayoutGroup>
         )}
