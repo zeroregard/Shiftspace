@@ -157,14 +157,6 @@ export function WorktreeCard({
               {folderName}
             </Link>
           )}
-          {wt.badge && !isRenaming && (
-            <WorktreeBadge
-              icon={wt.badge.icon}
-              label={wt.badge.label}
-              bgColor={wt.badge.bgColor}
-              fgColor={wt.badge.fgColor}
-            />
-          )}
           {!wt.isMainWorktree && !isRenaming && (
             <>
               <IconButton
@@ -211,6 +203,14 @@ export function WorktreeCard({
                 </ConfirmPopover>
               )}
             </>
+          )}
+          {wt.badge && !isRenaming && (
+            <WorktreeBadge
+              icon={wt.badge.icon}
+              label={wt.badge.label}
+              bgColor={wt.badge.bgColor}
+              fgColor={wt.badge.fgColor}
+            />
           )}
         </div>
         <BranchRow
