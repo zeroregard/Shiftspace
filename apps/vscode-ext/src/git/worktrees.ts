@@ -1,10 +1,81 @@
 /* eslint-disable max-lines -- TODO: decompose in a follow-up PR */
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { WorktreeState } from '@shiftspace/renderer';
+import type { WorktreeState, WorktreeBadge } from '@shiftspace/renderer';
 import { gitReadOnly, gitWrite } from './git-utils';
 import { log } from '../logger';
 import { reportError, reportUnexpectedState } from '../telemetry';
+
+/** Relative path (from worktree root) of the optional per-worktree config file. */
+export const WORKTREE_CONFIG_FILENAME = '.shiftspace-worktree.json';
+
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{3,8}$/;
+
+/**
+ * Read and validate the optional `.shiftspace-worktree.json` in a worktree
+ * root. Returns the parsed badge, or undefined if the file doesn't exist, is
+ * malformed, or doesn't contain a valid badge.
+ *
+ * Schema (v1):
+ *   { "badge": { "icon": "clock", "label": "stale",
+ *                "bgColor": "#7f1d1d", "fgColor": "#fecaca" } }
+ *
+ * - `icon` is a codicon name (no `codicon-` prefix).
+ * - `bgColor` / `fgColor` are hex colors only — keeps v1 tight and avoids CSS
+ *   injection in the webview.
+ */
+export async function readWorktreeBadge(worktreePath: string): Promise<WorktreeBadge | undefined> {
+  const filePath = path.join(worktreePath, WORKTREE_CONFIG_FILENAME);
+  let raw: string;
+  try {
+    raw = await fs.readFile(filePath, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') return undefined;
+    log.warn(`readWorktreeBadge: failed to read ${filePath}:`, err);
+    return undefined;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    log.warn(`readWorktreeBadge: invalid JSON in ${filePath}:`, err);
+    return undefined;
+  }
+
+  if (typeof parsed !== 'object' || parsed === null) return undefined;
+  const badge = (parsed as { badge?: unknown }).badge;
+  if (typeof badge !== 'object' || badge === null) return undefined;
+
+  const b = badge as Record<string, unknown>;
+  if (
+    typeof b['icon'] !== 'string' ||
+    typeof b['label'] !== 'string' ||
+    typeof b['bgColor'] !== 'string' ||
+    typeof b['fgColor'] !== 'string' ||
+    !HEX_COLOR_RE.test(b['bgColor']) ||
+    !HEX_COLOR_RE.test(b['fgColor'])
+  ) {
+    log.warn(`readWorktreeBadge: invalid badge shape in ${filePath}`);
+    return undefined;
+  }
+
+  return {
+    icon: b['icon'],
+    label: b['label'],
+    bgColor: b['bgColor'],
+    fgColor: b['fgColor'],
+  };
+}
+
+/** Deep equality check for two optional badges. */
+export function badgesEqual(a: WorktreeBadge | undefined, b: WorktreeBadge | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.icon === b.icon && a.label === b.label && a.bgColor === b.bgColor && a.fgColor === b.fgColor
+  );
+}
 
 /**
  * Parse the output of `git worktree list --porcelain` into WorktreeState[].
@@ -72,7 +143,15 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
       cwd: repoRoot,
       timeout: 5000,
     });
-    return parseWorktreeOutput(stdout);
+    const worktrees = parseWorktreeOutput(stdout);
+    // Read per-worktree badge configs in parallel. Failures are already
+    // absorbed by readWorktreeBadge, so this never throws.
+    await Promise.all(
+      worktrees.map(async (wt) => {
+        wt.badge = await readWorktreeBadge(wt.path);
+      })
+    );
+    return worktrees;
   } catch (err) {
     reportError(err as Error, { context: 'detectWorktrees', root: repoRoot });
     return [];

@@ -22,6 +22,21 @@ Shiftspace gives you two views:
 
 ![Sidebar worktree view](https://github.com/user-attachments/assets/9e3688bf-7bb7-48ea-b7b5-dbcbf5fb3111)
 
+**Worktree badges** — Drop a `.shiftspace-worktree.json` at a worktree's root and Shiftspace renders a pill badge next to its name. Handy for marking a worktree as `stale`, `in progress`, `in review`, etc. — great for AI agents to tag the worktree they're working on so you know which ones are safe to delete. Add `.shiftspace-worktree.json` to your `.gitignore` so badges stay local to each checkout.
+
+```json
+{
+  "badge": {
+    "icon": "clock",
+    "label": "stale",
+    "bgColor": "#7f1d1d",
+    "fgColor": "#fecaca"
+  }
+}
+```
+
+`icon` is any [VS Code codicon](https://microsoft.github.io/vscode-codicons/dist/codicon.html) name; `bgColor` / `fgColor` are hex CSS colors.
+
 **Checks & pipelines** — Define lint, typecheck, test, build, or any custom command in `.shiftspace.json`. Run them per worktree. Chain them into pipelines (e.g., fmt → lint → typecheck → test). Results show pass/fail badges on each card and go stale automatically when files change.
 
 **Code smell detection** — Define regex patterns in `.shiftspace.json` to flag things linters won't catch: `eslint-disable` comments, LLM-generated separators, TODO counts, whatever matters to your team. Findings appear as badges on file nodes in Inspection mode.

@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 import {
   parseWorktreeOutput,
   getDefaultBranch,
   getGitRoot,
   listBranches,
+  readWorktreeBadge,
+  badgesEqual,
+  WORKTREE_CONFIG_FILENAME,
 } from '../../src/git/worktrees';
 
 const fixture = (name: string) => readFileSync(join(__dirname, '../fixtures', name), 'utf8');
@@ -135,5 +139,147 @@ describe('listBranches', () => {
   it('returns empty array for a non-existent repo', async () => {
     const branches = await listBranches('/tmp/nonexistent-repo-' + Date.now());
     expect(branches).toEqual([]);
+  });
+});
+
+// readWorktreeBadge
+describe('readWorktreeBadge', () => {
+  function makeTempWorktree(content?: string): string {
+    const dir = mkdtempSync(join(tmpdir(), 'shiftspace-badge-test-'));
+    if (content !== undefined) {
+      writeFileSync(join(dir, WORKTREE_CONFIG_FILENAME), content, 'utf8');
+    }
+    return dir;
+  }
+
+  it('returns undefined when the config file is missing', async () => {
+    const dir = makeTempWorktree();
+    try {
+      expect(await readWorktreeBadge(dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('parses a well-formed badge', async () => {
+    const dir = makeTempWorktree(
+      JSON.stringify({
+        badge: { icon: 'clock', label: 'stale', bgColor: '#7f1d1d', fgColor: '#fecaca' },
+      })
+    );
+    try {
+      expect(await readWorktreeBadge(dir)).toEqual({
+        icon: 'clock',
+        label: 'stale',
+        bgColor: '#7f1d1d',
+        fgColor: '#fecaca',
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts 3-, 6-, and 8-digit hex colors', async () => {
+    const dir = makeTempWorktree(
+      JSON.stringify({
+        badge: { icon: 'eye', label: 'x', bgColor: '#abc', fgColor: '#aabbccdd' },
+      })
+    );
+    try {
+      const badge = await readWorktreeBadge(dir);
+      expect(badge?.bgColor).toBe('#abc');
+      expect(badge?.fgColor).toBe('#aabbccdd');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns undefined for non-hex colors (e.g. named or rgb())', async () => {
+    const dir = makeTempWorktree(
+      JSON.stringify({
+        badge: { icon: 'eye', label: 'x', bgColor: 'red', fgColor: '#fff' },
+      })
+    );
+    try {
+      expect(await readWorktreeBadge(dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns undefined when required fields are missing', async () => {
+    const dir = makeTempWorktree(
+      JSON.stringify({ badge: { icon: 'eye', label: 'x', bgColor: '#fff' } })
+    );
+    try {
+      expect(await readWorktreeBadge(dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns undefined when `badge` key is absent', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ somethingElse: true }));
+    try {
+      expect(await readWorktreeBadge(dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns undefined for invalid JSON without throwing', async () => {
+    const dir = makeTempWorktree('{ this is not json');
+    try {
+      expect(await readWorktreeBadge(dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns undefined for non-object top level', async () => {
+    const dir = makeTempWorktree('42');
+    try {
+      expect(await readWorktreeBadge(dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns undefined when field types are wrong', async () => {
+    const dir = makeTempWorktree(
+      JSON.stringify({
+        badge: { icon: 42, label: 'x', bgColor: '#fff', fgColor: '#000' },
+      })
+    );
+    try {
+      expect(await readWorktreeBadge(dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// badgesEqual
+describe('badgesEqual', () => {
+  const a = { icon: 'clock', label: 'stale', bgColor: '#111', fgColor: '#fff' };
+
+  it('returns true for two undefined badges', () => {
+    expect(badgesEqual(undefined, undefined)).toBe(true);
+  });
+
+  it('returns false when only one side is defined', () => {
+    expect(badgesEqual(a, undefined)).toBe(false);
+    expect(badgesEqual(undefined, a)).toBe(false);
+  });
+
+  it('returns true for structurally equal badges', () => {
+    expect(badgesEqual(a, { ...a })).toBe(true);
+  });
+
+  it('returns false when any field differs', () => {
+    expect(badgesEqual(a, { ...a, icon: 'eye' })).toBe(false);
+    expect(badgesEqual(a, { ...a, label: 'stale!' })).toBe(false);
+    expect(badgesEqual(a, { ...a, bgColor: '#222' })).toBe(false);
+    expect(badgesEqual(a, { ...a, fgColor: '#eee' })).toBe(false);
   });
 });

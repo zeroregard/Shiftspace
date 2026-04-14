@@ -139,6 +139,15 @@ jobs:
             add_spec flows
           fi
 
+          # worktree-badge: isolated component harness + badge-in-grove check.
+          # Triggered by the harness page, the shared ui WorktreeBadge component,
+          # the grove WorktreeCard render, or any core/grove change.
+          if has_changes '^apps/preview/e2e/worktree-badge\.spec\.ts' \
+             || has_changes '^apps/preview/src/(badge-examples-page\.tsx|main\.tsx|mock/)' \
+             || $E2E_SHARED || $CORE || $GROVE; then
+            add_spec worktree-badge
+          fi
+
           # Deduplicate
           SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
 

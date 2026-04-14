@@ -4,6 +4,7 @@ export { ShiftspaceRenderer, type PanZoomConfig } from './shiftspace-renderer';
 export {
   // Types
   type WorktreeState,
+  type WorktreeBadge,
   type FileChange,
   type ShiftspaceEvent,
   type LODLevel,

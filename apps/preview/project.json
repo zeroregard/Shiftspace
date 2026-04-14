@@ -130,6 +130,21 @@
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/flows.spec.ts"]
     },
+    "e2e:worktree-badge": {
+      "command": "playwright test e2e/worktree-badge.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/worktree-badge.spec.ts",
+        "{projectRoot}/src/badge-examples-page.tsx",
+        "{projectRoot}/src/main.tsx",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/worktree-badge.spec.ts"]
+    },
     "test:e2e": {
       "dependsOn": [
         "e2e:controls",
@@ -140,7 +155,8 @@
         "e2e:inspector-file-categories",
         "e2e:search-filter",
         "e2e:sidebar",
-        "e2e:tree-sorting"
+        "e2e:tree-sorting",
+        "e2e:worktree-badge"
       ],
       "command": "echo 'All E2E specs completed'",
       "cache": false

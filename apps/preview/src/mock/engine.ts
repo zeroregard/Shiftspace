@@ -1,6 +1,7 @@
 /* eslint-disable max-lines -- TODO: decompose in a follow-up PR */
 import type {
   WorktreeState,
+  WorktreeBadge,
   FileChange,
   ShiftspaceEvent,
   DiffHunk,
@@ -205,7 +206,8 @@ export class MockEngine {
   private speedMultiplier = 1;
 
   constructor() {
-    // Initialize with first two preset worktrees
+    // Initialize with first two preset worktrees. The second preset carries a
+    // sample badge so screenshot tests exercise the badge-in-card layout.
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {
       this.addWorktree({
         id: `wt-${i}`,
@@ -213,6 +215,10 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
+        badge:
+          i === 1
+            ? { icon: 'clock', label: 'stale', bgColor: '#7f1d1d', fgColor: '#fecaca' }
+            : undefined,
       });
     });
   }
@@ -257,8 +263,9 @@ export class MockEngine {
     path: string;
     template: TemplateKey;
     isMainWorktree?: boolean;
+    badge?: WorktreeBadge;
   }) {
-    const { id, branch, path, template, isMainWorktree = false } = opts;
+    const { id, branch, path, template, isMainWorktree = false, badge } = opts;
     const isDefault = branch === DEFAULT_BRANCH;
     const diffMode: DiffMode = isDefault
       ? { type: 'working' }
@@ -277,6 +284,7 @@ export class MockEngine {
       defaultBranch: DEFAULT_BRANCH,
       isMainWorktree,
       lastActivityAt: Date.now(),
+      badge,
     };
     this.worktrees.set(id, wt);
     this.emit({ type: 'worktree-added', worktree: wt });
@@ -562,7 +570,7 @@ export class MockEngine {
     });
     this.worktrees.clear();
 
-    // Re-initialize
+    // Re-initialize (mirror the constructor — keep the sample badge)
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {
       this.addWorktree({
         id: `wt-${i}`,
@@ -570,6 +578,10 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
+        badge:
+          i === 1
+            ? { icon: 'clock', label: 'stale', bgColor: '#7f1d1d', fgColor: '#fecaca' }
+            : undefined,
       });
     });
   }
