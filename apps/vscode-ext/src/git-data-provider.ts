@@ -15,6 +15,8 @@ import {
   removeWorktree,
   moveWorktree,
   recoverStuckTempBranch,
+  badgesEqual,
+  WORKTREE_CONFIG_FILENAME,
 } from './git/worktrees';
 import { getFileChanges, getBranchDiffFileChanges, getRepoFiles } from './git/status';
 import { diffFileChanges } from './git/event-diff';
@@ -161,8 +163,26 @@ export class GitDataProvider implements vscode.Disposable {
     this.setupHeadWatcher();
     this.setupIndexWatcher();
     this.setupConfigWatcher();
+    this.setupWorktreeBadgeWatcher();
     this.startWorktreePolling();
     this.startStatusPolling();
+  }
+
+  /**
+   * Watch `.shiftspace-worktree.json` across all workspace folders so that
+   * agent-written badge updates propagate without waiting for the 3-second
+   * worktree poll. Linked worktrees outside any workspace folder are still
+   * covered by the poll.
+   */
+  private setupWorktreeBadgeWatcher(): void {
+    const watcher = vscode.workspace.createFileSystemWatcher(`**/${WORKTREE_CONFIG_FILENAME}`);
+    const onBadgeChange = () => void this.checkForWorktreeChanges();
+    this.disposables.push(
+      watcher,
+      watcher.onDidChange(onBadgeChange),
+      watcher.onDidCreate(onBadgeChange),
+      watcher.onDidDelete(onBadgeChange)
+    );
   }
 
   private async loadAllFileChanges(): Promise<void> {
@@ -509,7 +529,7 @@ export class GitDataProvider implements vscode.Disposable {
         }
       }
 
-      // Branch or path changed for an existing worktree
+      // Branch, path, or badge changed for an existing worktree
       for (const freshWt of fresh) {
         if (!prevIds.has(freshWt.id)) continue; // already handled as new above
         const prevWt = this.worktrees.find((wt) => wt.id === freshWt.id);
@@ -517,8 +537,9 @@ export class GitDataProvider implements vscode.Disposable {
 
         const branchChanged = prevWt.branch !== freshWt.branch;
         const pathChanged = prevWt.path !== freshWt.path;
+        const badgeChanged = !badgesEqual(prevWt.badge, freshWt.badge);
 
-        if (!branchChanged && !pathChanged) continue;
+        if (!branchChanged && !pathChanged && !badgeChanged) continue;
 
         freshWt.defaultBranch = this.defaultBranch;
 
@@ -554,7 +575,7 @@ export class GitDataProvider implements vscode.Disposable {
           log.info(
             `[diffMode] re-adding worktree after branch change: ${freshWt.branch} diffMode=${JSON.stringify(freshWt.diffMode)}`
           );
-        } else {
+        } else if (pathChanged) {
           // Path changed only (rename/move) — preserve diffMode, files, and
           // activity timestamp (renames aren't user-visible "activity").
           freshWt.diffMode = prevWt.diffMode;
@@ -563,6 +584,14 @@ export class GitDataProvider implements vscode.Disposable {
           freshWt.lastActivityAt = prevWt.lastActivityAt;
           this.fileStates.set(freshWt.id, freshWt.files);
           log.info(`[path] worktree path changed: ${prevWt.path} → ${freshWt.path}`);
+        } else {
+          // Badge-only change — preserve diffMode, files, and activity
+          // timestamp. The upsert below propagates the new badge to the webview.
+          freshWt.diffMode = prevWt.diffMode;
+          freshWt.files = prevWt.files;
+          freshWt.branchFiles = prevWt.branchFiles;
+          freshWt.lastActivityAt = prevWt.lastActivityAt;
+          this.fileStates.set(freshWt.id, freshWt.files);
         }
 
         // Send a worktree-added (upsert) — no remove needed since the ID is the same.

@@ -1,6 +1,7 @@
 // Types
 export type {
   WorktreeState,
+  WorktreeBadge,
   FileChange,
   ShiftspaceEvent,
   LODLevel,

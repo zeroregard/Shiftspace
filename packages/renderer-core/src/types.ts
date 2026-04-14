@@ -3,6 +3,16 @@ export type DiffMode =
   | { type: 'branch'; branch: string } // diff HEAD against another branch
   | { type: 'repo' }; // all tracked files in the repository
 
+export interface WorktreeBadge {
+  /** Codicon name without the `codicon-` prefix (e.g. 'clock', 'eye'). */
+  icon: string;
+  label: string;
+  /** Hex CSS color for the pill background, e.g. '#7f1d1d'. */
+  bgColor: string;
+  /** Hex CSS color for the icon + text, e.g. '#fecaca'. */
+  fgColor: string;
+}
+
 export interface WorktreeState {
   id: string;
   path: string;
@@ -25,6 +35,8 @@ export interface WorktreeState {
    * creation/detection time). Used for the "last updated" display and sort.
    */
   lastActivityAt: number;
+  /** Optional badge defined by `.shiftspace-worktree.json` at the worktree root. */
+  badge?: WorktreeBadge;
 }
 
 export interface DiffLine {

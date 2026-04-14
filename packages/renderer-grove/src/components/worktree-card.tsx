@@ -15,6 +15,7 @@ import {
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Input } from '@shiftspace/ui/input';
 import { Link } from '@shiftspace/ui/link';
+import { WorktreeBadge } from '@shiftspace/ui/worktree-badge';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -155,6 +156,14 @@ export function WorktreeCard({
             >
               {folderName}
             </Link>
+          )}
+          {wt.badge && !isRenaming && (
+            <WorktreeBadge
+              icon={wt.badge.icon}
+              label={wt.badge.label}
+              bgColor={wt.badge.bgColor}
+              fgColor={wt.badge.fgColor}
+            />
           )}
           {!wt.isMainWorktree && !isRenaming && (
             <>
