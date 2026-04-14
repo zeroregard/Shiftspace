@@ -139,3 +139,60 @@ test.describe('WorktreeCard', () => {
     await expect(component).toHaveScreenshot('worktree-card-checks.png');
   });
 });
+
+test.describe('WorktreeCard — sync status', () => {
+  test('ahead only (push needed)', async ({ mount }) => {
+    const wt = createMockWorktreeWithFiles([createMockFile({ path: 'src/App.tsx' })], {
+      id: 'wt-0',
+      branch: 'feature/auth',
+      path: '/projects/myapp-auth',
+      upstream: 'origin/feature/auth',
+      ahead: 3,
+    });
+    seedWorktree(wt);
+
+    const component = await mount(
+      <Wrapper>
+        <WorktreeCard worktree={wt} />
+      </Wrapper>
+    );
+    await expect(component).toHaveScreenshot('worktree-card-sync-ahead.png');
+  });
+
+  test('behind only (pull needed)', async ({ mount }) => {
+    const wt = createMockWorktreeWithFiles([createMockFile({ path: 'src/App.tsx' })], {
+      id: 'wt-0',
+      branch: 'refactor/components',
+      path: '/projects/myapp-refactor',
+      upstream: 'origin/refactor/components',
+      behind: 2,
+    });
+    seedWorktree(wt);
+
+    const component = await mount(
+      <Wrapper>
+        <WorktreeCard worktree={wt} />
+      </Wrapper>
+    );
+    await expect(component).toHaveScreenshot('worktree-card-sync-behind.png');
+  });
+
+  test('diverged (ahead and behind)', async ({ mount }) => {
+    const wt = createMockWorktreeWithFiles([createMockFile({ path: 'src/App.tsx' })], {
+      id: 'wt-0',
+      branch: 'fix/perf-issues',
+      path: '/projects/myapp-perf',
+      upstream: 'origin/fix/perf-issues',
+      ahead: 2,
+      behind: 4,
+    });
+    seedWorktree(wt);
+
+    const component = await mount(
+      <Wrapper>
+        <WorktreeCard worktree={wt} />
+      </Wrapper>
+    );
+    await expect(component).toHaveScreenshot('worktree-card-sync-diverged.png');
+  });
+});
