@@ -25,6 +25,30 @@ import { reportError, reportUnexpectedState } from './telemetry';
 type PostMessage = (msg: object) => void;
 type OnFileChange = (worktreeId: string) => void;
 
+/**
+ * Copy `lastChangedAt` from `prev` onto unchanged files in `next` so the
+ * timestamp reflects the last real change rather than the last poll tick.
+ * Files whose tracked fields (status/staged/linesAdded/linesRemoved) match
+ * are considered unchanged; changed or new files keep their fresh timestamp.
+ */
+function preserveLastChangedAt(prev: FileChange[], next: FileChange[]): FileChange[] {
+  if (prev.length === 0) return next;
+  const prevMap = new Map(prev.map((f) => [f.path, f]));
+  return next.map((f) => {
+    const p = prevMap.get(f.path);
+    if (
+      p &&
+      p.status === f.status &&
+      p.staged === f.staged &&
+      p.linesAdded === f.linesAdded &&
+      p.linesRemoved === f.linesRemoved
+    ) {
+      return { ...f, lastChangedAt: p.lastChangedAt };
+    }
+    return f;
+  });
+}
+
 function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
   if (a.type !== b.type) return false;
   if (a.type === 'branch' && b.type === 'branch') return a.branch === b.branch;
@@ -291,8 +315,12 @@ export class GitDataProvider implements vscode.Disposable {
   private async reloadAllWithFilter(): Promise<void> {
     for (const wt of this.worktrees) {
       try {
-        const { files: newFiles, branchFiles } = await this.getFilesForMode(wt);
+        const { files: rawNewFiles, branchFiles: rawBranchFiles } = await this.getFilesForMode(wt);
         const prevFiles = this.fileStates.get(wt.id) ?? [];
+        const newFiles = preserveLastChangedAt(prevFiles, rawNewFiles);
+        const branchFiles = rawBranchFiles
+          ? preserveLastChangedAt(wt.branchFiles ?? [], rawBranchFiles)
+          : rawBranchFiles;
         const events = diffFileChanges(wt.id, prevFiles, newFiles);
         wt.files = newFiles;
         wt.branchFiles = branchFiles;
@@ -336,12 +364,22 @@ export class GitDataProvider implements vscode.Disposable {
 
   private async refreshWorktree(wt: WorktreeState): Promise<void> {
     try {
-      const { files: newFiles, branchFiles } = await this.getFilesForMode(wt);
+      const { files: rawNewFiles, branchFiles: rawBranchFiles } = await this.getFilesForMode(wt);
       const prevFiles = this.fileStates.get(wt.id) ?? [];
+
+      // git/status.ts stamps every file with `lastChangedAt: Date.now()` because
+      // it has no prev-state context. Preserve the previous timestamp for files
+      // whose tracked fields didn't change, so `lastChangedAt` reflects when the
+      // file actually changed rather than when git was last polled.
+      const newFiles = preserveLastChangedAt(prevFiles, rawNewFiles);
+      const prevBranch = wt.branchFiles ?? [];
+      const branchFiles = rawBranchFiles
+        ? preserveLastChangedAt(prevBranch, rawBranchFiles)
+        : rawBranchFiles;
+
       const events = diffFileChanges(wt.id, prevFiles, newFiles);
 
       // Detect branchFiles changes (e.g. after a commit)
-      const prevBranch = wt.branchFiles ?? [];
       const newBranch = branchFiles ?? [];
       const branchChanged = diffFileChanges(wt.id, prevBranch, newBranch).length > 0;
 

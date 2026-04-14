@@ -9,7 +9,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   ghost:
     'bg-transparent text-text-muted border-border-dashed hover:text-text-primary hover:border-border-default',
   danger:
-    'bg-transparent text-text-muted border-border-dashed hover:text-status-deleted hover:border-status-deleted/50',
+    'bg-status-deleted/90 text-white border-status-deleted/50 hover:bg-status-deleted hover:border-status-deleted',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
