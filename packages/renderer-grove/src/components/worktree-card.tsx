@@ -6,6 +6,7 @@ import {
   BranchPicker,
   ConfirmPopover,
   ActionBar,
+  SyncBadge,
   filterCheckoutableBranches,
   useActions,
   useWorktreeRename,
@@ -69,6 +70,7 @@ function BranchRow({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: Br
           <BranchPicker.Branches branches={checkoutBranches} selected={wt.branch} />
         </BranchPicker.Content>
       </BranchPicker>
+      <SyncBadge worktree={wt} />
     </div>
   );
 }
