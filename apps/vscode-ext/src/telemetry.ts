@@ -191,6 +191,38 @@ function scrubEvent<T extends Sentry.Event>(event: T): T {
 }
 
 /**
+ * Detect whether a captured exception's frames include at least one frame from
+ * Shiftspace's own code. Used to drop events whose stack traces come entirely
+ * from host-editor internals (`vscode-file://vscode-app/...`), which Sentry's
+ * global handlers occasionally surface even though we can't act on them.
+ */
+export function hasShiftspaceFrame(
+  values: NonNullable<NonNullable<Sentry.ErrorEvent['exception']>['values']>
+): boolean {
+  let sawAnyFrame = false;
+  for (const value of values) {
+    const frames = value.stacktrace?.frames;
+    if (!frames) continue;
+    for (const frame of frames) {
+      const filename = frame.filename ?? '';
+      if (!filename) continue;
+      sawAnyFrame = true;
+      // Host-editor frames live under vscode-file:// (VSCode/Cursor webview
+      // bundle URLs) or reference the editor binary directly. Everything else
+      // — our extension bundle, node_modules loaded by the extension host,
+      // user paths — counts as "ours".
+      if (filename.startsWith('vscode-file://')) continue;
+      if (filename.startsWith('electron/')) continue;
+      if (filename === '<anonymous>') continue;
+      return true;
+    }
+  }
+  // If we couldn't determine the origin (no frames at all), keep the event —
+  // better to investigate than silently drop.
+  return !sawAnyFrame;
+}
+
+/**
  * Initialize Sentry error reporting.
  * Only sends data if the user has opted in via shiftspace.telemetry.enabled.
  */
@@ -233,6 +265,17 @@ export function initTelemetry(extensionVersion: string): void {
     beforeSend(event) {
       // Don't send if telemetry was disabled after init
       if (!shouldSendTelemetry()) return null;
+
+      // Drop events that originate entirely from the host editor's workbench
+      // (e.g. Cursor/VSCode internals like `_chat.editSessions.accept` command
+      // failures). The `integrations` filter above already strips the global
+      // uncaught/unhandled-rejection handlers that were the main source of
+      // these — this is defense-in-depth for explicit `reportError` / direct
+      // `captureException` calls that might hand us a foreign stack.
+      if (event.exception?.values && !hasShiftspaceFrame(event.exception.values)) {
+        return null;
+      }
+
       return scrubEvent(event);
     },
   });
