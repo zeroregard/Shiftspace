@@ -226,7 +226,17 @@ jobs:
             echo "No screenshot changes to commit."
           else
             git commit -m "chore: update e2e snapshots"
-            git push -u origin ${{ github.head_ref }}
+            # Rebase-and-retry to avoid races with other workflows (e.g. CT)
+            # that may also push snapshot updates to the same branch.
+            for attempt in 1 2 3; do
+              git fetch origin "${{ github.head_ref }}"
+              git rebase "origin/${{ github.head_ref }}" || { git rebase --abort; exit 1; }
+              if git push -u origin "${{ github.head_ref }}"; then
+                break
+              fi
+              echo "Push attempt $attempt failed, retrying..."
+              sleep $((attempt * 2))
+            done
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "new_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
           fi
