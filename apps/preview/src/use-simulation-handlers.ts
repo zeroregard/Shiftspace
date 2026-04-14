@@ -2,7 +2,6 @@ import React, { useRef } from 'react';
 import { useWorktreeStore, useActionStore, useInsightStore } from '@shiftspace/renderer';
 import type { DiffMode } from '@shiftspace/renderer';
 import type { MockEngine } from './mock/engine';
-import { MOCK_BRANCHES } from './mock/engine';
 import {
   MOCK_ACTION_CONFIGS,
   MOCK_PIPELINES,
@@ -19,7 +18,7 @@ import {
 export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | null>) {
   const activeSimulations = useRef<Map<string, () => void>>(new Map());
 
-  const { updateWorktreeFiles, setDiffModeLoading, setBranchList } = useWorktreeStore();
+  const { updateWorktreeFiles, setDiffModeLoading } = useWorktreeStore();
   const { setActionState } = useActionStore();
   const { setInsightDetail, setFileDiagnostics, setInsightsRunning } = useInsightStore();
 
@@ -41,10 +40,6 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
         );
       }
     }, 200);
-  };
-
-  const handleRequestBranchList = (worktreeId: string) => {
-    setBranchList(worktreeId, MOCK_BRANCHES);
   };
 
   const handleRunAction = (worktreeId: string, actionId: string) => {
@@ -88,16 +83,6 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
     }, 600);
   };
 
-  const handleRenameWorktree = (worktreeId: string, newName: string) => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    const wt = engine.getWorktrees().find((w) => w.id === worktreeId);
-    if (!wt) return;
-    const parentDir = wt.path.split('/').slice(0, -1).join('/');
-    const newPath = parentDir + '/' + newName;
-    engine.renameWorktree(worktreeId, newPath);
-  };
-
   const cleanupSimulations = () => {
     for (const cancel of activeSimulations.current.values()) cancel();
     activeSimulations.current.clear();
@@ -106,12 +91,10 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
   return {
     activeSimulations,
     handleDiffModeChange,
-    handleRequestBranchList,
     handleRunAction,
     handleStopAction,
     handleRunPipeline,
     handleRecheckInsights,
-    handleRenameWorktree,
     cleanupSimulations,
   };
 }

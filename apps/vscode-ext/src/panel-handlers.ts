@@ -3,7 +3,8 @@ import type { SharedGitProvider } from './shared-git-provider';
 import type { ActionCoordinator } from './actions/action-coordinator';
 import type { ViewSettingsStore } from './view-settings-store';
 import type { InspectionSession } from './insights/inspection-session';
-import type { DiffMode } from '@shiftspace/renderer';
+import type { DiffMode, GitProviderHandlers } from '@shiftspace/renderer';
+import { registerGitProviderHandlers } from '@shiftspace/renderer';
 import { log } from './logger';
 import { reportUnexpectedState } from './telemetry';
 
@@ -25,14 +26,30 @@ export function registerPanelHandlers(
 
   router.on('ready', onReady);
 
-  // Git provider handlers — delegate to the shared GitDataProvider
-  router.on('file-click', (m) => {
-    void sharedGit.provider?.handleFileClick(
-      m.worktreeId ?? '',
-      m.filePath ?? '',
-      typeof m.line === 'number' ? m.line : undefined
-    );
-  });
+  // Git provider handlers — delegate to the shared GitDataProvider. The
+  // direct pass-through handlers live in a shared registrar so the preview
+  // app exercises byte-identical routing; see
+  // `packages/renderer-core/src/protocol/git-provider-handlers.ts`.
+  const providerProxy: GitProviderHandlers = {
+    handleFileClick: (worktreeId, filePath, line) =>
+      sharedGit.provider?.handleFileClick(worktreeId, filePath, line),
+    handleFolderClick: (worktreeId, folderPath) =>
+      sharedGit.provider?.handleFolderClick(worktreeId, folderPath),
+    handleGetBranchList: (worktreeId) => sharedGit.provider?.handleGetBranchList(worktreeId),
+    handleCheckoutBranch: (worktreeId, branch) =>
+      sharedGit.provider?.handleCheckoutBranch(worktreeId, branch),
+    handleFetchBranches: (worktreeId) => sharedGit.provider?.handleFetchBranches(worktreeId),
+    handleSwapBranches: (worktreeId) => sharedGit.provider?.handleSwapBranches(worktreeId),
+    handleAddWorktree: () => sharedGit.provider?.handleAddWorktree(),
+    handleRemoveWorktree: (worktreeId) => sharedGit.provider?.handleRemoveWorktree(worktreeId),
+    handleRenameWorktree: (worktreeId, newName) =>
+      sharedGit.provider?.handleRenameWorktree(worktreeId, newName),
+  };
+  registerGitProviderHandlers(router, providerProxy);
+
+  // set-diff-mode has extra extension-specific behavior (view-settings
+  // persistence) so it stays here and is registered AFTER the shared
+  // registrar (which intentionally omits set-diff-mode).
   router.on('set-diff-mode', (m) => {
     if (!m.worktreeId || !m.diffMode) return;
     const diffMode = m.diffMode as DiffMode;
@@ -43,33 +60,6 @@ export function registerPanelHandlers(
       viewSettings!.save({ diffModeOverrides: settings.diffModeOverrides });
     }
     void sharedGit.provider?.handleSetDiffMode(m.worktreeId, diffMode);
-  });
-  router.on('get-branch-list', (m) => {
-    if (m.worktreeId) void sharedGit.provider?.handleGetBranchList(m.worktreeId);
-  });
-  router.on('checkout-branch', (m) => {
-    if (m.worktreeId && m.branch)
-      void sharedGit.provider?.handleCheckoutBranch(m.worktreeId, m.branch);
-  });
-  router.on('folder-click', (m) => {
-    if (m.worktreeId && m.folderPath)
-      void sharedGit.provider?.handleFolderClick(m.worktreeId, m.folderPath);
-  });
-  router.on('fetch-branches', (m) => {
-    if (m.worktreeId) void sharedGit.provider?.handleFetchBranches(m.worktreeId);
-  });
-  router.on('swap-branches', (m) => {
-    if (m.worktreeId) void sharedGit.provider?.handleSwapBranches(m.worktreeId);
-  });
-  router.on('add-worktree', () => {
-    void sharedGit.provider?.handleAddWorktree();
-  });
-  router.on('remove-worktree', (m) => {
-    if (m.worktreeId) void sharedGit.provider?.handleRemoveWorktree(m.worktreeId);
-  });
-  router.on('rename-worktree', (m) => {
-    if (m.worktreeId && m.newName)
-      void sharedGit.provider?.handleRenameWorktree(m.worktreeId, m.newName);
   });
 
   // Action coordinator handlers

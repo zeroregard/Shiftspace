@@ -10,6 +10,8 @@ import {
 } from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
 import { MockEngine } from './mock/engine';
+import { MockGitProvider } from './mock/mock-git-provider';
+import { MockWebviewBridge } from './mock/mock-webview-bridge';
 import { MOCK_ACTION_CONFIGS, MOCK_PIPELINES, getMockInitialStates } from './mock/actions';
 import {
   MOCK_CODE_SMELL_DETAIL_WT0,
@@ -21,6 +23,7 @@ import { useSimulationHandlers } from './use-simulation-handlers';
 
 export const SidebarPage: React.FC = () => {
   const engineRef = useRef<MockEngine | null>(null);
+  const bridgeRef = useRef<MockWebviewBridge | null>(null);
   const [_worktreeIds, setWorktreeIds] = useState<string[]>([]);
 
   const { setActionConfigs, setPipelines, setActionState } = useActionStore();
@@ -30,17 +33,26 @@ export const SidebarPage: React.FC = () => {
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
   }
+  if (!bridgeRef.current) {
+    bridgeRef.current = new MockWebviewBridge(new MockGitProvider({ engine: engineRef.current }));
+    bridgeRef.current.installTestHook();
+  }
 
   const {
     handleDiffModeChange,
-    handleRequestBranchList,
     handleRunAction,
     handleStopAction,
     handleRunPipeline,
     handleRecheckInsights,
-    handleRenameWorktree,
     cleanupSimulations,
   } = useSimulationHandlers(engineRef);
+
+  const handleRequestBranchList = (worktreeId: string) => {
+    bridgeRef.current?.postMessage({ type: 'get-branch-list', worktreeId });
+  };
+  const handleRenameWorktree = (worktreeId: string, newName: string) => {
+    bridgeRef.current?.postMessage({ type: 'rename-worktree', worktreeId, newName });
+  };
 
   useEffect(() => {
     setActionConfigs(MOCK_ACTION_CONFIGS);
@@ -96,8 +108,7 @@ export const SidebarPage: React.FC = () => {
   const wtArray = Array.from(worktrees.values());
 
   const handleAddWorktree = () => {
-    const id = engineRef.current?.addPresetWorktree(wtArray.length);
-    if (id) setWorktreeIds((ids) => [...ids, id]);
+    bridgeRef.current?.postMessage({ type: 'add-worktree' });
   };
 
   return (

@@ -226,6 +226,25 @@ export class MockEngine {
     this.handlers.forEach((h) => h(event));
   }
 
+  /**
+   * Exposed for the test-only `MockGitProvider` so it can emit lifecycle
+   * events (e.g. `worktree-removal-failed`) that don't map to an existing
+   * engine mutation. Keep callers to the mock layer — production code paths
+   * should use the typed mutation methods.
+   */
+  publicEmit(event: ShiftspaceEvent): void {
+    this.emit(event);
+  }
+
+  /** Used by the mock git provider to simulate `handleCheckoutBranch`. */
+  setBranch(worktreeId: string, branch: string): void {
+    const wt = this.worktrees.get(worktreeId);
+    if (!wt) return;
+    const updated: WorktreeState = { ...wt, branch };
+    this.worktrees.set(worktreeId, updated);
+    this.emit({ type: 'worktree-added', worktree: updated });
+  }
+
   getWorktrees(): WorktreeState[] {
     return Array.from(this.worktrees.values());
   }

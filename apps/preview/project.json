@@ -113,10 +113,28 @@
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/tree-sorting.spec.ts"]
     },
+    "e2e:flows": {
+      "command": "playwright test e2e/flows.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/flows.spec.ts",
+        "{projectRoot}/src/mock/**/*",
+        "{projectRoot}/src/app.tsx",
+        "{projectRoot}/src/sidebar-page.tsx",
+        "{projectRoot}/src/use-simulation-handlers.ts",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/flows.spec.ts"]
+    },
     "test:e2e": {
       "dependsOn": [
         "e2e:controls",
         "e2e:diagnostics",
+        "e2e:flows",
         "e2e:graph",
         "e2e:hover-tooltips",
         "e2e:inspector-file-categories",
