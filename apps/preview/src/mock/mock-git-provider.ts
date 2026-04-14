@@ -86,7 +86,15 @@ export class MockGitProvider implements GitProviderHandlers {
 
   handleAddWorktree(): void {
     this.logCall('add-worktree', []);
-    if (this.shouldFail('add-worktree')) return;
+    // Mirror the real provider: emit pending immediately so the add button
+    // shows a spinner while the op is in flight.
+    this.engine.publicEmit({ type: 'worktree-add-pending' });
+    if (this.shouldFail('add-worktree')) {
+      queueMicrotask(() => {
+        this.engine.publicEmit({ type: 'worktree-add-failed' });
+      });
+      return;
+    }
     this.engine.addPresetWorktree(this.engine.getWorktrees().length);
   }
 

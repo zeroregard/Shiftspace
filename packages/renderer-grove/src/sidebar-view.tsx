@@ -24,6 +24,7 @@ function WorktreeCardError() {
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
   const sortMode = useWorktreeStore((s) => s.sortMode);
+  const addingWorktree = useWorktreeStore((s) => s.addingWorktree);
   const actions = useActions();
   const sorted = useMemo(() => sortWorktrees(worktrees, sortMode), [worktrees, sortMode]);
 
@@ -73,15 +74,30 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
             </div>
           </LayoutGroup>
         )}
-        <IconButton
-          icon="add"
-          label="Add worktree"
-          size="md"
-          className="!w-full mt-3 !h-8 !rounded-xl !border-2 !border-dashed !border-border-dashed hover:!border-border-default"
-          iconSize={14}
-          onClick={() => actions.addWorktree()}
-          data-testid="add-worktree"
-        />
+        <div className="flex justify-center mt-3">
+          {addingWorktree ? (
+            <IconButton
+              icon="loading"
+              label="Adding worktree…"
+              size="md"
+              className="!w-10 !h-10 !rounded-xl !border-2 !border-dashed !border-border-dashed"
+              iconSize={14}
+              iconAnimation="spin 1s linear infinite"
+              disabled
+              data-testid="add-worktree"
+            />
+          ) : (
+            <IconButton
+              icon="add"
+              label="Add worktree"
+              size="md"
+              className="!w-10 !h-10 !rounded-xl !border-2 !border-dashed !border-border-dashed hover:!border-border-default"
+              iconSize={14}
+              onClick={() => actions.addWorktree()}
+              data-testid="add-worktree"
+            />
+          )}
+        </div>
       </div>
     </div>
   );

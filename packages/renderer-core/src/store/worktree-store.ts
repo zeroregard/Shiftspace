@@ -45,6 +45,8 @@ interface WorktreeStore {
   fetchLoading: Set<string>;
   swapLoading: Set<string>;
   removingWorktrees: Set<string>;
+  /** True while a `git worktree add` is in flight. Cleared on success (worktree-added event) or failure. */
+  addingWorktree: boolean;
   lastFetchAt: Map<string, number>;
   sortMode: WorktreeSortMode;
   iconMap: IconMap;
@@ -76,6 +78,7 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
   fetchLoading: new Set(),
   swapLoading: new Set(),
   removingWorktrees: new Set(),
+  addingWorktree: false,
   lastFetchAt: new Map(),
   sortMode: 'name',
   iconMap: {},
@@ -97,11 +100,25 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
         removingWorktrees.delete(event.worktreeId);
         return { removingWorktrees };
       }
+      // Add lifecycle events — a single boolean flag is sufficient because
+      // the UI disables the add button while it's in flight.
+      if (event.type === 'worktree-add-pending') {
+        if (state.addingWorktree) return state;
+        return { addingWorktree: true };
+      }
+      if (event.type === 'worktree-add-failed') {
+        if (!state.addingWorktree) return state;
+        return { addingWorktree: false };
+      }
       const nextWorktrees = applyEventReducer(state.worktrees, event);
       if (event.type === 'worktree-removed' && state.removingWorktrees.has(event.worktreeId)) {
         const removingWorktrees = new Set(state.removingWorktrees);
         removingWorktrees.delete(event.worktreeId);
         return { worktrees: nextWorktrees, removingWorktrees };
+      }
+      // A fresh worktree arrived — clear the pending-add flag (success path).
+      if (event.type === 'worktree-added' && state.addingWorktree) {
+        return { worktrees: nextWorktrees, addingWorktree: false };
       }
       if (nextWorktrees === state.worktrees) return state;
       return { worktrees: nextWorktrees };
