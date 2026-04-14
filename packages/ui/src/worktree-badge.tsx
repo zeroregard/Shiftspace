@@ -25,14 +25,14 @@ export function WorktreeBadge({ icon, label, bgColor, fgColor, className }: Work
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-0.5 text-10 font-medium px-1 rounded leading-tight shrink-0 max-w-[8rem]',
+        'inline-flex items-center justify-center gap-1 text-10 font-medium rounded leading-none shrink-0 max-w-[8rem] px-[6px] py-[2px]',
         className
       )}
       style={{ backgroundColor: bgColor, color: fgColor }}
       title={label}
     >
-      <Codicon name={icon} size={10} />
-      <span className="truncate">{label}</span>
+      <Codicon name={icon} size={10} className="leading-none" />
+      <span className="truncate leading-none">{label}</span>
     </span>
   );
 }
