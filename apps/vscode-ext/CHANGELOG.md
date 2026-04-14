@@ -2,6 +2,21 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.2.1] — 2026-04-14
+
+### Changed
+
+- Extract shared webview protocol into renderer-core package
+- Add inline confirmation popover for worktree removal
+- Track worktree activity timestamp for accurate "last updated" sorting
+
+### Fixed
+
+- skip swap confirmation when there are no unstaged changes (#133) _(vscode-ext)_
+- drop fetch/http breadcrumbs from Sentry (#132) _(vscode-ext)_
+- gate telemetry on own opt-in only (#128) _(vscode-ext)_
+- prevent stale branchFiles from leaking across diffMode changes (#130) _(vscode-ext)_
+
 ## [0.2.0] — 2026-04-12
 
 ### Added
