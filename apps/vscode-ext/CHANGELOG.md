@@ -2,6 +2,26 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.3.0] — 2026-04-15
+
+### Added
+
+- add worktree badge labels via .shiftspace-worktree.json (#136)
+
+### Changed
+
+- Adjust badges
+- Preserve file timestamps and improve danger button styling
+
+### Fixed
+
+- drop Sentry events from host-editor internals (#137) _(vscode-ext)_
+- harden Sentry anonymization (#139) _(vscode-ext)_
+
+### Performance
+
+- speed up worktree deletion + add loading indicator (#140)
+
 ## [0.2.1] — 2026-04-14
 
 ### Changed
