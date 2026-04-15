@@ -34,6 +34,7 @@ export class ShiftspacePanel {
   private _viewSettings: ViewSettingsStore | undefined;
   private _inspection: InspectionSession | undefined;
   private _insightRunner: InsightRunner | undefined;
+  private _diagnosticCollector: DiagnosticCollector | undefined;
 
   private _insightStatusBar: vscode.StatusBarItem | undefined;
   private _removeFileChangeListener: (() => void) | undefined;
@@ -166,6 +167,7 @@ export class ShiftspacePanel {
     this._actionCoordinator?.dispose();
     this._iconManager?.dispose();
     this._inspection?.dispose();
+    this._diagnosticCollector?.dispose();
     this._removeFileChangeListener?.();
     this._removeRepoChangeListener?.();
 
@@ -180,7 +182,7 @@ export class ShiftspacePanel {
     );
 
     this._insightRunner = new InsightRunner();
-    const diagnosticCollector = new DiagnosticCollector(postMessage);
+    this._diagnosticCollector = new DiagnosticCollector(postMessage);
 
     this._actionCoordinator = new ActionCoordinator(postMessage);
 
@@ -199,7 +201,7 @@ export class ShiftspacePanel {
     });
 
     // Create inspection session (needs providers to be ready)
-    this._inspection = new InspectionSession(this._insightRunner, diagnosticCollector, {
+    this._inspection = new InspectionSession(this._insightRunner, this._diagnosticCollector, {
       postMessage,
       getWorktrees: () => sharedGit.provider?.getWorktrees() ?? [],
       getWorktreeFiles: (id) => sharedGit.provider?.getWorktreeFiles(id) ?? [],
@@ -333,6 +335,8 @@ export class ShiftspacePanel {
     this._insightStatusBar = undefined;
     this._inspection?.dispose();
     this._inspection = undefined;
+    this._diagnosticCollector?.dispose();
+    this._diagnosticCollector = undefined;
     this._actionCoordinator?.dispose();
     this._actionCoordinator = undefined;
     this._iconManager?.dispose();
