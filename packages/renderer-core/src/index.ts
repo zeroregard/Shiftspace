@@ -2,6 +2,7 @@
 export type {
   WorktreeState,
   WorktreeBadge,
+  WorktreeBadgeColor,
   FileChange,
   ShiftspaceEvent,
   LODLevel,

@@ -215,10 +215,7 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
-        badge:
-          i === 1
-            ? { icon: 'clock', label: 'stale', bgColor: '#7f1d1d', fgColor: '#fecaca' }
-            : undefined,
+        badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
       });
     });
   }
@@ -578,10 +575,7 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
-        badge:
-          i === 1
-            ? { icon: 'clock', label: 'stale', bgColor: '#7f1d1d', fgColor: '#fecaca' }
-            : undefined,
+        badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
       });
     });
   }

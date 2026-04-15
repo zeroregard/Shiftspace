@@ -205,12 +205,7 @@ export function WorktreeCard({
             </>
           )}
           {wt.badge && !isRenaming && (
-            <WorktreeBadge
-              icon={wt.badge.icon}
-              label={wt.badge.label}
-              bgColor={wt.badge.bgColor}
-              fgColor={wt.badge.fgColor}
-            />
+            <WorktreeBadge label={wt.badge.label} color={wt.badge.color} />
           )}
         </div>
         <BranchRow

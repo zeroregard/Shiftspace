@@ -5,6 +5,7 @@ export {
   // Types
   type WorktreeState,
   type WorktreeBadge,
+  type WorktreeBadgeColor,
   type FileChange,
   type ShiftspaceEvent,
   type LODLevel,

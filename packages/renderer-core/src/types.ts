@@ -3,14 +3,12 @@ export type DiffMode =
   | { type: 'branch'; branch: string } // diff HEAD against another branch
   | { type: 'repo' }; // all tracked files in the repository
 
+export type WorktreeBadgeColor = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
+
 export interface WorktreeBadge {
-  /** Codicon name without the `codicon-` prefix (e.g. 'clock', 'eye'). */
-  icon: string;
   label: string;
-  /** Hex CSS color for the pill background, e.g. '#7f1d1d'. */
-  bgColor: string;
-  /** Hex CSS color for the icon + text, e.g. '#fecaca'. */
-  fgColor: string;
+  /** Semantic color, backed by a VSCode theme token. Defaults to 'neutral'. */
+  color?: WorktreeBadgeColor;
 }
 
 export interface WorktreeState {

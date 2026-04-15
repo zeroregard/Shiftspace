@@ -27,15 +27,13 @@ Shiftspace gives you two views:
 ```json
 {
   "badge": {
-    "icon": "clock",
     "label": "stale",
-    "bgColor": "#7f1d1d",
-    "fgColor": "#fecaca"
+    "color": "warning"
   }
 }
 ```
 
-`icon` is any [VS Code codicon](https://microsoft.github.io/vscode-codicons/dist/codicon.html) name; `bgColor` / `fgColor` are hex CSS colors.
+`label` is free-form text; `color` (optional) is one of `neutral`, `info`, `success`, `warning`, `danger` — each backed by a VSCode theme token so badges stay coherent across themes. Defaults to `neutral`.
 
 **Checks & pipelines** — Define lint, typecheck, test, build, or any custom command in `.shiftspace.json`. Run them per worktree. Chain them into pipelines (e.g., fmt → lint → typecheck → test). Results show pass/fail badges on each card and go stale automatically when files change.
 

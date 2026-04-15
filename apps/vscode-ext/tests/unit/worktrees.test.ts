@@ -161,45 +161,26 @@ describe('readWorktreeBadge', () => {
     }
   });
 
-  it('parses a well-formed badge', async () => {
-    const dir = makeTempWorktree(
-      JSON.stringify({
-        badge: { icon: 'clock', label: 'stale', bgColor: '#7f1d1d', fgColor: '#fecaca' },
-      })
-    );
+  it('parses a well-formed badge with a color', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'stale', color: 'warning' } }));
     try {
-      expect(await readWorktreeBadge(dir)).toEqual({
-        icon: 'clock',
-        label: 'stale',
-        bgColor: '#7f1d1d',
-        fgColor: '#fecaca',
-      });
+      expect(await readWorktreeBadge(dir)).toEqual({ label: 'stale', color: 'warning' });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('accepts 3-, 6-, and 8-digit hex colors', async () => {
-    const dir = makeTempWorktree(
-      JSON.stringify({
-        badge: { icon: 'eye', label: 'x', bgColor: '#abc', fgColor: '#aabbccdd' },
-      })
-    );
+  it('parses a badge without a color (defaults to neutral at render time)', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'stale' } }));
     try {
-      const badge = await readWorktreeBadge(dir);
-      expect(badge?.bgColor).toBe('#abc');
-      expect(badge?.fgColor).toBe('#aabbccdd');
+      expect(await readWorktreeBadge(dir)).toEqual({ label: 'stale' });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('returns undefined for non-hex colors (e.g. named or rgb())', async () => {
-    const dir = makeTempWorktree(
-      JSON.stringify({
-        badge: { icon: 'eye', label: 'x', bgColor: 'red', fgColor: '#fff' },
-      })
-    );
+  it('returns undefined for an unknown color value', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'x', color: '#ff0000' } }));
     try {
       expect(await readWorktreeBadge(dir)).toBeUndefined();
     } finally {
@@ -207,10 +188,8 @@ describe('readWorktreeBadge', () => {
     }
   });
 
-  it('returns undefined when required fields are missing', async () => {
-    const dir = makeTempWorktree(
-      JSON.stringify({ badge: { icon: 'eye', label: 'x', bgColor: '#fff' } })
-    );
+  it('returns undefined when label is missing', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ badge: { color: 'info' } }));
     try {
       expect(await readWorktreeBadge(dir)).toBeUndefined();
     } finally {
@@ -245,12 +224,8 @@ describe('readWorktreeBadge', () => {
     }
   });
 
-  it('returns undefined when field types are wrong', async () => {
-    const dir = makeTempWorktree(
-      JSON.stringify({
-        badge: { icon: 42, label: 'x', bgColor: '#fff', fgColor: '#000' },
-      })
-    );
+  it('returns undefined when label is not a string', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ badge: { label: 42, color: 'info' } }));
     try {
       expect(await readWorktreeBadge(dir)).toBeUndefined();
     } finally {
@@ -261,7 +236,7 @@ describe('readWorktreeBadge', () => {
 
 // badgesEqual
 describe('badgesEqual', () => {
-  const a = { icon: 'clock', label: 'stale', bgColor: '#111', fgColor: '#fff' };
+  const a = { label: 'stale', color: 'warning' as const };
 
   it('returns true for two undefined badges', () => {
     expect(badgesEqual(undefined, undefined)).toBe(true);
@@ -277,9 +252,7 @@ describe('badgesEqual', () => {
   });
 
   it('returns false when any field differs', () => {
-    expect(badgesEqual(a, { ...a, icon: 'eye' })).toBe(false);
     expect(badgesEqual(a, { ...a, label: 'stale!' })).toBe(false);
-    expect(badgesEqual(a, { ...a, bgColor: '#222' })).toBe(false);
-    expect(badgesEqual(a, { ...a, fgColor: '#eee' })).toBe(false);
+    expect(badgesEqual(a, { ...a, color: 'info' })).toBe(false);
   });
 });

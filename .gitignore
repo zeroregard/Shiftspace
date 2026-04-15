@@ -22,3 +22,6 @@ test-results/
 .nx/polygraph
 .claude/worktrees
 .claude/settings.local.json
+
+# Shiftspace
+.shiftspace-worktree.json
