@@ -90,23 +90,8 @@
         "command": "shiftspace.recheckInsights",
         "title": "Recheck Insights",
         "category": "Shiftspace"
-      },
-      {
-        "command": "shiftspace.sortWorktrees",
-        "title": "Sort Worktrees",
-        "category": "Shiftspace",
-        "icon": "$(three-bars)"
       }
     ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "shiftspace.sortWorktrees",
-          "when": "view == shiftspace.sidebar",
-          "group": "navigation"
-        }
-      ]
-    },
     "keybindings": [
       {
         "command": "shiftspace.toggle",

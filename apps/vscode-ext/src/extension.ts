@@ -53,7 +53,6 @@ export function activate(context: vscode.ExtensionContext) {
       webviewOptions: { retainContextWhenHidden: true },
     })
   );
-  context.subscriptions.push(sidebarProvider.registerSortCommand());
 
   context.subscriptions.push(
     vscode.commands.registerCommand('shiftspace.toggle', () => {

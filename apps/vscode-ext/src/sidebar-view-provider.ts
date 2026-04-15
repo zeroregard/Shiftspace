@@ -7,14 +7,6 @@ import { reportError, reportInvariant, reportUnexpectedState } from './telemetry
 
 const VIEW_ID = 'sidebar';
 
-type SortMode = 'last-updated' | 'name' | 'branch';
-
-const SORT_OPTIONS: Array<{ label: string; value: SortMode; description?: string }> = [
-  { label: 'Last updated', value: 'last-updated', description: 'Most recently changed first' },
-  { label: 'Name (A\u2013Z)', value: 'name', description: 'Worktree directory name' },
-  { label: 'Branch (A\u2013Z)', value: 'branch', description: 'Git branch name' },
-];
-
 /**
  * Renders a slim grove view (SidebarView) inside the activity-bar sidebar.
  *
@@ -24,28 +16,11 @@ const SORT_OPTIONS: Array<{ label: string; value: SortMode; description?: string
 export class SidebarViewProvider implements vscode.WebviewViewProvider {
   private _view: vscode.WebviewView | undefined;
   private _disposables: vscode.Disposable[] = [];
-  private _currentSortMode: SortMode = 'name';
 
   constructor(
     private readonly _context: vscode.ExtensionContext,
     private readonly _sharedGit: SharedGitProvider
   ) {}
-
-  registerSortCommand(): vscode.Disposable {
-    return vscode.commands.registerCommand('shiftspace.sortWorktrees', async () => {
-      const picked = await vscode.window.showQuickPick(
-        SORT_OPTIONS.map((opt) => ({
-          label: `${opt.value === this._currentSortMode ? '$(check) ' : '      '}${opt.label}`,
-          description: opt.description,
-          value: opt.value,
-        })),
-        { placeHolder: 'Sort worktrees by\u2026' }
-      );
-      if (!picked) return;
-      this._currentSortMode = picked.value;
-      this._sharedGit.broadcast({ type: 'set-sort-mode', mode: picked.value });
-    });
-  }
 
   resolveWebviewView(
     webviewView: vscode.WebviewView,
