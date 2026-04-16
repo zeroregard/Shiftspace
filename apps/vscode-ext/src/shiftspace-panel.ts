@@ -171,12 +171,21 @@ export class ShiftspacePanel {
     this._removeFileChangeListener?.();
     this._removeRepoChangeListener?.();
 
+    // Create panel-specific helpers (viewSettings first so we can read
+    // persisted diff-mode overrides before any init message is posted).
+    this._viewSettings = new ViewSettingsStore(this._context.workspaceState);
+    const viewSettings = this._viewSettings.get();
+
+    // Hand persisted diff-mode overrides to the shared provider BEFORE the
+    // view is registered. This guarantees that the first `init` message the
+    // webview receives already carries the correct `diffMode` + `branchFiles`
+    // — the inspection view won't flash empty on reopen with "vs staging".
+    await sharedGit.setDiffModeOverrides(viewSettings.diffModeOverrides);
+
     // Register this panel's postMessage with the shared git provider.
     // (Re-registers on every "ready" since the webview reference may change.)
     sharedGit.registerView(VIEW_ID, postMessage);
 
-    // Create panel-specific helpers
-    this._viewSettings = new ViewSettingsStore(this._context.workspaceState);
     this._iconManager = new PanelIconManager(sharedGit, (msg) =>
       this._panel.webview.postMessage(msg)
     );
@@ -212,7 +221,10 @@ export class ShiftspacePanel {
     // Register message handlers
     this.registerHandlers();
 
-    // Ensure the shared git provider is initialized (no-ops if already done)
+    // Ensure the shared git provider is initialized (no-ops if already done).
+    // Overrides registered above are picked up inside `initialize()` — the
+    // worktrees' diffMode + branchFiles are populated together before the
+    // `init` broadcast.
     const gitRoot = await sharedGit.ensureInitialized();
 
     if (!gitRoot) {
@@ -224,10 +236,6 @@ export class ShiftspacePanel {
       });
       return;
     }
-
-    // Apply persisted diff mode overrides before the webview renders
-    const viewSettings = this._viewSettings.get();
-    sharedGit.provider?.applyDiffModeOverrides(viewSettings.diffModeOverrides);
 
     await this._actionCoordinator.initialize(gitRoot, viewSettings.selectedPackage);
     this.syncWorktreesToCoordinator();

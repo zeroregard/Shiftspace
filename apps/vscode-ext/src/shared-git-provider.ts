@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { DiffMode } from '@shiftspace/renderer';
 import { GitDataProvider } from './git-data-provider';
 import { RepoTracker } from './git/repo-tracker';
 import { log } from './logger';
@@ -28,6 +29,7 @@ export class SharedGitProvider implements vscode.Disposable {
   private _initialized = false;
   private _initializing: Promise<void> | undefined;
   private _settingsDisposable: vscode.Disposable | undefined;
+  private _diffModeOverrides: Record<string, DiffMode> = {};
 
   // ── Broadcast ────────────────────────────────────────────────────────────
 
@@ -100,6 +102,21 @@ export class SharedGitProvider implements vscode.Disposable {
   // ── Initialization ───────────────────────────────────────────────────────
 
   /**
+   * Register persisted per-branch diff-mode overrides. Call this BEFORE
+   * `ensureInitialized()` so the first file fetch and `init` message the
+   * webview receives already reflect the user's selection. If the provider
+   * is already initialized, applies the overrides in place and awaits the
+   * atomic re-fetch so subsequent `registerView` calls hand out the
+   * consistent snapshot.
+   */
+  async setDiffModeOverrides(overrides: Record<string, DiffMode>): Promise<void> {
+    this._diffModeOverrides = overrides ?? {};
+    if (this._initialized && this._provider) {
+      await this._provider.applyDiffModeOverrides(this._diffModeOverrides);
+    }
+  }
+
+  /**
    * Ensure the shared provider is initialized. Safe to call multiple times —
    * subsequent calls await the first initialization. Returns the detected
    * git root, or undefined if none was found.
@@ -122,7 +139,7 @@ export class SharedGitProvider implements vscode.Disposable {
 
     const handleRepoSwitch = async (newRoot: string) => {
       this._currentRoot = newRoot;
-      await this._provider?.switchRepo(newRoot);
+      await this._provider?.switchRepo(newRoot, this._diffModeOverrides);
       this._initialized = true;
       for (const fn of this._repoChangeListeners) {
         fn(newRoot);
@@ -141,7 +158,7 @@ export class SharedGitProvider implements vscode.Disposable {
     }
 
     this._currentRoot = gitRoot;
-    await this._provider.switchRepo(gitRoot);
+    await this._provider.switchRepo(gitRoot, this._diffModeOverrides);
     this._initialized = true;
 
     log.info(`SharedGitProvider: initialized with root ${gitRoot}`);
@@ -160,5 +177,6 @@ export class SharedGitProvider implements vscode.Disposable {
     this._repoChangeListeners = [];
     this._initialized = false;
     this._initializing = undefined;
+    this._diffModeOverrides = {};
   }
 }
