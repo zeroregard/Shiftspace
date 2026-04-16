@@ -137,4 +137,45 @@ describe('DiagnosticCollector.updateFiles', () => {
 
     collector.dispose();
   });
+
+  it('does not call postMessage after dispose (prevents "Webview is disposed" errors)', () => {
+    // Capture the diagnostics change listener so we can fire it after dispose,
+    // simulating a late event arriving once the webview is gone.
+    let changeListener: ((e: { uris: Array<{ fsPath: string }> }) => void) | undefined;
+    (vscode.languages as Record<string, unknown>).onDidChangeDiagnostics = vi.fn(
+      (listener: (e: { uris: Array<{ fsPath: string }> }) => void) => {
+        changeListener = listener;
+        return { dispose: vi.fn() };
+      }
+    );
+
+    vi.useFakeTimers();
+    try {
+      const postMessage = vi.fn();
+      const collector = new DiagnosticCollector(postMessage);
+      collector.startInspection('w1', '/repo', [makeFile('a.ts')]);
+
+      // Fire a change so the debounce timer is scheduled
+      changeListener?.({ uris: [{ fsPath: '/repo/a.ts' }] });
+
+      // Dispose while the timer is still pending
+      collector.dispose();
+      postMessage.mockClear();
+
+      // Let the pending debounce timer fire — it must not post
+      vi.runAllTimers();
+
+      const updateMsg = postMessage.mock.calls.find(
+        ([msg]: [{ type: string }]) => msg.type === 'diagnostics-update'
+      );
+      expect(updateMsg).toBeUndefined();
+
+      // A late diagnostics change event after dispose must also be ignored
+      changeListener?.({ uris: [{ fsPath: '/repo/a.ts' }] });
+      vi.runAllTimers();
+      expect(postMessage).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

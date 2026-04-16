@@ -74,11 +74,13 @@ export class DiagnosticCollector {
   private _currentWorktreeRoot: string | undefined;
   private _currentFiles: FileChange[] = [];
   private _postMessage: (msg: object) => void;
+  private _disposed = false;
 
   constructor(postMessage: (msg: object) => void) {
     this._postMessage = postMessage;
 
     this._disposable = vscode.languages.onDidChangeDiagnostics((e) => {
+      if (this._disposed) return;
       if (!this._currentWorktreeId || !this._currentWorktreeRoot) return;
       if (!this.isEnabled()) return;
 
@@ -95,6 +97,7 @@ export class DiagnosticCollector {
       if (this._debounceTimer !== undefined) clearTimeout(this._debounceTimer);
       this._debounceTimer = setTimeout(() => {
         this._debounceTimer = undefined;
+        if (this._disposed) return;
         this.sendDiagnostics();
       }, 500);
     });
@@ -162,6 +165,7 @@ export class DiagnosticCollector {
   }
 
   private sendDiagnostics(): void {
+    if (this._disposed) return;
     if (!this._currentWorktreeId || !this._currentWorktreeRoot) return;
 
     const summaries = collectDiagnostics(this._currentFiles, this._currentWorktreeRoot);
@@ -173,11 +177,15 @@ export class DiagnosticCollector {
   }
 
   dispose(): void {
+    this._disposed = true;
     this._disposable?.dispose();
     this._disposable = undefined;
     if (this._debounceTimer !== undefined) {
       clearTimeout(this._debounceTimer);
       this._debounceTimer = undefined;
     }
+    this._currentWorktreeId = undefined;
+    this._currentWorktreeRoot = undefined;
+    this._currentFiles = [];
   }
 }
