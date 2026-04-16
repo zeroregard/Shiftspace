@@ -114,15 +114,23 @@ export class GitDataProvider implements vscode.Disposable {
   /**
    * Switch to tracking a different git repo root.
    * No-ops if the root hasn't changed. Tears down existing watchers first.
+   *
+   * `diffModeOverrides` (keyed by branch name) is applied BEFORE the initial
+   * file fetch so the first `init` message sent to the webview already
+   * reflects the persisted per-branch selection — preventing the inspection
+   * view from flashing empty when it reopens with a non-default diff mode.
    */
-  async switchRepo(gitRoot: string): Promise<void> {
+  async switchRepo(
+    gitRoot: string,
+    diffModeOverrides: Record<string, DiffMode> = {}
+  ): Promise<void> {
     if (gitRoot === this.currentRoot) return;
     this.tearDownWatchers();
     this.currentRoot = gitRoot;
-    await this.initialize();
+    await this.initialize(diffModeOverrides);
   }
 
-  private async initialize(): Promise<void> {
+  private async initialize(diffModeOverrides: Record<string, DiffMode> = {}): Promise<void> {
     if (!this.currentRoot) return;
 
     const gitStatus = await checkGitAvailability(this.currentRoot);
@@ -151,15 +159,22 @@ export class GitDataProvider implements vscode.Disposable {
     }
 
     // Set initial diff modes: feature branches diff against default branch,
-    // worktrees on the default branch show working changes.
+    // worktrees on the default branch show working changes. Persisted
+    // per-branch overrides win so the first file fetch matches the selector
+    // the user will see on open.
     for (const wt of this.worktrees) {
       wt.defaultBranch = this.defaultBranch;
-      if (wt.branch === this.defaultBranch) {
+      const override = diffModeOverrides[wt.branch];
+      if (override) {
+        wt.diffMode = override;
+        log.info(`[diffMode] init override: ${wt.branch} → ${JSON.stringify(override)}`);
+      } else if (wt.branch === this.defaultBranch) {
         wt.diffMode = { type: 'working' };
+        log.info(`[diffMode] init: ${wt.branch} → ${JSON.stringify(wt.diffMode)}`);
       } else {
         wt.diffMode = { type: 'branch', branch: this.defaultBranch };
+        log.info(`[diffMode] init: ${wt.branch} → ${JSON.stringify(wt.diffMode)}`);
       }
-      log.info(`[diffMode] init: ${wt.branch} → ${JSON.stringify(wt.diffMode)}`);
     }
 
     await this.loadAllFileChanges();
@@ -213,19 +228,25 @@ export class GitDataProvider implements vscode.Disposable {
    *
    * - `files`       → always the current git status (staged + unstaged working changes)
    * - `branchFiles` → only in branch mode: commits on this branch vs the base
+   *
+   * Pass `mode` explicitly to fetch for a prospective mode without mutating
+   * `wt.diffMode` first — callers that need atomic fetch-then-commit (e.g.
+   * applyDiffModeOverrides, handleSetDiffMode) rely on this so the shared
+   * worktree state is never left with a new diffMode and stale branchFiles.
    */
   private async getFilesForMode(
-    wt: WorktreeState
+    wt: WorktreeState,
+    mode: DiffMode = wt.diffMode
   ): Promise<{ files: FileChange[]; branchFiles?: FileChange[] }> {
     const patterns = getIgnorePatterns();
-    if (wt.diffMode.type === 'repo') {
+    if (mode.type === 'repo') {
       const branchFiles = await getRepoFiles(wt.path).then((f) => filterIgnoredFiles(f, patterns));
       return { files: [], branchFiles };
     }
-    if (wt.diffMode.type === 'branch') {
+    if (mode.type === 'branch') {
       // Run sequentially to avoid concurrent git processes on the same repo
       const files = await getFileChanges(wt.path).then((f) => filterIgnoredFiles(f, patterns));
-      const branchFiles = await getBranchDiffFileChanges(wt.path, wt.diffMode.branch).then((f) =>
+      const branchFiles = await getBranchDiffFileChanges(wt.path, mode.branch).then((f) =>
         filterIgnoredFiles(f, patterns)
       );
       return { files, branchFiles };
@@ -1085,52 +1106,57 @@ export class GitDataProvider implements vscode.Disposable {
 
   /**
    * Apply persisted diff mode overrides (keyed by branch name) to the
-   * current worktrees. Called after switchRepo() and before the init
-   * message is sent to the webview so the correct diff mode is reflected
-   * on first render. Re-fetches file data for overridden worktrees.
+   * current worktrees. Fetches file data for the target mode BEFORE
+   * mutating the shared worktree state so `wt.diffMode` and
+   * `wt.branchFiles` are always consistent — a late-registering view
+   * (sidebar or a reopened panel) will never see an override-branch
+   * diffMode paired with undefined branchFiles, which would render the
+   * inspection view empty despite the selector showing "vs staging".
    */
-  applyDiffModeOverrides(overrides: Record<string, DiffMode>): void {
+  async applyDiffModeOverrides(overrides: Record<string, DiffMode>): Promise<void> {
     if (!overrides || Object.keys(overrides).length === 0) return;
-    for (const wt of this.worktrees) {
-      const override = overrides[wt.branch];
-      if (!override) continue;
-      // Skip if already matching (e.g. feature branch already defaults to "vs main")
-      if (
-        wt.diffMode.type === override.type &&
-        (wt.diffMode.type !== 'branch' ||
-          (override.type === 'branch' && wt.diffMode.branch === override.branch))
-      ) {
-        continue;
-      }
-      log.info(`[diffMode] applyOverride: ${wt.branch} → ${JSON.stringify(override)}`);
-      wt.diffMode = override;
-      // Re-fetch files for the new mode (fire-and-forget; init message
-      // already includes the files from the initial load, and the
-      // worktree-files-updated message will patch them once ready).
-      // Capture the target mode so we can detect mid-flight mutations and
-      // avoid broadcasting a payload whose `branchFiles` no longer matches
-      // the current diffMode (e.g. "repo"-fetched all-files leaking into
-      // a branch-mode update).
-      const targetMode = override;
-      void this.getFilesForMode(wt).then(({ files, branchFiles }) => {
-        if (!isDiffModeEqual(wt.diffMode, targetMode)) {
-          log.info(
-            `[diffMode] applyOverride dropped (mode changed): ${wt.branch} target=${JSON.stringify(targetMode)} current=${JSON.stringify(wt.diffMode)}`
-          );
-          return;
+    await Promise.all(
+      this.worktrees.map(async (wt) => {
+        const override = overrides[wt.branch];
+        if (!override) return;
+        // Skip if already matching (e.g. feature branch already defaults to "vs main")
+        if (isDiffModeEqual(wt.diffMode, override)) return;
+        log.info(`[diffMode] applyOverride: ${wt.branch} → ${JSON.stringify(override)}`);
+        try {
+          // Fetch with the target mode explicitly — do NOT mutate wt.diffMode
+          // yet, so concurrent readers still see a consistent snapshot.
+          const { files, branchFiles } = await this.getFilesForMode(wt, override);
+          // If diffMode was changed mid-flight by another caller (e.g.
+          // handleSetDiffMode from the webview), drop our stale result.
+          const currentExpected = overrides[wt.branch];
+          if (!currentExpected || !isDiffModeEqual(currentExpected, override)) {
+            log.info(
+              `[diffMode] applyOverride dropped (override changed): ${wt.branch} target=${JSON.stringify(override)}`
+            );
+            return;
+          }
+          // Atomic commit: diffMode + files + branchFiles together.
+          wt.diffMode = override;
+          wt.files = files;
+          wt.branchFiles = branchFiles;
+          this.fileStates.set(wt.id, files);
+          this.postMessage({
+            type: 'worktree-files-updated',
+            worktreeId: wt.id,
+            files,
+            diffMode: override,
+            branchFiles,
+          });
+        } catch (err) {
+          log.error('applyDiffModeOverrides error for', wt.path, err);
+          reportError(err as Error, {
+            context: 'applyDiffModeOverrides',
+            branch: wt.branch,
+            mode: override.type,
+          });
         }
-        wt.files = files;
-        wt.branchFiles = branchFiles;
-        this.fileStates.set(wt.id, files);
-        this.postMessage({
-          type: 'worktree-files-updated',
-          worktreeId: wt.id,
-          files,
-          diffMode: targetMode,
-          branchFiles,
-        });
-      });
-    }
+      })
+    );
   }
 
   /** Returns current worktree snapshot (id, path, branch) for ActionManager consumption. */
