@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { IconThemeProvider } from '../../src/icon-theme-provider';
 
 const { mockReadFile, mockGetConfiguration, mockExtensions } = vi.hoisted(() => {
   const mockReadFile = vi.fn<[{ fsPath: string }], Promise<Uint8Array>>();
@@ -98,11 +99,9 @@ function setupFileReads(extPath = '/ext') {
   return extPath;
 }
 
-// Import after mocks are in place
-
-// Dynamic import so the vscode mock is registered first
-async function makeProvider() {
-  const { IconThemeProvider } = await import('../../src/icon-theme-provider');
+// `vi.mock('vscode', ...)` above is hoisted by vitest, so the static import
+// at the top of this file already sees the stubbed module.
+function makeProvider() {
   return new IconThemeProvider();
 }
 
@@ -222,7 +221,6 @@ describe('IconThemeProvider.resolveForFiles()', () => {
     setupConfig('test-theme');
     setupExtension();
 
-    const { IconThemeProvider } = await import('../../src/icon-theme-provider');
     const p = new IconThemeProvider();
     await p.load();
 
@@ -240,7 +238,6 @@ describe('IconThemeProvider.resolveForFiles()', () => {
     setupConfig('test-theme');
     setupExtension();
 
-    const { IconThemeProvider } = await import('../../src/icon-theme-provider');
     const p = new IconThemeProvider();
     await p.load();
 

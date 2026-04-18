@@ -33,7 +33,7 @@ function seed(wt: WorktreeState): Map<string, WorktreeState> {
 }
 
 describe('applyEventReducer – lastActivityAt', () => {
-  it('bumps lastActivityAt on file-changed to the file timestamp', () => {
+  it('bumps lastActivityAt on file-changed to the file timestamp when content is new', () => {
     const map = seed(makeWt({ lastActivityAt: 1_000 }));
     const event: ShiftspaceEvent = {
       type: 'file-changed',
@@ -42,6 +42,43 @@ describe('applyEventReducer – lastActivityAt', () => {
     };
     const next = applyEventReducer(map, event);
     expect(next.get('wt-1')!.lastActivityAt).toBe(5_000);
+  });
+
+  it('bumps lastActivityAt on file-changed when linesAdded/Removed or status differ', () => {
+    const wt = makeWt({
+      lastActivityAt: 1_000,
+      files: [makeFile({ path: 'a.ts', linesAdded: 1, linesRemoved: 0 })],
+    });
+    const map = seed(wt);
+    const event: ShiftspaceEvent = {
+      type: 'file-changed',
+      worktreeId: 'wt-1',
+      file: makeFile({ path: 'a.ts', linesAdded: 5, linesRemoved: 0, lastChangedAt: 5_000 }),
+    };
+    const next = applyEventReducer(map, event);
+    expect(next.get('wt-1')!.lastActivityAt).toBe(5_000);
+  });
+
+  it('does not bump lastActivityAt on file-changed when only staged flipped', () => {
+    const wt = makeWt({
+      lastActivityAt: 1_000,
+      files: [makeFile({ path: 'a.ts', staged: false, linesAdded: 3, linesRemoved: 1 })],
+    });
+    const map = seed(wt);
+    const event: ShiftspaceEvent = {
+      type: 'file-changed',
+      worktreeId: 'wt-1',
+      file: makeFile({
+        path: 'a.ts',
+        staged: true,
+        linesAdded: 3,
+        linesRemoved: 1,
+        lastChangedAt: 5_000,
+      }),
+    };
+    const next = applyEventReducer(map, event);
+    expect(next.get('wt-1')!.lastActivityAt).toBe(1_000);
+    expect(next.get('wt-1')!.files[0]!.staged).toBe(true);
   });
 
   it('does not regress lastActivityAt when a file event is older', () => {
@@ -66,7 +103,7 @@ describe('applyEventReducer – lastActivityAt', () => {
     expect(next.get('wt-1')!.lastActivityAt).toBe(9_000);
   });
 
-  it('bumps lastActivityAt on file-removed', () => {
+  it('does not bump lastActivityAt on file-removed', () => {
     const wt = makeWt({
       lastActivityAt: 1_000,
       files: [makeFile({ path: 'a.ts' })],
@@ -78,11 +115,11 @@ describe('applyEventReducer – lastActivityAt', () => {
       filePath: 'a.ts',
     };
     const next = applyEventReducer(map, event);
-    expect(next.get('wt-1')!.lastActivityAt).toBeGreaterThan(1_000);
+    expect(next.get('wt-1')!.lastActivityAt).toBe(1_000);
     expect(next.get('wt-1')!.files).toHaveLength(0);
   });
 
-  it('bumps lastActivityAt on file-staged', () => {
+  it('does not bump lastActivityAt on file-staged', () => {
     const wt = makeWt({
       lastActivityAt: 1_000,
       files: [makeFile({ path: 'a.ts', staged: false })],
@@ -94,7 +131,7 @@ describe('applyEventReducer – lastActivityAt', () => {
       filePath: 'a.ts',
     };
     const next = applyEventReducer(map, event);
-    expect(next.get('wt-1')!.lastActivityAt).toBeGreaterThan(1_000);
+    expect(next.get('wt-1')!.lastActivityAt).toBe(1_000);
     expect(next.get('wt-1')!.files[0]!.staged).toBe(true);
   });
 

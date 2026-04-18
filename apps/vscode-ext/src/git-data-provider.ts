@@ -148,6 +148,13 @@ export class GitDataProvider implements vscode.Disposable {
     }
 
     this.defaultBranch = await getDefaultBranch(this.currentRoot);
+
+    // Preserve the current "last activity" timestamp across re-initialization
+    // (checkout / swap / re-init). detectWorktrees() stamps a fresh Date.now()
+    // on every worktree it returns, which would otherwise reset the
+    // "last updated" display on every worktree each time we re-init.
+    const prevActivity = new Map(this.worktrees.map((wt) => [wt.id, wt.lastActivityAt]));
+
     this.worktrees = await detectWorktrees(this.currentRoot);
 
     // Recover any worktrees left on a temp swap branch from a previous crash
@@ -156,6 +163,11 @@ export class GitDataProvider implements vscode.Disposable {
     );
     if (recoveryResults.some(Boolean)) {
       this.worktrees = await detectWorktrees(this.currentRoot);
+    }
+
+    for (const wt of this.worktrees) {
+      const prev = prevActivity.get(wt.id);
+      if (prev !== undefined) wt.lastActivityAt = prev;
     }
 
     // Set initial diff modes: feature branches diff against default branch,
@@ -453,23 +465,36 @@ export class GitDataProvider implements vscode.Disposable {
         this.postMessage({ type: 'event', event });
       }
 
-      // branchFiles changed with no working-file events = commit happened.
-      // Surface it as worktree activity so the timestamp bumps even though
-      // the working tree is clean. File events already bump activity via
-      // the reducer, so we only emit here when events.length === 0.
-      if (branchChanged && events.length === 0) {
+      // Activity = non-gitignored working-tree content change or revert.
+      // - Commits: branchChanged with no working-file content events → NOT activity.
+      // - Reverts: a file-removed event with no branch advance → activity.
+      // - Content edits: a file-changed event whose content actually changed
+      //   → activity (the reducer handles the per-file bump; we just need to
+      //   keep the provider's wt.lastActivityAt in sync).
+      const prevByPath = new Map(prevFiles.map((f) => [f.path, f]));
+      const hasContentChange = newFiles.some((f) => {
+        const p = prevByPath.get(f.path);
+        return (
+          !p ||
+          p.status !== f.status ||
+          p.linesAdded !== f.linesAdded ||
+          p.linesRemoved !== f.linesRemoved
+        );
+      });
+      const hasRevert = !branchChanged && events.some((e) => e.type === 'file-removed');
+
+      if (hasContentChange) {
+        let maxTs = wt.lastActivityAt;
+        for (const f of newFiles) if (f.lastChangedAt > maxTs) maxTs = f.lastChangedAt;
+        wt.lastActivityAt = maxTs;
+      }
+      if (hasRevert) {
         const now = Date.now();
-        wt.lastActivityAt = now;
+        if (now > wt.lastActivityAt) wt.lastActivityAt = now;
         this.postMessage({
           type: 'event',
           event: { type: 'worktree-activity', worktreeId: wt.id, timestamp: now },
         });
-      } else if (events.length > 0) {
-        // Keep the provider's WorktreeState in sync with the reducer's rule
-        // (file events bump activity). Use the max file lastChangedAt.
-        let maxTs = wt.lastActivityAt;
-        for (const f of newFiles) if (f.lastChangedAt > maxTs) maxTs = f.lastChangedAt;
-        wt.lastActivityAt = maxTs;
       }
 
       // Notify stale callback if working files or branch diff changed
