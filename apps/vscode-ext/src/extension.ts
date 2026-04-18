@@ -15,20 +15,17 @@ export function activate(context: vscode.ExtensionContext) {
   initLogger(context);
   initGitPath();
 
-  // Initialize telemetry (respects opt-in setting + VSCode global telemetry)
+  // Initialize telemetry (respects opt-in setting + VSCode global telemetry).
+  // We deliberately do NOT subscribe to process.on('uncaughtException' /
+  // 'unhandledRejection') here — the extension host is shared with every
+  // other installed extension and with the editor itself, so those events
+  // routinely carry foreign errors (e.g. Cursor's `_chat.editSessions.accept`
+  // command failures). Sentry's default integrations for these are also
+  // disabled in `initTelemetry` for the same reason. All Shiftspace errors
+  // reach Sentry via explicit `reportError` calls at known call sites.
   const ext = vscode.extensions.getExtension('shiftspace.shiftspace');
   const version = ext?.packageJSON.version ?? 'unknown';
   initTelemetry(version);
-
-  // Global error handlers — catch-all for unhandled errors
-  process.on('uncaughtException', (err) => {
-    reportError(err, { context: 'uncaughtException' });
-  });
-  process.on('unhandledRejection', (reason) => {
-    if (reason instanceof Error) {
-      reportError(reason, { context: 'unhandledRejection' });
-    }
-  });
 
   // Show first-run telemetry opt-in prompt (only once, ever)
   void promptTelemetryOptIn(context, version);
