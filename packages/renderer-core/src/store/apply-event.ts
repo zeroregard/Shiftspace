@@ -43,16 +43,23 @@ export function applyEventReducer(
       const wt = worktrees.get(event.worktreeId);
       if (!wt) return worktrees;
       const idx = wt.files.findIndex((f) => f.path === event.file.path);
+      const prevFile = idx >= 0 ? wt.files[idx] : undefined;
       const files =
         idx >= 0
           ? [...wt.files.slice(0, idx), event.file, ...wt.files.slice(idx + 1)]
           : [...wt.files, event.file];
+      // Only content changes (new file, or status/linesAdded/linesRemoved
+      // differ) count as activity — a bare `staged` flip does not.
+      const contentChanged =
+        !prevFile ||
+        prevFile.status !== event.file.status ||
+        prevFile.linesAdded !== event.file.linesAdded ||
+        prevFile.linesRemoved !== event.file.linesRemoved;
+      const lastActivityAt = contentChanged
+        ? Math.max(wt.lastActivityAt, event.file.lastChangedAt)
+        : wt.lastActivityAt;
       const next = new Map(worktrees);
-      next.set(event.worktreeId, {
-        ...wt,
-        files,
-        lastActivityAt: Math.max(wt.lastActivityAt, event.file.lastChangedAt),
-      });
+      next.set(event.worktreeId, { ...wt, files, lastActivityAt });
       return next;
     }
     case 'file-removed': {
@@ -60,8 +67,11 @@ export function applyEventReducer(
       if (!wt) return worktrees;
       const files = wt.files.filter((f) => f.path !== event.filePath);
       if (files.length === wt.files.length) return worktrees;
+      // Don't bump lastActivityAt: the provider emits `worktree-activity`
+      // explicitly when a removal represents a revert (working-tree change).
+      // Removals from commits should not register as activity.
       const next = new Map(worktrees);
-      next.set(event.worktreeId, { ...wt, files, lastActivityAt: Date.now() });
+      next.set(event.worktreeId, { ...wt, files });
       return next;
     }
     case 'file-staged': {
@@ -70,8 +80,9 @@ export function applyEventReducer(
       const target = wt.files.find((f) => f.path === event.filePath);
       if (!target || target.staged) return worktrees;
       const files = wt.files.map((f) => (f.path === event.filePath ? { ...f, staged: true } : f));
+      // Staging flips the flag but doesn't change file content — not activity.
       const next = new Map(worktrees);
-      next.set(event.worktreeId, { ...wt, files, lastActivityAt: Date.now() });
+      next.set(event.worktreeId, { ...wt, files });
       return next;
     }
     case 'process-started': {
