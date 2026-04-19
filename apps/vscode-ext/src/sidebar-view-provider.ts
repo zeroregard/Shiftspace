@@ -4,6 +4,7 @@ import { SharedGitProvider } from './shared-git-provider';
 import { ShiftspacePanel } from './shiftspace-panel';
 import { log } from './logger';
 import { reportError, reportInvariant, reportUnexpectedState } from './telemetry';
+import type { WebviewMessage } from '@shiftspace/renderer';
 
 const VIEW_ID = 'sidebar';
 
@@ -65,9 +66,12 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
       'sidebar'
     );
 
-    // Listen for messages from the sidebar webview
+    // Listen for messages from the sidebar webview. Payloads are a
+    // discriminated union — switching on `message.type` narrows each case to
+    // the exact fields it carries, so missing fields are a compile error
+    // rather than silent `undefined` drops.
     webviewView.webview.onDidReceiveMessage(
-      (message: { type: string; worktreeId?: string; branch?: string; newName?: string }) => {
+      (message: WebviewMessage) => {
         try {
           const provider = this._sharedGit.provider;
           switch (message.type) {
@@ -75,39 +79,33 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               void this.onReady();
               break;
             case 'worktree-click':
-              if (message.worktreeId) {
-                ShiftspacePanel.openInspection(this._context, message.worktreeId);
-              }
+              ShiftspacePanel.openInspection(this._context, message.worktreeId);
               break;
             case 'get-branch-list':
-              if (message.worktreeId) void provider?.handleGetBranchList(message.worktreeId);
+              void provider?.handleGetBranchList(message.worktreeId);
               break;
             case 'checkout-branch':
-              if (message.worktreeId && message.branch)
-                void provider?.handleCheckoutBranch(message.worktreeId, message.branch);
+              void provider?.handleCheckoutBranch(message.worktreeId, message.branch);
               break;
             case 'fetch-branches':
-              if (message.worktreeId) void provider?.handleFetchBranches(message.worktreeId);
+              void provider?.handleFetchBranches(message.worktreeId);
               break;
             case 'rename-worktree':
-              if (message.worktreeId && message.newName)
-                void provider?.handleRenameWorktree(message.worktreeId, message.newName);
+              void provider?.handleRenameWorktree(message.worktreeId, message.newName);
               break;
             case 'add-worktree':
               void provider?.handleAddWorktree();
               break;
             case 'remove-worktree':
-              if (message.worktreeId) void provider?.handleRemoveWorktree(message.worktreeId);
+              void provider?.handleRemoveWorktree(message.worktreeId);
               break;
             case 'swap-branches':
-              if (message.worktreeId) void provider?.handleSwapBranches(message.worktreeId);
+              void provider?.handleSwapBranches(message.worktreeId);
               break;
             case 'webview-error':
-              log.error(
-                `[Webview/Sidebar] ${(message as { error?: string }).error ?? 'Unknown error'}`
-              );
+              log.error(`[Webview/Sidebar] ${message.error}`);
               reportUnexpectedState('webview.sidebar.errorReport', {
-                preview: ((message as { error?: string }).error ?? '').slice(0, 120),
+                preview: message.error.slice(0, 120),
               });
               break;
             default:

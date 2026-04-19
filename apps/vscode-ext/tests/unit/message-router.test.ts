@@ -1,29 +1,46 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MessageRouter } from '../../src/webview/message-router';
+import type { WebviewMessage } from '../../src/webview/message-router';
 
 describe('MessageRouter', () => {
   it('dispatches to registered handler', () => {
     const router = new MessageRouter();
     const handler = vi.fn();
-    router.on('test', handler);
+    router.on('ready', handler);
 
-    router.dispatch({ type: 'test' });
+    router.dispatch({ type: 'ready' });
 
-    expect(handler).toHaveBeenCalledWith({ type: 'test' });
+    expect(handler).toHaveBeenCalledWith({ type: 'ready' });
+  });
+
+  it('narrows the payload to the variant matching the type', () => {
+    const router = new MessageRouter();
+    const handler = vi.fn();
+    router.on('file-click', (m) => {
+      // These property accesses are compile-checked — no `?? ''` required.
+      handler(m.worktreeId, m.filePath, m.line);
+    });
+
+    router.dispatch({ type: 'file-click', worktreeId: 'wt-1', filePath: 'a.ts', line: 3 });
+
+    expect(handler).toHaveBeenCalledWith('wt-1', 'a.ts', 3);
   });
 
   it('silently ignores unregistered message types', () => {
     const router = new MessageRouter();
-    expect(() => router.dispatch({ type: 'unknown' })).not.toThrow();
+    // Cast only because the union doesn't include 'unknown-type' — we're
+    // explicitly exercising the runtime "drop unknown types" path.
+    const bogus = { type: 'unknown-type' } as unknown as WebviewMessage;
+    expect(() => router.dispatch(bogus)).not.toThrow();
   });
 
   it('clear() removes all handlers', () => {
     const router = new MessageRouter();
     const handler = vi.fn();
-    router.on('test', handler);
+    router.on('ready', handler);
     router.clear();
 
-    router.dispatch({ type: 'test' });
+    router.dispatch({ type: 'ready' });
 
     expect(handler).not.toHaveBeenCalled();
   });

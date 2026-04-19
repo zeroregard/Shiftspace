@@ -1,6 +1,3 @@
-import { execFileSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
 import type { WorktreeState, FileChange, FileDiagnosticSummary } from '@shiftspace/renderer';
 import type { ConfigLoader } from '../actions/config-loader';
 import type { StateManager } from '../actions/state-manager';
@@ -9,8 +6,21 @@ import type { InsightRunner } from '../insights/runner';
 import { resolveCommand } from '../actions/command-resolver';
 import { runCheck } from '../actions/runner';
 import { runPipeline } from '../actions/pipeline-runner';
-import { log } from '../logger';
-import { reportError, reportUnexpectedState } from '../telemetry';
+import { reportError } from '../telemetry';
+import type {
+  CwdParams,
+  GetChangedFilesResponse,
+  GetCheckStatusResponse,
+  GetInsightsResponse,
+  GetSmellsResponse,
+  McpErrorResponse,
+  RunCheckParams,
+  RunCheckResponse,
+  RunPipelineParams,
+  RunPipelineResponse,
+} from './protocol';
+import { parseMcpRequest } from './protocol';
+import { noWorktreeError, resolveWorktree } from './worktree-resolver';
 
 export interface WorktreeProvider {
   getWorktrees(): WorktreeState[];
@@ -27,111 +37,44 @@ export interface McpHandlerDeps {
   getSmellRules?: () => SmellRule[];
 }
 
-/** Normalize a path by resolving symlinks and removing trailing slashes. */
-function normalizePath(p: string): string {
-  try {
-    return fs.realpathSync(p).replace(/\/+$/, '');
-  } catch {
-    // Path may not exist (e.g. stale worktree) — fall back to basic normalization.
-    return path.resolve(p).replace(/\/+$/, '');
-  }
-}
-
 export class McpToolHandlers {
   constructor(private readonly deps: McpHandlerDeps) {}
 
-  async handleTool(tool: string, params: Record<string, unknown>): Promise<object> {
-    switch (tool) {
+  /**
+   * Single validating entry point. Raw JSON off the wire → typed request →
+   * per-tool handler. Every downstream handler receives narrowed params, so
+   * a misnamed field is caught here (as "Missing required parameter: X")
+   * instead of silently becoming an undefined inside a handler body.
+   */
+  async handleTool(tool: string, rawParams: Record<string, unknown>): Promise<object> {
+    const request = parseMcpRequest(tool, rawParams);
+    if ('error' in request) return request;
+
+    switch (request.tool) {
       case 'get_insights':
-        return this.handleGetInsights(params);
+        return this.handleGetInsights(request.params);
       case 'get_check_status':
-        return this.handleGetCheckStatus(params);
+        return this.handleGetCheckStatus(request.params);
       case 'run_check':
-        return this.handleRunCheck(params);
+        return this.handleRunCheck(request.params);
       case 'run_pipeline':
-        return this.handleRunPipeline(params);
+        return this.handleRunPipeline(request.params);
       case 'get_changed_files':
-        return this.handleGetChangedFiles(params);
+        return this.handleGetChangedFiles(request.params);
       case 'get_smells':
-        return this.handleGetSmells(params);
-      default:
-        return { error: `Unknown tool: ${tool}` };
+        return this.handleGetSmells(request.params);
     }
   }
 
-  private noWorktreeError(cwd?: string): object {
+  private resolve(cwd: string | undefined): WorktreeState | McpErrorResponse {
     const worktrees = this.deps.worktreeProvider.getWorktrees();
-    const detail: Record<string, unknown> = {
-      error: 'No worktree found',
-      cwd: cwd ?? '(none — used first worktree fallback)',
-      availableWorktrees: worktrees.map((wt) => ({ id: wt.id, path: wt.path, branch: wt.branch })),
-    };
-    if (cwd) {
-      try {
-        detail.resolvedGitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-          cwd,
-          encoding: 'utf-8',
-          timeout: 5000,
-        }).trim();
-      } catch {
-        detail.resolvedGitRoot = '(git rev-parse failed)';
-      }
-    }
-    return detail;
+    const wt = resolveWorktree(worktrees, cwd);
+    return wt ?? noWorktreeError(worktrees, cwd);
   }
 
-  private resolveWorktree(cwd?: string): WorktreeState | null {
-    const worktrees = this.deps.worktreeProvider.getWorktrees();
-    if (worktrees.length === 0) {
-      log.warn('[MCP] resolveWorktree: no worktrees available');
-      reportUnexpectedState('mcp.resolveWorktree.noWorktrees', {
-        hasCwd: String(Boolean(cwd)),
-      });
-      return null;
-    }
-    if (!cwd) {
-      return worktrees[0] ?? null;
-    }
-    let gitRoot: string;
-    try {
-      gitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-        cwd,
-        encoding: 'utf-8',
-        timeout: 5000,
-      }).trim();
-    } catch (err) {
-      log.warn('[MCP] resolveWorktree: git rev-parse failed for cwd="%s":', cwd, err);
-      reportUnexpectedState('mcp.resolveWorktree.revParseFailed', {
-        errorName: err instanceof Error ? err.name : 'unknown',
-      });
-      return null;
-    }
-
-    // Resolve symlinks so that paths like /var/... and /private/var/... match on macOS.
-    const resolvedGitRoot = normalizePath(gitRoot);
-    const wtPaths = worktrees.map((wt) => wt.path);
-
-    const match = worktrees.find((wt) => normalizePath(wt.path) === resolvedGitRoot) ?? null;
-
-    if (!match) {
-      log.warn(
-        '[MCP] resolveWorktree: no match for cwd="%s" (gitRoot="%s", resolved="%s"). Known worktree paths: %s',
-        cwd,
-        gitRoot,
-        resolvedGitRoot,
-        JSON.stringify(wtPaths)
-      );
-      reportUnexpectedState('mcp.resolveWorktree.noMatchForCwd', {
-        worktreeCount: String(worktrees.length),
-      });
-    }
-    return match;
-  }
-
-  private handleGetInsights(params: Record<string, unknown>): object {
-    const cwd = params['cwd'] as string | undefined;
-    const wt = this.resolveWorktree(cwd);
-    if (!wt) return this.noWorktreeError(cwd);
+  private handleGetInsights(params: CwdParams): GetInsightsResponse | McpErrorResponse {
+    const wt = this.resolve(params.cwd);
+    if ('error' in wt) return wt;
 
     const diagnostics = this.deps.collectDiagnostics?.(wt.files, wt.path) ?? [];
 
@@ -146,10 +89,9 @@ export class McpToolHandlers {
     };
   }
 
-  private handleGetCheckStatus(params: Record<string, unknown>): object {
-    const cwd = params['cwd'] as string | undefined;
-    const wt = this.resolveWorktree(cwd);
-    if (!wt) return this.noWorktreeError(cwd);
+  private handleGetCheckStatus(params: CwdParams): GetCheckStatusResponse | McpErrorResponse {
+    const wt = this.resolve(params.cwd);
+    if ('error' in wt) return wt;
 
     const states = this.deps.stateManager.getWorktreeStates(wt.id);
     const actions = this.deps.configLoader.config.actions;
@@ -158,30 +100,28 @@ export class McpToolHandlers {
       worktree: { id: wt.id, branch: wt.branch },
       checks: actions.map((config) => {
         const state = states.get(config.id);
-        const base: Record<string, unknown> = {
+        const entry: GetCheckStatusResponse['checks'][number] = {
           id: config.id,
           label: config.label,
           type: config.type,
           status: state?.status ?? 'idle',
         };
-        if (state?.type === 'check') {
-          if (state.status === 'passed' || state.status === 'failed') {
-            base['exitCode'] = state.exitCode;
-            base['durationMs'] = state.durationMs;
-          }
+        if (state?.type === 'check' && (state.status === 'passed' || state.status === 'failed')) {
+          entry.exitCode = state.exitCode;
+          entry.durationMs = state.durationMs;
         }
-        return base;
+        return entry;
       }),
     };
   }
 
-  private async handleRunCheck(params: Record<string, unknown>): Promise<object> {
-    const checkId = params['check_id'] as string | undefined;
-    if (!checkId) return { error: 'Missing required parameter: check_id' };
+  private async handleRunCheck(
+    params: RunCheckParams
+  ): Promise<RunCheckResponse | McpErrorResponse> {
+    const { check_id: checkId, cwd } = params;
 
-    const cwd = params['cwd'] as string | undefined;
-    const wt = this.resolveWorktree(cwd);
-    if (!wt) return this.noWorktreeError(cwd);
+    const wt = this.resolve(cwd);
+    if ('error' in wt) return wt;
 
     const config = this.deps.configLoader.config.actions.find((a) => a.id === checkId);
     if (!config) return { error: `Unknown check: ${checkId}` };
@@ -222,13 +162,13 @@ export class McpToolHandlers {
     };
   }
 
-  private async handleRunPipeline(params: Record<string, unknown>): Promise<object> {
-    const pipelineId = params['pipeline_id'] as string | undefined;
-    if (!pipelineId) return { error: 'Missing required parameter: pipeline_id' };
+  private async handleRunPipeline(
+    params: RunPipelineParams
+  ): Promise<RunPipelineResponse | McpErrorResponse> {
+    const { pipeline_id: pipelineId, cwd } = params;
 
-    const cwd = params['cwd'] as string | undefined;
-    const wt = this.resolveWorktree(cwd);
-    if (!wt) return this.noWorktreeError(cwd);
+    const wt = this.resolve(cwd);
+    if ('error' in wt) return wt;
 
     const pipelines = this.deps.configLoader.config.pipelines;
     const pipeline = pipelines?.[pipelineId];
@@ -277,10 +217,9 @@ export class McpToolHandlers {
     };
   }
 
-  private handleGetChangedFiles(params: Record<string, unknown>): object {
-    const cwd = params['cwd'] as string | undefined;
-    const wt = this.resolveWorktree(cwd);
-    if (!wt) return this.noWorktreeError(cwd);
+  private handleGetChangedFiles(params: CwdParams): GetChangedFilesResponse | McpErrorResponse {
+    const wt = this.resolve(params.cwd);
+    if ('error' in wt) return wt;
 
     return {
       worktree: { id: wt.id, branch: wt.branch },
@@ -295,14 +234,13 @@ export class McpToolHandlers {
     };
   }
 
-  private async handleGetSmells(params: Record<string, unknown>): Promise<object> {
+  private async handleGetSmells(params: CwdParams): Promise<GetSmellsResponse | McpErrorResponse> {
     const runner = this.deps.insightRunner;
     const getRules = this.deps.getSmellRules;
     if (!runner || !getRules) return { error: 'Smell analysis not available' };
 
-    const cwd = params['cwd'] as string | undefined;
-    const wt = this.resolveWorktree(cwd);
-    if (!wt) return this.noWorktreeError(cwd);
+    const wt = this.resolve(params.cwd);
+    if ('error' in wt) return wt;
 
     const smellRules = getRules();
     if (smellRules.length === 0) {

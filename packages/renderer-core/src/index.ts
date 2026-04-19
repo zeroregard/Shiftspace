@@ -105,6 +105,9 @@ export { ActionBar } from './components/action-bar';
 export {
   MessageRouter,
   type WebviewMessage,
+  type WebviewMessageType,
+  type MessageOfType,
+  type MessageHandler,
   registerGitProviderHandlers,
   type GitProviderHandlers,
 } from './protocol';
