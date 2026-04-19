@@ -45,34 +45,30 @@ export function registerGitProviderHandlers(
   provider: GitProviderHandlers
 ): void {
   router.on('file-click', (m) => {
-    void provider.handleFileClick(
-      m.worktreeId ?? '',
-      m.filePath ?? '',
-      typeof m.line === 'number' ? m.line : undefined
-    );
+    void provider.handleFileClick(m.worktreeId, m.filePath, m.line);
   });
   router.on('folder-click', (m) => {
-    if (m.worktreeId && m.folderPath) void provider.handleFolderClick(m.worktreeId, m.folderPath);
+    void provider.handleFolderClick(m.worktreeId, m.folderPath);
   });
   router.on('get-branch-list', (m) => {
-    if (m.worktreeId) void provider.handleGetBranchList(m.worktreeId);
+    void provider.handleGetBranchList(m.worktreeId);
   });
   router.on('checkout-branch', (m) => {
-    if (m.worktreeId && m.branch) void provider.handleCheckoutBranch(m.worktreeId, m.branch);
+    void provider.handleCheckoutBranch(m.worktreeId, m.branch);
   });
   router.on('fetch-branches', (m) => {
-    if (m.worktreeId) void provider.handleFetchBranches(m.worktreeId);
+    void provider.handleFetchBranches(m.worktreeId);
   });
   router.on('swap-branches', (m) => {
-    if (m.worktreeId) void provider.handleSwapBranches(m.worktreeId);
+    void provider.handleSwapBranches(m.worktreeId);
   });
   router.on('add-worktree', () => {
     void provider.handleAddWorktree();
   });
   router.on('remove-worktree', (m) => {
-    if (m.worktreeId) void provider.handleRemoveWorktree(m.worktreeId);
+    void provider.handleRemoveWorktree(m.worktreeId);
   });
   router.on('rename-worktree', (m) => {
-    if (m.worktreeId && m.newName) void provider.handleRenameWorktree(m.worktreeId, m.newName);
+    void provider.handleRenameWorktree(m.worktreeId, m.newName);
   });
 }

@@ -27,9 +27,7 @@ export class MockWebviewBridge {
     // (the extension persists view-settings first, but the preview has no
     // such concept — passthrough is enough).
     this.router.on('set-diff-mode', (m) => {
-      if (!m.worktreeId || !m.diffMode) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DiffMode is runtime-validated elsewhere
-      provider.handleSetDiffMode(m.worktreeId, m.diffMode as any);
+      provider.handleSetDiffMode(m.worktreeId, m.diffMode);
     });
   }
 

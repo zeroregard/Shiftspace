@@ -3,7 +3,7 @@ import type { SharedGitProvider } from './shared-git-provider';
 import type { ActionCoordinator } from './actions/action-coordinator';
 import type { ViewSettingsStore } from './view-settings-store';
 import type { InspectionSession } from './insights/inspection-session';
-import type { DiffMode, GitProviderHandlers } from '@shiftspace/renderer';
+import type { GitProviderHandlers } from '@shiftspace/renderer';
 import { registerGitProviderHandlers } from '@shiftspace/renderer';
 import { log } from './logger';
 import { reportUnexpectedState } from './telemetry';
@@ -51,36 +51,32 @@ export function registerPanelHandlers(
   // persistence) so it stays here and is registered AFTER the shared
   // registrar (which intentionally omits set-diff-mode).
   router.on('set-diff-mode', (m) => {
-    if (!m.worktreeId || !m.diffMode) return;
-    const diffMode = m.diffMode as DiffMode;
     const wt = sharedGit.provider?.getWorktrees().find((w) => w.id === m.worktreeId);
     if (wt) {
       const settings = viewSettings!.get();
-      settings.diffModeOverrides[wt.branch] = diffMode;
+      settings.diffModeOverrides[wt.branch] = m.diffMode;
       viewSettings!.save({ diffModeOverrides: settings.diffModeOverrides });
     }
-    void sharedGit.provider?.handleSetDiffMode(m.worktreeId, diffMode);
+    void sharedGit.provider?.handleSetDiffMode(m.worktreeId, m.diffMode);
   });
 
   // Action coordinator handlers
   router.on('run-action', (m) => {
-    if (m.worktreeId && m.actionId) void actionCoordinator?.runAction(m.worktreeId, m.actionId);
+    void actionCoordinator?.runAction(m.worktreeId, m.actionId);
   });
   router.on('stop-action', (m) => {
-    if (m.worktreeId && m.actionId) actionCoordinator?.stopAction(m.worktreeId, m.actionId);
+    actionCoordinator?.stopAction(m.worktreeId, m.actionId);
   });
   router.on('run-pipeline', (m) => {
-    if (m.worktreeId && m.pipelineId)
-      void actionCoordinator?.runPipeline(m.worktreeId, m.pipelineId);
+    void actionCoordinator?.runPipeline(m.worktreeId, m.pipelineId);
   });
   router.on('cancel-pipeline', (m) => {
-    if (m.worktreeId) actionCoordinator?.cancelPipeline(m.worktreeId);
+    actionCoordinator?.cancelPipeline(m.worktreeId);
   });
   router.on('get-log', (m) => {
-    if (m.worktreeId && m.actionId) actionCoordinator?.getLog(m.worktreeId, m.actionId);
+    actionCoordinator?.getLog(m.worktreeId, m.actionId);
   });
   router.on('set-package', (m) => {
-    if (m.packageName === undefined) return;
     viewSettings!.save({ selectedPackage: m.packageName });
     void actionCoordinator?.setPackage(m.packageName);
   });
@@ -90,7 +86,6 @@ export function registerPanelHandlers(
 
   // Inspection handlers
   router.on('enter-inspection', (m) => {
-    if (!m.worktreeId) return;
     const wt = sharedGit.provider?.getWorktrees().find((w) => w.id === m.worktreeId);
     if (wt) {
       viewSettings!.save({ mode: { type: 'inspection', branch: wt.branch } });
@@ -98,7 +93,7 @@ export function registerPanelHandlers(
     inspection?.enter(m.worktreeId);
   });
   router.on('recheck-insights', (m) => {
-    if (m.worktreeId) inspection?.recheck(m.worktreeId);
+    inspection?.recheck(m.worktreeId);
   });
   router.on('cancel-insights', () => {
     inspection?.cancel();
@@ -110,13 +105,13 @@ export function registerPanelHandlers(
 
   // Miscellaneous handlers
   router.on('set-sort-mode', (m) => {
-    if (m.mode) sharedGit.broadcast({ type: 'set-sort-mode', mode: m.mode });
+    sharedGit.broadcast({ type: 'set-sort-mode', mode: m.mode });
   });
 
   router.on('webview-error', (m) => {
-    log.error(`[Webview/Panel] ${m.error ?? 'Unknown error'}`);
+    log.error(`[Webview/Panel] ${m.error}`);
     reportUnexpectedState('webview.panel.errorReport', {
-      preview: (m.error ?? '').slice(0, 120),
+      preview: m.error.slice(0, 120),
     });
   });
 }
