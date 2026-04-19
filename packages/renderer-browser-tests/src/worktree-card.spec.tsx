@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/experimental-ct-react';
 import { WorktreeCard } from '@shiftspace/renderer-grove/src/components/worktree-card';
 import { createMockWorktreeWithFiles } from './fixtures/mock-worktree';
 import { createMockFile, createStagedFile, createAddedFile } from './fixtures/mock-files';
-import { useWorktreeStore } from '@shiftspace/renderer-core/src/store/worktree-store.ts';
+import { useOperationStore, opKey } from '@shiftspace/renderer-core/src/store/operation-store.ts';
 import {
   resetAllStores,
   seedWorktree,
@@ -81,7 +81,7 @@ test.describe('WorktreeCard', () => {
       path: '/projects/myapp-to-delete',
     });
     seedWorktree(wt);
-    useWorktreeStore.setState({ removingWorktrees: new Set(['wt-0']) });
+    useOperationStore.getState().startOperation(opKey.removeWorktree('wt-0'), 'wt-0');
 
     const component = await mount(
       <Wrapper>

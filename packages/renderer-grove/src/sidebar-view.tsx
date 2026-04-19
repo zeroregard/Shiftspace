@@ -1,7 +1,14 @@
 import { useMemo } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
-import { useWorktreeStore, useActions, sortWorktrees } from '@shiftspace/renderer-core';
+import {
+  useWorktreeStore,
+  useOperationStore,
+  useActions,
+  sortWorktrees,
+  opKey,
+  isOperationPending,
+} from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { IconButton } from '@shiftspace/ui/icon-button';
@@ -24,7 +31,9 @@ function WorktreeCardError() {
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
   const sortMode = useWorktreeStore((s) => s.sortMode);
-  const addingWorktree = useWorktreeStore((s) => s.addingWorktree);
+  const addingWorktree = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.addWorktree)
+  );
   const actions = useActions();
   const sorted = useMemo(() => sortWorktrees(worktrees, sortMode), [worktrees, sortMode]);
 

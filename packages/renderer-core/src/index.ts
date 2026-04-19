@@ -36,6 +36,11 @@ export {
   getFileFindings,
   useInspectionStore,
   usePackageStore,
+  useOperationStore,
+  opKey,
+  isOperationPending,
+  type OperationState,
+  type OperationStatus,
 } from './store';
 
 // Nodes

@@ -3,6 +3,7 @@ import type { WorktreeState } from '@shiftspace/renderer-core';
 import {
   useWorktreeStore,
   useInspectionStore,
+  useOperationStore,
   BranchPicker,
   ConfirmPopover,
   ActionBar,
@@ -11,6 +12,8 @@ import {
   useWorktreeRename,
   useRelativeTime,
   AnimatedTimestamp,
+  opKey,
+  isOperationPending,
 } from '@shiftspace/renderer-core';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Input } from '@shiftspace/ui/input';
@@ -91,8 +94,12 @@ export function WorktreeCard({
   const actions = useActions();
   const enterInspection = useInspectionStore((s) => s.enterInspection);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
-  const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(wt.id));
-  const isRemoving = useWorktreeStore((s) => s.removingWorktrees.has(wt.id));
+  const isFetchingBranches = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.fetchBranches(wt.id))
+  );
+  const isRemoving = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.removeWorktree(wt.id))
+  );
   const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
   const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))

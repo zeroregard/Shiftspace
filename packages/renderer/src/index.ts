@@ -32,6 +32,11 @@ export {
   getFileFindings,
   useInspectionStore,
   usePackageStore,
+  useOperationStore,
+  opKey,
+  isOperationPending,
+  type OperationState,
+  type OperationStatus,
   // Canvas
   TreeCanvas,
   // Nodes

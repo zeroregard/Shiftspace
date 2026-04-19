@@ -1,7 +1,14 @@
 import { useMemo } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import type { WorktreeState } from '@shiftspace/renderer-core';
-import { useActions, useWorktreeStore, sortWorktrees } from '@shiftspace/renderer-core';
+import {
+  useActions,
+  useWorktreeStore,
+  useOperationStore,
+  sortWorktrees,
+  opKey,
+  isOperationPending,
+} from '@shiftspace/renderer-core';
 import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { IconButton } from '@shiftspace/ui/icon-button';
@@ -21,7 +28,9 @@ function WorktreeCardError() {
 export function GroveView({ worktrees }: GroveViewProps) {
   const actions = useActions();
   const sortMode = useWorktreeStore((s) => s.sortMode);
-  const addingWorktree = useWorktreeStore((s) => s.addingWorktree);
+  const addingWorktree = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.addWorktree)
+  );
   const sorted = useMemo(() => sortWorktrees(worktrees, sortMode), [worktrees, sortMode]);
 
   return (

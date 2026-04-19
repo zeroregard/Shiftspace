@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useWorktreeStore } from './worktree-store';
+import { useOperationStore, opKey } from './operation-store';
 import type { ShiftspaceEvent, WorktreeState } from '../types';
 
 function makeWt(overrides: Partial<WorktreeState> = {}): WorktreeState {
@@ -20,13 +21,10 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
   beforeEach(() => {
     useWorktreeStore.setState({
       worktrees: new Map(),
-      removingWorktrees: new Set(),
       branchLists: new Map(),
-      diffModeLoading: new Set(),
-      fetchLoading: new Set(),
-      swapLoading: new Set(),
       lastFetchAt: new Map(),
     });
+    useOperationStore.setState({ operations: new Map() });
   });
 
   it('marks the worktree as removing on worktree-removal-pending but keeps it in the map', () => {
@@ -36,9 +34,9 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
     const event: ShiftspaceEvent = { type: 'worktree-removal-pending', worktreeId: 'wt-1' };
     useWorktreeStore.getState().applyEvent(event);
 
-    const state = useWorktreeStore.getState();
-    expect(state.removingWorktrees.has('wt-1')).toBe(true);
-    expect(state.worktrees.has('wt-1')).toBe(true);
+    const ops = useOperationStore.getState().operations;
+    expect(ops.get(opKey.removeWorktree('wt-1'))?.status).toBe('pending');
+    expect(useWorktreeStore.getState().worktrees.has('wt-1')).toBe(true);
   });
 
   it('clears the removing marker on worktree-removal-failed but keeps the worktree', () => {
@@ -50,9 +48,9 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
 
     useWorktreeStore.getState().applyEvent({ type: 'worktree-removal-failed', worktreeId: 'wt-1' });
 
-    const state = useWorktreeStore.getState();
-    expect(state.removingWorktrees.has('wt-1')).toBe(false);
-    expect(state.worktrees.has('wt-1')).toBe(true);
+    const ops = useOperationStore.getState().operations;
+    expect(ops.has(opKey.removeWorktree('wt-1'))).toBe(false);
+    expect(useWorktreeStore.getState().worktrees.has('wt-1')).toBe(true);
   });
 
   it('deletes the worktree AND clears the removing marker on worktree-removed', () => {
@@ -64,9 +62,9 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
 
     useWorktreeStore.getState().applyEvent({ type: 'worktree-removed', worktreeId: 'wt-1' });
 
-    const state = useWorktreeStore.getState();
-    expect(state.worktrees.has('wt-1')).toBe(false);
-    expect(state.removingWorktrees.has('wt-1')).toBe(false);
+    const ops = useOperationStore.getState().operations;
+    expect(useWorktreeStore.getState().worktrees.has('wt-1')).toBe(false);
+    expect(ops.has(opKey.removeWorktree('wt-1'))).toBe(false);
   });
 
   it('handles worktree-removed even when pending was never emitted', () => {
@@ -75,9 +73,9 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
 
     useWorktreeStore.getState().applyEvent({ type: 'worktree-removed', worktreeId: 'wt-1' });
 
-    const state = useWorktreeStore.getState();
-    expect(state.worktrees.has('wt-1')).toBe(false);
-    expect(state.removingWorktrees.has('wt-1')).toBe(false);
+    const ops = useOperationStore.getState().operations;
+    expect(useWorktreeStore.getState().worktrees.has('wt-1')).toBe(false);
+    expect(ops.has(opKey.removeWorktree('wt-1'))).toBe(false);
   });
 
   it('pending → failed → pending → removed sequence ends with worktree gone', () => {
@@ -93,9 +91,9 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
       .applyEvent({ type: 'worktree-removal-pending', worktreeId: 'wt-1' });
     useWorktreeStore.getState().applyEvent({ type: 'worktree-removed', worktreeId: 'wt-1' });
 
-    const state = useWorktreeStore.getState();
-    expect(state.worktrees.has('wt-1')).toBe(false);
-    expect(state.removingWorktrees.has('wt-1')).toBe(false);
+    const ops = useOperationStore.getState().operations;
+    expect(useWorktreeStore.getState().worktrees.has('wt-1')).toBe(false);
+    expect(ops.has(opKey.removeWorktree('wt-1'))).toBe(false);
   });
 
   it('tracks multiple concurrent removals independently', () => {
@@ -112,11 +110,11 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
     useWorktreeStore.getState().applyEvent({ type: 'worktree-removal-failed', worktreeId: 'wt-a' });
     useWorktreeStore.getState().applyEvent({ type: 'worktree-removed', worktreeId: 'wt-b' });
 
-    const state = useWorktreeStore.getState();
-    expect(state.removingWorktrees.has('wt-a')).toBe(false);
-    expect(state.worktrees.has('wt-a')).toBe(true);
-    expect(state.removingWorktrees.has('wt-b')).toBe(false);
-    expect(state.worktrees.has('wt-b')).toBe(false);
+    const ops = useOperationStore.getState().operations;
+    expect(ops.has(opKey.removeWorktree('wt-a'))).toBe(false);
+    expect(useWorktreeStore.getState().worktrees.has('wt-a')).toBe(true);
+    expect(ops.has(opKey.removeWorktree('wt-b'))).toBe(false);
+    expect(useWorktreeStore.getState().worktrees.has('wt-b')).toBe(false);
   });
 
   it('is idempotent for repeated worktree-removal-pending events', () => {
@@ -126,13 +124,13 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
     useWorktreeStore
       .getState()
       .applyEvent({ type: 'worktree-removal-pending', worktreeId: 'wt-1' });
-    const firstRef = useWorktreeStore.getState().removingWorktrees;
+    const firstRef = useOperationStore.getState().operations;
     useWorktreeStore
       .getState()
       .applyEvent({ type: 'worktree-removal-pending', worktreeId: 'wt-1' });
-    const secondRef = useWorktreeStore.getState().removingWorktrees;
+    const secondRef = useOperationStore.getState().operations;
 
     expect(secondRef).toBe(firstRef);
-    expect(secondRef.has('wt-1')).toBe(true);
+    expect(secondRef.get(opKey.removeWorktree('wt-1'))?.status).toBe('pending');
   });
 });

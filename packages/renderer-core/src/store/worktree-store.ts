@@ -8,6 +8,7 @@ import type {
   WorktreeSortMode,
 } from '../types';
 import { applyEventReducer } from './apply-event';
+import { useOperationStore, opKey } from './operation-store';
 
 /**
  * Reverse index built from the icon map so that new files can resolve an
@@ -37,16 +38,39 @@ function buildIconIndex(iconMap: IconMap): IconIndex {
   return { byName, byExt };
 }
 
+/**
+ * Route add/remove lifecycle events to the operation store so UI spinners
+ * can observe them via the same selector pattern as every other async flow.
+ * Worktree-data updates still flow through `applyEventReducer` below.
+ */
+function dispatchLifecycleOperation(event: ShiftspaceEvent): void {
+  const ops = useOperationStore.getState();
+  switch (event.type) {
+    case 'worktree-removal-pending':
+      ops.startOperation(opKey.removeWorktree(event.worktreeId), event.worktreeId);
+      return;
+    case 'worktree-removal-failed':
+      ops.clearOperation(opKey.removeWorktree(event.worktreeId));
+      return;
+    case 'worktree-removed':
+      ops.clearOperationsForWorktree(event.worktreeId);
+      return;
+    case 'worktree-add-pending':
+      ops.startOperation(opKey.addWorktree);
+      return;
+    case 'worktree-add-failed':
+    case 'worktree-added':
+      ops.clearOperation(opKey.addWorktree);
+      return;
+    default:
+      return;
+  }
+}
+
 interface WorktreeStore {
   initialized: boolean;
   worktrees: Map<string, WorktreeState>;
   branchLists: Map<string, string[]>;
-  diffModeLoading: Set<string>;
-  fetchLoading: Set<string>;
-  swapLoading: Set<string>;
-  removingWorktrees: Set<string>;
-  /** True while a `git worktree add` is in flight. Cleared on success (worktree-added event) or failure. */
-  addingWorktree: boolean;
   lastFetchAt: Map<string, number>;
   sortMode: WorktreeSortMode;
   iconMap: IconMap;
@@ -54,7 +78,6 @@ interface WorktreeStore {
   applyEvent: (event: ShiftspaceEvent) => void;
   setWorktrees: (worktrees: WorktreeState[]) => void;
   setDiffMode: (worktreeId: string, diffMode: DiffMode) => void;
-  setDiffModeLoading: (worktreeId: string, loading: boolean) => void;
   setBranchList: (worktreeId: string, branches: string[]) => void;
   updateWorktreeFiles: (
     worktreeId: string,
@@ -62,9 +85,6 @@ interface WorktreeStore {
     diffMode: DiffMode,
     branchFiles?: FileChange[]
   ) => void;
-  setFetchLoading: (worktreeId: string, loading: boolean) => void;
-  setSwapLoading: (worktreeId: string, loading: boolean) => void;
-  setRemoving: (worktreeId: string, removing: boolean) => void;
   setLastFetchAt: (worktreeId: string, timestamp: number) => void;
   setSortMode: (mode: WorktreeSortMode) => void;
   setIconMap: (map: IconMap) => void;
@@ -74,55 +94,19 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
   initialized: false,
   worktrees: new Map(),
   branchLists: new Map(),
-  diffModeLoading: new Set(),
-  fetchLoading: new Set(),
-  swapLoading: new Set(),
-  removingWorktrees: new Set(),
-  addingWorktree: false,
   lastFetchAt: new Map(),
   sortMode: 'name',
   iconMap: {},
   iconIndex: { byName: new Map(), byExt: new Map() },
 
-  applyEvent: (event) =>
+  applyEvent: (event) => {
+    dispatchLifecycleOperation(event);
     set((state) => {
-      // Removal lifecycle events toggle the removingWorktrees set; terminal
-      // 'worktree-removed' clears it too (defensive cleanup).
-      if (event.type === 'worktree-removal-pending') {
-        if (state.removingWorktrees.has(event.worktreeId)) return state;
-        const removingWorktrees = new Set(state.removingWorktrees);
-        removingWorktrees.add(event.worktreeId);
-        return { removingWorktrees };
-      }
-      if (event.type === 'worktree-removal-failed') {
-        if (!state.removingWorktrees.has(event.worktreeId)) return state;
-        const removingWorktrees = new Set(state.removingWorktrees);
-        removingWorktrees.delete(event.worktreeId);
-        return { removingWorktrees };
-      }
-      // Add lifecycle events — a single boolean flag is sufficient because
-      // the UI disables the add button while it's in flight.
-      if (event.type === 'worktree-add-pending') {
-        if (state.addingWorktree) return state;
-        return { addingWorktree: true };
-      }
-      if (event.type === 'worktree-add-failed') {
-        if (!state.addingWorktree) return state;
-        return { addingWorktree: false };
-      }
       const nextWorktrees = applyEventReducer(state.worktrees, event);
-      if (event.type === 'worktree-removed' && state.removingWorktrees.has(event.worktreeId)) {
-        const removingWorktrees = new Set(state.removingWorktrees);
-        removingWorktrees.delete(event.worktreeId);
-        return { worktrees: nextWorktrees, removingWorktrees };
-      }
-      // A fresh worktree arrived — clear the pending-add flag (success path).
-      if (event.type === 'worktree-added' && state.addingWorktree) {
-        return { worktrees: nextWorktrees, addingWorktree: false };
-      }
       if (nextWorktrees === state.worktrees) return state;
       return { worktrees: nextWorktrees };
-    }),
+    });
+  },
 
   setWorktrees: (worktrees) =>
     set({ initialized: true, worktrees: new Map(worktrees.map((wt) => [wt.id, wt])) }),
@@ -134,17 +118,6 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
       const worktrees = new Map(state.worktrees);
       worktrees.set(worktreeId, { ...wt, diffMode });
       return { worktrees };
-    }),
-
-  setDiffModeLoading: (worktreeId, loading) =>
-    set((state) => {
-      const has = state.diffModeLoading.has(worktreeId);
-      if (loading && has) return state;
-      if (!loading && !has) return state;
-      const diffModeLoading = new Set(state.diffModeLoading);
-      if (loading) diffModeLoading.add(worktreeId);
-      else diffModeLoading.delete(worktreeId);
-      return { diffModeLoading };
     }),
 
   setBranchList: (worktreeId, branches) =>
@@ -160,44 +133,7 @@ export const useWorktreeStore = create<WorktreeStore>((set) => ({
       if (!wt) return state;
       const worktrees = new Map(state.worktrees);
       worktrees.set(worktreeId, { ...wt, files, diffMode, branchFiles });
-      const hadLoading = state.diffModeLoading.has(worktreeId);
-      if (!hadLoading) return { worktrees };
-      const diffModeLoading = new Set(state.diffModeLoading);
-      diffModeLoading.delete(worktreeId);
-      return { worktrees, diffModeLoading };
-    }),
-
-  setFetchLoading: (worktreeId, loading) =>
-    set((state) => {
-      const has = state.fetchLoading.has(worktreeId);
-      if (loading && has) return state;
-      if (!loading && !has) return state;
-      const fetchLoading = new Set(state.fetchLoading);
-      if (loading) fetchLoading.add(worktreeId);
-      else fetchLoading.delete(worktreeId);
-      return { fetchLoading };
-    }),
-
-  setSwapLoading: (worktreeId, loading) =>
-    set((state) => {
-      const has = state.swapLoading.has(worktreeId);
-      if (loading && has) return state;
-      if (!loading && !has) return state;
-      const swapLoading = new Set(state.swapLoading);
-      if (loading) swapLoading.add(worktreeId);
-      else swapLoading.delete(worktreeId);
-      return { swapLoading };
-    }),
-
-  setRemoving: (worktreeId, removing) =>
-    set((state) => {
-      const has = state.removingWorktrees.has(worktreeId);
-      if (removing && has) return state;
-      if (!removing && !has) return state;
-      const removingWorktrees = new Set(state.removingWorktrees);
-      if (removing) removingWorktrees.add(worktreeId);
-      else removingWorktrees.delete(worktreeId);
-      return { removingWorktrees };
+      return { worktrees };
     }),
 
   setLastFetchAt: (worktreeId, timestamp) =>

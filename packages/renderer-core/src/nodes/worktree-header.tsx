@@ -1,6 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import type { WorktreeState } from '../types';
-import { useWorktreeStore } from '../store';
+import { useWorktreeStore, useOperationStore } from '../store';
+import { opKey, isOperationPending } from '../store/operation-store';
 import { BranchPicker } from '../overlays/branch-picker';
 import { filterCheckoutableBranches } from '../utils/worktree-utils';
 import { useActions } from '../ui/actions-context';
@@ -22,8 +23,12 @@ export function WorktreeHeader({ worktree: wt, compact }: WorktreeHeaderProps) {
   const actions = useActions();
   const isSingle = useWorktreeStore((s) => s.worktrees.size <= 1);
   const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
-  const isFetchingBranches = useWorktreeStore((s) => s.fetchLoading.has(wt.id));
-  const isSwapping = useWorktreeStore((s) => s.swapLoading.has(wt.id));
+  const isFetchingBranches = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.fetchBranches(wt.id))
+  );
+  const isSwapping = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.swapBranches(wt.id))
+  );
   const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
   const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
