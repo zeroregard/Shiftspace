@@ -11,6 +11,8 @@ import {
   useInsightStore,
   useInspectionStore,
   usePackageStore,
+  useOperationStore,
+  opKey,
   setComponentErrorReporter,
 } from '@shiftspace/renderer';
 import type {
@@ -118,6 +120,7 @@ function handleCoreMessage(
   setErrorMessage: (m: string | undefined) => void
 ): boolean {
   const wt = useWorktreeStore.getState();
+  const ops = useOperationStore.getState();
   switch (msg.type) {
     case 'init':
       setErrorMessage(undefined);
@@ -131,20 +134,23 @@ function handleCoreMessage(
       return true;
     case 'worktree-files-updated':
       wt.updateWorktreeFiles(msg.worktreeId, msg.files, msg.diffMode, msg.branchFiles);
+      ops.clearOperation(opKey.diffMode(msg.worktreeId));
       return true;
     case 'branch-list':
       wt.setBranchList(msg.worktreeId, msg.branches);
       return true;
     case 'fetch-loading':
-      wt.setFetchLoading(msg.worktreeId, msg.loading);
+      if (msg.loading) ops.startOperation(opKey.fetchBranches(msg.worktreeId), msg.worktreeId);
+      else ops.clearOperation(opKey.fetchBranches(msg.worktreeId));
       return true;
     case 'fetch-done':
-      wt.setFetchLoading(msg.worktreeId, false);
+      ops.clearOperation(opKey.fetchBranches(msg.worktreeId));
       wt.setLastFetchAt(msg.worktreeId, msg.timestamp);
       wt.setBranchList(msg.worktreeId, msg.branches);
       return true;
     case 'swap-loading':
-      wt.setSwapLoading(msg.worktreeId, msg.loading);
+      if (msg.loading) ops.startOperation(opKey.swapBranches(msg.worktreeId), msg.worktreeId);
+      else ops.clearOperation(opKey.swapBranches(msg.worktreeId));
       return true;
     case 'set-sort-mode':
       wt.setSortMode(msg.mode);
@@ -205,7 +211,8 @@ function handleActionMessage(msg: HostMessage): boolean {
         .setInsightDetail(msg.detail.worktreeId, msg.detail.insightId, msg.detail);
       return true;
     case 'insights-status':
-      useInsightStore.getState().setInsightsRunning(msg.running);
+      if (msg.running) useOperationStore.getState().startOperation(opKey.runInsights);
+      else useOperationStore.getState().clearOperation(opKey.runInsights);
       return true;
     case 'diagnostics-update':
       useInsightStore.getState().setFileDiagnostics(msg.worktreeId, msg.files);
@@ -232,7 +239,7 @@ function handleHostMessage(
 }
 
 const App: React.FC = () => {
-  const { setDiffModeLoading } = useWorktreeStore();
+  const startOperation = useOperationStore((s) => s.startOperation);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const mode = useInspectionStore((s) => s.mode as AppMode);
 
@@ -266,7 +273,7 @@ const App: React.FC = () => {
   };
 
   const handleDiffModeChange = (worktreeId: string, diffMode: DiffMode) => {
-    setDiffModeLoading(worktreeId, true);
+    startOperation(opKey.diffMode(worktreeId), worktreeId);
     vscode?.postMessage({ type: 'set-diff-mode', worktreeId, diffMode });
   };
 

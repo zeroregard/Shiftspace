@@ -2,6 +2,7 @@ import { useWorktreeStore } from '@shiftspace/renderer-core/src/store/worktree-s
 import { useInspectionStore } from '@shiftspace/renderer-core/src/store/inspection-store.ts';
 import { useInsightStore } from '@shiftspace/renderer-core/src/store/insight-store.ts';
 import { useActionStore } from '@shiftspace/renderer-core/src/store/action-store.ts';
+import { useOperationStore } from '@shiftspace/renderer-core/src/store/operation-store.ts';
 import type {
   WorktreeState,
   ActionConfig,
@@ -16,10 +17,6 @@ export function resetAllStores(): void {
   useWorktreeStore.setState({
     worktrees: new Map(),
     branchLists: new Map(),
-    diffModeLoading: new Set(),
-    fetchLoading: new Set(),
-    swapLoading: new Set(),
-    removingWorktrees: new Set(),
     lastFetchAt: new Map(),
   });
   useInspectionStore.setState({
@@ -30,7 +27,6 @@ export function resetAllStores(): void {
     insightDetails: new Map(),
     findingsIndex: new Map(),
     fileDiagnostics: new Map(),
-    insightsRunning: false,
   });
   useActionStore.setState({
     actionConfigs: [],
@@ -38,6 +34,7 @@ export function resetAllStores(): void {
     actionLogs: new Map(),
     pipelines: {},
   });
+  useOperationStore.setState({ operations: new Map() });
 }
 
 /** Seed a worktree into the worktree store. */

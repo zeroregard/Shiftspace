@@ -1,5 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
-import { useWorktreeStore, useInspectionStore, useInsightStore } from '../store';
+import { useWorktreeStore, useInspectionStore, useOperationStore } from '../store';
+import { opKey, isOperationPending } from '../store/operation-store';
 import type { DiffMode } from '../types';
 import { BranchPicker } from '../overlays/branch-picker';
 import { IconButton } from '@shiftspace/ui/icon-button';
@@ -33,11 +34,11 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
   const branchList = useWorktreeStore((s) =>
     worktreeId ? (s.branchLists.get(worktreeId) ?? EMPTY_BRANCHES) : EMPTY_BRANCHES
   );
-  const isLoading = useWorktreeStore((s) =>
-    worktreeId ? s.diffModeLoading.has(worktreeId) : false
+  const isLoading = useOperationStore((s) =>
+    worktreeId ? isOperationPending(s.operations, opKey.diffMode(worktreeId)) : false
   );
-  const isFetchingBranches = useWorktreeStore((s) =>
-    worktreeId ? s.fetchLoading.has(worktreeId) : false
+  const isFetchingBranches = useOperationStore((s) =>
+    worktreeId ? isOperationPending(s.operations, opKey.fetchBranches(worktreeId)) : false
   );
   const lastFetchAt = useWorktreeStore((s) =>
     worktreeId ? s.lastFetchAt.get(worktreeId) : undefined
@@ -45,7 +46,9 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
   const occupiedBranches = useWorktreeStore(
     useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
   );
-  const insightsRunning = useInsightStore((s) => s.insightsRunning);
+  const insightsRunning = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.runInsights)
+  );
 
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const diffMode: DiffMode = wt?.diffMode ?? { type: 'working' };

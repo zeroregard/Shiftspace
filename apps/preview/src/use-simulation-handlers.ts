@@ -1,5 +1,11 @@
 import React, { useRef } from 'react';
-import { useWorktreeStore, useActionStore, useInsightStore } from '@shiftspace/renderer';
+import {
+  useWorktreeStore,
+  useActionStore,
+  useInsightStore,
+  useOperationStore,
+  opKey,
+} from '@shiftspace/renderer';
 import type { DiffMode } from '@shiftspace/renderer';
 import type { MockEngine } from './mock/engine';
 import {
@@ -18,15 +24,20 @@ import {
 export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | null>) {
   const activeSimulations = useRef<Map<string, () => void>>(new Map());
 
-  const { updateWorktreeFiles, setDiffModeLoading } = useWorktreeStore();
+  const { updateWorktreeFiles } = useWorktreeStore();
   const { setActionState } = useActionStore();
-  const { setInsightDetail, setFileDiagnostics, setInsightsRunning } = useInsightStore();
+  const { setInsightDetail, setFileDiagnostics } = useInsightStore();
+  const { startOperation, clearOperation } = useOperationStore();
 
   const handleDiffModeChange = (worktreeId: string, diffMode: DiffMode) => {
-    setDiffModeLoading(worktreeId, true);
+    const opId = opKey.diffMode(worktreeId);
+    startOperation(opId, worktreeId);
     setTimeout(() => {
       const engine = engineRef.current;
-      if (!engine) return;
+      if (!engine) {
+        clearOperation(opId);
+        return;
+      }
       if (diffMode.type === 'working') {
         updateWorktreeFiles(worktreeId, engine.getMockWorkingFiles(worktreeId), diffMode);
       } else if (diffMode.type === 'repo') {
@@ -39,6 +50,7 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
           engine.getMockBranchFiles(worktreeId)
         );
       }
+      clearOperation(opId);
     }, 200);
   };
 
@@ -70,7 +82,7 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
   };
 
   const handleRecheckInsights = (worktreeId: string) => {
-    setInsightsRunning(true);
+    startOperation(opKey.runInsights);
     setTimeout(() => {
       if (worktreeId === 'wt-0') {
         setInsightDetail('wt-0', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT0);
@@ -79,7 +91,7 @@ export function useSimulationHandlers(engineRef: React.RefObject<MockEngine | nu
         setInsightDetail('wt-1', 'codeSmells', MOCK_CODE_SMELL_DETAIL_WT1);
         setFileDiagnostics('wt-1', MOCK_DIAGNOSTICS_WT1);
       }
-      setInsightsRunning(false);
+      clearOperation(opKey.runInsights);
     }, 600);
   };
 
