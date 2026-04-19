@@ -1,13 +1,21 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type {
+  FileChange,
   FileDiagnosticSummary,
   InsightFinding,
   WorktreeState,
 } from '@shiftspace/renderer-core';
 import { useFilteredFiles, useResizableWidth } from '@shiftspace/renderer-core';
-import { useVirtualFileList } from '../hooks/use-virtual-file-list';
 import { SearchInput } from './search-input';
 import { InspectionFileRow, FileSectionLabel } from './file-row';
+
+const SECTION_LABEL_HEIGHT = 28;
+const FILE_ROW_HEIGHT = 32;
+
+type VirtualItem =
+  | { type: 'label'; label: string; icon?: string }
+  | { type: 'file'; file: FileChange; sectionKey: string };
 
 interface FileListPanelProps {
   wt: WorktreeState;
@@ -49,12 +57,43 @@ export function FileListPanel({
       fileDiagnostics,
     });
 
-  const { items, virtualizer } = useVirtualFileList({
-    committed,
-    staged,
-    unstaged,
-    diffModeType: wt.diffMode.type,
-    scrollRef,
+  // `useVirtualizer` is intentionally kept inline here rather than extracted
+  // into a custom hook — wrapping it in a hook (even with the ref co-located)
+  // leaves the virtualizer with a stale scroll element under React Compiler,
+  // and the list renders empty.
+  const items = useMemo(() => {
+    const result: VirtualItem[] = [];
+    if (committed.length > 0) {
+      result.push({
+        type: 'label',
+        label: wt.diffMode.type === 'repo' ? 'Tracked' : 'Committed',
+        icon: 'git-branch',
+      });
+      for (const file of committed) {
+        result.push({ type: 'file', file, sectionKey: 'committed' });
+      }
+    }
+    if (staged.length > 0) {
+      result.push({ type: 'label', label: 'Staged', icon: 'git-branch-staged-changes' });
+      for (const file of staged) {
+        result.push({ type: 'file', file, sectionKey: 'staged' });
+      }
+    }
+    if (unstaged.length > 0) {
+      result.push({ type: 'label', label: 'Unstaged', icon: 'git-branch-changes' });
+      for (const file of unstaged) {
+        result.push({ type: 'file', file, sectionKey: 'unstaged' });
+      }
+    }
+    return result;
+  }, [committed, staged, unstaged, wt.diffMode.type]);
+
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) =>
+      items[index].type === 'label' ? SECTION_LABEL_HEIGHT : FILE_ROW_HEIGHT,
+    overscan: 10,
   });
 
   const resize = useResizableWidth({
