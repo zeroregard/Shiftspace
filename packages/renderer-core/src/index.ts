@@ -77,6 +77,8 @@ export {
 export { useFileAnnotations, type FileAnnotations } from './hooks/use-file-annotations';
 export { useWorktreeRename } from './hooks/use-worktree-rename';
 export { useRelativeTime } from './hooks/use-relative-time';
+export { useResizableWidth } from './hooks/use-resizable-width';
+export { useFilteredFiles } from './hooks/use-filtered-files';
 
 // Overlays
 export { DiffPopover } from './overlays/diff-popover';
