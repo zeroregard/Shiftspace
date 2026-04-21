@@ -25,8 +25,6 @@ interface FileListPanelProps {
   onProblemsOnlyChange: (value: boolean) => void;
   findingsIndex: Map<string, InsightFinding[]>;
   fileDiagnostics: Map<string, FileDiagnosticSummary>;
-  onFileClick: (worktreeId: string, filePath: string, line?: number) => void;
-  onHoverFile: (filePath: string | null) => void;
 }
 
 const WIDTH_STORAGE_KEY = 'shiftspace:file-list-width';
@@ -42,8 +40,6 @@ export function FileListPanel({
   onProblemsOnlyChange,
   findingsIndex,
   fileDiagnostics,
-  onFileClick,
-  onHoverFile,
 }: FileListPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -160,12 +156,7 @@ export function FileListPanel({
                   {item.type === 'label' ? (
                     <FileSectionLabel label={item.label} icon={item.icon} />
                   ) : (
-                    <InspectionFileRow
-                      file={item.file}
-                      worktreeId={wt.id}
-                      onFileClick={onFileClick}
-                      onHoverFile={onHoverFile}
-                    />
+                    <InspectionFileRow file={item.file} worktreeId={wt.id} />
                   )}
                 </div>
               );

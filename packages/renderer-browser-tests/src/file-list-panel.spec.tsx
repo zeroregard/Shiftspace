@@ -36,8 +36,6 @@ test.describe('FileListPanel', () => {
           onProblemsOnlyChange={noopFn}
           findingsIndex={new Map()}
           fileDiagnostics={new Map()}
-          onFileClick={noopFn}
-          onHoverFile={noopFn}
         />
       </Wrapper>
     );
@@ -57,8 +55,6 @@ test.describe('FileListPanel', () => {
           onProblemsOnlyChange={noopFn}
           findingsIndex={new Map()}
           fileDiagnostics={new Map()}
-          onFileClick={noopFn}
-          onHoverFile={noopFn}
         />
       </Wrapper>
     );
@@ -82,8 +78,6 @@ test.describe('FileListPanel', () => {
           onProblemsOnlyChange={noopFn}
           findingsIndex={new Map()}
           fileDiagnostics={new Map()}
-          onFileClick={noopFn}
-          onHoverFile={noopFn}
         />
       </Wrapper>
     );
@@ -106,8 +100,6 @@ test.describe('FileListPanel', () => {
           onProblemsOnlyChange={noopFn}
           findingsIndex={new Map()}
           fileDiagnostics={new Map()}
-          onFileClick={noopFn}
-          onHoverFile={noopFn}
         />
       </Wrapper>
     );
@@ -127,8 +119,6 @@ test.describe('FileListPanel', () => {
           onProblemsOnlyChange={noopFn}
           findingsIndex={new Map()}
           fileDiagnostics={new Map()}
-          onFileClick={noopFn}
-          onHoverFile={noopFn}
         />
       </Wrapper>
     );
