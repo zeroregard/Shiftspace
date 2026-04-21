@@ -11,8 +11,6 @@ import {
 import { resetAllStores } from './fixtures/store-helpers';
 import { FileListPanelWrapper as Wrapper } from './fixtures/wrappers';
 
-const noopFn = () => {};
-
 test.beforeEach(() => {
   resetAllStores();
 });
@@ -28,15 +26,7 @@ test.describe('FileListPanel', () => {
 
     const component = await mount(
       <Wrapper>
-        <FileListPanel
-          wt={wt}
-          searchQuery=""
-          onSearchChange={noopFn}
-          problemsOnly={false}
-          onProblemsOnlyChange={noopFn}
-          findingsIndex={new Map()}
-          fileDiagnostics={new Map()}
-        />
+        <FileListPanel wt={wt} findingsIndex={new Map()} fileDiagnostics={new Map()} />
       </Wrapper>
     );
     await expect(component).toHaveScreenshot('file-list-default.png');
@@ -47,15 +37,7 @@ test.describe('FileListPanel', () => {
 
     const component = await mount(
       <Wrapper>
-        <FileListPanel
-          wt={wt}
-          searchQuery=""
-          onSearchChange={noopFn}
-          problemsOnly={false}
-          onProblemsOnlyChange={noopFn}
-          findingsIndex={new Map()}
-          fileDiagnostics={new Map()}
-        />
+        <FileListPanel wt={wt} findingsIndex={new Map()} fileDiagnostics={new Map()} />
       </Wrapper>
     );
     await expect(component).toHaveScreenshot('file-list-empty.png');
@@ -69,16 +51,8 @@ test.describe('FileListPanel', () => {
     ]);
 
     const component = await mount(
-      <Wrapper>
-        <FileListPanel
-          wt={wt}
-          searchQuery="App"
-          onSearchChange={noopFn}
-          problemsOnly={false}
-          onProblemsOnlyChange={noopFn}
-          findingsIndex={new Map()}
-          fileDiagnostics={new Map()}
-        />
+      <Wrapper searchQuery="App">
+        <FileListPanel wt={wt} findingsIndex={new Map()} fileDiagnostics={new Map()} />
       </Wrapper>
     );
     await expect(component).toHaveScreenshot('file-list-search-active.png');
@@ -92,15 +66,7 @@ test.describe('FileListPanel', () => {
 
     const component = await mount(
       <Wrapper>
-        <FileListPanel
-          wt={wt}
-          searchQuery=""
-          onSearchChange={noopFn}
-          problemsOnly={false}
-          onProblemsOnlyChange={noopFn}
-          findingsIndex={new Map()}
-          fileDiagnostics={new Map()}
-        />
+        <FileListPanel wt={wt} findingsIndex={new Map()} fileDiagnostics={new Map()} />
       </Wrapper>
     );
     await expect(component).toHaveScreenshot('file-list-partial-staging.png');
@@ -110,16 +76,8 @@ test.describe('FileListPanel', () => {
     const wt = createMockWorktreeWithFiles([createMockFile({ path: 'src/utils.ts' })]);
 
     const component = await mount(
-      <Wrapper>
-        <FileListPanel
-          wt={wt}
-          searchQuery="zzz-no-match"
-          onSearchChange={noopFn}
-          problemsOnly={false}
-          onProblemsOnlyChange={noopFn}
-          findingsIndex={new Map()}
-          fileDiagnostics={new Map()}
-        />
+      <Wrapper searchQuery="zzz-no-match">
+        <FileListPanel wt={wt} findingsIndex={new Map()} fileDiagnostics={new Map()} />
       </Wrapper>
     );
     await expect(component).toHaveScreenshot('file-list-no-matches.png');

@@ -1,30 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { isValidRegex } from '@shiftspace/renderer-core';
+import { isValidRegex, useInspectionFilters } from '@shiftspace/renderer-core';
 import { Codicon } from '@shiftspace/ui/codicon';
 import { IconButton } from '@shiftspace/ui/icon-button';
 
 const SEARCH_DEBOUNCE_MS = 150;
 
 interface SearchInputProps {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  problemsOnly: boolean;
-  onProblemsOnlyChange: (value: boolean) => void;
   filteredFileCount: number;
   totalFileCount: number;
   hasProblems: boolean;
 }
 
-export function SearchInput({
-  searchQuery,
-  onSearchChange,
-  problemsOnly,
-  onProblemsOnlyChange,
-  filteredFileCount,
-  totalFileCount,
-  hasProblems,
-}: SearchInputProps) {
+export function SearchInput({ filteredFileCount, totalFileCount, hasProblems }: SearchInputProps) {
+  const { searchQuery, setSearchQuery, problemsOnly, setProblemsOnly } = useInspectionFilters();
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -36,13 +25,13 @@ export function SearchInput({
   const handleChange = (value: string) => {
     setLocalQuery(value);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => onSearchChange(value), SEARCH_DEBOUNCE_MS);
+    debounceRef.current = setTimeout(() => setSearchQuery(value), SEARCH_DEBOUNCE_MS);
   };
 
   const handleClear = () => {
     setLocalQuery('');
     clearTimeout(debounceRef.current);
-    onSearchChange('');
+    setSearchQuery('');
   };
 
   const searchRegexError = !isValidRegex(localQuery);
@@ -102,7 +91,7 @@ export function SearchInput({
                 ? 'bg-status-deleted/15 border-status-deleted text-status-deleted'
                 : 'bg-node-file border-border-dashed text-text-faint hover:text-text-primary hover:border-text-muted'
           )}
-          onClick={() => hasProblems && onProblemsOnlyChange(!problemsOnly)}
+          onClick={() => hasProblems && setProblemsOnly(!problemsOnly)}
         />
       </div>
       {isFiltering && (

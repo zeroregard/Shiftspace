@@ -6,7 +6,11 @@ import type {
   InsightFinding,
   WorktreeState,
 } from '@shiftspace/renderer-core';
-import { useFilteredFiles, useResizableWidth } from '@shiftspace/renderer-core';
+import {
+  useFilteredFiles,
+  useResizableWidth,
+  useInspectionFilters,
+} from '@shiftspace/renderer-core';
 import { SearchInput } from './search-input';
 import { InspectionFileRow, FileSectionLabel } from './file-row';
 
@@ -19,10 +23,6 @@ type VirtualItem =
 
 interface FileListPanelProps {
   wt: WorktreeState;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  problemsOnly: boolean;
-  onProblemsOnlyChange: (value: boolean) => void;
   findingsIndex: Map<string, InsightFinding[]>;
   fileDiagnostics: Map<string, FileDiagnosticSummary>;
 }
@@ -32,15 +32,8 @@ const MIN_WIDTH = 180;
 const MAX_WIDTH = 600;
 const DEFAULT_WIDTH = 280;
 
-export function FileListPanel({
-  wt,
-  searchQuery,
-  onSearchChange,
-  problemsOnly,
-  onProblemsOnlyChange,
-  findingsIndex,
-  fileDiagnostics,
-}: FileListPanelProps) {
+export function FileListPanel({ wt, findingsIndex, fileDiagnostics }: FileListPanelProps) {
+  const { searchQuery, problemsOnly, setProblemsOnly } = useInspectionFilters();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { committed, staged, unstaged, totalFileCount, filteredFileCount, hasAnyProblems } =
@@ -48,7 +41,7 @@ export function FileListPanel({
       wt,
       searchQuery,
       problemsOnly,
-      onProblemsOnlyChange,
+      onProblemsOnlyChange: setProblemsOnly,
       findingsIndex,
       fileDiagnostics,
     });
@@ -114,10 +107,6 @@ export function FileListPanel({
         onPointerUp={resize.onPointerUp}
       />
       <SearchInput
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        problemsOnly={problemsOnly}
-        onProblemsOnlyChange={onProblemsOnlyChange}
         filteredFileCount={filteredFileCount}
         totalFileCount={totalFileCount}
         hasProblems={hasAnyProblems}
