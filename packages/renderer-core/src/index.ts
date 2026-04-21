@@ -55,6 +55,10 @@ export { ThemedFileIcon } from './shared/themed-file-icon';
 export { PackageSwitcher } from './shared/package-switcher';
 export { SortPicker } from './shared/sort-picker';
 export { InspectionHoverContext, useInspectionHover } from './shared/inspection-hover-context';
+export {
+  InspectionFiltersContext,
+  useInspectionFilters,
+} from './shared/inspection-filters-context';
 export { FileRowButton } from './shared/file-row-button';
 export { AnimatedTimestamp } from './shared/animated-timestamp';
 

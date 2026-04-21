@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActionsProvider } from '@shiftspace/renderer-core/src/ui/actions-context';
 import { InspectionHoverContext } from '@shiftspace/renderer-core/src/shared/inspection-hover-context';
+import { InspectionFiltersContext } from '@shiftspace/renderer-core/src/shared/inspection-filters-context';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 
 /**
@@ -41,22 +42,40 @@ export function FileNodeWrapper({
 
 /**
  * Wrapper for FileListPanel tests.
- * Provides: RadixTooltip.Provider, ActionsProvider, 350x500 flex container.
+ * Provides: RadixTooltip.Provider, ActionsProvider, InspectionFiltersContext,
+ * 350x500 flex container.
  */
-export function FileListPanelWrapper({ children }: { children: React.ReactNode }) {
+export function FileListPanelWrapper({
+  children,
+  searchQuery = '',
+  problemsOnly = false,
+}: {
+  children: React.ReactNode;
+  searchQuery?: string;
+  problemsOnly?: boolean;
+}) {
   return (
     <RadixTooltip.Provider>
       <ActionsProvider>
-        <div
-          style={{
-            width: 350,
-            height: 500,
-            background: 'var(--color-canvas)',
-            display: 'flex',
+        <InspectionFiltersContext.Provider
+          value={{
+            searchQuery,
+            setSearchQuery: () => {},
+            problemsOnly,
+            setProblemsOnly: () => {},
           }}
         >
-          {children}
-        </div>
+          <div
+            style={{
+              width: 350,
+              height: 500,
+              background: 'var(--color-canvas)',
+              display: 'flex',
+            }}
+          >
+            {children}
+          </div>
+        </InspectionFiltersContext.Provider>
       </ActionsProvider>
     </RadixTooltip.Provider>
   );

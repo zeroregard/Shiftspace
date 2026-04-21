@@ -13,6 +13,7 @@ import {
   type PanZoomConfig,
   NODE_TYPES,
   InspectionHoverContext,
+  InspectionFiltersContext,
   getAllFilteredFiles,
   filterFilesByProblems,
   computeSingleWorktreeLayout,
@@ -149,51 +150,56 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
     onFileClick: handleFileRowClick,
   };
 
+  const filtersContextValue = {
+    searchQuery,
+    setSearchQuery,
+    problemsOnly,
+    setProblemsOnly,
+  };
+
   return (
-    <InspectionHoverContext.Provider value={inspectionContextValue}>
-      <div className="w-full h-full flex flex-col bg-canvas">
-        {actionConfigs.length > 0 && (
-          <ActionBar
-            worktreeId={worktreeId}
-            className="px-3 py-1.5 border-b border-border-dashed shrink-0"
-          />
-        )}
+    <InspectionFiltersContext.Provider value={filtersContextValue}>
+      <InspectionHoverContext.Provider value={inspectionContextValue}>
+        <div className="w-full h-full flex flex-col bg-canvas">
+          {actionConfigs.length > 0 && (
+            <ActionBar
+              worktreeId={worktreeId}
+              className="px-3 py-1.5 border-b border-border-dashed shrink-0"
+            />
+          )}
 
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto min-[600px]:overflow-hidden min-[600px]:flex-row">
-          <FileListPanel
-            wt={wt}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            problemsOnly={problemsOnly}
-            onProblemsOnlyChange={setProblemsOnly}
-            findingsIndex={stableFindingsIndex}
-            fileDiagnostics={stableFileDiagnostics}
-          />
+          <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto min-[600px]:overflow-hidden min-[600px]:flex-row">
+            <FileListPanel
+              wt={wt}
+              findingsIndex={stableFindingsIndex}
+              fileDiagnostics={stableFileDiagnostics}
+            />
 
-          <div className="hidden min-[600px]:block flex-1 min-h-0 min-w-0 relative">
-            <ErrorBoundary
-              resetKey={wt}
-              fallback={(retry) => (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-text-faint text-13">
-                  <span>Graph failed to render</span>
-                  <Button variant="ghost" size="sm" onClick={retry}>
-                    Retry
-                  </Button>
-                </div>
-              )}
-            >
-              <TreeCanvas
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={NODE_TYPES}
-                panZoomConfig={panZoomConfig}
-                focusNodeId={focusNodeId}
-                onFocusComplete={handleFocusComplete}
-              />
-            </ErrorBoundary>
+            <div className="hidden min-[600px]:block flex-1 min-h-0 min-w-0 relative">
+              <ErrorBoundary
+                resetKey={wt}
+                fallback={(retry) => (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-text-faint text-13">
+                    <span>Graph failed to render</span>
+                    <Button variant="ghost" size="sm" onClick={retry}>
+                      Retry
+                    </Button>
+                  </div>
+                )}
+              >
+                <TreeCanvas
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={NODE_TYPES}
+                  panZoomConfig={panZoomConfig}
+                  focusNodeId={focusNodeId}
+                  onFocusComplete={handleFocusComplete}
+                />
+              </ErrorBoundary>
+            </div>
           </div>
         </div>
-      </div>
-    </InspectionHoverContext.Provider>
+      </InspectionHoverContext.Provider>
+    </InspectionFiltersContext.Provider>
   );
 }
