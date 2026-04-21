@@ -26,13 +26,19 @@ const EMPTY_BRANCHES: string[] = [];
 
 interface BranchRowProps {
   wt: WorktreeState;
-  checkoutBranches: string[];
-  isFetchingBranches: boolean;
-  lastFetchAt: number | undefined;
 }
 
-function BranchRow({ wt, checkoutBranches, isFetchingBranches, lastFetchAt }: BranchRowProps) {
+function BranchRow({ wt }: BranchRowProps) {
   const actions = useActions();
+  const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
+  const occupiedBranches = useWorktreeStore(
+    useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
+  );
+  const isFetchingBranches = useOperationStore((s) =>
+    isOperationPending(s.operations, opKey.fetchBranches(wt.id))
+  );
+  const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
+  const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   return (
     <div
       className="flex items-center gap-1.5 min-w-0"
@@ -93,22 +99,13 @@ export function WorktreeCard({
 }: WorktreeCardProps) {
   const actions = useActions();
   const enterInspection = useInspectionStore((s) => s.enterInspection);
-  const branchList = useWorktreeStore((s) => s.branchLists.get(wt.id) ?? EMPTY_BRANCHES);
-  const isFetchingBranches = useOperationStore((s) =>
-    isOperationPending(s.operations, opKey.fetchBranches(wt.id))
-  );
   const isRemoving = useOperationStore((s) =>
     isOperationPending(s.operations, opKey.removeWorktree(wt.id))
-  );
-  const lastFetchAt = useWorktreeStore((s) => s.lastFetchAt.get(wt.id));
-  const occupiedBranches = useWorktreeStore(
-    useShallow((s) => Array.from(s.worktrees.values()).map((w) => w.branch))
   );
 
   const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
   const relativeTime = useRelativeTime(wt.lastActivityAt);
-  const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
 
   const {
@@ -215,12 +212,7 @@ export function WorktreeCard({
             <WorktreeBadge label={wt.badge.label} color={wt.badge.color} />
           )}
         </div>
-        <BranchRow
-          wt={wt}
-          checkoutBranches={checkoutBranches}
-          isFetchingBranches={isFetchingBranches}
-          lastFetchAt={lastFetchAt}
-        />
+        <BranchRow wt={wt} />
       </div>
 
       {/* Action buttons (hidden in slim variant) */}

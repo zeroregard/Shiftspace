@@ -52,7 +52,7 @@ interface InspectionViewProps {
 }
 
 export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProps) {
-  const actions = useActions();
+  const { fileClick } = useActions();
   const wt = useWorktreeStore((s) => s.worktrees.get(worktreeId));
   // Select only entries for this worktree so insight updates for *other*
   // worktrees don't trigger layout recomputation.  useShallow compares Map
@@ -95,7 +95,7 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const handleFileRowClick = (wtId: string, filePath: string, line?: number) => {
-    actions.fileClick(wtId, filePath, line);
+    fileClick(wtId, filePath, line);
     setFocusNodeId(`file-${wtId}-${filePath}`);
   };
 
@@ -143,43 +143,45 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
     );
   }
 
-  const hoverContextValue = { hoveredFilePath };
+  const inspectionContextValue = {
+    hoveredFilePath,
+    setHoveredFilePath,
+    onFileClick: handleFileRowClick,
+  };
 
   return (
-    <div className="w-full h-full flex flex-col bg-canvas">
-      {actionConfigs.length > 0 && (
-        <ActionBar
-          worktreeId={worktreeId}
-          className="px-3 py-1.5 border-b border-border-dashed shrink-0"
-        />
-      )}
+    <InspectionHoverContext.Provider value={inspectionContextValue}>
+      <div className="w-full h-full flex flex-col bg-canvas">
+        {actionConfigs.length > 0 && (
+          <ActionBar
+            worktreeId={worktreeId}
+            className="px-3 py-1.5 border-b border-border-dashed shrink-0"
+          />
+        )}
 
-      <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto min-[600px]:overflow-hidden min-[600px]:flex-row">
-        <FileListPanel
-          wt={wt}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          problemsOnly={problemsOnly}
-          onProblemsOnlyChange={setProblemsOnly}
-          findingsIndex={stableFindingsIndex}
-          fileDiagnostics={stableFileDiagnostics}
-          onFileClick={handleFileRowClick}
-          onHoverFile={setHoveredFilePath}
-        />
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto min-[600px]:overflow-hidden min-[600px]:flex-row">
+          <FileListPanel
+            wt={wt}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            problemsOnly={problemsOnly}
+            onProblemsOnlyChange={setProblemsOnly}
+            findingsIndex={stableFindingsIndex}
+            fileDiagnostics={stableFileDiagnostics}
+          />
 
-        <div className="hidden min-[600px]:block flex-1 min-h-0 min-w-0 relative">
-          <ErrorBoundary
-            resetKey={wt}
-            fallback={(retry) => (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-text-faint text-13">
-                <span>Graph failed to render</span>
-                <Button variant="ghost" size="sm" onClick={retry}>
-                  Retry
-                </Button>
-              </div>
-            )}
-          >
-            <InspectionHoverContext.Provider value={hoverContextValue}>
+          <div className="hidden min-[600px]:block flex-1 min-h-0 min-w-0 relative">
+            <ErrorBoundary
+              resetKey={wt}
+              fallback={(retry) => (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-text-faint text-13">
+                  <span>Graph failed to render</span>
+                  <Button variant="ghost" size="sm" onClick={retry}>
+                    Retry
+                  </Button>
+                </div>
+              )}
+            >
               <TreeCanvas
                 nodes={nodes}
                 edges={edges}
@@ -188,10 +190,10 @@ export function InspectionView({ worktreeId, panZoomConfig }: InspectionViewProp
                 focusNodeId={focusNodeId}
                 onFocusComplete={handleFocusComplete}
               />
-            </InspectionHoverContext.Provider>
-          </ErrorBoundary>
+            </ErrorBoundary>
+          </div>
         </div>
       </div>
-    </div>
+    </InspectionHoverContext.Provider>
   );
 }
