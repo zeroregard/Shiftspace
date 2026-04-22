@@ -68,7 +68,7 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
       }
     }
 
-    // Branch, path, or badge changed for an existing worktree
+    // Branch, path, badge, or plan path changed for an existing worktree
     for (const freshWt of fresh) {
       if (!prevIds.has(freshWt.id)) continue; // already handled as new above
       const prevWt = host.worktrees.find((wt) => wt.id === freshWt.id);
@@ -77,8 +77,9 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
       const branchChanged = prevWt.branch !== freshWt.branch;
       const pathChanged = prevWt.path !== freshWt.path;
       const badgeChanged = !badgesEqual(prevWt.badge, freshWt.badge);
+      const planPathChanged = prevWt.planPath !== freshWt.planPath;
 
-      if (!branchChanged && !pathChanged && !badgeChanged) continue;
+      if (!branchChanged && !pathChanged && !badgeChanged && !planPathChanged) continue;
 
       freshWt.defaultBranch = host.defaultBranch;
 
@@ -124,8 +125,9 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
         host.fileStates.set(freshWt.id, freshWt.files);
         log.info(`[path] worktree path changed: ${prevWt.path} → ${freshWt.path}`);
       } else {
-        // Badge-only change — preserve diffMode, files, and activity
-        // timestamp. The upsert below propagates the new badge to the webview.
+        // Badge- or plan-path-only change — preserve diffMode, files, and
+        // activity timestamp. The upsert below propagates the new config to
+        // the webview.
         freshWt.diffMode = prevWt.diffMode;
         freshWt.files = prevWt.files;
         freshWt.branchFiles = prevWt.branchFiles;

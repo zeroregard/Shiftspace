@@ -7,7 +7,7 @@ import {
   getDefaultBranch,
   getGitRoot,
   listBranches,
-  readWorktreeBadge,
+  readWorktreeConfig,
   badgesEqual,
   WORKTREE_CONFIG_FILENAME,
 } from '../../src/git/worktrees';
@@ -142,20 +142,20 @@ describe('listBranches', () => {
   });
 });
 
-// readWorktreeBadge
-describe('readWorktreeBadge', () => {
+// readWorktreeConfig
+describe('readWorktreeConfig', () => {
   function makeTempWorktree(content?: string): string {
-    const dir = mkdtempSync(join(tmpdir(), 'shiftspace-badge-test-'));
+    const dir = mkdtempSync(join(tmpdir(), 'shiftspace-config-test-'));
     if (content !== undefined) {
       writeFileSync(join(dir, WORKTREE_CONFIG_FILENAME), content, 'utf8');
     }
     return dir;
   }
 
-  it('returns undefined when the config file is missing', async () => {
+  it('returns empty config when the config file is missing', async () => {
     const dir = makeTempWorktree();
     try {
-      expect(await readWorktreeBadge(dir)).toBeUndefined();
+      expect(await readWorktreeConfig(dir)).toEqual({});
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -164,7 +164,7 @@ describe('readWorktreeBadge', () => {
   it('parses a well-formed badge with a color', async () => {
     const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'stale', color: 'warning' } }));
     try {
-      expect(await readWorktreeBadge(dir)).toEqual({ label: 'stale', color: 'warning' });
+      expect((await readWorktreeConfig(dir)).badge).toEqual({ label: 'stale', color: 'warning' });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -173,61 +173,122 @@ describe('readWorktreeBadge', () => {
   it('parses a badge without a color (defaults to neutral at render time)', async () => {
     const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'stale' } }));
     try {
-      expect(await readWorktreeBadge(dir)).toEqual({ label: 'stale' });
+      expect((await readWorktreeConfig(dir)).badge).toEqual({ label: 'stale' });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('returns undefined for an unknown color value', async () => {
+  it('parses a badge with a description', async () => {
+    const dir = makeTempWorktree(
+      JSON.stringify({ badge: { label: 'stale', description: 'Needs rebase.' } })
+    );
+    try {
+      expect((await readWorktreeConfig(dir)).badge).toEqual({
+        label: 'stale',
+        description: 'Needs rebase.',
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('drops a non-string description but keeps the badge', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'stale', description: 42 } }));
+    try {
+      expect((await readWorktreeConfig(dir)).badge).toEqual({ label: 'stale' });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('drops an empty string description', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'stale', description: '' } }));
+    try {
+      expect((await readWorktreeConfig(dir)).badge).toEqual({ label: 'stale' });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('drops badge with unknown color value', async () => {
     const dir = makeTempWorktree(JSON.stringify({ badge: { label: 'x', color: '#ff0000' } }));
     try {
-      expect(await readWorktreeBadge(dir)).toBeUndefined();
+      expect((await readWorktreeConfig(dir)).badge).toBeUndefined();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('returns undefined when label is missing', async () => {
+  it('drops badge when label is missing', async () => {
     const dir = makeTempWorktree(JSON.stringify({ badge: { color: 'info' } }));
     try {
-      expect(await readWorktreeBadge(dir)).toBeUndefined();
+      expect((await readWorktreeConfig(dir)).badge).toBeUndefined();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('returns undefined when `badge` key is absent', async () => {
+  it('returns empty config when neither `badge` nor `planPath` is present', async () => {
     const dir = makeTempWorktree(JSON.stringify({ somethingElse: true }));
     try {
-      expect(await readWorktreeBadge(dir)).toBeUndefined();
+      expect(await readWorktreeConfig(dir)).toEqual({});
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('returns undefined for invalid JSON without throwing', async () => {
+  it('returns empty config for invalid JSON without throwing', async () => {
     const dir = makeTempWorktree('{ this is not json');
     try {
-      expect(await readWorktreeBadge(dir)).toBeUndefined();
+      expect(await readWorktreeConfig(dir)).toEqual({});
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('returns undefined for non-object top level', async () => {
+  it('returns empty config for non-object top level', async () => {
     const dir = makeTempWorktree('42');
     try {
-      expect(await readWorktreeBadge(dir)).toBeUndefined();
+      expect(await readWorktreeConfig(dir)).toEqual({});
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it('returns undefined when label is not a string', async () => {
-    const dir = makeTempWorktree(JSON.stringify({ badge: { label: 42, color: 'info' } }));
+  it('parses a relative planPath', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ planPath: 'docs/PLAN.md' }));
     try {
-      expect(await readWorktreeBadge(dir)).toBeUndefined();
+      expect((await readWorktreeConfig(dir)).planPath).toBe('docs/PLAN.md');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an absolute planPath', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ planPath: '/etc/passwd' }));
+    try {
+      expect((await readWorktreeConfig(dir)).planPath).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an empty planPath', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ planPath: '' }));
+    try {
+      expect((await readWorktreeConfig(dir)).planPath).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a non-string planPath but keeps the badge', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ planPath: 42, badge: { label: 'stale' } }));
+    try {
+      const cfg = await readWorktreeConfig(dir);
+      expect(cfg.planPath).toBeUndefined();
+      expect(cfg.badge).toEqual({ label: 'stale' });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -254,5 +315,6 @@ describe('badgesEqual', () => {
   it('returns false when any field differs', () => {
     expect(badgesEqual(a, { ...a, label: 'stale!' })).toBe(false);
     expect(badgesEqual(a, { ...a, color: 'info' })).toBe(false);
+    expect(badgesEqual(a, { ...a, description: 'new' })).toBe(false);
   });
 });

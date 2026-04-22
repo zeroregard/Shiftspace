@@ -124,6 +124,66 @@ test.describe('Flows – round-trip message routing', () => {
       .toEqual(expect.arrayContaining([expect.objectContaining({ op: 'add-worktree' })]));
   });
 
+  test('plan button click posts file-click with the worktree planPath', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+    await clearCalls(page);
+
+    await page.getByTestId('plan-button-wt-1').click();
+
+    await expect
+      .poll(() => getPostedMessages(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'file-click',
+            worktreeId: 'wt-1',
+            filePath: 'PLAN.md',
+          }),
+        ])
+      );
+
+    await expect
+      .poll(() => getCalls(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ op: 'file-click', args: ['wt-1', 'PLAN.md', undefined] }),
+        ])
+      );
+  });
+
+  test('shift-hovering the plan button triggers load-plan-content once', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+    await clearCalls(page);
+
+    const btn = page.getByTestId('plan-button-wt-1');
+    await page.keyboard.down('Shift');
+    await btn.hover();
+    // Wait long enough for the load request + store update
+    await page.waitForTimeout(150);
+
+    await expect
+      .poll(() => getCalls(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ op: 'load-plan-content', args: ['wt-1'] }),
+        ])
+      );
+
+    // Re-hover — cache should prevent a second request
+    await page.mouse.move(10, 10);
+    await btn.hover();
+    await page.waitForTimeout(100);
+    await page.keyboard.up('Shift');
+
+    const calls = await getCalls(page);
+    const loadCalls = calls.filter((c) => c.op === 'load-plan-content');
+    expect(loadCalls).toHaveLength(1);
+  });
+
   test('control panel remove button also routes through the bridge', async ({ page }) => {
     // The control panel's ✕ button is a second UI surface for removal.
     // Catching it here ensures app.tsx's `handleRemoveWorktree` wiring stays

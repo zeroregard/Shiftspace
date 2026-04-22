@@ -7,6 +7,7 @@ import {
   BranchPicker,
   ConfirmPopover,
   ActionBar,
+  PlanButton,
   filterCheckoutableBranches,
   useActions,
   useWorktreeRename,
@@ -208,8 +209,13 @@ export function WorktreeCard({
               )}
             </>
           )}
+          {wt.planPath && !isRenaming && <PlanButton worktreeId={wt.id} planPath={wt.planPath} />}
           {wt.badge && !isRenaming && (
-            <WorktreeBadge label={wt.badge.label} color={wt.badge.color} />
+            <WorktreeBadge
+              label={wt.badge.label}
+              color={wt.badge.color}
+              description={wt.badge.description}
+            />
           )}
         </div>
         <BranchRow wt={wt} />

@@ -25,6 +25,7 @@ import {
   handleRenameWorktree,
   handleFolderClick,
   handleFileClick,
+  handleLoadPlanContent,
 } from './mutations-lifecycle';
 
 type PostMessage = (msg: object) => void;
@@ -204,6 +205,9 @@ export class GitDataProvider implements vscode.Disposable {
   }
   handleFileClick(worktreeId: string, filePath: string, line?: number): Promise<void> {
     return handleFileClick(this, worktreeId, filePath, line);
+  }
+  handleLoadPlanContent(worktreeId: string): Promise<void> {
+    return handleLoadPlanContent(this, worktreeId);
   }
 
   // ── Accessors ──────────────────────────────────────────────────────────

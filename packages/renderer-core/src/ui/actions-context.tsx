@@ -13,6 +13,7 @@ import type { DiffMode } from '../types';
 export interface ShiftspaceActions {
   fileClick: (worktreeId: string, filePath: string, line?: number) => void;
   folderClick: (worktreeId: string, folderPath: string) => void;
+  loadPlanContent: (worktreeId: string) => void;
   diffModeChange: (worktreeId: string, diffMode: DiffMode) => void;
   requestBranchList: (worktreeId: string) => void;
   checkoutBranch: (worktreeId: string, branch: string) => void;
@@ -34,6 +35,7 @@ export interface ShiftspaceActions {
 const DEFAULT_ACTIONS: ShiftspaceActions = {
   fileClick: () => {},
   folderClick: () => {},
+  loadPlanContent: () => {},
   diffModeChange: () => {},
   requestBranchList: () => {},
   checkoutBranch: () => {},
@@ -65,6 +67,7 @@ export function useActions(): ShiftspaceActions {
 interface ActionsProviderProps {
   onFileClick?: (worktreeId: string, filePath: string, line?: number) => void;
   onFolderClick?: (worktreeId: string, folderPath: string) => void;
+  onLoadPlanContent?: (worktreeId: string) => void;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
@@ -95,6 +98,7 @@ interface ActionsProviderProps {
 export function ActionsProvider({
   onFileClick,
   onFolderClick,
+  onLoadPlanContent,
   onDiffModeChange,
   onRequestBranchList,
   onCheckoutBranch,
@@ -117,6 +121,7 @@ export function ActionsProvider({
     () => ({
       fileClick: (a, b, c) => onFileClick?.(a, b, c),
       folderClick: (a, b) => onFolderClick?.(a, b),
+      loadPlanContent: (a) => onLoadPlanContent?.(a),
       diffModeChange: (a, b) => onDiffModeChange?.(a, b),
       requestBranchList: (a) => onRequestBranchList?.(a),
       checkoutBranch: (a, b) => onCheckoutBranch?.(a, b),
@@ -137,6 +142,7 @@ export function ActionsProvider({
     [
       onFileClick,
       onFolderClick,
+      onLoadPlanContent,
       onDiffModeChange,
       onRequestBranchList,
       onCheckoutBranch,

@@ -13,6 +13,7 @@ import {
   usePackageStore,
   useOperationStore,
   opKey,
+  planContentKey,
   setComponentErrorReporter,
 } from '@shiftspace/renderer';
 import type {
@@ -78,6 +79,15 @@ type HostMessage =
       branchFiles?: FileChange[];
     }
   | { type: 'branch-list'; worktreeId: string; branches: string[] }
+  | {
+      type: 'plan-content';
+      worktreeId: string;
+      planPath: string;
+      status: 'loaded' | 'missing' | 'error';
+      content?: string;
+      truncated?: boolean;
+      message?: string;
+    }
   | { type: 'fetch-loading'; worktreeId: string; loading: boolean }
   | { type: 'fetch-done'; worktreeId: string; timestamp: number; branches: string[] }
   | { type: 'swap-loading'; worktreeId: string; loading: boolean }
@@ -139,6 +149,21 @@ function handleCoreMessage(
     case 'branch-list':
       wt.setBranchList(msg.worktreeId, msg.branches);
       return true;
+    case 'plan-content': {
+      const key = planContentKey(msg.worktreeId, msg.planPath);
+      if (msg.status === 'loaded') {
+        wt.setPlanContent(key, {
+          status: 'loaded',
+          content: msg.content ?? '',
+          truncated: msg.truncated ?? false,
+        });
+      } else if (msg.status === 'missing') {
+        wt.setPlanContent(key, { status: 'missing' });
+      } else {
+        wt.setPlanContent(key, { status: 'error', message: msg.message ?? 'Failed to load plan' });
+      }
+      return true;
+    }
     case 'fetch-loading':
       if (msg.loading) ops.startOperation(opKey.fetchBranches(msg.worktreeId), msg.worktreeId);
       else ops.clearOperation(opKey.fetchBranches(msg.worktreeId));
@@ -289,6 +314,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'folder-click', worktreeId, folderPath });
   };
 
+  const handleLoadPlanContent = (worktreeId: string) => {
+    vscode?.postMessage({ type: 'load-plan-content', worktreeId });
+  };
+
   const handleFetchBranches = (worktreeId: string) => {
     vscode?.postMessage({ type: 'fetch-branches', worktreeId });
   };
@@ -368,6 +397,7 @@ const App: React.FC = () => {
     <div style={{ width: '100%', height: '100vh' }}>
       <ShiftspaceRenderer
         onFileClick={handleFileClick}
+        onLoadPlanContent={handleLoadPlanContent}
         onDiffModeChange={handleDiffModeChange}
         onRequestBranchList={handleRequestBranchList}
         onCheckoutBranch={handleCheckoutBranch}

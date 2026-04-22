@@ -1,4 +1,4 @@
-export { useWorktreeStore } from './worktree-store';
+export { useWorktreeStore, planContentKey, type PlanContentEntry } from './worktree-store';
 export { useActionStore } from './action-store';
 export { useInsightStore, getFileFindings } from './insight-store';
 export { useInspectionStore } from './inspection-store';

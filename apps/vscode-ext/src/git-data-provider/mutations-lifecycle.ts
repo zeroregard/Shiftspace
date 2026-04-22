@@ -241,6 +241,88 @@ export async function handleFileClick(
   }
 }
 
+/**
+ * Read the worktree's `planPath` file and post its contents back to the
+ * webview. Cap at 64 KB — the tooltip preview is a hover glance, not a full
+ * editor, and we don't want to ship megabytes through postMessage.
+ */
+const PLAN_PREVIEW_MAX_BYTES = 64 * 1024;
+
+export async function handleLoadPlanContent(
+  host: GitDataProvider,
+  worktreeId: string
+): Promise<void> {
+  const wt = host.worktrees.find((w) => w.id === worktreeId);
+  if (!wt || !wt.planPath) return;
+
+  const planPath = wt.planPath;
+  const absolutePath = path.join(wt.path, planPath);
+
+  try {
+    const stat = await fs.promises.stat(absolutePath);
+    if (!stat.isFile()) {
+      host.postMessage({
+        type: 'plan-content',
+        worktreeId: wt.id,
+        planPath,
+        status: 'missing',
+      });
+      return;
+    }
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') {
+      host.postMessage({
+        type: 'plan-content',
+        worktreeId: wt.id,
+        planPath,
+        status: 'missing',
+      });
+      return;
+    }
+    log.error('handleLoadPlanContent stat error:', err);
+    host.postMessage({
+      type: 'plan-content',
+      worktreeId: wt.id,
+      planPath,
+      status: 'error',
+      message: (err as Error).message,
+    });
+    return;
+  }
+
+  try {
+    const handle = await fs.promises.open(absolutePath, 'r');
+    try {
+      const buffer = Buffer.alloc(PLAN_PREVIEW_MAX_BYTES + 1);
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+      const truncated = bytesRead > PLAN_PREVIEW_MAX_BYTES;
+      const content = buffer
+        .subarray(0, Math.min(bytesRead, PLAN_PREVIEW_MAX_BYTES))
+        .toString('utf8');
+      host.postMessage({
+        type: 'plan-content',
+        worktreeId: wt.id,
+        planPath,
+        status: 'loaded',
+        content,
+        truncated,
+      });
+    } finally {
+      await handle.close();
+    }
+  } catch (err) {
+    log.error('handleLoadPlanContent read error:', err);
+    reportError(err as Error, { context: 'handleLoadPlanContent' });
+    host.postMessage({
+      type: 'plan-content',
+      worktreeId: wt.id,
+      planPath,
+      status: 'error',
+      message: (err as Error).message,
+    });
+  }
+}
+
 /** Returns the view column of a tab group that has no Shiftspace webview tab, or undefined. */
 function findNonShiftspaceColumn(): vscode.ViewColumn | undefined {
   for (const group of vscode.window.tabGroups.all) {

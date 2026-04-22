@@ -35,6 +35,7 @@ export function registerPanelHandlers(
       sharedGit.provider?.handleFileClick(worktreeId, filePath, line),
     handleFolderClick: (worktreeId, folderPath) =>
       sharedGit.provider?.handleFolderClick(worktreeId, folderPath),
+    handleLoadPlanContent: (worktreeId) => sharedGit.provider?.handleLoadPlanContent(worktreeId),
     handleGetBranchList: (worktreeId) => sharedGit.provider?.handleGetBranchList(worktreeId),
     handleCheckoutBranch: (worktreeId, branch) =>
       sharedGit.provider?.handleCheckoutBranch(worktreeId, branch),

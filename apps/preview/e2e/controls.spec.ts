@@ -70,4 +70,35 @@ test.describe('Control panel', () => {
 
     await expect(page).toHaveScreenshot('delete-popover-cancelled.png');
   });
+
+  test('plan button appears only when planPath is set', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    // Seeded: wt-0 has no plan, wt-1 does.
+    await expect(page.getByTestId('plan-button-wt-0')).toHaveCount(0);
+    await expect(page.getByTestId('plan-button-wt-1')).toBeVisible();
+
+    // Toggle wt-1's plan off via the control panel — the button disappears.
+    await page.getByTestId('controls-plan-wt-1').click();
+    await expect(page.getByTestId('plan-button-wt-1')).toHaveCount(0);
+
+    // Toggle wt-0's plan on — the button appears.
+    await page.getByTestId('controls-plan-wt-0').click();
+    await expect(page.getByTestId('plan-button-wt-0')).toBeVisible();
+  });
+
+  test('badge description appears in a tooltip on hover', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    // Seeded: wt-1 has both a badge and a description.
+    const badge = page.getByTestId('worktree-badge');
+    await expect(badge).toBeVisible();
+    await badge.hover();
+
+    await expect(page.getByText('Last touched 3 weeks ago', { exact: false })).toBeVisible();
+  });
 });
