@@ -18,6 +18,7 @@ export function resetAllStores(): void {
     worktrees: new Map(),
     branchLists: new Map(),
     lastFetchAt: new Map(),
+    planContents: new Map(),
   });
   useInspectionStore.setState({
     mode: { type: 'grove' },

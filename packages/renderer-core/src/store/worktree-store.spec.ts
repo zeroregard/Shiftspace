@@ -23,6 +23,7 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
       worktrees: new Map(),
       branchLists: new Map(),
       lastFetchAt: new Map(),
+      planContents: new Map(),
     });
     useOperationStore.setState({ operations: new Map() });
   });

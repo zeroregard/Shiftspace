@@ -27,6 +27,8 @@ export {
   type FileDiagnosticSummary,
   // Store
   useWorktreeStore,
+  planContentKey,
+  type PlanContentEntry,
   useActionStore,
   useInsightStore,
   getFileFindings,

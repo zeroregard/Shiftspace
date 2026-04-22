@@ -12,65 +12,119 @@ export const WORKTREE_CONFIG_FILENAME = '.shiftspace-worktree.json';
 const VALID_COLORS = ['neutral', 'info', 'success', 'warning', 'danger'] as const;
 type ValidColor = (typeof VALID_COLORS)[number];
 
+export interface WorktreeConfig {
+  badge?: WorktreeBadge;
+  /** Plan file path, relative to the worktree root. */
+  planPath?: string;
+}
+
 /**
  * Read and validate the optional `.shiftspace-worktree.json` in a worktree
- * root. Returns the parsed badge, or undefined if the file doesn't exist, is
- * malformed, or doesn't contain a valid badge.
+ * root. Returns the parsed config, or an empty object if the file doesn't
+ * exist, is malformed, or fails validation of every field.
  *
- * Schema (v2):
- *   { "badge": { "label": "stale", "color": "warning" } }
+ * Schema (v3):
+ *   {
+ *     "planPath": "PLAN.md",
+ *     "badge": {
+ *       "label": "stale",
+ *       "color": "warning",
+ *       "description": "Needs rebase against main."
+ *     }
+ *   }
  *
- * - `label` is free-form text.
- * - `color` (optional) is one of: neutral, info, success, warning, danger.
- *   Omitting it defaults to neutral. Constraining color to a semantic set
- *   keeps badges theme-coherent and avoids CSS injection in the webview.
+ * - `planPath` must be a non-empty relative path. Absolute paths are rejected
+ *   to keep file access scoped to the worktree.
+ * - `badge.label` is free-form text.
+ * - `badge.color` (optional) is one of: neutral, info, success, warning, danger.
+ *   Constraining color to a semantic set keeps badges theme-coherent.
+ * - `badge.description` (optional) is free-form text shown on hover.
+ *
+ * Invalid fields are dropped individually — a bad `badge` never poisons a
+ * good `planPath` and vice versa.
  */
-export async function readWorktreeBadge(worktreePath: string): Promise<WorktreeBadge | undefined> {
+export async function readWorktreeConfig(worktreePath: string): Promise<WorktreeConfig> {
   const filePath = path.join(worktreePath, WORKTREE_CONFIG_FILENAME);
   let raw: string;
   try {
     raw = await fs.readFile(filePath, 'utf8');
   } catch (err) {
-    if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') return undefined;
-    log.warn(`readWorktreeBadge: failed to read ${filePath}:`, err);
-    return undefined;
+    if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') return {};
+    log.warn(`readWorktreeConfig: failed to read ${filePath}:`, err);
+    return {};
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    log.warn(`readWorktreeBadge: invalid JSON in ${filePath}:`, err);
-    return undefined;
+    log.warn(`readWorktreeConfig: invalid JSON in ${filePath}:`, err);
+    return {};
   }
 
-  if (typeof parsed !== 'object' || parsed === null) return undefined;
+  if (typeof parsed !== 'object' || parsed === null) return {};
+
+  return {
+    badge: parseBadge(parsed, filePath),
+    planPath: parsePlanPath(parsed, filePath),
+  };
+}
+
+function parseBadge(parsed: unknown, filePath: string): WorktreeBadge | undefined {
   const badge = (parsed as { badge?: unknown }).badge;
+  if (badge === undefined) return undefined;
   if (typeof badge !== 'object' || badge === null) return undefined;
 
   const b = badge as Record<string, unknown>;
   if (typeof b['label'] !== 'string') {
-    log.warn(`readWorktreeBadge: invalid badge shape in ${filePath}`);
+    log.warn(`readWorktreeConfig: invalid badge shape in ${filePath}`);
     return undefined;
   }
 
   let color: ValidColor | undefined;
   if (b['color'] !== undefined) {
     if (typeof b['color'] !== 'string' || !VALID_COLORS.includes(b['color'] as ValidColor)) {
-      log.warn(`readWorktreeBadge: invalid color in ${filePath}`);
+      log.warn(`readWorktreeConfig: invalid badge color in ${filePath}`);
       return undefined;
     }
     color = b['color'] as ValidColor;
   }
 
-  return { label: b['label'], ...(color ? { color } : {}) };
+  let description: string | undefined;
+  if (b['description'] !== undefined) {
+    if (typeof b['description'] !== 'string') {
+      log.warn(`readWorktreeConfig: invalid badge description in ${filePath}`);
+    } else if (b['description'].length > 0) {
+      description = b['description'];
+    }
+  }
+
+  return {
+    label: b['label'],
+    ...(color ? { color } : {}),
+    ...(description ? { description } : {}),
+  };
+}
+
+function parsePlanPath(parsed: unknown, filePath: string): string | undefined {
+  const planPath = (parsed as { planPath?: unknown }).planPath;
+  if (planPath === undefined) return undefined;
+  if (typeof planPath !== 'string' || planPath.length === 0) {
+    log.warn(`readWorktreeConfig: invalid planPath in ${filePath}`);
+    return undefined;
+  }
+  if (path.isAbsolute(planPath)) {
+    log.warn(`readWorktreeConfig: rejecting absolute planPath in ${filePath}`);
+    return undefined;
+  }
+  return planPath;
 }
 
 /** Deep equality check for two optional badges. */
 export function badgesEqual(a: WorktreeBadge | undefined, b: WorktreeBadge | undefined): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  return a.label === b.label && a.color === b.color;
+  return a.label === b.label && a.color === b.color && a.description === b.description;
 }
 
 /**
@@ -140,11 +194,13 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
       timeout: 5000,
     });
     const worktrees = parseWorktreeOutput(stdout);
-    // Read per-worktree badge configs in parallel. Failures are already
-    // absorbed by readWorktreeBadge, so this never throws.
+    // Read per-worktree configs in parallel. Failures are already absorbed
+    // by readWorktreeConfig, so this never throws.
     await Promise.all(
       worktrees.map(async (wt) => {
-        wt.badge = await readWorktreeBadge(wt.path);
+        const cfg = await readWorktreeConfig(wt.path);
+        wt.badge = cfg.badge;
+        wt.planPath = cfg.planPath;
       })
     );
     return worktrees;

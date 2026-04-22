@@ -4,6 +4,7 @@ import {
   type WebviewMessage,
 } from '@shiftspace/renderer';
 import type { MockGitProvider, OpName } from './mock-git-provider';
+import type { MockEngine } from './engine';
 
 /**
  * Drives the preview's webview message protocol end-to-end.
@@ -18,10 +19,12 @@ import type { MockGitProvider, OpName } from './mock-git-provider';
 export class MockWebviewBridge {
   readonly router = new MessageRouter();
   readonly provider: MockGitProvider;
+  readonly engine: MockEngine;
   readonly posted: WebviewMessage[] = [];
 
-  constructor(provider: MockGitProvider) {
+  constructor(provider: MockGitProvider, engine: MockEngine) {
     this.provider = provider;
+    this.engine = engine;
     registerGitProviderHandlers(this.router, provider);
     // Parity with extension: set-diff-mode is registered separately
     // (the extension persists view-settings first, but the preview has no
@@ -51,6 +54,25 @@ export class MockWebviewBridge {
       clearCalls: () => {
         this.provider.calls.length = 0;
         this.posted.length = 0;
+      },
+      // Opt-in feature toggles — used by E2E specs that exercise planPath
+      // and badge.description without polluting the default seed (which
+      // would force every screenshot baseline to update).
+      enablePlanPath: (worktreeId: string, planPath = 'PLAN.md', planContent?: string) => {
+        this.engine.setPlanConfig(worktreeId, {
+          planPath,
+          planContent:
+            planContent ??
+            `# Plan for ${worktreeId}\n\nRepresentative preview content for the plan tooltip.`,
+        });
+      },
+      disablePlanPath: (worktreeId: string) => {
+        this.engine.setPlanConfig(worktreeId, undefined);
+      },
+      enableBadgeDescription: (worktreeId: string, description: string) => {
+        const wt = this.engine.getWorktrees().find((w) => w.id === worktreeId);
+        if (!wt?.badge) return;
+        this.engine.setBadge(worktreeId, { ...wt.badge, description });
       },
     };
   }

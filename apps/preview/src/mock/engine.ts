@@ -194,6 +194,7 @@ const DEFAULT_BRANCH = 'main';
 
 export class MockEngine {
   private worktrees = new Map<string, WorktreeState>();
+  private planContents = new Map<string, string>();
   private agents = new Map<
     string,
     AgentConfig & {
@@ -208,6 +209,8 @@ export class MockEngine {
   constructor() {
     // Initialize with first two preset worktrees. The second preset carries a
     // sample badge so screenshot tests exercise the badge-in-card layout.
+    // Optional features (plan path, badge description) stay opt-in via the
+    // preview control panel so existing screenshots stay stable.
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {
       this.addWorktree({
         id: `wt-${i}`,
@@ -261,8 +264,19 @@ export class MockEngine {
     template: TemplateKey;
     isMainWorktree?: boolean;
     badge?: WorktreeBadge;
+    planPath?: string;
+    planContent?: string;
   }) {
-    const { id, branch, path, template, isMainWorktree = false, badge } = opts;
+    const {
+      id,
+      branch,
+      path,
+      template,
+      isMainWorktree = false,
+      badge,
+      planPath,
+      planContent,
+    } = opts;
     const isDefault = branch === DEFAULT_BRANCH;
     const diffMode: DiffMode = isDefault
       ? { type: 'working' }
@@ -282,9 +296,43 @@ export class MockEngine {
       isMainWorktree,
       lastActivityAt: Date.now(),
       badge,
+      planPath,
     };
     this.worktrees.set(id, wt);
+    if (planContent !== undefined) this.planContents.set(id, planContent);
     this.emit({ type: 'worktree-added', worktree: wt });
+  }
+
+  /** Returns the mocked plan content for a worktree, or undefined if none is set. */
+  getPlanContent(worktreeId: string): string | undefined {
+    return this.planContents.get(worktreeId);
+  }
+
+  /** Control-panel hook: set (or clear) a worktree's plan path and content. */
+  setPlanConfig(
+    worktreeId: string,
+    config: { planPath?: string; planContent?: string } | undefined
+  ): void {
+    const wt = this.worktrees.get(worktreeId);
+    if (!wt) return;
+    const planPath = config?.planPath;
+    const updated: WorktreeState = { ...wt, planPath };
+    this.worktrees.set(worktreeId, updated);
+    if (config?.planContent !== undefined) {
+      this.planContents.set(worktreeId, config.planContent);
+    } else if (!planPath) {
+      this.planContents.delete(worktreeId);
+    }
+    this.emit({ type: 'worktree-added', worktree: updated });
+  }
+
+  /** Control-panel hook: set (or clear) a worktree's badge. */
+  setBadge(worktreeId: string, badge: WorktreeBadge | undefined): void {
+    const wt = this.worktrees.get(worktreeId);
+    if (!wt) return;
+    const updated: WorktreeState = { ...wt, badge };
+    this.worktrees.set(worktreeId, updated);
+    this.emit({ type: 'worktree-added', worktree: updated });
   }
 
   addPresetWorktree(presetIndex: number) {
@@ -566,6 +614,8 @@ export class MockEngine {
       this.emit({ type: 'worktree-removed', worktreeId: wt.id });
     });
     this.worktrees.clear();
+
+    this.planContents.clear();
 
     // Re-initialize (mirror the constructor — keep the sample badge)
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {

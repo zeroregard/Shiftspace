@@ -15,6 +15,7 @@ import type { DiffMode } from '../types';
 export interface GitProviderHandlers {
   handleFileClick(worktreeId: string, filePath: string, line?: number): unknown;
   handleFolderClick(worktreeId: string, folderPath: string): unknown;
+  handleLoadPlanContent(worktreeId: string): unknown;
   handleGetBranchList(worktreeId: string): unknown;
   handleCheckoutBranch(worktreeId: string, branch: string): unknown;
   handleFetchBranches(worktreeId: string): unknown;
@@ -49,6 +50,9 @@ export function registerGitProviderHandlers(
   });
   router.on('folder-click', (m) => {
     void provider.handleFolderClick(m.worktreeId, m.folderPath);
+  });
+  router.on('load-plan-content', (m) => {
+    void provider.handleLoadPlanContent(m.worktreeId);
   });
   router.on('get-branch-list', (m) => {
     void provider.handleGetBranchList(m.worktreeId);

@@ -34,7 +34,10 @@ export const SidebarPage: React.FC = () => {
     engineRef.current = new MockEngine();
   }
   if (!bridgeRef.current) {
-    bridgeRef.current = new MockWebviewBridge(new MockGitProvider({ engine: engineRef.current }));
+    bridgeRef.current = new MockWebviewBridge(
+      new MockGitProvider({ engine: engineRef.current }),
+      engineRef.current
+    );
     bridgeRef.current.installTestHook();
   }
 

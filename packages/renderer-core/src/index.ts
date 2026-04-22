@@ -31,6 +31,8 @@ export type { NodeComponentProps } from './tree-canvas';
 // Store
 export {
   useWorktreeStore,
+  planContentKey,
+  type PlanContentEntry,
   useActionStore,
   useInsightStore,
   getFileFindings,
@@ -83,6 +85,7 @@ export { useWorktreeRename } from './hooks/use-worktree-rename';
 export { useRelativeTime } from './hooks/use-relative-time';
 export { useResizableWidth } from './hooks/use-resizable-width';
 export { useFilteredFiles } from './hooks/use-filtered-files';
+export { useShiftHeld } from './hooks/use-shift-held';
 
 // Overlays
 export { DiffPopover } from './overlays/diff-popover';
@@ -111,6 +114,7 @@ export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/diagnostic
 
 // Components (shared between views)
 export { ActionBar } from './components/action-bar';
+export { PlanButton } from './components/plan-button';
 
 // Protocol (shared between webview hosts and preview)
 export {

@@ -9,6 +9,8 @@ export interface WorktreeBadge {
   label: string;
   /** Semantic color, backed by a VSCode theme token. Defaults to 'neutral'. */
   color?: WorktreeBadgeColor;
+  /** Optional free-form description shown in a hover tooltip. */
+  description?: string;
 }
 
 export interface WorktreeState {
@@ -35,6 +37,13 @@ export interface WorktreeState {
   lastActivityAt: number;
   /** Optional badge defined by `.shiftspace-worktree.json` at the worktree root. */
   badge?: WorktreeBadge;
+  /**
+   * Optional path to a plan document (typically a Markdown file), relative
+   * to the worktree root. When set, the UI surfaces a Plan icon button on
+   * the worktree card that opens the file and can preview its contents on
+   * shift-hover. Defined by `.shiftspace-worktree.json`.
+   */
+  planPath?: string;
 }
 
 export interface DiffLine {

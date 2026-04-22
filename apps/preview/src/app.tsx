@@ -40,7 +40,7 @@ export const App: React.FC = () => {
     // uses, dispatching into a MockGitProvider. This ensures Playwright
     // exercises the real message protocol, not a shortcut around it.
     const provider = new MockGitProvider({ engine: engineRef.current });
-    bridgeRef.current = new MockWebviewBridge(provider);
+    bridgeRef.current = new MockWebviewBridge(provider, engineRef.current);
     bridgeRef.current.installTestHook();
   }
 
@@ -62,6 +62,12 @@ export const App: React.FC = () => {
   };
   const handleRenameWorktree = (worktreeId: string, newName: string) => {
     bridgeRef.current?.postMessage({ type: 'rename-worktree', worktreeId, newName });
+  };
+  const handleLoadPlanContent = (worktreeId: string) => {
+    bridgeRef.current?.postMessage({ type: 'load-plan-content', worktreeId });
+  };
+  const handleFileClick = (worktreeId: string, filePath: string, line?: number) => {
+    bridgeRef.current?.postMessage({ type: 'file-click', worktreeId, filePath, line });
   };
 
   // Initialize mock action configs and pipelines once on mount / reset
@@ -163,6 +169,8 @@ export const App: React.FC = () => {
         onRunPipeline={handleRunPipeline}
         onRecheckInsights={handleRecheckInsights}
         onRenameWorktree={handleRenameWorktree}
+        onLoadPlanContent={handleLoadPlanContent}
+        onFileClick={handleFileClick}
         onSetPackage={handleSetPackage}
         onDetectPackages={handleDetectPackages}
         onAddWorktree={handleAddWorktree}

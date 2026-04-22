@@ -17,6 +17,7 @@ interface Props {
   onEvent?: (handler: (event: ShiftspaceEvent) => void) => () => void;
   onFileClick?: (worktreeId: string, filePath: string, line?: number) => void;
   onTerminalOpen?: (worktreeId: string) => void;
+  onLoadPlanContent?: (worktreeId: string) => void;
   onDiffModeChange?: (worktreeId: string, diffMode: DiffMode) => void;
   onRequestBranchList?: (worktreeId: string) => void;
   onCheckoutBranch?: (worktreeId: string, branch: string) => void;
@@ -46,6 +47,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   initialWorktrees = [],
   onEvent,
   onFileClick,
+  onLoadPlanContent,
   onDiffModeChange,
   onRequestBranchList,
   onCheckoutBranch,
@@ -81,6 +83,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
     <ActionsProvider
       onFileClick={onFileClick}
       onFolderClick={onFolderClick}
+      onLoadPlanContent={onLoadPlanContent}
       onDiffModeChange={onDiffModeChange}
       onRequestBranchList={onRequestBranchList}
       onCheckoutBranch={onCheckoutBranch}

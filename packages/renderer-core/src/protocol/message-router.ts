@@ -30,6 +30,8 @@ export type WebviewMessage =
   // File / folder interaction
   | { type: 'file-click'; worktreeId: string; filePath: string; line?: number }
   | { type: 'folder-click'; worktreeId: string; folderPath: string }
+  // Plan document preview (async round trip → host replies with `plan-content`)
+  | { type: 'load-plan-content'; worktreeId: string }
   // Worktree lifecycle
   | { type: 'add-worktree' }
   | { type: 'remove-worktree'; worktreeId: string }

@@ -1,5 +1,5 @@
 import type { GitProviderHandlers, DiffMode } from '@shiftspace/renderer';
-import { useWorktreeStore } from '@shiftspace/renderer';
+import { useWorktreeStore, planContentKey } from '@shiftspace/renderer';
 import { MOCK_BRANCHES } from './engine';
 import type { MockEngine } from './engine';
 
@@ -57,6 +57,27 @@ export class MockGitProvider implements GitProviderHandlers {
 
   handleFolderClick(worktreeId: string, folderPath: string): void {
     this.logCall('folder-click', [worktreeId, folderPath]);
+  }
+
+  handleLoadPlanContent(worktreeId: string): void {
+    this.logCall('load-plan-content', [worktreeId]);
+    const wt = this.engine.getWorktrees().find((w) => w.id === worktreeId);
+    if (!wt?.planPath) return;
+    const key = planContentKey(worktreeId, wt.planPath);
+    if (this.shouldFail('load-plan-content')) {
+      useWorktreeStore
+        .getState()
+        .setPlanContent(key, { status: 'error', message: 'mock: failed to load plan' });
+      return;
+    }
+    const content = this.engine.getPlanContent(worktreeId);
+    if (content === undefined) {
+      useWorktreeStore.getState().setPlanContent(key, { status: 'missing' });
+      return;
+    }
+    useWorktreeStore
+      .getState()
+      .setPlanContent(key, { status: 'loaded', content, truncated: false });
   }
 
   handleGetBranchList(worktreeId: string): void {
@@ -135,4 +156,5 @@ export type OpName =
   | 'rename-worktree'
   | 'checkout-branch'
   | 'swap-branches'
-  | 'fetch-branches';
+  | 'fetch-branches'
+  | 'load-plan-content';

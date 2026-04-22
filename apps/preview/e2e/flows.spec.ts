@@ -21,6 +21,9 @@ interface TestHook {
   getCalls: () => Array<{ op: string; args: unknown[] }>;
   getPostedMessages: () => Array<Record<string, unknown>>;
   clearCalls: () => void;
+  enablePlanPath: (worktreeId: string, planPath?: string, planContent?: string) => void;
+  disablePlanPath: (worktreeId: string) => void;
+  enableBadgeDescription: (worktreeId: string, description: string) => void;
 }
 
 declare global {
@@ -122,6 +125,77 @@ test.describe('Flows – round-trip message routing', () => {
     await expect
       .poll(() => getCalls(page))
       .toEqual(expect.arrayContaining([expect.objectContaining({ op: 'add-worktree' })]));
+  });
+
+  test('plan button click posts file-click with the worktree planPath', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    // Plan path is opt-in — enable it through the test hook first.
+    await page.evaluate(() => window.__shiftspaceTest?.enablePlanPath('wt-1'));
+    await clearCalls(page);
+
+    await page.getByTestId('plan-button-wt-1').click();
+
+    await expect
+      .poll(() => getPostedMessages(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'file-click',
+            worktreeId: 'wt-1',
+            filePath: 'PLAN.md',
+          }),
+        ])
+      );
+
+    // `args` survives serialization through evaluate(); a trailing `undefined`
+    // becomes `null` over the wire, so match the prefix instead of the exact
+    // shape.
+    await expect
+      .poll(() => getCalls(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            op: 'file-click',
+            args: expect.arrayContaining(['wt-1', 'PLAN.md']),
+          }),
+        ])
+      );
+  });
+
+  test('shift-hovering the plan button triggers load-plan-content once', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    await page.evaluate(() => window.__shiftspaceTest?.enablePlanPath('wt-1'));
+    await clearCalls(page);
+
+    const btn = page.getByTestId('plan-button-wt-1');
+    await page.keyboard.down('Shift');
+    await btn.hover();
+    // Wait long enough for the load request + store update
+    await page.waitForTimeout(150);
+
+    await expect
+      .poll(() => getCalls(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ op: 'load-plan-content', args: ['wt-1'] }),
+        ])
+      );
+
+    // Re-hover — cache should prevent a second request
+    await page.mouse.move(10, 10);
+    await btn.hover();
+    await page.waitForTimeout(100);
+    await page.keyboard.up('Shift');
+
+    const calls = await getCalls(page);
+    const loadCalls = calls.filter((c) => c.op === 'load-plan-content');
+    expect(loadCalls).toHaveLength(1);
   });
 
   test('control panel remove button also routes through the bridge', async ({ page }) => {
