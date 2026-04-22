@@ -144,11 +144,17 @@ test.describe('Flows – round-trip message routing', () => {
         ])
       );
 
+    // `args` survives serialization through evaluate(); a trailing `undefined`
+    // becomes `null` over the wire, so match the prefix instead of the exact
+    // shape.
     await expect
       .poll(() => getCalls(page))
       .toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ op: 'file-click', args: ['wt-1', 'PLAN.md', undefined] }),
+          expect.objectContaining({
+            op: 'file-click',
+            args: expect.arrayContaining(['wt-1', 'PLAN.md']),
+          }),
         ])
       );
   });

@@ -80,6 +80,9 @@ test.describe('Control panel', () => {
     await expect(page.getByTestId('plan-button-wt-0')).toHaveCount(0);
     await expect(page.getByTestId('plan-button-wt-1')).toBeVisible();
 
+    // Baseline: wt-1 card shows the Plan icon button next to the badge.
+    await expect(page).toHaveScreenshot('plan-button-and-badge-visible.png');
+
     // Toggle wt-1's plan off via the control panel — the button disappears.
     await page.getByTestId('controls-plan-wt-1').click();
     await expect(page.getByTestId('plan-button-wt-1')).toHaveCount(0);
@@ -99,6 +102,33 @@ test.describe('Control panel', () => {
     await expect(badge).toBeVisible();
     await badge.hover();
 
+    // Tooltip uses delayDuration=200ms.
     await expect(page.getByText('Last touched 3 weeks ago', { exact: false })).toBeVisible();
+
+    await expect(page).toHaveScreenshot('badge-description-tooltip.png');
+  });
+
+  test('shift-hover on the plan button shows the plan preview', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    const planBtn = page.getByTestId('plan-button-wt-1');
+    await expect(planBtn).toBeVisible();
+
+    // Hover first, then press Shift — the button's hover+shift gate opens the
+    // tooltip and kicks off the mock `load-plan-content` round trip which
+    // resolves synchronously against the seeded plan content.
+    await planBtn.hover();
+    await page.keyboard.down('Shift');
+    // Plan content is seeded synchronously in the mock; the preview text is
+    // the authoritative signal that the tooltip has populated.
+    await expect(
+      page.getByText('Ship a minimal email + password flow', { exact: false })
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot('plan-preview-tooltip.png');
+
+    await page.keyboard.up('Shift');
   });
 });
