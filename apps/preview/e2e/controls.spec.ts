@@ -71,25 +71,25 @@ test.describe('Control panel', () => {
     await expect(page).toHaveScreenshot('delete-popover-cancelled.png');
   });
 
-  test('plan button appears only when planPath is set', async ({ page }) => {
+  test('plan button toggles with the planPath control', async ({ page }) => {
     await page.goto('/');
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
 
-    // Seeded: wt-0 has no plan, wt-1 does.
+    // Default seed: neither worktree has a planPath — the feature is opt-in.
     await expect(page.getByTestId('plan-button-wt-0')).toHaveCount(0);
+    await expect(page.getByTestId('plan-button-wt-1')).toHaveCount(0);
+
+    // Toggle wt-1's plan on via the control panel — the button appears.
+    await page.getByTestId('controls-plan-wt-1').click();
     await expect(page.getByTestId('plan-button-wt-1')).toBeVisible();
 
     // Baseline: wt-1 card shows the Plan icon button next to the badge.
     await expect(page).toHaveScreenshot('plan-button-and-badge-visible.png');
 
-    // Toggle wt-1's plan off via the control panel — the button disappears.
+    // Toggle off again — the button disappears.
     await page.getByTestId('controls-plan-wt-1').click();
     await expect(page.getByTestId('plan-button-wt-1')).toHaveCount(0);
-
-    // Toggle wt-0's plan on — the button appears.
-    await page.getByTestId('controls-plan-wt-0').click();
-    await expect(page.getByTestId('plan-button-wt-0')).toBeVisible();
   });
 
   test('badge description appears in a tooltip on hover', async ({ page }) => {
@@ -97,7 +97,9 @@ test.describe('Control panel', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
 
-    // Seeded: wt-1 has both a badge and a description.
+    // Enable the description on wt-1's badge via the control panel.
+    await page.getByTestId('controls-badge-desc-wt-1').click();
+
     const badge = page.getByTestId('worktree-badge');
     await expect(badge).toBeVisible({ timeout: 5000 });
     await badge.hover();
@@ -116,6 +118,9 @@ test.describe('Control panel', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
 
+    // Enable the plan via the control panel — also seeds preview content.
+    await page.getByTestId('controls-plan-wt-1').click();
+
     const planBtn = page.getByTestId('plan-button-wt-1');
     await expect(planBtn).toBeVisible({ timeout: 5000 });
 
@@ -129,7 +134,8 @@ test.describe('Control panel', () => {
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
-    await expect(tooltip).toContainText('Ship a minimal email + password flow');
+    // Matches the preview content set by `WorktreeMetaControls.togglePlan`.
+    await expect(tooltip).toContainText('Representative preview content');
 
     await expect(page).toHaveScreenshot('plan-preview-tooltip.png');
 

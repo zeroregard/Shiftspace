@@ -192,23 +192,6 @@ export const MOCK_BRANCHES = [
 
 const DEFAULT_BRANCH = 'main';
 
-const DEFAULT_PLAN_CONTENT = `# Auth worktree plan
-
-## Goal
-Ship a minimal email + password flow so the dashboard can drop the dev-only
-"pretend you're logged in" shim.
-
-## Steps
-1. POST /auth/sign-in, returns an httpOnly session cookie.
-2. Session middleware that populates \`req.user\` or 401s.
-3. Sign-in form on /login with a redirect-back param.
-4. E2E: sign-in succeeds, bad password surfaces an inline error.
-
-## Out of scope (for this branch)
-- OAuth / social providers — follow-up ticket.
-- Password reset — follow-up ticket.
-`;
-
 export class MockEngine {
   private worktrees = new Map<string, WorktreeState>();
   private planContents = new Map<string, string>();
@@ -225,7 +208,9 @@ export class MockEngine {
 
   constructor() {
     // Initialize with first two preset worktrees. The second preset carries a
-    // sample badge + plan so screenshot tests exercise both layouts.
+    // sample badge so screenshot tests exercise the badge-in-card layout.
+    // Optional features (plan path, badge description) stay opt-in via the
+    // preview control panel so existing screenshots stay stable.
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {
       this.addWorktree({
         id: `wt-${i}`,
@@ -233,16 +218,7 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
-        badge:
-          i === 1
-            ? {
-                label: 'stale',
-                color: 'warning',
-                description: 'Last touched 3 weeks ago; needs a rebase against main.',
-              }
-            : undefined,
-        planPath: i === 1 ? 'PLAN.md' : undefined,
-        planContent: i === 1 ? DEFAULT_PLAN_CONTENT : undefined,
+        badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
       });
     });
   }
@@ -641,7 +617,7 @@ export class MockEngine {
 
     this.planContents.clear();
 
-    // Re-initialize (mirror the constructor — keep the sample badge + plan)
+    // Re-initialize (mirror the constructor — keep the sample badge)
     WORKTREE_PRESETS.slice(0, 2).forEach((preset, i) => {
       this.addWorktree({
         id: `wt-${i}`,
@@ -649,16 +625,7 @@ export class MockEngine {
         path: preset.path,
         template: preset.template,
         isMainWorktree: i === 0,
-        badge:
-          i === 1
-            ? {
-                label: 'stale',
-                color: 'warning',
-                description: 'Last touched 3 weeks ago; needs a rebase against main.',
-              }
-            : undefined,
-        planPath: i === 1 ? 'PLAN.md' : undefined,
-        planContent: i === 1 ? DEFAULT_PLAN_CONTENT : undefined,
+        badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
       });
     });
   }

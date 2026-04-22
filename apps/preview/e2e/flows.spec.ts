@@ -128,6 +128,9 @@ test.describe('Flows – round-trip message routing', () => {
     await page.goto('/');
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
+
+    // Plan path is opt-in — enable it through the control panel first.
+    await page.getByTestId('controls-plan-wt-1').click();
     await clearCalls(page);
 
     await page.getByTestId('plan-button-wt-1').click();
@@ -163,6 +166,8 @@ test.describe('Flows – round-trip message routing', () => {
     await page.goto('/');
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
+
+    await page.getByTestId('controls-plan-wt-1').click();
     await clearCalls(page);
 
     const btn = page.getByTestId('plan-button-wt-1');
