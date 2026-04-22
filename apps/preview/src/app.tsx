@@ -40,7 +40,7 @@ export const App: React.FC = () => {
     // uses, dispatching into a MockGitProvider. This ensures Playwright
     // exercises the real message protocol, not a shortcut around it.
     const provider = new MockGitProvider({ engine: engineRef.current });
-    bridgeRef.current = new MockWebviewBridge(provider);
+    bridgeRef.current = new MockWebviewBridge(provider, engineRef.current);
     bridgeRef.current.installTestHook();
   }
 

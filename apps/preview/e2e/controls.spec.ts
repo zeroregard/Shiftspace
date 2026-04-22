@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test';
 
+declare global {
+  interface Window {
+    __shiftspaceTest?: {
+      enablePlanPath: (worktreeId: string, planPath?: string, planContent?: string) => void;
+      disablePlanPath: (worktreeId: string) => void;
+      enableBadgeDescription: (worktreeId: string, description: string) => void;
+    };
+  }
+}
+
 test.describe('Control panel', () => {
   test('control panel is visible', async ({ page }) => {
     await page.goto('/');
@@ -71,7 +81,7 @@ test.describe('Control panel', () => {
     await expect(page).toHaveScreenshot('delete-popover-cancelled.png');
   });
 
-  test('plan button toggles with the planPath control', async ({ page }) => {
+  test('plan button toggles with the planPath feature', async ({ page }) => {
     await page.goto('/');
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
@@ -80,15 +90,16 @@ test.describe('Control panel', () => {
     await expect(page.getByTestId('plan-button-wt-0')).toHaveCount(0);
     await expect(page.getByTestId('plan-button-wt-1')).toHaveCount(0);
 
-    // Toggle wt-1's plan on via the control panel — the button appears.
-    await page.getByTestId('controls-plan-wt-1').click();
+    // Enable plan on wt-1 via the test hook (no UI surface — keeps the
+    // control panel pixel-stable so existing baselines don't drift).
+    await page.evaluate(() => window.__shiftspaceTest?.enablePlanPath('wt-1'));
     await expect(page.getByTestId('plan-button-wt-1')).toBeVisible();
 
     // Baseline: wt-1 card shows the Plan icon button next to the badge.
     await expect(page).toHaveScreenshot('plan-button-and-badge-visible.png');
 
-    // Toggle off again — the button disappears.
-    await page.getByTestId('controls-plan-wt-1').click();
+    // Disable again — the button disappears.
+    await page.evaluate(() => window.__shiftspaceTest?.disablePlanPath('wt-1'));
     await expect(page.getByTestId('plan-button-wt-1')).toHaveCount(0);
   });
 
@@ -97,8 +108,12 @@ test.describe('Control panel', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
 
-    // Enable the description on wt-1's badge via the control panel.
-    await page.getByTestId('controls-badge-desc-wt-1').click();
+    await page.evaluate(() =>
+      window.__shiftspaceTest?.enableBadgeDescription(
+        'wt-1',
+        'Last touched 3 weeks ago; needs a rebase.'
+      )
+    );
 
     const badge = page.getByTestId('worktree-badge');
     await expect(badge).toBeVisible({ timeout: 5000 });
@@ -118,8 +133,7 @@ test.describe('Control panel', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
 
-    // Enable the plan via the control panel — also seeds preview content.
-    await page.getByTestId('controls-plan-wt-1').click();
+    await page.evaluate(() => window.__shiftspaceTest?.enablePlanPath('wt-1'));
 
     const planBtn = page.getByTestId('plan-button-wt-1');
     await expect(planBtn).toBeVisible({ timeout: 5000 });
@@ -134,7 +148,7 @@ test.describe('Control panel', () => {
 
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible({ timeout: 5000 });
-    // Matches the preview content set by `WorktreeMetaControls.togglePlan`.
+    // Matches the preview content seeded by the test hook's default.
     await expect(tooltip).toContainText('Representative preview content');
 
     await expect(page).toHaveScreenshot('plan-preview-tooltip.png');

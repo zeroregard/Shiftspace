@@ -202,72 +202,9 @@ export const ControlPanel: React.FC<Props> = ({
                 ✕
               </button>
             </div>
-            <WorktreeMetaControls engine={engine} worktreeId={id} />
           </div>
         ))}
       </div>
     </div>
   );
 };
-
-/**
- * Per-worktree toggles that exercise the plan-path + badge-description
- * features. Kept in the preview control panel (not production UI) so
- * screenshots and flow tests can drive both states without needing a real
- * `.shiftspace-worktree.json` on disk.
- */
-function WorktreeMetaControls({ engine, worktreeId }: { engine: MockEngine; worktreeId: string }) {
-  const [planOn, setPlanOn] = useState<boolean>(
-    () => engine.getWorktrees().find((w) => w.id === worktreeId)?.planPath !== undefined
-  );
-  const [descOn, setDescOn] = useState<boolean>(
-    () => engine.getWorktrees().find((w) => w.id === worktreeId)?.badge?.description !== undefined
-  );
-
-  const togglePlan = () => {
-    const next = !planOn;
-    setPlanOn(next);
-    if (next) {
-      engine.setPlanConfig(worktreeId, {
-        planPath: 'PLAN.md',
-        planContent: `# Plan for ${worktreeId}\n\nRepresentative preview content for the plan tooltip.`,
-      });
-    } else {
-      engine.setPlanConfig(worktreeId, undefined);
-    }
-  };
-
-  const toggleDescription = () => {
-    const wt = engine.getWorktrees().find((w) => w.id === worktreeId);
-    const next = !descOn;
-    setDescOn(next);
-    const existingBadge = wt?.badge ?? { label: 'stale', color: 'warning' as const };
-    if (next) {
-      engine.setBadge(worktreeId, {
-        ...existingBadge,
-        description: 'Last touched 3 weeks ago; needs a rebase.',
-      });
-    } else {
-      engine.setBadge(worktreeId, { label: existingBadge.label, color: existingBadge.color });
-    }
-  };
-
-  return (
-    <div className="flex gap-1 items-center mt-1">
-      <button
-        onClick={togglePlan}
-        className={ctrlBtn(planOn, true)}
-        data-testid={`controls-plan-${worktreeId}`}
-      >
-        plan
-      </button>
-      <button
-        onClick={toggleDescription}
-        className={ctrlBtn(descOn, true)}
-        data-testid={`controls-badge-desc-${worktreeId}`}
-      >
-        desc
-      </button>
-    </div>
-  );
-}

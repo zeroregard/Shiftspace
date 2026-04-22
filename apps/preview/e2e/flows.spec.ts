@@ -21,6 +21,9 @@ interface TestHook {
   getCalls: () => Array<{ op: string; args: unknown[] }>;
   getPostedMessages: () => Array<Record<string, unknown>>;
   clearCalls: () => void;
+  enablePlanPath: (worktreeId: string, planPath?: string, planContent?: string) => void;
+  disablePlanPath: (worktreeId: string) => void;
+  enableBadgeDescription: (worktreeId: string, description: string) => void;
 }
 
 declare global {
@@ -129,8 +132,8 @@ test.describe('Flows – round-trip message routing', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
 
-    // Plan path is opt-in — enable it through the control panel first.
-    await page.getByTestId('controls-plan-wt-1').click();
+    // Plan path is opt-in — enable it through the test hook first.
+    await page.evaluate(() => window.__shiftspaceTest?.enablePlanPath('wt-1'));
     await clearCalls(page);
 
     await page.getByTestId('plan-button-wt-1').click();
@@ -167,7 +170,7 @@ test.describe('Flows – round-trip message routing', () => {
     await page.locator('.bg-canvas').waitFor();
     await page.waitForTimeout(300);
 
-    await page.getByTestId('controls-plan-wt-1').click();
+    await page.evaluate(() => window.__shiftspaceTest?.enablePlanPath('wt-1'));
     await clearCalls(page);
 
     const btn = page.getByTestId('plan-button-wt-1');
