@@ -28,17 +28,23 @@ export const Tooltip = ({
   contentClassName,
   sideOffset = 4,
   align,
-}: Props) => (
-  <RadixTooltip.Root delayDuration={delayDuration} open={open}>
-    <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>
-    <RadixTooltip.Portal>
-      <RadixTooltip.Content
-        className={contentClassName ?? DEFAULT_CONTENT_CLASS}
-        sideOffset={sideOffset}
-        align={align}
-      >
-        {content}
-      </RadixTooltip.Content>
-    </RadixTooltip.Portal>
-  </RadixTooltip.Root>
-);
+}: Props) => {
+  // Pass `open` only when explicitly controlled — Radix switches to
+  // controlled mode based on the presence of the prop, and some versions
+  // treat `open={undefined}` differently from an omitted prop.
+  const controlled = open !== undefined ? { open } : {};
+  return (
+    <RadixTooltip.Root delayDuration={delayDuration} {...controlled}>
+      <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>
+      <RadixTooltip.Portal>
+        <RadixTooltip.Content
+          className={contentClassName ?? DEFAULT_CONTENT_CLASS}
+          sideOffset={sideOffset}
+          align={align}
+        >
+          {content}
+        </RadixTooltip.Content>
+      </RadixTooltip.Portal>
+    </RadixTooltip.Root>
+  );
+};

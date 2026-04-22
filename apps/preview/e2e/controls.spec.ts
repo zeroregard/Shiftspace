@@ -99,11 +99,14 @@ test.describe('Control panel', () => {
 
     // Seeded: wt-1 has both a badge and a description.
     const badge = page.getByTestId('worktree-badge');
-    await expect(badge).toBeVisible();
+    await expect(badge).toBeVisible({ timeout: 5000 });
     await badge.hover();
+    // Tooltip uses delayDuration=200ms — pad so the open animation settles.
+    await page.waitForTimeout(400);
 
-    // Tooltip uses delayDuration=200ms.
-    await expect(page.getByText('Last touched 3 weeks ago', { exact: false })).toBeVisible();
+    const tooltip = page.getByRole('tooltip');
+    await expect(tooltip).toBeVisible({ timeout: 5000 });
+    await expect(tooltip).toContainText('Last touched 3 weeks ago');
 
     await expect(page).toHaveScreenshot('badge-description-tooltip.png');
   });
@@ -114,18 +117,19 @@ test.describe('Control panel', () => {
     await page.waitForTimeout(300);
 
     const planBtn = page.getByTestId('plan-button-wt-1');
-    await expect(planBtn).toBeVisible();
+    await expect(planBtn).toBeVisible({ timeout: 5000 });
 
-    // Hover first, then press Shift — the button's hover+shift gate opens the
-    // tooltip and kicks off the mock `load-plan-content` round trip which
-    // resolves synchronously against the seeded plan content.
-    await planBtn.hover();
+    // Hold Shift BEFORE hovering — that way the first mousemove into the
+    // button has `shiftKey=true`, which satisfies both branches of the
+    // shift+hover gate in one step and avoids a race between the key event
+    // and the hover state update.
     await page.keyboard.down('Shift');
-    // Plan content is seeded synchronously in the mock; the preview text is
-    // the authoritative signal that the tooltip has populated.
-    await expect(
-      page.getByText('Ship a minimal email + password flow', { exact: false })
-    ).toBeVisible();
+    await planBtn.hover();
+    await page.waitForTimeout(200);
+
+    const tooltip = page.getByRole('tooltip');
+    await expect(tooltip).toBeVisible({ timeout: 5000 });
+    await expect(tooltip).toContainText('Ship a minimal email + password flow');
 
     await expect(page).toHaveScreenshot('plan-preview-tooltip.png');
 
