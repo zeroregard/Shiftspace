@@ -6,6 +6,7 @@ import {
   sanitizePath,
   sanitizePathString,
   __scrubEventForTests,
+  __extractCommandErrorDiagnosticsForTests as extractDiag,
 } from '../../src/telemetry';
 
 type ExceptionValues = NonNullable<NonNullable<Sentry.ErrorEvent['exception']>['values']>;
@@ -246,6 +247,61 @@ describe('__scrubEventForTests', () => {
     expect(out.message).toBe('everything ok');
     expect(out.tags).toEqual({ branch: 'main', category: 'invariant' });
     expect(out.breadcrumbs?.[0]?.message).toBe('did a thing');
+  });
+});
+
+describe('extractCommandErrorDiagnostics', () => {
+  it('returns empty diagnostics for non-object errors', () => {
+    expect(extractDiag(undefined)).toEqual({ diag: {}, killed: false });
+    expect(extractDiag(null)).toEqual({ diag: {}, killed: false });
+    expect(extractDiag('boom')).toEqual({ diag: {}, killed: false });
+    expect(extractDiag(42)).toEqual({ diag: {}, killed: false });
+  });
+
+  it('flags killed=true when the process was killed (e.g. our timeout fired)', () => {
+    // Shape of err passed to execFile's callback when Node enforces `timeout`:
+    // Node sends SIGTERM, then the exithandler delivers an Error with these
+    // fields set. This is the exact case behind the original Sentry report.
+    const err = Object.assign(
+      new Error('Command failed: /usr/bin/git --no-optional-locks worktree list --porcelain'),
+      { killed: true, signal: 'SIGTERM', code: null }
+    );
+    const result = extractDiag(err);
+    expect(result.killed).toBe(true);
+    expect(result.diag).toEqual({ killed: 'true', signal: 'SIGTERM' });
+  });
+
+  it('keeps killed=false for plain non-zero exits', () => {
+    // Exit-non-zero path: code is the exit number, no signal, killed=false.
+    const err = Object.assign(new Error('Command failed: git status'), {
+      killed: false,
+      signal: null,
+      code: 128,
+    });
+    const result = extractDiag(err);
+    expect(result.killed).toBe(false);
+    expect(result.diag).toEqual({ code: '128' });
+  });
+
+  it('handles spawn ENOENT (no signal/killed fields)', () => {
+    const err = Object.assign(new Error('spawn git ENOENT'), { code: 'ENOENT' });
+    const result = extractDiag(err);
+    expect(result.killed).toBe(false);
+    expect(result.diag).toEqual({ code: 'ENOENT' });
+  });
+
+  it('preserves signal info even when killed flag is missing (external SIGKILL)', () => {
+    const err = Object.assign(new Error('Command failed'), { signal: 'SIGKILL' });
+    const result = extractDiag(err);
+    // No killed flag → not classified as a kill, but the signal still surfaces
+    // in the diagnostic context for the operator looking at the Sentry tags.
+    expect(result.killed).toBe(false);
+    expect(result.diag).toEqual({ signal: 'SIGKILL' });
+  });
+
+  it('drops empty/undefined code values', () => {
+    const err = Object.assign(new Error('boom'), { code: '' });
+    expect(extractDiag(err).diag).toEqual({});
   });
 });
 

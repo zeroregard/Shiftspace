@@ -318,6 +318,75 @@ export function reportError(error: Error, context?: Record<string, string>): voi
 }
 
 /**
+ * Pull the diagnostic fields off a thrown child_process error. Returns string
+ * values only so the result can be merged straight into a Sentry tag map.
+ *
+ * We treat anything that *looks* like a Node child_process error as one —
+ * duck-typed because rethrowGitError sometimes wraps the original with a new
+ * Error that copies these fields across (see git-utils.ts).
+ */
+function extractCommandErrorDiagnostics(err: unknown): {
+  diag: Record<string, string>;
+  killed: boolean;
+} {
+  const diag: Record<string, string> = {};
+  let killed = false;
+  if (!err || typeof err !== 'object') return { diag, killed };
+  const e = err as {
+    code?: string | number;
+    signal?: string | null;
+    killed?: boolean;
+  };
+  if (e.code !== undefined && e.code !== null && e.code !== '') diag.code = String(e.code);
+  if (e.signal) diag.signal = String(e.signal);
+  if (e.killed) {
+    diag.killed = 'true';
+    killed = true;
+  }
+  return { diag, killed };
+}
+
+/**
+ * Report a failure from a git (or other child_process) command with extra
+ * diagnostic context.
+ *
+ * Why the wrapper exists: Node's `execFile` errors print a generic
+ * "Command failed: ..." message and discard the interesting fields (`signal`,
+ * `killed`, exit code) into Sentry. Without those it's impossible to tell a
+ * real bug ("git exited non-zero") from a benign timeout ("we killed git
+ * after 5s because the system was loaded"). We were getting the
+ * `git worktree list --porcelain` variant of this in Sentry with no way to
+ * triage it.
+ *
+ * Filtering policy:
+ *  - **Killed processes** (our timeout fired, or the OS sent a signal during
+ *    shutdown) go through `reportUnexpectedState('git.commandKilled')`. That
+ *    path is deduped per session, so a chronically slow workspace doesn't
+ *    spam Sentry — but we still see *that* it happened, plus the diagnostic
+ *    tags, so we can investigate if it shows up across many users.
+ *  - **Everything else** (real exit-non-zero, unexpected error shapes,
+ *    spawn failures we couldn't classify) flows through `reportError` with
+ *    the diagnostics merged into the tag context. Same volume as before,
+ *    just with more useful tags.
+ */
+export function reportGitError(err: unknown, context: Record<string, string>): void {
+  if (!initialized || !shouldSendTelemetry()) return;
+
+  const { diag, killed } = extractCommandErrorDiagnostics(err);
+  const merged = { ...context, ...diag };
+
+  if (killed) {
+    // Use the dedup path — one report per (context+signal) per session is
+    // enough to know that timeouts are happening here.
+    reportUnexpectedState('git.commandKilled', merged);
+    return;
+  }
+
+  const asError = err instanceof Error ? err : new Error(String(err));
+  reportError(asError, merged);
+}
+
+/**
  * Report a non-fatal issue (warning level).
  */
 export function reportWarning(message: string, context?: Record<string, string>): void {
@@ -415,4 +484,12 @@ export function __resetTelemetryDedupForTests(): void {
 /** Test-only: expose `scrubEvent` so tests can hit it without `Sentry.init`. */
 export function __scrubEventForTests<T extends Sentry.Event>(event: T): T {
   return scrubEvent(event);
+}
+
+/** Test-only: expose `extractCommandErrorDiagnostics` for classifier tests. */
+export function __extractCommandErrorDiagnosticsForTests(err: unknown): {
+  diag: Record<string, string>;
+  killed: boolean;
+} {
+  return extractCommandErrorDiagnostics(err);
 }

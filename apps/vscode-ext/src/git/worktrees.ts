@@ -4,7 +4,7 @@ import * as path from 'path';
 import type { WorktreeState, WorktreeBadge } from '@shiftspace/renderer';
 import { gitReadOnly, gitWrite } from './git-utils';
 import { log } from '../logger';
-import { reportError, reportUnexpectedState } from '../telemetry';
+import { reportGitError, reportUnexpectedState } from '../telemetry';
 
 /** Relative path (from worktree root) of the optional per-worktree config file. */
 export const WORKTREE_CONFIG_FILENAME = '.shiftspace-worktree.json';
@@ -205,7 +205,7 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
     );
     return worktrees;
   } catch (err) {
-    reportError(err as Error, { context: 'detectWorktrees', root: repoRoot });
+    reportGitError(err, { context: 'detectWorktrees', root: repoRoot });
     return [];
   }
 }
@@ -424,9 +424,7 @@ export async function recoverStuckTempBranch(worktreePath: string): Promise<bool
     await gitWrite(['checkout', '-'], { cwd: worktreePath, timeout: 10_000 });
   } catch (e) {
     log.error('recoverStuckTempBranch: checkout - failed:', e);
-    reportError(e instanceof Error ? e : new Error(String(e)), {
-      context: 'recoverStuckTempBranch.checkout',
-    });
+    reportGitError(e, { context: 'recoverStuckTempBranch.checkout' });
     // Continue to attempt temp branch deletion even if checkout failed
   }
 
@@ -434,9 +432,7 @@ export async function recoverStuckTempBranch(worktreePath: string): Promise<bool
     await gitWrite(['branch', '-D', currentBranch], { cwd: worktreePath, timeout: 10_000 });
   } catch (e) {
     log.error('recoverStuckTempBranch: branch -D failed:', e);
-    reportError(e instanceof Error ? e : new Error(String(e)), {
-      context: 'recoverStuckTempBranch.deleteBranch',
-    });
+    reportGitError(e, { context: 'recoverStuckTempBranch.deleteBranch' });
   }
 
   return true;
@@ -658,9 +654,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
         await popStashByMessage(worktreeBPath, 'shiftspace-swap-A');
       } catch (err) {
         log.error('swapBranches: failed to pop stash A on B:', err);
-        reportError(err instanceof Error ? err : new Error(String(err)), {
-          context: 'swapBranches.popStashA',
-        });
+        reportGitError(err, { context: 'swapBranches.popStashA' });
         // Non-fatal: stash is preserved in the stash list
       }
     }
@@ -669,9 +663,7 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
         await popStashByMessage(worktreeAPath, 'shiftspace-swap-B');
       } catch (err) {
         log.error('swapBranches: failed to pop stash B on A:', err);
-        reportError(err instanceof Error ? err : new Error(String(err)), {
-          context: 'swapBranches.popStashB',
-        });
+        reportGitError(err, { context: 'swapBranches.popStashB' });
       }
     }
   } catch (err) {

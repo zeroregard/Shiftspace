@@ -8,9 +8,19 @@ const execFileAsync = promisify(execFile);
  * Wrap low-level spawn errors (ENOENT, EACCES, etc.) with a message that
  * actually names the binary and the cause, instead of Node's opaque
  * "A system error occurred".
+ *
+ * For all wrapped errors we copy the diagnostic fields (`signal`, `killed`,
+ * `code`) from the original child_process error onto the thrown one. Sentry
+ * reporters use these to distinguish "process was killed by our timeout" from
+ * "git exited non-zero with a real failure".
  */
 function rethrowGitError(err: unknown): never {
-  const e = err as NodeJS.ErrnoException & { stderr?: string; stdout?: string };
+  const e = err as NodeJS.ErrnoException & {
+    stderr?: string;
+    stdout?: string;
+    signal?: NodeJS.Signals | null;
+    killed?: boolean;
+  };
   if (e?.code === 'ENOENT') {
     // Preserve `code` so callers (e.g. checkGitAvailability) can still
     // distinguish "git binary missing" from "command failed".
@@ -28,7 +38,14 @@ function rethrowGitError(err: unknown): never {
     throw wrapped;
   }
   if (e?.stderr?.trim()) {
-    throw new Error(e.stderr.trim());
+    const wrapped = new Error(e.stderr.trim()) as NodeJS.ErrnoException & {
+      signal?: NodeJS.Signals | null;
+      killed?: boolean;
+    };
+    if (e.code !== undefined) wrapped.code = e.code as string;
+    if (e.signal) wrapped.signal = e.signal;
+    if (e.killed) wrapped.killed = e.killed;
+    throw wrapped;
   }
   throw err;
 }

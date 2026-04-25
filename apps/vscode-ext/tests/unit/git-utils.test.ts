@@ -155,6 +155,62 @@ describe('gitReadOnly', () => {
       'fatal: custom failure'
     );
   });
+
+  it('preserves signal/killed/code on the wrapped error so Sentry can classify timeouts', async () => {
+    // Mirrors what Node hands back when our 5s timeout kills git mid-run AND
+    // git managed to flush some stderr first. The stderr-wrap path used to
+    // drop signal/killed, leaving Sentry with no way to tell the kill apart
+    // from a real exit-non-zero failure.
+    setExec((_cmd, _args, _opts, cb) => {
+      const err = Object.assign(new Error('Command failed'), {
+        stderr: 'fatal: not a git repository',
+        code: null,
+        signal: 'SIGTERM',
+        killed: true,
+      }) as NodeJS.ErrnoException & {
+        stderr?: string;
+        signal?: NodeJS.Signals;
+        killed?: boolean;
+      };
+      cb(err, { stdout: '', stderr: err.stderr ?? '' });
+    });
+
+    let caught: (NodeJS.ErrnoException & { signal?: string; killed?: boolean }) | undefined;
+    try {
+      await gitReadOnly(['status'], { cwd: '/repo' });
+    } catch (err) {
+      caught = err as NodeJS.ErrnoException & { signal?: string; killed?: boolean };
+    }
+    expect(caught?.message).toBe('fatal: not a git repository');
+    expect(caught?.signal).toBe('SIGTERM');
+    expect(caught?.killed).toBe(true);
+  });
+
+  it('preserves signal/killed when stderr is empty (timeout kill, no stderr flushed)', async () => {
+    // The original Sentry report's exact shape: timeout fires, git is killed
+    // before it could write to stderr, so rethrowGitError falls through to the
+    // raw-throw path. The original Node error already carries signal/killed.
+    setExec((_cmd, _args, _opts, cb) => {
+      const err = Object.assign(
+        new Error('Command failed: /usr/bin/git --no-optional-locks worktree list --porcelain'),
+        { stderr: '', code: null, signal: 'SIGTERM', killed: true }
+      ) as NodeJS.ErrnoException & {
+        stderr?: string;
+        signal?: NodeJS.Signals;
+        killed?: boolean;
+      };
+      cb(err, { stdout: '', stderr: '' });
+    });
+
+    let caught: (NodeJS.ErrnoException & { signal?: string; killed?: boolean }) | undefined;
+    try {
+      await gitReadOnly(['worktree', 'list', '--porcelain'], { cwd: '/repo' });
+    } catch (err) {
+      caught = err as NodeJS.ErrnoException & { signal?: string; killed?: boolean };
+    }
+    expect(caught?.signal).toBe('SIGTERM');
+    expect(caught?.killed).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
