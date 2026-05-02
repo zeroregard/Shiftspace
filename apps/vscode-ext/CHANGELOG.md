@@ -2,6 +2,30 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.4.0] — 2026-05-02
+
+### Added
+
+- worktree plan path and badge description (#157)
+
+### Changed
+
+- Improve .shiftspace-worktree.json documentation with planPath feature
+- move inspection search/filter state into a context (#156)
+- eliminate prop drilling in inspection and grove views (#155)
+- decompose FileListPanel into focused hooks and components (#154) _(renderer-inspection)_
+- extract async loading state into a dedicated operation store (#153)
+- tighten webview and MCP protocol types (#152)
+- decompose GitDataProvider into focused modules (#151) _(vscode-ext)_
+
+### Fixed
+
+- scope worktree lastActivityAt to real content changes (#149)
+- use stable worktree id for sidebar motion key (#148) _(renderer-grove)_
+- stop forwarding foreign uncaught errors to Sentry (#147) _(vscode-ext)_
+- show correct files on inspection view open with persisted diff mode (#145) _(shiftspace)_
+- dispose DiagnosticCollector to prevent "Webview is disposed" errors (#144) _(shiftspace)_
+
 ## [0.3.0] — 2026-04-15
 
 ### Added
