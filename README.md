@@ -22,7 +22,18 @@ Shiftspace gives you two views.
 
 ![Sidebar worktree view](https://github.com/user-attachments/assets/9e3688bf-7bb7-48ea-b7b5-dbcbf5fb3111)
 
-**Per-worktree config (`.shiftspace-worktree.json`).** Drop this file at a worktree's root to attach a badge and/or a plan file to that specific worktree. Add it to your `.gitignore` so it stays local to each checkout instead of getting committed onto the branch.
+- **Checks and pipelines.** Define lint, typecheck, test, build, or any custom command in `.shiftspace.json`. Run them per worktree. Chain them into pipelines (fmt, lint, typecheck, test). Results show up as pass/fail badges on each card, and they go stale automatically when files change.
+
+- **Code smell detection.** Regex patterns in `.shiftspace.json` flag things linters won't catch: `eslint-disable` comments, LLM-generated separators, TODO counts, whatever matters to your team. Findings appear as badges on file nodes in Inspection mode.
+  ![Code smell badges on file nodes](https://github.com/user-attachments/assets/a52c1cf2-ced9-44a9-bae8-3c6b6a1c30b7)
+
+- **MCP server.** Built-in Model Context Protocol server so AI agents can query insights, check status, run checks, and list changed files programmatically.
+
+- **Bundled themes.** Ships with Shiftspace Dark and Shiftspace Light.
+
+### Per-worktree config
+
+Drop a `.shiftspace-worktree.json` at a worktree's root to attach metadata related to that to that specific worktree. Add it to your `.gitignore` so it stays local to each checkout instead of getting committed onto the branch.
 
 ```json
 {
@@ -35,25 +46,19 @@ Shiftspace gives you two views.
 }
 ```
 
+#### Badge
+
 The `badge` block renders a pill next to the worktree's name. Useful for marking a worktree `stale`, `in progress`, `in review`, or whatever you want. Agents can set this too, which makes it easier to tell at a glance which worktrees are still being worked on and which are safe to delete. `label` is required and free-form. `color` is optional and must be one of `neutral`, `info`, `success`, `warning`, or `danger`. Each maps to a VSCode theme token so badges stay readable across themes. It defaults to `neutral`. `description` is optional and shows as a tooltip when you hover the badge.
 
+#### Plan
+
 `planPath` points at a plan or notes file relative to the worktree root (`PLAN.md`, `TODO.txt`, that kind of thing). When it's set, a book icon shows up on the worktree card. Click it to open the file. Hold Shift while hovering to preview the contents inline without leaving the Shiftspace panel.
-
-**Checks and pipelines.** Define lint, typecheck, test, build, or any custom command in `.shiftspace.json`. Run them per worktree. Chain them into pipelines (fmt, lint, typecheck, test). Results show up as pass/fail badges on each card, and they go stale automatically when files change.
-
-**Code smell detection.** Regex patterns in `.shiftspace.json` flag things linters won't catch: `eslint-disable` comments, LLM-generated separators, TODO counts, whatever matters to your team. Findings appear as badges on file nodes in Inspection mode.
-
-![Code smell badges on file nodes](https://github.com/user-attachments/assets/a52c1cf2-ced9-44a9-bae8-3c6b6a1c30b7)
-
-**MCP server.** Built-in Model Context Protocol server so AI agents can query insights, check status, run checks, and list changed files programmatically.
-
-**Bundled themes.** Ships with Shiftspace Dark and Shiftspace Light.
 
 ## Getting started
 
 1. Install the extension.
-2. Press `Shift+Space` to open Shiftspace, or run `Shiftspace: Open as Tab` from the command palette.
-3. Your worktrees show up automatically. Click one to inspect it.
+2. Run `Shiftspace: Open as Tab` from the command palette or use the Shiftspace Primary Side Bar tab
+3. Click a work tree to inspect the details regarding it
 4. Drop a `.shiftspace.json` in your repo root to configure checks and code smell rules:
 
 ```json
@@ -79,12 +84,17 @@ The `badge` block renders a pill next to the worktree's name. Useful for marking
 
 ## Configuration
 
-| Setting                                   | Description                                                        |
-| ----------------------------------------- | ------------------------------------------------------------------ |
-| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`) |
-| `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines     |
-| `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                  |
-| `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on) |
+| Setting                                   | Description                                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`)                          |
+| `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines                              |
+| `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                                           |
+| `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on)                          |
+| `shiftspace.telemetry.enabled`            | Send anonymous error reports to help improve Shiftspace (default: off, opt-in on first run) |
+
+## Privacy and telemetry
+
+Shiftspace ships with optional, opt-in anonymous error reporting through Sentry. It's off by default. The first time the extension activates you'll see a one-time prompt asking whether to turn it on. Pick "No thanks" and you won't be asked again. No code, file contents, or personally identifiable info is ever sent. You can flip the toggle any time via `shiftspace.telemetry.enabled`, and VS Code's global `telemetry.telemetryLevel` always wins over it.
 
 ## Requirements
 
