@@ -22,18 +22,26 @@ Shiftspace gives you two views:
 
 ![Sidebar worktree view](https://github.com/user-attachments/assets/9e3688bf-7bb7-48ea-b7b5-dbcbf5fb3111)
 
-**Worktree badges** — Drop a `.shiftspace-worktree.json` at a worktree's root and Shiftspace renders a pill badge next to its name. Handy for marking a worktree as `stale`, `in progress`, `in review`, etc. — great for AI agents to tag the worktree they're working on so you know which ones are safe to delete. Add `.shiftspace-worktree.json` to your `.gitignore` so badges stay local to each checkout.
+**Per-worktree config (`.shiftspace-worktree.json`)** — Drop this file at a worktree's root to configure a badge and/or a plan file for that worktree. Add it to your `.gitignore` so it stays local to each checkout (not committed to the branch).
 
 ```json
 {
   "badge": {
-    "label": "stale",
-    "color": "warning"
-  }
+    "label": "in review",
+    "color": "info",
+    "description": "PR open — waiting on approval."
+  },
+  "planPath": "PLAN.md"
 }
 ```
 
-`label` is free-form text; `color` (optional) is one of `neutral`, `info`, `success`, `warning`, `danger` — each backed by a VSCode theme token so badges stay coherent across themes. Defaults to `neutral`.
+**`badge`** — Renders a pill badge next to the worktree's name. Handy for marking a worktree as `stale`, `in progress`, `in review`, etc. — great for AI agents to tag the worktree they're working on so you know which ones are safe to delete.
+
+- `label` (required) — free-form text displayed in the pill.
+- `color` (optional) — one of `neutral`, `info`, `success`, `warning`, `danger`, each backed by a VSCode theme token so badges stay coherent across themes. Defaults to `neutral`.
+- `description` (optional) — free-form text shown as a tooltip when hovering over the badge.
+
+**`planPath`** — Relative path (from the worktree root) to a plan or notes file (e.g. `PLAN.md`, `TODO.txt`). When set, a book icon appears on the worktree card: click to open the file in the editor, or hold **Shift** while hovering to preview its contents inline without leaving the Shiftspace panel.
 
 **Checks & pipelines** — Define lint, typecheck, test, build, or any custom command in `.shiftspace.json`. Run them per worktree. Chain them into pipelines (e.g., fmt → lint → typecheck → test). Results show pass/fail badges on each card and go stale automatically when files change.
 
