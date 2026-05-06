@@ -144,8 +144,9 @@ async function callExtension(
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Shiftspace extension returned ${response.status}: ${text}`);
+    const body = await response.json().catch(() => null);
+    const detail = (body as { detail?: string } | null)?.detail ?? `HTTP ${response.status}`;
+    throw new Error(`MCP error: ${detail}`);
   }
 
   return response.json();
@@ -172,11 +173,10 @@ async function main(): Promise<void> {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };
     } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Internal server error';
       console.error('[MCP stdio] Tool call error:', err);
       return {
-        content: [
-          { type: 'text' as const, text: JSON.stringify({ error: 'Internal server error' }) },
-        ],
+        content: [{ type: 'text' as const, text: JSON.stringify({ error: message }) }],
         isError: true,
       };
     }
