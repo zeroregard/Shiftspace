@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.4.1] — 2026-05-06
+
+### Fixed
+
+- propagate MCP internal server error details to agent (#159) _(vscode-ext)_
+
 ## [0.4.0] — 2026-05-02
 
 ### Added
