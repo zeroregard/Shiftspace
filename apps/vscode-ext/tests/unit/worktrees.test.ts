@@ -275,9 +275,7 @@ describe('readWorktreeConfig', () => {
   });
 
   it('accepts an https URL planPath', async () => {
-    const dir = makeTempWorktree(
-      JSON.stringify({ planPath: 'https://example.com/PLAN.md' })
-    );
+    const dir = makeTempWorktree(JSON.stringify({ planPath: 'https://example.com/PLAN.md' }));
     try {
       expect((await readWorktreeConfig(dir)).planPath).toBe('https://example.com/PLAN.md');
     } finally {
