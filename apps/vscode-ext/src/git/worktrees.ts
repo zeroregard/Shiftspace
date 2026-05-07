@@ -14,7 +14,7 @@ type ValidColor = (typeof VALID_COLORS)[number];
 
 export interface WorktreeConfig {
   badge?: WorktreeBadge;
-  /** Plan file path, relative to the worktree root. */
+  /** Plan file path: relative to the worktree root, an absolute path, or an http/https URL. */
   planPath?: string;
 }
 
@@ -33,8 +33,8 @@ export interface WorktreeConfig {
  *     }
  *   }
  *
- * - `planPath` must be a non-empty relative path. Absolute paths are rejected
- *   to keep file access scoped to the worktree.
+ * - `planPath` is a non-empty string: a relative path (resolved from the worktree
+ *   root), an absolute filesystem path, or an http/https URL.
  * - `badge.label` is free-form text.
  * - `badge.color` (optional) is one of: neutral, info, success, warning, danger.
  *   Constraining color to a semantic set keeps badges theme-coherent.
@@ -111,10 +111,6 @@ function parsePlanPath(parsed: unknown, filePath: string): string | undefined {
   if (planPath === undefined) return undefined;
   if (typeof planPath !== 'string' || planPath.length === 0) {
     log.warn(`readWorktreeConfig: invalid planPath in ${filePath}`);
-    return undefined;
-  }
-  if (path.isAbsolute(planPath)) {
-    log.warn(`readWorktreeConfig: rejecting absolute planPath in ${filePath}`);
     return undefined;
   }
   return planPath;

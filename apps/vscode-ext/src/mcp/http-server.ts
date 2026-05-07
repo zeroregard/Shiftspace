@@ -133,8 +133,7 @@ export class ShiftspaceMcpHttpServer {
       console.error('[MCP HTTP] Tool handler error:', err);
       reportError(err as Error, { context: 'mcpHttpServer', tool });
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      const detail = err instanceof Error ? err.message : String(err);
-      res.end(JSON.stringify({ error: 'Internal server error', detail }));
+      res.end(JSON.stringify({ error: 'Internal server error' }));
     }
   }
 

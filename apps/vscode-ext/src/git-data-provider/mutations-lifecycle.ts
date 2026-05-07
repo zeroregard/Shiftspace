@@ -256,7 +256,50 @@ export async function handleLoadPlanContent(
   if (!wt || !wt.planPath) return;
 
   const planPath = wt.planPath;
-  const absolutePath = path.join(wt.path, planPath);
+
+  let isUrl = false;
+  try {
+    const u = new URL(planPath);
+    isUrl = u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    // not a URL — treat as filesystem path
+  }
+
+  if (isUrl) {
+    try {
+      const resp = await fetch(planPath);
+      if (!resp.ok) {
+        host.postMessage({ type: 'plan-content', worktreeId: wt.id, planPath, status: 'missing' });
+        return;
+      }
+      const buf = await resp.arrayBuffer();
+      const truncated = buf.byteLength > PLAN_PREVIEW_MAX_BYTES;
+      const content = Buffer.from(buf)
+        .subarray(0, Math.min(buf.byteLength, PLAN_PREVIEW_MAX_BYTES))
+        .toString('utf8');
+      host.postMessage({
+        type: 'plan-content',
+        worktreeId: wt.id,
+        planPath,
+        status: 'loaded',
+        content,
+        truncated,
+      });
+    } catch (err) {
+      log.error('handleLoadPlanContent fetch error:', err);
+      reportError(err as Error, { context: 'handleLoadPlanContent' });
+      host.postMessage({
+        type: 'plan-content',
+        worktreeId: wt.id,
+        planPath,
+        status: 'error',
+        message: (err as Error).message,
+      });
+    }
+    return;
+  }
+
+  const absolutePath = path.isAbsolute(planPath) ? planPath : path.join(wt.path, planPath);
 
   try {
     const stat = await fs.promises.stat(absolutePath);
