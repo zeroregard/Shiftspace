@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.4.2] — 2026-05-07
+
+### Added
+
+- allow absolute paths and http/https URLs for planPath (#160) _(vscode-ext)_
+
 ## [0.4.1] — 2026-05-06
 
 ### Fixed
