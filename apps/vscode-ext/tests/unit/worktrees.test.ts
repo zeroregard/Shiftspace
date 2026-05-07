@@ -265,10 +265,21 @@ describe('readWorktreeConfig', () => {
     }
   });
 
-  it('rejects an absolute planPath', async () => {
-    const dir = makeTempWorktree(JSON.stringify({ planPath: '/etc/passwd' }));
+  it('accepts an absolute planPath', async () => {
+    const dir = makeTempWorktree(JSON.stringify({ planPath: '/home/user/PLAN.md' }));
     try {
-      expect((await readWorktreeConfig(dir)).planPath).toBeUndefined();
+      expect((await readWorktreeConfig(dir)).planPath).toBe('/home/user/PLAN.md');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts an https URL planPath', async () => {
+    const dir = makeTempWorktree(
+      JSON.stringify({ planPath: 'https://example.com/PLAN.md' })
+    );
+    try {
+      expect((await readWorktreeConfig(dir)).planPath).toBe('https://example.com/PLAN.md');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
