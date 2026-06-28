@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.4.3] — 2026-06-28
+
+### Fixed
+
+- don't block swap on stale REBASE*HEAD/MERGE_HEAD (#161) *(shiftspace)\_
+
 ## [0.4.2] — 2026-05-07
 
 ### Added
