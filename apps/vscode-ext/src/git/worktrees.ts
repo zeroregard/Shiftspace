@@ -324,6 +324,37 @@ async function cleanStaleLockFile(worktreePath: string, maxAgeMs = 5000): Promis
 }
 
 /**
+ * Determine whether an actual rebase is underway in a worktree by checking for
+ * the rebase state directories (`rebase-merge` / `rebase-apply`) in its git dir.
+ *
+ * git can leave a `REBASE_HEAD` ref behind after a rebase completes or is
+ * aborted, even though these directories are gone. `rev-parse --verify
+ * REBASE_HEAD` still resolves against that orphaned ref, so it can't be trusted
+ * on its own — the directories are the source of truth.
+ *
+ * Returns true if a rebase is genuinely in progress. If the git dir can't be
+ * resolved, returns true to stay conservative (we'd rather block a swap than
+ * delete state we couldn't verify).
+ */
+async function isRebaseInProgress(worktreePath: string): Promise<boolean> {
+  let gitDir: string;
+  try {
+    gitDir = await resolveGitDir(worktreePath);
+  } catch {
+    return true;
+  }
+  for (const name of ['rebase-merge', 'rebase-apply']) {
+    try {
+      await fs.access(path.join(gitDir, name));
+      return true;
+    } catch {
+      // Directory absent — check the next one.
+    }
+  }
+  return false;
+}
+
+/**
  * Check if a worktree is safe for a branch swap.
  * Returns a human-readable error string if unsafe, or null if safe.
  */
@@ -344,18 +375,47 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
       cwd: worktreePath,
       timeout: 5000,
     });
-    return 'A merge is in progress in this worktree';
+    return (
+      'A merge is in progress in this worktree. If this is a stale state, run: ' +
+      `git -C ${worktreePath} update-ref -d MERGE_HEAD`
+    );
   } catch {
     // Not merging — good
   }
 
-  // Rebase in progress check
+  // Rebase in progress check.
+  //
+  // REBASE_HEAD can survive as an orphaned ref after a rebase finishes or is
+  // aborted, so resolving it isn't enough — confirm the rebase state dirs exist.
+  // If REBASE_HEAD is stale (ref resolves, no state dirs), clean it up and
+  // continue rather than blocking the swap on a phantom rebase.
   try {
     await gitReadOnly(['rev-parse', '--quiet', '--verify', 'REBASE_HEAD'], {
       cwd: worktreePath,
       timeout: 5000,
     });
-    return 'A rebase is in progress in this worktree';
+    if (await isRebaseInProgress(worktreePath)) {
+      return 'A rebase is in progress in this worktree';
+    }
+    log.warn('Stale REBASE_HEAD detected (no rebase state dirs); cleaning it up', {
+      worktreePath,
+    });
+    try {
+      await gitWrite(['update-ref', '-d', 'REBASE_HEAD'], {
+        cwd: worktreePath,
+        timeout: 5000,
+      });
+    } catch (err) {
+      // Couldn't delete the stale ref — surface it with the manual fix.
+      reportError(err instanceof Error ? err : new Error(String(err)), {
+        context: 'checkWorktreeSafety.staleRebaseHead',
+        worktreePath,
+      });
+      return (
+        'A rebase is in progress in this worktree. If this is a stale state, run: ' +
+        `git -C ${worktreePath} update-ref -d REBASE_HEAD`
+      );
+    }
   } catch {
     // Not rebasing — good
   }

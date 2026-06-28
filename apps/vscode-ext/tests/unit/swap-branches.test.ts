@@ -4,8 +4,16 @@ vi.mock('child_process', () => ({
   execFile: vi.fn(),
 }));
 
+// Keep real fs/promises behavior (e.g. for index.lock stat) but make `access`
+// controllable so we can simulate the presence/absence of rebase state dirs.
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return { ...actual, default: actual, access: vi.fn() };
+});
+
 import { swapBranches, checkWorktreeSafety } from '../../src/git/worktrees';
 import { execFile } from 'child_process';
+import * as fsp from 'fs/promises';
 
 // Helpers
 
@@ -80,15 +88,49 @@ describe('checkWorktreeSafety', () => {
   });
 
   it('returns error when rebase is in progress', async () => {
+    // REBASE_HEAD resolves AND a rebase state dir exists → genuine rebase.
+    vi.mocked(fsp.access).mockResolvedValue(undefined);
     vi.mocked(execFile).mockImplementation(
       mockSequence([
         { stdout: 'refs/heads/feature/auth' }, // symbolic-ref
         { error: 'not found' }, // MERGE_HEAD missing
-        { stdout: 'abc1234' }, // REBASE_HEAD exists = rebase in progress
+        { stdout: 'abc1234' }, // REBASE_HEAD exists
+        { stdout: '.git/worktrees/feature' }, // rev-parse --git-dir
       ]) as any
     );
     const result = await checkWorktreeSafety('/some/worktree');
     expect(result).toMatch(/rebase is in progress/);
+  });
+
+  it('cleans up a stale REBASE_HEAD and continues when no rebase state dirs exist', async () => {
+    // REBASE_HEAD resolves but neither rebase-merge nor rebase-apply exists.
+    vi.mocked(fsp.access).mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    const calls: Array<string[]> = [];
+    vi.mocked(execFile).mockImplementation(((
+      _cmd: unknown,
+      rawArgs: string[],
+      _opts: unknown,
+      cb: Function
+    ) => {
+      const args = normalizeGitArgs(rawArgs);
+      calls.push(args);
+      if (args[0] === 'symbolic-ref')
+        return cb(null, { stdout: 'refs/heads/feature/auth', stderr: '' });
+      if (args.includes('MERGE_HEAD'))
+        return cb(new Error('not found'), { stdout: '', stderr: '' });
+      if (args.includes('REBASE_HEAD') && args[0] === 'rev-parse' && args[1] === '--quiet')
+        return cb(null, { stdout: 'abc1234', stderr: '' });
+      if (args[0] === 'rev-parse' && args[1] === '--git-dir')
+        return cb(null, { stdout: '.git/worktrees/feature', stderr: '' });
+      // update-ref, diff, etc.
+      cb(null, { stdout: '', stderr: '' });
+    }) as any);
+
+    const result = await checkWorktreeSafety('/some/worktree');
+
+    // Stale ref was deleted and the swap is no longer blocked.
+    expect(calls.some((a) => a.join(' ') === 'update-ref -d REBASE_HEAD')).toBe(true);
+    expect(result).toBeNull();
   });
 
   it('returns error when there are merge conflicts', async () => {
