@@ -3,6 +3,9 @@ export type {
   WorktreeState,
   WorktreeBadge,
   WorktreeBadgeColor,
+  PrStatus,
+  CiStatus,
+  MergeableState,
   FileChange,
   ShiftspaceEvent,
   LODLevel,
@@ -38,6 +41,7 @@ export {
   getFileFindings,
   useInspectionStore,
   usePackageStore,
+  useSettingsStore,
   useOperationStore,
   opKey,
   isOperationPending,
@@ -107,6 +111,7 @@ export {
 } from './utils/list-sections';
 export { getSourceLineFromHunks } from './utils/diff-line-lookup';
 export { sortWorktrees } from './utils/sort-worktrees';
+export { buildTicketUrl, extractTicketId } from './utils/ticket-url';
 export { formatRelativeTime, TICK_INTERVAL } from './utils/relative-time';
 
 // UI (additional)
@@ -115,6 +120,8 @@ export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/diagnostic
 // Components (shared between views)
 export { ActionBar } from './components/action-bar';
 export { PlanButton } from './components/plan-button';
+export { PrStatusBadges } from './components/pr-status-badges';
+export { TicketLinkButton } from './components/ticket-link-button';
 
 // Protocol (shared between webview hosts and preview)
 export {

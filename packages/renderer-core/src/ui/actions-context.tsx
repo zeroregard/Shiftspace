@@ -30,6 +30,8 @@ export interface ShiftspaceActions {
   cancelInsights: (worktreeId: string) => void;
   setPackage: (packageName: string) => void;
   detectPackages: () => void;
+  /** Open an external URL in the user's browser (PR link, ticket link). */
+  openExternalUrl: (url: string) => void;
 }
 
 const DEFAULT_ACTIONS: ShiftspaceActions = {
@@ -52,6 +54,7 @@ const DEFAULT_ACTIONS: ShiftspaceActions = {
   cancelInsights: () => {},
   setPackage: () => {},
   detectPackages: () => {},
+  openExternalUrl: () => {},
 };
 
 const ActionsContext = createContext<ShiftspaceActions>(DEFAULT_ACTIONS);
@@ -84,6 +87,7 @@ interface ActionsProviderProps {
   onCancelInsights?: (worktreeId: string) => void;
   onSetPackage?: (packageName: string) => void;
   onDetectPackages?: () => void;
+  onOpenExternalUrl?: (url: string) => void;
   children: ReactNode;
 }
 
@@ -115,6 +119,7 @@ export function ActionsProvider({
   onCancelInsights,
   onSetPackage,
   onDetectPackages,
+  onOpenExternalUrl,
   children,
 }: ActionsProviderProps) {
   const actions: ShiftspaceActions = useMemo(
@@ -138,6 +143,7 @@ export function ActionsProvider({
       cancelInsights: (a) => onCancelInsights?.(a),
       setPackage: (a) => onSetPackage?.(a),
       detectPackages: () => onDetectPackages?.(),
+      openExternalUrl: (a) => onOpenExternalUrl?.(a),
     }),
     [
       onFileClick,
@@ -159,6 +165,7 @@ export function ActionsProvider({
       onCancelInsights,
       onSetPackage,
       onDetectPackages,
+      onOpenExternalUrl,
     ]
   );
 

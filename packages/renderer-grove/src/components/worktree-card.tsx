@@ -8,6 +8,10 @@ import {
   ConfirmPopover,
   ActionBar,
   PlanButton,
+  PrStatusBadges,
+  TicketLinkButton,
+  useSettingsStore,
+  buildTicketUrl,
   filterCheckoutableBranches,
   useActions,
   useWorktreeRename,
@@ -108,6 +112,8 @@ export function WorktreeCard({
   const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
   const relativeTime = useRelativeTime(wt.lastActivityAt);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
+  const ticketUrlTemplate = useSettingsStore((s) => s.ticketUrlTemplate);
+  const ticketUrl = ticketUrlTemplate ? buildTicketUrl(ticketUrlTemplate, wt.branch) : null;
 
   const {
     isRenaming,
@@ -210,6 +216,8 @@ export function WorktreeCard({
             </>
           )}
           {wt.planPath && !isRenaming && <PlanButton worktreeId={wt.id} planPath={wt.planPath} />}
+          {ticketUrl && !isRenaming && <TicketLinkButton worktreeId={wt.id} url={ticketUrl} />}
+          {wt.prStatus && !isRenaming && <PrStatusBadges prStatus={wt.prStatus} />}
           {wt.badge && !isRenaming && (
             <WorktreeBadge
               label={wt.badge.label}

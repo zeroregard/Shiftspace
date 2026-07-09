@@ -84,6 +84,15 @@ export const workspace = {
   }),
 };
 
+export const authentication = {
+  getSession: (..._args: unknown[]) => Promise.resolve(undefined),
+  onDidChangeSessions: () => ({ dispose: () => {} }),
+};
+
+export const env = {
+  openExternal: (..._args: unknown[]) => Promise.resolve(true),
+};
+
 export class RelativePattern {
   constructor(
     public base: string,

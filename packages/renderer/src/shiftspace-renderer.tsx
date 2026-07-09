@@ -35,6 +35,7 @@ interface Props {
   onGetLog?: (worktreeId: string, actionId: string) => void;
   onRecheckInsights?: (worktreeId: string) => void;
   onCancelInsights?: (worktreeId: string) => void;
+  onOpenExternalUrl?: (url: string) => void;
   onSortChange?: (mode: string) => void;
   panZoomConfig?: PanZoomConfig;
 }
@@ -65,6 +66,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
   onGetLog,
   onRecheckInsights,
   onCancelInsights,
+  onOpenExternalUrl,
   onSortChange,
   panZoomConfig,
 }) => {
@@ -100,6 +102,7 @@ export const ShiftspaceRenderer: React.FC<Props> = ({
       onCancelInsights={onCancelInsights}
       onSetPackage={onSetPackage}
       onDetectPackages={onDetectPackages}
+      onOpenExternalUrl={onOpenExternalUrl}
     >
       <RadixTooltip.Provider delayDuration={0} skipDelayDuration={0}>
         <ShiftspaceContent

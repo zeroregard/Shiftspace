@@ -145,6 +145,19 @@
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/worktree-badge.spec.ts"]
     },
+    "e2e:pr-status": {
+      "command": "playwright test e2e/pr-status.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/pr-status.spec.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/pr-status.spec.ts"]
+    },
     "test:e2e": {
       "dependsOn": [
         "e2e:controls",
@@ -156,7 +169,8 @@
         "e2e:search-filter",
         "e2e:sidebar",
         "e2e:tree-sorting",
-        "e2e:worktree-badge"
+        "e2e:worktree-badge",
+        "e2e:pr-status"
       ],
       "command": "echo 'All E2E specs completed'",
       "cache": false

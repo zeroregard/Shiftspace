@@ -58,7 +58,8 @@ export type WebviewMessage =
   | { type: 'recheck-insights'; worktreeId: string }
   | { type: 'cancel-insights' }
   // Misc
-  | { type: 'set-sort-mode'; mode: WorktreeSortMode };
+  | { type: 'set-sort-mode'; mode: WorktreeSortMode }
+  | { type: 'open-external-url'; url: string };
 
 /** Valid message type discriminants (keys of the union). */
 export type WebviewMessageType = WebviewMessage['type'];

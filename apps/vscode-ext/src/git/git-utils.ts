@@ -138,6 +138,21 @@ export async function gitReadOnly(
 }
 
 /**
+ * Read the fetch URL of a remote (default 'origin') for the repo at `cwd`.
+ * Returns null when the remote isn't configured or the command fails, so
+ * callers (the PR poller) can silently no-op for repos with no GitHub remote.
+ */
+export async function getRemoteUrl(cwd: string, remote = 'origin'): Promise<string | null> {
+  try {
+    const { stdout } = await gitReadOnly(['remote', 'get-url', remote], { cwd, timeout: 5_000 });
+    const url = stdout.trim();
+    return url.length > 0 ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Run a git command that modifies the repo (checkout, stash, fetch, etc.).
  * These are serialized through the global queue so writes never overlap.
  */

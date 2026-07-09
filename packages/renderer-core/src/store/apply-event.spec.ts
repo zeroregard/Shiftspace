@@ -135,6 +135,44 @@ describe('applyEventReducer – lastActivityAt', () => {
     expect(next.get('wt-1')!.files[0]!.staged).toBe(true);
   });
 
+  it('sets prStatus on pr-status-updated without touching lastActivityAt', () => {
+    const map = seed(makeWt({ lastActivityAt: 1_000 }));
+    const prStatus = {
+      number: 5,
+      url: 'https://x/pull/5',
+      conflicts: false as const,
+      approved: true,
+      ciStatus: 'passing' as const,
+      fetchedAt: 0,
+    };
+    const next = applyEventReducer(map, {
+      type: 'pr-status-updated',
+      worktreeId: 'wt-1',
+      prStatus,
+    });
+    expect(next.get('wt-1')!.prStatus).toEqual(prStatus);
+    expect(next.get('wt-1')!.lastActivityAt).toBe(1_000);
+  });
+
+  it('clears prStatus when pr-status-updated carries undefined', () => {
+    const wt = makeWt({
+      prStatus: {
+        number: 5,
+        url: 'u',
+        conflicts: false,
+        approved: false,
+        ciStatus: 'none',
+        fetchedAt: 0,
+      },
+    });
+    const next = applyEventReducer(seed(wt), {
+      type: 'pr-status-updated',
+      worktreeId: 'wt-1',
+      prStatus: undefined,
+    });
+    expect(next.get('wt-1')!.prStatus).toBeUndefined();
+  });
+
   it('preserves lastActivityAt on worktree-renamed', () => {
     const wt = makeWt({ id: 'old-id', lastActivityAt: 42_000 });
     const map = seed(wt);

@@ -3,6 +3,7 @@ export { useActionStore } from './action-store';
 export { useInsightStore, getFileFindings } from './insight-store';
 export { useInspectionStore } from './inspection-store';
 export { usePackageStore } from './package-store';
+export { useSettingsStore } from './settings-store';
 export {
   useOperationStore,
   opKey,

@@ -2,6 +2,7 @@
 import type {
   WorktreeState,
   WorktreeBadge,
+  PrStatus,
   FileChange,
   ShiftspaceEvent,
   DiffHunk,
@@ -266,6 +267,7 @@ export class MockEngine {
     badge?: WorktreeBadge;
     planPath?: string;
     planContent?: string;
+    prStatus?: PrStatus;
   }) {
     const {
       id,
@@ -276,6 +278,7 @@ export class MockEngine {
       badge,
       planPath,
       planContent,
+      prStatus,
     } = opts;
     const isDefault = branch === DEFAULT_BRANCH;
     const diffMode: DiffMode = isDefault
@@ -297,6 +300,7 @@ export class MockEngine {
       lastActivityAt: Date.now(),
       badge,
       planPath,
+      prStatus,
     };
     this.worktrees.set(id, wt);
     if (planContent !== undefined) this.planContents.set(id, planContent);
@@ -333,6 +337,15 @@ export class MockEngine {
     const updated: WorktreeState = { ...wt, badge };
     this.worktrees.set(worktreeId, updated);
     this.emit({ type: 'worktree-added', worktree: updated });
+  }
+
+  /** Control-panel / test hook: set (or clear) a worktree's PR status. */
+  setPrStatus(worktreeId: string, prStatus: PrStatus | undefined): void {
+    const wt = this.worktrees.get(worktreeId);
+    if (!wt) return;
+    const updated: WorktreeState = { ...wt, prStatus };
+    this.worktrees.set(worktreeId, updated);
+    this.emit({ type: 'pr-status-updated', worktreeId, prStatus });
   }
 
   addPresetWorktree(presetIndex: number) {

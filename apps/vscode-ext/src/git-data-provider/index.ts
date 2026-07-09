@@ -9,6 +9,7 @@ import {
 } from '../git/worktrees';
 import { FileEventCoordinator } from './file-event-coordinator';
 import { Poller } from './poller';
+import { PrStatusPoller, prStatusEqual } from './pr-status-poller';
 import { loadAllFileChanges, refreshWorktree, reloadAllWithFilter } from './refresh';
 import { checkForWorktreeChanges } from './worktree-reconciler';
 import { applyDiffModeOverrides } from './diff-mode';
@@ -53,6 +54,7 @@ export class GitDataProvider implements vscode.Disposable {
   defaultBranch = 'main';
   readonly fileEvents: FileEventCoordinator;
   private readonly poller: Poller;
+  private readonly prPoller: PrStatusPoller;
 
   constructor(
     public readonly postMessage: PostMessage,
@@ -69,6 +71,18 @@ export class GitDataProvider implements vscode.Disposable {
       getWorktrees: () => this.worktrees,
       onWorktreePoll: () => this.checkForWorktreeChanges(),
       onStatusPoll: (wt) => this.refreshWorktree(wt),
+    });
+    this.prPoller = new PrStatusPoller({
+      getWorktrees: () => this.worktrees,
+      onPrStatus: (worktreeId, prStatus) => {
+        const wt = this.worktrees.find((w) => w.id === worktreeId);
+        if (!wt || prStatusEqual(wt.prStatus, prStatus)) return;
+        wt.prStatus = prStatus;
+        this.postMessage({
+          type: 'event',
+          event: { type: 'pr-status-updated', worktreeId, prStatus },
+        });
+      },
     });
   }
 
@@ -161,6 +175,7 @@ export class GitDataProvider implements vscode.Disposable {
     this.fileEvents.rebuildFileWatchers();
     this.fileEvents.startAuxWatchers();
     this.poller.start();
+    this.prPoller.start();
   }
 
   // ── Delegating methods ──────────────────────────────────────────────────
@@ -249,6 +264,9 @@ export class GitDataProvider implements vscode.Disposable {
 
   private tearDown(): void {
     this.poller.dispose();
+    // Stop (not dispose) so the PR poller's config/auth subscriptions survive a
+    // repo switch; a following initialize() restarts its timer.
+    this.prPoller.stop();
     this.fileEvents.dispose();
     this.worktrees = [];
     this.fileStates.clear();
@@ -256,5 +274,6 @@ export class GitDataProvider implements vscode.Disposable {
 
   dispose(): void {
     this.tearDown();
+    this.prPoller.dispose();
   }
 }
