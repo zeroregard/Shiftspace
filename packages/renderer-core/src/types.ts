@@ -13,6 +13,39 @@ export interface WorktreeBadge {
   description?: string;
 }
 
+/** Aggregate CI state for a PR's head commit, derived from GitHub check-runs. */
+export type CiStatus = 'passing' | 'failing' | 'running' | 'none';
+
+/**
+ * Mergeability of a PR. `'unknown'` means GitHub is still computing it
+ * (it does this asynchronously — the first fetch after a push reports
+ * `'unknown'` and a later poll resolves it).
+ */
+export type MergeableState = boolean | 'unknown';
+
+/**
+ * Status of the pull request directly related to a worktree's branch.
+ * Populated by the GitHub PR poller in the extension host; `undefined` when
+ * the feature is off, there's no GitHub session, the remote isn't GitHub, or
+ * the branch has no open PR.
+ */
+export interface PrStatus {
+  /** PR number, e.g. 1234. */
+  number: number;
+  /** Full html URL to the PR. */
+  url: string;
+  /** true = has conflicts, false = clean, 'unknown' = GitHub still computing. */
+  conflicts: MergeableState;
+  /** At least one approving review and no outstanding change requests. */
+  approved: boolean;
+  /** Count of unresolved review threads. undefined if it couldn't be fetched. */
+  unresolvedComments?: number;
+  /** Aggregate CI state derived from check-runs. */
+  ciStatus: CiStatus;
+  /** When this status was fetched (epoch ms) — used for staleness display. */
+  fetchedAt: number;
+}
+
 export interface WorktreeState {
   id: string;
   path: string;
@@ -44,6 +77,12 @@ export interface WorktreeState {
    * shift-hover. Defined by `.shiftspace-worktree.json`.
    */
   planPath?: string;
+  /**
+   * GitHub PR status for this worktree's branch. Populated by the PR poller;
+   * undefined when the feature is off, there's no session, the remote isn't
+   * GitHub, or the branch has no open PR.
+   */
+  prStatus?: PrStatus;
 }
 
 export interface DiffLine {
@@ -87,7 +126,8 @@ export type ShiftspaceEvent =
   | { type: 'worktree-renamed'; oldWorktreeId: string; worktree: WorktreeState }
   | { type: 'worktree-activity'; worktreeId: string; timestamp: number }
   | { type: 'process-started'; worktreeId: string; port: number; command: string }
-  | { type: 'process-stopped'; worktreeId: string };
+  | { type: 'process-stopped'; worktreeId: string }
+  | { type: 'pr-status-updated'; worktreeId: string; prStatus: PrStatus | undefined };
 
 export type WorktreeSortMode = 'last-updated' | 'name' | 'branch';
 

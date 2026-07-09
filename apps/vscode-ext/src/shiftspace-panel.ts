@@ -146,7 +146,24 @@ export class ShiftspacePanel {
       this._disposables
     );
 
+    // Re-send renderer settings (e.g. the ticket URL template) whenever they change.
+    vscode.workspace.onDidChangeConfiguration(
+      (e) => {
+        if (e.affectsConfiguration('shiftspace.ticketUrlTemplate')) this.sendSettings();
+      },
+      null,
+      this._disposables
+    );
+
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+  }
+
+  /** Read renderer-facing settings from config and push them to the webview. */
+  private sendSettings(): void {
+    const ticketUrlTemplate = vscode.workspace
+      .getConfiguration('shiftspace')
+      .get<string>('ticketUrlTemplate', '');
+    void this._panel.webview.postMessage({ type: 'settings-update', ticketUrlTemplate });
   }
 
   // Initialization (called when webview sends "ready")
@@ -253,6 +270,7 @@ export class ShiftspacePanel {
     }
 
     this.restoreViewSettings(viewSettings);
+    this.sendSettings();
 
     // Resolve and send file icons (non-blocking)
     void this._iconManager?.reload();

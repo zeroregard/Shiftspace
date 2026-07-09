@@ -96,6 +96,11 @@
         "title": "Sort Worktrees",
         "category": "Shiftspace",
         "icon": "$(three-bars)"
+      },
+      {
+        "command": "shiftspace.pr.signIn",
+        "title": "Sign in to GitHub",
+        "category": "Shiftspace"
       }
     ],
     "menus": {
@@ -227,6 +232,28 @@
             "telemetry",
             "usesOnlineServices"
           ]
+        },
+        "shiftspace.pr.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Poll the GitHub API to show pull request status (mergeability, approvals, unresolved comments, CI) on worktree cards. Requires signing in via VSCode's built-in GitHub authentication (run 'Shiftspace: Sign in to GitHub').",
+          "scope": "resource",
+          "tags": [
+            "usesOnlineServices"
+          ]
+        },
+        "shiftspace.pr.pollIntervalSeconds": {
+          "type": "number",
+          "default": 45,
+          "minimum": 15,
+          "description": "How often to poll GitHub for PR status, in seconds. Minimum 15 to respect API rate limits.",
+          "scope": "resource"
+        },
+        "shiftspace.ticketUrlTemplate": {
+          "type": "string",
+          "default": "",
+          "description": "URL template for linking a branch to an external ticket (Jira, Linear, etc.). Use {ticket} for a ticket id extracted from the branch name (e.g. ABC-123) or {branch} for the full branch name. Example: https://linear.app/acme/issue/{ticket}. Leave empty to disable ticket links.",
+          "scope": "resource"
         }
       }
     }

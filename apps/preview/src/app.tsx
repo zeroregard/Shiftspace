@@ -5,6 +5,7 @@ import {
   useActionStore,
   useInsightStore,
   usePackageStore,
+  useSettingsStore,
 } from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
 import { MockEngine } from './mock/engine';
@@ -31,6 +32,7 @@ export const App: React.FC = () => {
   const { setActionConfigs, setPipelines, setActionState } = useActionStore();
   const { setInsightDetail, setFileDiagnostics } = useInsightStore();
   const { setSelectedPackage, setAvailablePackages } = usePackageStore();
+  const setTicketUrlTemplate = useSettingsStore((s) => s.setTicketUrlTemplate);
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -74,7 +76,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     setActionConfigs(MOCK_ACTION_CONFIGS);
     setPipelines(MOCK_PIPELINES);
-  }, [resetKey, setActionConfigs, setPipelines]);
+    // Mirror the extension's `settings-update` push. Empty by default so the
+    // ticket link stays hidden until a control-panel input / test hook sets it.
+    setTicketUrlTemplate('');
+  }, [resetKey, setActionConfigs, setPipelines, setTicketUrlTemplate]);
 
   useEffect(() => {
     const engine = engineRef.current!;
@@ -156,6 +161,10 @@ export const App: React.FC = () => {
     bridgeRef.current?.postMessage({ type: 'remove-worktree', worktreeId: id });
   };
 
+  const handleOpenExternalUrl = (url: string) => {
+    bridgeRef.current?.postMessage({ type: 'open-external-url', url });
+  };
+
   return (
     <div className="w-screen h-screen relative">
       <ShiftspaceRenderer
@@ -175,6 +184,7 @@ export const App: React.FC = () => {
         onDetectPackages={handleDetectPackages}
         onAddWorktree={handleAddWorktree}
         onRemoveWorktree={handleRemoveWorktree}
+        onOpenExternalUrl={handleOpenExternalUrl}
       />
       <ControlPanel
         engine={engineRef.current}

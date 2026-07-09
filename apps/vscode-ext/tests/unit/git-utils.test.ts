@@ -4,7 +4,7 @@ vi.mock('child_process', () => ({
   execFile: vi.fn(),
 }));
 
-import { gitReadOnly, gitWrite, gitQueue } from '../../src/git/git-utils';
+import { gitReadOnly, gitWrite, gitQueue, getRemoteUrl } from '../../src/git/git-utils';
 import { execFile } from 'child_process';
 
 type ExecCallback = (
@@ -154,6 +154,39 @@ describe('gitReadOnly', () => {
     await expect(gitReadOnly(['status'], { cwd: '/repo' })).rejects.toThrow(
       'fatal: custom failure'
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getRemoteUrl
+// ---------------------------------------------------------------------------
+
+describe('getRemoteUrl', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns the trimmed remote URL on success', async () => {
+    setExec(mockSuccess('git@github.com:owner/repo.git\n'));
+    expect(await getRemoteUrl('/repo')).toBe('git@github.com:owner/repo.git');
+  });
+
+  it('passes the requested remote name to git', async () => {
+    let receivedArgs: string[] = [];
+    setExec((_cmd, args, _opts, cb) => {
+      receivedArgs = args;
+      cb(null, { stdout: 'url', stderr: '' });
+    });
+    await getRemoteUrl('/repo', 'upstream');
+    expect(receivedArgs).toEqual(['--no-optional-locks', 'remote', 'get-url', 'upstream']);
+  });
+
+  it('returns null when the command fails (no such remote)', async () => {
+    setExec(mockError({ stderr: "fatal: No such remote 'origin'" }));
+    expect(await getRemoteUrl('/repo')).toBeNull();
+  });
+
+  it('returns null when the remote URL is empty', async () => {
+    setExec(mockSuccess('   \n'));
+    expect(await getRemoteUrl('/repo')).toBeNull();
   });
 });
 

@@ -24,6 +24,8 @@ interface TestHook {
   enablePlanPath: (worktreeId: string, planPath?: string, planContent?: string) => void;
   disablePlanPath: (worktreeId: string) => void;
   enableBadgeDescription: (worktreeId: string, description: string) => void;
+  enablePrStatus: (worktreeId: string, prStatus: unknown) => void;
+  setTicketTemplate: (template: string) => void;
 }
 
 declare global {
@@ -196,6 +198,66 @@ test.describe('Flows – round-trip message routing', () => {
     const calls = await getCalls(page);
     const loadCalls = calls.filter((c) => c.op === 'load-plan-content');
     expect(loadCalls).toHaveLength(1);
+  });
+
+  test('ticket link button posts open-external-url with the resolved template', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    // Ticket link is hidden until a template is configured.
+    await page.evaluate(() =>
+      window.__shiftspaceTest?.setTicketTemplate('https://linear.app/acme/issue/{branch}')
+    );
+    await clearCalls(page);
+
+    await page.getByTestId('ticket-link-wt-1').click();
+
+    await expect
+      .poll(() => getPostedMessages(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'open-external-url',
+            url: expect.stringContaining('https://linear.app/acme/issue/'),
+          }),
+        ])
+      );
+  });
+
+  test('clicking the PR status cluster posts open-external-url with the PR url', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    await page.evaluate(() =>
+      window.__shiftspaceTest?.enablePrStatus('wt-1', {
+        number: 321,
+        url: 'https://github.com/acme/shiftspace/pull/321',
+        conflicts: false,
+        approved: true,
+        ciStatus: 'passing',
+        fetchedAt: 0,
+      })
+    );
+    await clearCalls(page);
+
+    await page.getByTestId('pr-status-321').click();
+
+    await expect
+      .poll(() => getPostedMessages(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'open-external-url',
+            url: 'https://github.com/acme/shiftspace/pull/321',
+          }),
+        ])
+      );
   });
 
   test('control panel remove button also routes through the bridge', async ({ page }) => {

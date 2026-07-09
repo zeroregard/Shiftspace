@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import type { MessageRouter } from './webview/message-router';
 import type { SharedGitProvider } from './shared-git-provider';
 import type { ActionCoordinator } from './actions/action-coordinator';
@@ -107,6 +108,10 @@ export function registerPanelHandlers(
   // Miscellaneous handlers
   router.on('set-sort-mode', (m) => {
     sharedGit.broadcast({ type: 'set-sort-mode', mode: m.mode });
+  });
+
+  router.on('open-external-url', (m) => {
+    void vscode.env.openExternal(vscode.Uri.parse(m.url));
   });
 
   router.on('webview-error', (m) => {

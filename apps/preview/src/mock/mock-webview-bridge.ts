@@ -1,7 +1,9 @@
 import {
   MessageRouter,
   registerGitProviderHandlers,
+  useSettingsStore,
   type WebviewMessage,
+  type PrStatus,
 } from '@shiftspace/renderer';
 import type { MockGitProvider, OpName } from './mock-git-provider';
 import type { MockEngine } from './engine';
@@ -73,6 +75,13 @@ export class MockWebviewBridge {
         const wt = this.engine.getWorktrees().find((w) => w.id === worktreeId);
         if (!wt?.badge) return;
         this.engine.setBadge(worktreeId, { ...wt.badge, description });
+      },
+      // Drive PR status + ticket link from E2E without control-panel churn.
+      enablePrStatus: (worktreeId: string, prStatus: PrStatus | undefined) => {
+        this.engine.setPrStatus(worktreeId, prStatus);
+      },
+      setTicketTemplate: (template: string) => {
+        useSettingsStore.getState().setTicketUrlTemplate(template);
       },
     };
   }

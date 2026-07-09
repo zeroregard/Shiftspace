@@ -148,6 +148,15 @@ jobs:
             add_spec worktree-badge
           fi
 
+          # pr-status: PR-status icon cluster on grove cards. Triggered by the
+          # spec, the preview mock (which seeds/drives PR states), or any
+          # core/grove change (the badge components live in renderer-core).
+          if has_changes '^apps/preview/e2e/pr-status\.spec\.ts' \
+             || has_changes '^apps/preview/src/mock/' \
+             || $E2E_SHARED || $CORE || $GROVE; then
+            add_spec pr-status
+          fi
+
           # Deduplicate
           SPECS=$(echo "$SPECS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
 

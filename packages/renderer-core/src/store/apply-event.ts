@@ -103,6 +103,19 @@ export function applyEventReducer(
       next.set(event.worktreeId, rest);
       return next;
     }
+    case 'pr-status-updated': {
+      const wt = worktrees.get(event.worktreeId);
+      if (!wt) return worktrees;
+      // PR status is not local activity — don't touch lastActivityAt.
+      const next = new Map(worktrees);
+      if (event.prStatus === undefined) {
+        const { prStatus: _dropped, ...rest } = wt;
+        next.set(event.worktreeId, rest);
+      } else {
+        next.set(event.worktreeId, { ...wt, prStatus: event.prStatus });
+      }
+      return next;
+    }
     default:
       return worktrees;
   }

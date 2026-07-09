@@ -2,6 +2,7 @@
 import type {
   WorktreeState,
   WorktreeBadge,
+  PrStatus,
   FileChange,
   ShiftspaceEvent,
   DiffHunk,
@@ -10,6 +11,21 @@ import type {
 } from '@shiftspace/renderer';
 import type { AgentConfig, AgentPersona } from './types';
 import { FILE_TREE_TEMPLATES, WORKTREE_PRESETS, type TemplateKey } from './templates';
+
+/**
+ * Sample PR status seeded onto the second preset worktree so grove screenshot
+ * baselines exercise the PR-status icon cluster (CI failing, approved, and
+ * unresolved comments — a mix that shows every badge variant).
+ */
+const SAMPLE_PR_STATUS: PrStatus = {
+  number: 128,
+  url: 'https://github.com/acme/shiftspace/pull/128',
+  conflicts: false,
+  approved: true,
+  unresolvedComments: 2,
+  ciStatus: 'failing',
+  fetchedAt: 0,
+};
 
 const SAMPLE_LINES: Record<string, string[]> = {
   ts: [
@@ -219,6 +235,7 @@ export class MockEngine {
         template: preset.template,
         isMainWorktree: i === 0,
         badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
+        prStatus: i === 1 ? SAMPLE_PR_STATUS : undefined,
       });
     });
   }
@@ -266,6 +283,7 @@ export class MockEngine {
     badge?: WorktreeBadge;
     planPath?: string;
     planContent?: string;
+    prStatus?: PrStatus;
   }) {
     const {
       id,
@@ -276,6 +294,7 @@ export class MockEngine {
       badge,
       planPath,
       planContent,
+      prStatus,
     } = opts;
     const isDefault = branch === DEFAULT_BRANCH;
     const diffMode: DiffMode = isDefault
@@ -297,6 +316,7 @@ export class MockEngine {
       lastActivityAt: Date.now(),
       badge,
       planPath,
+      prStatus,
     };
     this.worktrees.set(id, wt);
     if (planContent !== undefined) this.planContents.set(id, planContent);
@@ -333,6 +353,15 @@ export class MockEngine {
     const updated: WorktreeState = { ...wt, badge };
     this.worktrees.set(worktreeId, updated);
     this.emit({ type: 'worktree-added', worktree: updated });
+  }
+
+  /** Control-panel / test hook: set (or clear) a worktree's PR status. */
+  setPrStatus(worktreeId: string, prStatus: PrStatus | undefined): void {
+    const wt = this.worktrees.get(worktreeId);
+    if (!wt) return;
+    const updated: WorktreeState = { ...wt, prStatus };
+    this.worktrees.set(worktreeId, updated);
+    this.emit({ type: 'pr-status-updated', worktreeId, prStatus });
   }
 
   addPresetWorktree(presetIndex: number) {
@@ -626,6 +655,7 @@ export class MockEngine {
         template: preset.template,
         isMainWorktree: i === 0,
         badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
+        prStatus: i === 1 ? SAMPLE_PR_STATUS : undefined,
       });
     });
   }

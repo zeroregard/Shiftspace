@@ -7,6 +7,7 @@ import { ShiftspaceMcpHttpServer } from './mcp/http-server';
 import { installMcpServerBinary, configureClaudeCode, configureCursor } from './mcp/auto-config';
 import { initLogger, log } from './logger';
 import { initGitPath } from './git/git-utils';
+import { signInToGitHub } from './github/auth';
 import { initTelemetry, closeTelemetry, reportError } from './telemetry';
 
 const mcpHttpServer = new ShiftspaceMcpHttpServer();
@@ -73,6 +74,17 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('shiftspace.recheckInsights', () => {
       ShiftspacePanel.recheckInsights();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('shiftspace.pr.signIn', async () => {
+      const token = await signInToGitHub();
+      void vscode.window.showInformationMessage(
+        token
+          ? 'Shiftspace: signed in to GitHub. PR status will appear on worktree cards (enable "shiftspace.pr.enabled").'
+          : 'Shiftspace: GitHub sign-in was cancelled.'
+      );
     })
   );
 

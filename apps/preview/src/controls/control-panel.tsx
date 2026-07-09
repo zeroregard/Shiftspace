@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
+import { useSettingsStore, type PrStatus } from '@shiftspace/renderer';
 import type { MockEngine } from '../mock/engine';
 import type { AgentPersona } from '../mock/types';
 
@@ -19,6 +20,45 @@ const PERSONA_LABELS: Record<AgentPersona, string> = {
   feature: 'feature',
   bugfix: 'bugfix',
 };
+
+/** Representative PR states cycled by the per-worktree "PR" control button. */
+const PR_PRESETS: Array<{ label: string; status: PrStatus | undefined }> = [
+  { label: 'PR: off', status: undefined },
+  {
+    label: 'PR: pass ✓',
+    status: {
+      number: 42,
+      url: '#',
+      conflicts: false,
+      approved: true,
+      ciStatus: 'passing',
+      fetchedAt: 0,
+    },
+  },
+  {
+    label: 'PR: fail 💬2',
+    status: {
+      number: 42,
+      url: '#',
+      conflicts: false,
+      approved: false,
+      unresolvedComments: 2,
+      ciStatus: 'failing',
+      fetchedAt: 0,
+    },
+  },
+  {
+    label: 'PR: conflict',
+    status: {
+      number: 42,
+      url: '#',
+      conflicts: true,
+      approved: false,
+      ciStatus: 'running',
+      fetchedAt: 0,
+    },
+  },
+];
 
 function ctrlBtn(active: boolean, small = false): string {
   return clsx(
@@ -86,7 +126,10 @@ export const ControlPanel: React.FC<Props> = ({
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [agentStates, setAgentStates] = useState<Record<string, AgentPersona | null>>({});
+  const [prPresetIdx, setPrPresetIdx] = useState<Record<string, number>>({});
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
+  const ticketUrlTemplate = useSettingsStore((s) => s.ticketUrlTemplate);
+  const setTicketUrlTemplate = useSettingsStore((s) => s.setTicketUrlTemplate);
 
   // Auto-collapse on mobile
   useEffect(() => {
@@ -116,6 +159,12 @@ export const ControlPanel: React.FC<Props> = ({
       engine.startAgent(worktreeId, persona);
       setAgentStates((s) => ({ ...s, [worktreeId]: persona }));
     }
+  };
+
+  const cyclePrStatus = (worktreeId: string) => {
+    const next = ((prPresetIdx[worktreeId] ?? 0) + 1) % PR_PRESETS.length;
+    engine.setPrStatus(worktreeId, PR_PRESETS[next].status);
+    setPrPresetIdx((s) => ({ ...s, [worktreeId]: next }));
   };
 
   if (collapsed) {
@@ -202,8 +251,28 @@ export const ControlPanel: React.FC<Props> = ({
                 ✕
               </button>
             </div>
+            <div className="flex gap-1 items-center mt-1">
+              <button
+                onClick={() => cyclePrStatus(id)}
+                className={ctrlBtn((prPresetIdx[id] ?? 0) !== 0, true)}
+              >
+                {PR_PRESETS[prPresetIdx[id] ?? 0].label}
+              </button>
+            </div>
           </div>
         ))}
+      </div>
+
+      {/* Ticket link template */}
+      <div className="mt-2 pt-2 border-t border-border-default">
+        <div className="text-[9px] text-text-faint mb-1">Ticket URL template</div>
+        <input
+          type="text"
+          value={ticketUrlTemplate}
+          placeholder="https://linear.app/acme/issue/{ticket}"
+          onChange={(e) => setTicketUrlTemplate(e.target.value)}
+          className="w-full rounded-md px-1.5 py-1 text-[9px] bg-[rgba(128,128,128,0.06)] border border-border-default text-text-secondary placeholder:text-text-faint"
+        />
       </div>
     </div>
   );

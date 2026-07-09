@@ -11,6 +11,7 @@ import {
   useInsightStore,
   useInspectionStore,
   usePackageStore,
+  useSettingsStore,
   useOperationStore,
   opKey,
   planContentKey,
@@ -123,7 +124,8 @@ type HostMessage =
   | { type: 'diagnostics-update'; worktreeId: string; files: FileDiagnosticSummary[] }
   | { type: 'diagnostics-remove'; worktreeId: string; filePaths: string[] }
   | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string }
-  | { type: 'set-sort-mode'; mode: 'last-updated' | 'name' | 'branch' };
+  | { type: 'set-sort-mode'; mode: 'last-updated' | 'name' | 'branch' }
+  | { type: 'settings-update'; ticketUrlTemplate: string };
 
 function handleCoreMessage(
   msg: HostMessage,
@@ -250,6 +252,9 @@ function handleActionMessage(msg: HostMessage): boolean {
         useInspectionStore.getState().enterInspection(msg.mode.worktreeId);
       if (msg.selectedPackage) usePackageStore.getState().setSelectedPackage(msg.selectedPackage);
       return true;
+    case 'settings-update':
+      useSettingsStore.getState().setTicketUrlTemplate(msg.ticketUrlTemplate);
+      return true;
     default:
       return false;
   }
@@ -370,6 +375,10 @@ const App: React.FC = () => {
     vscode?.postMessage({ type: 'cancel-insights', worktreeId });
   };
 
+  const handleOpenExternalUrl = (url: string) => {
+    vscode?.postMessage({ type: 'open-external-url', url });
+  };
+
   if (errorMessage) {
     return (
       <div
@@ -415,6 +424,7 @@ const App: React.FC = () => {
         onGetLog={handleGetLog}
         onRecheckInsights={handleRecheckInsights}
         onCancelInsights={handleCancelInsights}
+        onOpenExternalUrl={handleOpenExternalUrl}
         onSortChange={(mode) => vscode?.postMessage({ type: 'set-sort-mode', mode })}
         panZoomConfig={panZoomConfig}
       />
