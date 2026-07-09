@@ -2,8 +2,15 @@
  * Matches a Jira/Linear-style ticket id anywhere in a branch name, e.g.
  * `feature/ABC-123-add-thing` → `ABC-123`. Requires an uppercase letter to
  * start so ordinary hyphenated words (`add-thing`) don't false-match.
+ *
+ * The repetition counts are bounded (rather than unbounded `+`) so the match
+ * is linear-time on any input — an unbounded `[A-Z0-9]+` after `[A-Z]` (an
+ * overlapping class) can backtrack quadratically on adversarial branch names
+ * like `AAAA…` (flagged by CodeQL as a polynomial-regex / ReDoS risk). Real
+ * project keys are ≤10 chars and issue numbers ≤10 digits, so the bounds are
+ * comfortably above anything legitimate.
  */
-const TICKET_RE = /[A-Z][A-Z0-9]+-\d+/;
+const TICKET_RE = /[A-Z][A-Z0-9]{1,9}-\d{1,10}/;
 
 /** Extract a ticket id from a branch name, or null if none is present. */
 export function extractTicketId(branch: string): string | null {

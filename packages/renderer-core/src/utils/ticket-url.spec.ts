@@ -11,6 +11,12 @@ describe('extractTicketId', () => {
     expect(extractTicketId('feature/add-thing')).toBeNull();
     expect(extractTicketId('main')).toBeNull();
   });
+
+  it('handles a pathological all-uppercase input in linear time (ReDoS guard)', () => {
+    const start = performance.now();
+    expect(extractTicketId('A'.repeat(100_000))).toBeNull();
+    expect(performance.now() - start).toBeLessThan(100);
+  });
 });
 
 describe('buildTicketUrl', () => {
