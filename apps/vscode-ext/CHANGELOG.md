@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.5.0] — 2026-07-09
+
+### Added
+
+- add GitHub PR status and ticket links to worktree cards (#162)
+
 ## [0.4.3] — 2026-06-28
 
 ### Fixed
