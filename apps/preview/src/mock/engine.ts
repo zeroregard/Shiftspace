@@ -12,21 +12,6 @@ import type {
 import type { AgentConfig, AgentPersona } from './types';
 import { FILE_TREE_TEMPLATES, WORKTREE_PRESETS, type TemplateKey } from './templates';
 
-/**
- * Sample PR status seeded onto the second preset worktree so grove screenshot
- * baselines exercise the PR-status icon cluster (CI failing, approved, and
- * unresolved comments — a mix that shows every badge variant).
- */
-const SAMPLE_PR_STATUS: PrStatus = {
-  number: 128,
-  url: 'https://github.com/acme/shiftspace/pull/128',
-  conflicts: false,
-  approved: true,
-  unresolvedComments: 2,
-  ciStatus: 'failing',
-  fetchedAt: 0,
-};
-
 const SAMPLE_LINES: Record<string, string[]> = {
   ts: [
     "import { useEffect, useState } from 'react';",
@@ -235,7 +220,6 @@ export class MockEngine {
         template: preset.template,
         isMainWorktree: i === 0,
         badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
-        prStatus: i === 1 ? SAMPLE_PR_STATUS : undefined,
       });
     });
   }
@@ -655,7 +639,6 @@ export class MockEngine {
         template: preset.template,
         isMainWorktree: i === 0,
         badge: i === 1 ? { label: 'stale', color: 'warning' } : undefined,
-        prStatus: i === 1 ? SAMPLE_PR_STATUS : undefined,
       });
     });
   }
