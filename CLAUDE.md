@@ -350,6 +350,26 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) for all commit 
 
 Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `perf`
 
+### Product-facing language (mandatory)
+
+Commit descriptions and PR titles must describe the **user-visible outcome**, not the implementation. Someone reading a changelog should understand what changed for them without knowing the codebase.
+
+**Rules:**
+
+- Describe what the user sees, not what the code does. No function names, variable names, component names, hook names, or internal identifiers.
+- Frame fixes as the problem that was solved: "links in sidebar now open in browser" not "wire onOpenExternalUrl handler".
+- Frame features as the capability added: "open a terminal in any worktree with one click" not "add terminal launcher button component".
+- The commit body (below the subject line) is the right place for implementation details — keep them out of the subject.
+
+**Examples:**
+
+| Bad (implementation-focused) | Good (product-focused) |
+|---|---|
+| `fix(vscode-ext): wire onOpenExternalUrl in the sidebar so PR/ticket links open` | `fix(vscode-ext): links in sidebar now open correctly in the browser` |
+| `feat(renderer): add DiffPopover component to FileNode` | `feat(renderer): show inline diff preview on file hover` |
+| `fix(renderer-core): update Zustand selector in useWorktreeStore` | `fix(renderer-core): worktree panel no longer re-renders unnecessarily` |
+| `refactor(renderer): extract UnifiedHeader from WorktreeNode` | `refactor(renderer): simplify worktree header rendering` |
+
 ---
 
 ## CI Hygiene
