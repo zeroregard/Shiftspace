@@ -363,12 +363,12 @@ Commit descriptions and PR titles must describe the **user-visible outcome**, no
 
 **Examples:**
 
-| Bad (implementation-focused) | Good (product-focused) |
-|---|---|
-| `fix(vscode-ext): wire onOpenExternalUrl in the sidebar so PR/ticket links open` | `fix(vscode-ext): links in sidebar now open correctly in the browser` |
-| `feat(renderer): add DiffPopover component to FileNode` | `feat(renderer): show inline diff preview on file hover` |
-| `fix(renderer-core): update Zustand selector in useWorktreeStore` | `fix(renderer-core): worktree panel no longer re-renders unnecessarily` |
-| `refactor(renderer): extract UnifiedHeader from WorktreeNode` | `refactor(renderer): simplify worktree header rendering` |
+| Bad (implementation-focused)                                                     | Good (product-focused)                                                  |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `fix(vscode-ext): wire onOpenExternalUrl in the sidebar so PR/ticket links open` | `fix(vscode-ext): links in sidebar now open correctly in the browser`   |
+| `feat(renderer): add DiffPopover component to FileNode`                          | `feat(renderer): show inline diff preview on file hover`                |
+| `fix(renderer-core): update Zustand selector in useWorktreeStore`                | `fix(renderer-core): worktree panel no longer re-renders unnecessarily` |
+| `refactor(renderer): extract UnifiedHeader from WorktreeNode`                    | `refactor(renderer): simplify worktree header rendering`                |
 
 ---
 
