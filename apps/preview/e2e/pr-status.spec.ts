@@ -52,4 +52,37 @@ test.describe('PR status badges', () => {
 
     await expect(page.locator('.bg-canvas')).toHaveScreenshot('pr-status-cluster.png');
   });
+
+  // Regression: the sidebar ActionsProvider once omitted onOpenExternalUrl, so
+  // clicking the PR badges did nothing (the click hit the no-op default). Drive
+  // the click through the real webview protocol and assert the open-external-url
+  // message is actually posted with the PR's URL.
+  test('clicking the PR badge cluster in the sidebar posts open-external-url', async ({ page }) => {
+    await seedMathRandom(page);
+    await page.goto('/sidebar');
+    await page.locator('[data-mode="sidebar"]').waitFor();
+    await page.waitForTimeout(300);
+
+    await page.evaluate(() => {
+      window.__shiftspaceTest?.enablePrStatus('wt-0', {
+        number: 100,
+        url: 'https://github.com/acme/repo/pull/100',
+        conflicts: false,
+        approved: true,
+        unresolvedComments: 0,
+        ciStatus: 'passing',
+        fetchedAt: 0,
+      });
+    });
+
+    const cluster = page.getByTestId('pr-status-100');
+    await expect(cluster).toBeVisible();
+    await cluster.click();
+
+    const posted = await page.evaluate(() => window.__shiftspaceTest?.getPostedMessages() ?? []);
+    expect(posted).toContainEqual({
+      type: 'open-external-url',
+      url: 'https://github.com/acme/repo/pull/100',
+    });
+  });
 });
