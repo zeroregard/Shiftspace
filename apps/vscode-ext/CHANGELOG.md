@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.5.1] — 2026-07-10
+
+### Fixed
+
+- wire onOpenExternalUrl in the sidebar so PR/ticket links open (#164) _(vscode-ext)_
+
 ## [0.5.0] — 2026-07-09
 
 ### Added
