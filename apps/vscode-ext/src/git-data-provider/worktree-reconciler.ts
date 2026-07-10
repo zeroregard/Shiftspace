@@ -111,6 +111,7 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
         host.fileStates.set(freshWt.id, freshWt.files);
         // Checkout counts as activity.
         freshWt.lastActivityAt = Date.now();
+        if (prevWt.prStatus) freshWt.prStatus = prevWt.prStatus;
 
         log.info(
           `[diffMode] re-adding worktree after branch change: ${freshWt.branch} diffMode=${JSON.stringify(freshWt.diffMode)}`
@@ -122,6 +123,7 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
         freshWt.files = prevWt.files;
         freshWt.branchFiles = prevWt.branchFiles;
         freshWt.lastActivityAt = prevWt.lastActivityAt;
+        if (prevWt.prStatus) freshWt.prStatus = prevWt.prStatus;
         host.fileStates.set(freshWt.id, freshWt.files);
         log.info(`[path] worktree path changed: ${prevWt.path} → ${freshWt.path}`);
       } else {
@@ -132,6 +134,7 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
         freshWt.files = prevWt.files;
         freshWt.branchFiles = prevWt.branchFiles;
         freshWt.lastActivityAt = prevWt.lastActivityAt;
+        if (prevWt.prStatus) freshWt.prStatus = prevWt.prStatus;
         host.fileStates.set(freshWt.id, freshWt.files);
       }
 
@@ -181,6 +184,7 @@ function preserveExistingDiffModes(prev: WorktreeState[], fresh: WorktreeState[]
       // detectWorktrees() stamps Date.now() on every call and would
       // otherwise reset the timer on every 3-second poll.
       freshWt.lastActivityAt = prevWt.lastActivityAt;
+      if (prevWt.prStatus) freshWt.prStatus = prevWt.prStatus;
     } else if (prevWt && prevWt.diffMode.type === 'repo') {
       log.info(
         `[diffMode] preserving repo mode despite branch mismatch: prev=${prevWt.branch} fresh=${freshWt.branch}`
