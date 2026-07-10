@@ -102,6 +102,9 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             case 'swap-branches':
               void provider?.handleSwapBranches(message.worktreeId);
               break;
+            case 'open-external-url':
+              void vscode.env.openExternal(vscode.Uri.parse(message.url));
+              break;
             case 'webview-error':
               log.error(`[Webview/Sidebar] ${message.error}`);
               reportUnexpectedState('webview.sidebar.errorReport', {
