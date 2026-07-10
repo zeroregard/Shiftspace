@@ -10,30 +10,52 @@ interface Props {
 }
 
 /**
- * Compact cluster of PR status icons for a worktree card: CI state, merge
- * conflict, approval, and unresolved-comment count. Clicking anywhere on the
- * cluster opens the PR in the browser. Structure mirrors `AnnotationBadges`.
+ * Compact cluster of PR status icons for a worktree card: a leading pull-request
+ * pill (always shown, with the PR number) followed by CI state, merge conflict,
+ * approval, and unresolved-comment signals. Clicking anywhere on the cluster —
+ * the PR pill or any status badge — opens the PR in the browser. It is also a
+ * keyboard-focusable button (Enter / Space). Structure mirrors `AnnotationBadges`.
  *
- * Each signal is hidden when it has nothing to say (CI 'none', no conflict,
- * not approved, zero/unknown comments) so the row stays quiet until there's
- * something worth surfacing.
+ * Each status signal is hidden when it has nothing to say (CI 'none', no
+ * conflict, not approved, zero/unknown comments) so the row stays quiet until
+ * there's something worth surfacing. The leading PR pill always renders, so
+ * every worktree with an open PR has a visible, clickable way to reach it.
  */
 export function PrStatusBadges({ prStatus }: Props) {
   const actions = useActions();
   const { ciStatus, conflicts, approved, unresolvedComments, url, number } = prStatus;
 
-  const open = (e: React.MouseEvent) => {
+  const open = () => actions.openExternalUrl(url);
+  const onClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    actions.openExternalUrl(url);
+    open();
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      open();
+    }
   };
 
   return (
     <span
       className="shrink-0 flex items-center gap-1 cursor-pointer"
       data-testid={`pr-status-${number}`}
-      onClick={open}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open pull request #${number} on GitHub`}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
       onPointerDown={(e) => e.stopPropagation()}
     >
+      <Tooltip content={`Open PR #${number} on GitHub`} delayDuration={0}>
+        <span data-testid={`pr-open-${number}`}>
+          <Badge variant="info">
+            <Codicon name="git-pull-request" size={12} />#{number}
+          </Badge>
+        </span>
+      </Tooltip>
       <CiBadge ciStatus={ciStatus} />
       {conflicts === true && (
         <Tooltip content="Has merge conflicts" delayDuration={0}>
