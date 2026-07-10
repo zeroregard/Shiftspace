@@ -114,6 +114,10 @@ export const SidebarPage: React.FC = () => {
     bridgeRef.current?.postMessage({ type: 'add-worktree' });
   };
 
+  const handleOpenExternalUrl = (url: string) => {
+    bridgeRef.current?.postMessage({ type: 'open-external-url', url });
+  };
+
   return (
     <ActionsProvider
       onDiffModeChange={handleDiffModeChange}
@@ -124,6 +128,7 @@ export const SidebarPage: React.FC = () => {
       onRecheckInsights={handleRecheckInsights}
       onRenameWorktree={handleRenameWorktree}
       onAddWorktree={handleAddWorktree}
+      onOpenExternalUrl={handleOpenExternalUrl}
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
         <div className="w-80 h-screen bg-canvas" data-mode="sidebar">

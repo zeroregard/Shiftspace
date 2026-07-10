@@ -480,6 +480,10 @@ const SidebarApp: React.FC = () => {
     vscode?.postMessage({ type: 'add-worktree' });
   };
 
+  const handleOpenExternalUrl = (url: string) => {
+    vscode?.postMessage({ type: 'open-external-url', url });
+  };
+
   if (errorMessage) {
     return (
       <div
@@ -509,6 +513,7 @@ const SidebarApp: React.FC = () => {
       onRemoveWorktree={handleRemoveWorktree}
       onSwapBranches={handleSwapBranches}
       onAddWorktree={handleAddWorktreeSidebar}
+      onOpenExternalUrl={handleOpenExternalUrl}
     >
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
         <SidebarView worktrees={wtArray} onWorktreeClick={handleWorktreeClick} />

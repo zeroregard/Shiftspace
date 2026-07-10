@@ -143,7 +143,18 @@ export function ActionsProvider({
       cancelInsights: (a) => onCancelInsights?.(a),
       setPackage: (a) => onSetPackage?.(a),
       detectPackages: () => onDetectPackages?.(),
-      openExternalUrl: (a) => onOpenExternalUrl?.(a),
+      openExternalUrl: (a) => {
+        if (!onOpenExternalUrl) {
+          // Loud on purpose: a click reached here but no host handler is wired
+          // (e.g. an ActionsProvider that forgot onOpenExternalUrl), so the URL
+          // would silently go nowhere. Surface it instead of failing quietly.
+          console.error(
+            `[shiftspace] openExternalUrl("${a}") ignored — no onOpenExternalUrl wired`
+          );
+          return;
+        }
+        onOpenExternalUrl(a);
+      },
     }),
     [
       onFileClick,
