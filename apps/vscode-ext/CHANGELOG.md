@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.5.3] — 2026-07-11
+
+### Fixed
+
+- preserve PR and CI status when switching branches (#167) _(vscode-ext)_
+
 ## [0.5.2] — 2026-07-10
 
 ### Fixed
