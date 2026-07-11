@@ -134,6 +134,9 @@ export class GitDataProvider implements vscode.Disposable {
     // on every worktree it returns, which would otherwise reset the
     // "last updated" display on every worktree each time we re-init.
     const prevActivity = new Map(this.worktrees.map((wt) => [wt.id, wt.lastActivityAt]));
+    const prevPrStatus = new Map(
+      this.worktrees.filter((wt) => wt.prStatus).map((wt) => [wt.id, wt.prStatus])
+    );
 
     this.worktrees = await detectWorktrees(this.currentRoot);
 
@@ -148,6 +151,8 @@ export class GitDataProvider implements vscode.Disposable {
     for (const wt of this.worktrees) {
       const prev = prevActivity.get(wt.id);
       if (prev !== undefined) wt.lastActivityAt = prev;
+      const prevPr = prevPrStatus.get(wt.id);
+      if (prevPr !== undefined) wt.prStatus = prevPr;
     }
 
     // Set initial diff modes: feature branches diff against default branch,
