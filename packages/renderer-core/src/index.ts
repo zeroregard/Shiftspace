@@ -4,6 +4,7 @@ export type {
   WorktreeBadge,
   WorktreeBadgeColor,
   PrStatus,
+  PrState,
   CiStatus,
   MergeableState,
   FileChange,
@@ -121,6 +122,7 @@ export { DiagnosticTooltipContent, FindingTooltipContent } from './ui/diagnostic
 export { ActionBar } from './components/action-bar';
 export { PlanButton } from './components/plan-button';
 export { PrStatusBadges } from './components/pr-status-badges';
+export { MergedPrBadge } from './components/merged-pr-badge';
 export { TicketLinkButton } from './components/ticket-link-button';
 
 // Protocol (shared between webview hosts and preview)

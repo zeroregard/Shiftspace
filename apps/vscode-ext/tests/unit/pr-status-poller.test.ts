@@ -43,6 +43,7 @@ import { GitHubApiError } from '../../src/github/client';
 const sampleStatus: PrStatus = {
   number: 1,
   url: 'https://x/pull/1',
+  state: 'open',
   conflicts: false,
   approved: true,
   unresolvedComments: 0,
@@ -66,6 +67,9 @@ describe('prStatusEqual', () => {
   it('is false when a meaningful field differs', () => {
     expect(prStatusEqual(sampleStatus, { ...sampleStatus, ciStatus: 'failing' })).toBe(false);
     expect(prStatusEqual(sampleStatus, { ...sampleStatus, approved: false })).toBe(false);
+  });
+  it('is false when the PR just got merged', () => {
+    expect(prStatusEqual(sampleStatus, { ...sampleStatus, state: 'merged' })).toBe(false);
   });
 });
 

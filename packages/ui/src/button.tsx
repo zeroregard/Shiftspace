@@ -28,6 +28,8 @@ interface ButtonProps {
   icon?: string;
   disabled?: boolean;
   className?: string;
+  /** Test ID for E2E selectors */
+  'data-testid'?: string;
 }
 
 /**
@@ -46,9 +48,11 @@ export function Button({
   icon,
   disabled = false,
   className,
+  'data-testid': testId,
 }: ButtonProps) {
   return (
     <button
+      data-testid={testId}
       className={clsx(
         'inline-flex items-center justify-center rounded border font-medium cursor-pointer transition-colors shrink-0',
         VARIANT_CLASSES[variant],

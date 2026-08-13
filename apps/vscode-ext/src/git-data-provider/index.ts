@@ -55,6 +55,8 @@ export class GitDataProvider implements vscode.Disposable {
   readonly fileEvents: FileEventCoordinator;
   private readonly poller: Poller;
   private readonly prPoller: PrStatusPoller;
+  /** Worktree ids already auto-deleted (or attempted) after their PR merged. */
+  private readonly autoDeleted = new Set<string>();
 
   constructor(
     public readonly postMessage: PostMessage,
@@ -76,12 +78,17 @@ export class GitDataProvider implements vscode.Disposable {
       getWorktrees: () => this.worktrees,
       onPrStatus: (worktreeId, prStatus) => {
         const wt = this.worktrees.find((w) => w.id === worktreeId);
-        if (!wt || prStatusEqual(wt.prStatus, prStatus)) return;
-        wt.prStatus = prStatus;
-        this.postMessage({
-          type: 'event',
-          event: { type: 'pr-status-updated', worktreeId, prStatus },
-        });
+        if (!wt) return;
+        if (!prStatusEqual(wt.prStatus, prStatus)) {
+          wt.prStatus = prStatus;
+          this.postMessage({
+            type: 'event',
+            event: { type: 'pr-status-updated', worktreeId, prStatus },
+          });
+        }
+        // Checked on every poll, not just on change, so turning the setting on
+        // also cleans up worktrees whose PR merged earlier in the session.
+        if (prStatus?.state === 'merged') this.autoDeleteMergedWorktree(wt);
       },
     });
   }
@@ -183,6 +190,32 @@ export class GitDataProvider implements vscode.Disposable {
     this.prPoller.start();
   }
 
+  /**
+   * Remove a worktree whose PR just landed, when the user has opted in via
+   * `shiftspace.pr.autoDeleteMergedWorktrees` (off by default — deleting a
+   * directory behind the user's back is only acceptable if they asked for it).
+   *
+   * The primary worktree is never touched: it's the repo itself, and it often
+   * sits on the default branch the PR merged into.
+   *
+   * Each worktree is attempted at most once per session — including after a
+   * failure, so a worktree we can't remove (dirty state, permissions) doesn't
+   * re-prompt on every poll.
+   */
+  private autoDeleteMergedWorktree(wt: WorktreeState): void {
+    if (wt.isMainWorktree || this.autoDeleted.has(wt.id)) return;
+    const enabled = vscode.workspace
+      .getConfiguration('shiftspace')
+      .get<boolean>('pr.autoDeleteMergedWorktrees', false);
+    if (!enabled) return;
+    this.autoDeleted.add(wt.id);
+    log.info(`[pr-status] auto-deleting merged worktree ${wt.branch} (${wt.path})`);
+    void vscode.window.showInformationMessage(
+      `Pull request for "${wt.branch}" was merged — removing its worktree.`
+    );
+    void this.handleRemoveWorktree(wt.id);
+  }
+
   // ── Delegating methods ──────────────────────────────────────────────────
 
   refreshWorktree(wt: WorktreeState): Promise<void> {
@@ -275,6 +308,7 @@ export class GitDataProvider implements vscode.Disposable {
     this.fileEvents.dispose();
     this.worktrees = [];
     this.fileStates.clear();
+    this.autoDeleted.clear();
   }
 
   dispose(): void {

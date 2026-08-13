@@ -16,6 +16,24 @@ test.beforeEach(() => {
   resetAllStores();
 });
 
+/** A worktree whose branch's PR has already landed. */
+function createMergedWorktree() {
+  return createMockWorktreeWithFiles([createMockFile({ path: 'src/App.tsx' })], {
+    id: 'wt-0',
+    branch: 'feature/merged',
+    path: '/projects/myapp-merged',
+    prStatus: {
+      number: 42,
+      url: 'https://github.com/acme/myapp/pull/42',
+      state: 'merged',
+      conflicts: false,
+      approved: true,
+      ciStatus: 'none',
+      fetchedAt: 0,
+    },
+  });
+}
+
 test.describe('WorktreeCard', () => {
   test('default with files', async ({ mount }) => {
     const wt = createMockWorktreeWithFiles(
@@ -112,6 +130,37 @@ test.describe('WorktreeCard', () => {
 
     // Popover portals to document.body — take a full page screenshot
     await expect(page).toHaveScreenshot('worktree-card-delete-popover.png');
+  });
+
+  test('merged PR shows the purple merged indicator', async ({ mount }) => {
+    const wt = createMergedWorktree();
+    seedWorktree(wt);
+
+    const component = await mount(
+      <Wrapper>
+        <WorktreeCard worktree={wt} />
+      </Wrapper>
+    );
+    await expect(component.getByTestId('pr-badge-merged')).toBeVisible();
+    await expect(component).toHaveScreenshot('worktree-card-pr-merged.png');
+  });
+
+  test('merged indicator opens a go-to-PR / delete menu', async ({ mount, page }) => {
+    const wt = createMergedWorktree();
+    seedWorktree(wt);
+
+    const component = await mount(
+      <Wrapper>
+        <WorktreeCard worktree={wt} />
+      </Wrapper>
+    );
+    await component.getByTestId('pr-status-42').click();
+    await page.waitForTimeout(100);
+
+    // Popover portals to document.body — assert on the page, not the component.
+    await expect(page.getByTestId('merged-go-to-pr')).toBeVisible();
+    await expect(page.getByTestId('merged-delete-worktree')).toBeVisible();
+    await expect(page).toHaveScreenshot('worktree-card-pr-merged-menu.png');
   });
 
   test('with action checks', async ({ mount }) => {

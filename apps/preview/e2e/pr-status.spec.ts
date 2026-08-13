@@ -53,6 +53,39 @@ test.describe('PR status badges', () => {
     await expect(page.locator('.bg-canvas')).toHaveScreenshot('pr-status-cluster.png');
   });
 
+  test('replaces the cluster with a purple merged indicator once the PR lands', async ({
+    page,
+  }) => {
+    await seedMathRandom(page);
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    await page.evaluate(() => {
+      window.__shiftspaceTest?.enablePrStatus('wt-1', {
+        number: 202,
+        url: '#',
+        state: 'merged',
+        conflicts: false,
+        approved: true,
+        ciStatus: 'none',
+        fetchedAt: 0,
+      });
+    });
+
+    await expect(page.getByTestId('pr-badge-merged')).toBeVisible();
+    // Merge/CI/comment badges are gone — merged is the only signal left.
+    await expect(page.getByTestId('pr-badge-conflict')).toHaveCount(0);
+    await expect(page.getByTestId('pr-badge-ci-passing')).toHaveCount(0);
+
+    await expect(page.locator('.bg-canvas')).toHaveScreenshot('pr-status-merged.png');
+
+    // Clicking it opens the two-option menu.
+    await page.getByTestId('pr-status-202').click();
+    await expect(page.getByTestId('merged-go-to-pr')).toBeVisible();
+    await expect(page.getByTestId('merged-delete-worktree')).toBeVisible();
+  });
+
   // Regression: the sidebar ActionsProvider once omitted onOpenExternalUrl, so
   // clicking the PR badges did nothing (the click hit the no-op default). Drive
   // the click through the real webview protocol and assert the open-external-url
