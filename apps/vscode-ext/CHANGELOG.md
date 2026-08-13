@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.6.0] — 2026-08-13
+
+### Added
+
+- show a merged indicator on worktrees whose PR has landed (#169)
+
 ## [0.5.3] — 2026-07-11
 
 ### Fixed
