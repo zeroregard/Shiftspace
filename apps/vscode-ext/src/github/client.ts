@@ -26,10 +26,13 @@ export function isRateLimited(err: unknown): boolean {
 // Raw API response shapes (only the fields we consume)
 // ---------------------------------------------------------------------------
 
-interface RawPrListItem {
+export interface RawPrListItem {
   number: number;
   html_url: string;
   head: { sha: string };
+  state: 'open' | 'closed';
+  /** ISO timestamp when the PR was merged, null if it was closed unmerged. */
+  merged_at: string | null;
 }
 
 export interface RawPrDetail {
@@ -120,12 +123,39 @@ export function mapToPrStatus(inputs: PrStatusInputs): PrStatus {
   return {
     number: inputs.number,
     url: inputs.url,
+    state: 'open',
     conflicts: mapMergeable(inputs.detail),
     approved: mapApproval(inputs.reviews),
     unresolvedComments: mapUnresolved(inputs.threads),
     ciStatus: mapCiStatus(inputs.checks),
     fetchedAt: inputs.now ?? Date.now(),
   };
+}
+
+/**
+ * Status for a PR that has already landed. Review/CI/mergeability are all
+ * moot once a PR is merged, so they're pinned to their settled values and the
+ * UI shows the merged indicator alone instead of the status cluster.
+ */
+export function mapMergedPrStatus(input: { number: number; url: string; now?: number }): PrStatus {
+  return {
+    number: input.number,
+    url: input.url,
+    state: 'merged',
+    conflicts: false,
+    approved: true,
+    ciStatus: 'none',
+    fetchedAt: input.now ?? Date.now(),
+  };
+}
+
+/**
+ * Pick the PR that describes a branch's current situation: an open PR if there
+ * is one, otherwise the most recently updated merged PR. A branch whose only
+ * PRs were closed without merging is treated as having no PR at all.
+ */
+export function pickRelevantPr(list: RawPrListItem[]): RawPrListItem | null {
+  return list.find((p) => p.state === 'open') ?? list.find((p) => p.merged_at !== null) ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,10 +170,15 @@ export function mapToPrStatus(inputs: PrStatusInputs): PrStatus {
 export class GitHubClient {
   constructor(private readonly token: string) {}
 
-  /** Fetch the full PR status for a branch, or null if there's no open PR. */
+  /**
+   * Fetch the full PR status for a branch, or null when the branch has no open
+   * or merged PR. Merged PRs short-circuit: a single list call is enough, and
+   * the review/CI endpoints would only report history nobody can act on.
+   */
   async fetchPrStatus(ref: GitHubRepoRef, branch: string): Promise<PrStatus | null> {
-    const pr = await this.findOpenPr(ref, branch);
+    const pr = await this.findPr(ref, branch);
     if (!pr) return null;
+    if (pr.merged_at !== null) return mapMergedPrStatus({ number: pr.number, url: pr.html_url });
     const [detail, reviews, threads, checks] = await Promise.all([
       this.getPr(ref, pr.number),
       this.listReviews(ref, pr.number),
@@ -153,12 +188,14 @@ export class GitHubClient {
     return mapToPrStatus({ number: pr.number, url: pr.html_url, detail, reviews, threads, checks });
   }
 
-  private async findOpenPr(ref: GitHubRepoRef, branch: string): Promise<RawPrListItem | null> {
+  private async findPr(ref: GitHubRepoRef, branch: string): Promise<RawPrListItem | null> {
     const head = `${ref.owner}:${branch}`;
+    // state=all so a branch whose PR just landed keeps reporting — sorted by
+    // recency so the newest merge wins when a branch has been reused.
     const list = await this.rest<RawPrListItem[]>(
-      `/repos/${ref.owner}/${ref.repo}/pulls?head=${encodeURIComponent(head)}&state=open&per_page=1`
+      `/repos/${ref.owner}/${ref.repo}/pulls?head=${encodeURIComponent(head)}&state=all&sort=updated&direction=desc&per_page=10`
     );
-    return list[0] ?? null;
+    return pickRelevantPr(list);
   }
 
   private getPr(ref: GitHubRepoRef, number: number): Promise<RawPrDetail> {

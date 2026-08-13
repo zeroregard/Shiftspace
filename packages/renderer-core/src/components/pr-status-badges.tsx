@@ -4,9 +4,14 @@ import { Codicon } from '@shiftspace/ui/codicon';
 import { Spinner } from '@shiftspace/ui/spinner';
 import type { PrStatus } from '../types';
 import { useActions } from '../ui/actions-context';
+import { MergedPrBadge } from './merged-pr-badge';
 
 interface Props {
   prStatus: PrStatus;
+  /** Worktree this PR belongs to — lets the merged menu offer deletion. */
+  worktreeId?: string;
+  /** False for the primary worktree, which can never be removed. */
+  canDelete?: boolean;
 }
 
 /**
@@ -17,8 +22,13 @@ interface Props {
  * Each signal is hidden when it has nothing to say (CI 'none', no conflict,
  * not approved, zero/unknown comments) so the row stays quiet until there's
  * something worth surfacing.
+ *
+ * Once the PR is merged the whole cluster collapses into a single purple
+ * merged indicator (`MergedPrBadge`) — CI and review state are history at
+ * that point, and the only useful next steps are opening the PR or cleaning
+ * up the worktree.
  */
-export function PrStatusBadges({ prStatus }: Props) {
+export function PrStatusBadges({ prStatus, worktreeId, canDelete }: Props) {
   const actions = useActions();
   const { ciStatus, conflicts, approved, unresolvedComments, url, number } = prStatus;
 
@@ -26,6 +36,10 @@ export function PrStatusBadges({ prStatus }: Props) {
     e.stopPropagation();
     actions.openExternalUrl(url);
   };
+
+  if (prStatus.state === 'merged') {
+    return <MergedPrBadge prStatus={prStatus} worktreeId={worktreeId} canDelete={canDelete} />;
+  }
 
   return (
     <span

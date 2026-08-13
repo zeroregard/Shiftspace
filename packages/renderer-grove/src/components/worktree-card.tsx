@@ -217,7 +217,13 @@ export function WorktreeCard({
           )}
           {wt.planPath && !isRenaming && <PlanButton worktreeId={wt.id} planPath={wt.planPath} />}
           {ticketUrl && !isRenaming && <TicketLinkButton worktreeId={wt.id} url={ticketUrl} />}
-          {wt.prStatus && !isRenaming && <PrStatusBadges prStatus={wt.prStatus} />}
+          {wt.prStatus && !isRenaming && (
+            <PrStatusBadges
+              prStatus={wt.prStatus}
+              worktreeId={wt.id}
+              canDelete={!wt.isMainWorktree}
+            />
+          )}
           {wt.badge && !isRenaming && (
             <WorktreeBadge
               label={wt.badge.label}

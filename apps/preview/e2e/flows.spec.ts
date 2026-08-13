@@ -260,6 +260,51 @@ test.describe('Flows – round-trip message routing', () => {
       );
   });
 
+  test('merged PR menu: Go to PR posts open-external-url, Delete removes the worktree', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.locator('.bg-canvas').waitFor();
+    await page.waitForTimeout(300);
+
+    await page.evaluate(() =>
+      window.__shiftspaceTest?.enablePrStatus('wt-1', {
+        number: 404,
+        url: 'https://github.com/acme/shiftspace/pull/404',
+        state: 'merged',
+        conflicts: false,
+        approved: true,
+        ciStatus: 'none',
+        fetchedAt: 0,
+      })
+    );
+    await clearCalls(page);
+
+    await page.getByTestId('pr-status-404').click();
+    await page.getByTestId('merged-go-to-pr').click();
+
+    await expect
+      .poll(() => getPostedMessages(page))
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'open-external-url',
+            url: 'https://github.com/acme/shiftspace/pull/404',
+          }),
+        ])
+      );
+
+    await page.getByTestId('pr-status-404').click();
+    await page.getByTestId('merged-delete-worktree').click();
+
+    await expect
+      .poll(() => getCalls(page))
+      .toEqual(
+        expect.arrayContaining([expect.objectContaining({ op: 'remove-worktree', args: ['wt-1'] })])
+      );
+    await expect(page.getByTestId('remove-worktree-wt-1')).toHaveCount(0, { timeout: 2000 });
+  });
+
   test('control panel remove button also routes through the bridge', async ({ page }) => {
     // The control panel's ✕ button is a second UI surface for removal.
     // Catching it here ensures app.tsx's `handleRemoveWorktree` wiring stays

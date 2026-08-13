@@ -7,6 +7,7 @@ export {
   type WorktreeBadge,
   type WorktreeBadgeColor,
   type PrStatus,
+  type PrState,
   type CiStatus,
   type MergeableState,
   type FileChange,

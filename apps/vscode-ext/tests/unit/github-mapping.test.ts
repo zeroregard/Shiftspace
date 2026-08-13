@@ -5,8 +5,11 @@ import {
   mapUnresolved,
   mapCiStatus,
   mapToPrStatus,
+  mapMergedPrStatus,
+  pickRelevantPr,
   type RawReview,
   type RawCheckRun,
+  type RawPrListItem,
 } from '../../src/github/client';
 
 describe('mapMergeable', () => {
@@ -105,11 +108,52 @@ describe('mapToPrStatus', () => {
     expect(status).toEqual({
       number: 7,
       url: 'https://example/pull/7',
+      state: 'open',
       conflicts: true,
       approved: true,
       unresolvedComments: 1,
       ciStatus: 'passing',
       fetchedAt: 123,
     });
+  });
+});
+
+describe('mapMergedPrStatus', () => {
+  it('reports a merged PR with settled review/CI fields', () => {
+    expect(mapMergedPrStatus({ number: 9, url: 'https://example/pull/9', now: 5 })).toEqual({
+      number: 9,
+      url: 'https://example/pull/9',
+      state: 'merged',
+      conflicts: false,
+      approved: true,
+      ciStatus: 'none',
+      fetchedAt: 5,
+    });
+  });
+});
+
+describe('pickRelevantPr', () => {
+  const pr = (number: number, state: 'open' | 'closed', merged = false): RawPrListItem => ({
+    number,
+    html_url: `https://example/pull/${number}`,
+    head: { sha: 'abc' },
+    state,
+    merged_at: merged ? '2026-01-01T00:00:00Z' : null,
+  });
+
+  it('prefers an open PR over an older merged one', () => {
+    expect(pickRelevantPr([pr(2, 'closed', true), pr(3, 'open')])?.number).toBe(3);
+  });
+
+  it('falls back to the most recent merged PR', () => {
+    expect(pickRelevantPr([pr(2, 'closed', true), pr(1, 'closed', true)])?.number).toBe(2);
+  });
+
+  it('ignores PRs closed without merging', () => {
+    expect(pickRelevantPr([pr(4, 'closed')])).toBeNull();
+  });
+
+  it('returns null for a branch with no PRs', () => {
+    expect(pickRelevantPr([])).toBeNull();
   });
 });

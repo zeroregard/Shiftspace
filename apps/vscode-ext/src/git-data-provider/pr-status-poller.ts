@@ -22,6 +22,7 @@ export function prStatusEqual(a: PrStatus | undefined, b: PrStatus | undefined):
   return (
     a.number === b.number &&
     a.url === b.url &&
+    a.state === b.state &&
     a.conflicts === b.conflicts &&
     a.approved === b.approved &&
     a.unresolvedComments === b.unresolvedComments &&

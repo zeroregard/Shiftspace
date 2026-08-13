@@ -24,16 +24,29 @@ export type CiStatus = 'passing' | 'failing' | 'running' | 'none';
 export type MergeableState = boolean | 'unknown';
 
 /**
+ * Lifecycle state of a PR, as far as Shiftspace cares about it. A PR that was
+ * closed without merging is reported as no PR at all (`prStatus: undefined`) —
+ * only open and merged PRs have something to say on a worktree card.
+ */
+export type PrState = 'open' | 'merged';
+
+/**
  * Status of the pull request directly related to a worktree's branch.
  * Populated by the GitHub PR poller in the extension host; `undefined` when
  * the feature is off, there's no GitHub session, the remote isn't GitHub, or
- * the branch has no open PR.
+ * the branch has no open or merged PR.
  */
 export interface PrStatus {
   /** PR number, e.g. 1234. */
   number: number;
   /** Full html URL to the PR. */
   url: string;
+  /**
+   * Open or merged. When merged, the review/CI fields are stale by definition
+   * and the UI shows a single merged indicator instead of the status cluster.
+   * Optional for backwards compatibility — absent means open.
+   */
+  state?: PrState;
   /** true = has conflicts, false = clean, 'unknown' = GitHub still computing. */
   conflicts: MergeableState;
   /** At least one approving review and no outstanding change requests. */
