@@ -8,7 +8,6 @@ import {
   checkWorktreeSafety,
   swapBranches,
 } from '../git/worktrees';
-import { reportError } from '../telemetry';
 import { getFilesForMode } from './diff-mode';
 import type { GitDataProvider } from './index';
 
@@ -40,11 +39,6 @@ export async function handleSetDiffMode(
     host.onFileChange?.(worktreeId);
   } catch (err) {
     log.error('handleSetDiffMode error:', err);
-    reportError(err as Error, {
-      context: 'handleSetDiffMode',
-      branch: wt.branch,
-      mode: diffMode.type,
-    });
     // Send back empty to clear loading state
     host.postMessage({ type: 'worktree-files-updated', worktreeId, files: [], diffMode });
   }
@@ -63,7 +57,6 @@ export async function handleFetchBranches(
     host.postMessage({ type: 'fetch-done', worktreeId, timestamp: Date.now(), branches });
   } catch (err) {
     log.error('handleFetchBranches error:', err);
-    reportError(err as Error, { context: 'handleFetchBranches' });
     host.postMessage({ type: 'fetch-loading', worktreeId, loading: false });
   }
 }
@@ -79,7 +72,6 @@ export async function handleGetBranchList(
     host.postMessage({ type: 'branch-list', worktreeId, branches });
   } catch (err) {
     log.error('handleGetBranchList error:', err);
-    reportError(err as Error, { context: 'handleGetBranchList' });
   }
 }
 
@@ -97,11 +89,6 @@ export async function handleCheckoutBranch(
     await host.reinitialize();
   } catch (err) {
     log.error('handleCheckoutBranch error:', err);
-    reportError(err as Error, {
-      context: 'handleCheckoutBranch',
-      fromBranch: wt.branch,
-      toBranch: branch,
-    });
     void vscode.window.showErrorMessage(
       `Failed to checkout "${branch}": ${(err as Error).message}`
     );
@@ -169,11 +156,6 @@ export async function handleSwapBranches(host: GitDataProvider, worktreeId: stri
         await host.reinitialize();
       } catch (err) {
         log.error('handleSwapBranches error:', err);
-        reportError(err as Error, {
-          context: 'handleSwapBranches',
-          branchA: linkedWt.branch,
-          branchB: mainWt.branch,
-        });
         void vscode.window.showErrorMessage(
           `Branch swap failed: ${(err as Error).message}. Check git stash list for any stashed changes.`
         );

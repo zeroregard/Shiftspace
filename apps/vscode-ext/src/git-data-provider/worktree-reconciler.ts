@@ -1,7 +1,6 @@
 import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
 import { log } from '../logger';
 import { detectWorktrees, badgesEqual } from '../git/worktrees';
-import { reportError, reportUnexpectedState } from '../telemetry';
 import { getFilesForMode } from './diff-mode';
 import type { GitDataProvider } from './index';
 
@@ -26,9 +25,6 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
     // Skip this cycle to avoid flashing "No worktrees".
     if (fresh.length === 0 && host.worktrees.length > 0) {
       log.info('checkForWorktreeChanges: detectWorktrees returned empty, skipping');
-      reportUnexpectedState('git.detectWorktrees.transientEmpty', {
-        previousCount: String(host.worktrees.length),
-      });
       return;
     }
 
@@ -58,10 +54,6 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
           wt.branchFiles = branchFiles;
         } catch (err) {
           log.error('getFileChanges error for new worktree', wt.path, err);
-          reportError(err as Error, {
-            context: 'getFileChanges.newWorktree',
-            branch: wt.branch,
-          });
         }
         const event: ShiftspaceEvent = { type: 'worktree-added', worktree: wt };
         host.postMessage({ type: 'event', event });
@@ -102,10 +94,6 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
           freshWt.branchFiles = branchFiles;
         } catch (err) {
           log.error('getFileChanges error after branch change', freshWt.path, err);
-          reportError(err as Error, {
-            context: 'getFileChanges.branchChanged',
-            branch: freshWt.branch,
-          });
           freshWt.files = [];
         }
         host.fileStates.set(freshWt.id, freshWt.files);
@@ -165,7 +153,6 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
     }
   } catch (err) {
     log.error('checkForWorktreeChanges error:', err);
-    reportError(err as Error, { context: 'checkForWorktreeChanges' });
   }
 }
 

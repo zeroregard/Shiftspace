@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { WorktreeState } from '@shiftspace/renderer';
 import { log } from '../logger';
-import { reportUnexpectedState } from '../telemetry';
 import type { McpErrorResponse } from './protocol';
 
 /** Normalize a path by resolving symlinks and removing trailing slashes. */
@@ -27,9 +26,6 @@ export function resolveWorktree(
 ): WorktreeState | null {
   if (worktrees.length === 0) {
     log.warn('[MCP] resolveWorktree: no worktrees available');
-    reportUnexpectedState('mcp.resolveWorktree.noWorktrees', {
-      hasCwd: String(Boolean(cwd)),
-    });
     return null;
   }
   if (!cwd) {
@@ -45,9 +41,6 @@ export function resolveWorktree(
     }).trim();
   } catch (err) {
     log.warn('[MCP] resolveWorktree: git rev-parse failed for cwd="%s":', cwd, err);
-    reportUnexpectedState('mcp.resolveWorktree.revParseFailed', {
-      errorName: err instanceof Error ? err.name : 'unknown',
-    });
     return null;
   }
 
@@ -63,9 +56,6 @@ export function resolveWorktree(
       resolvedGitRoot,
       JSON.stringify(worktrees.map((wt) => wt.path))
     );
-    reportUnexpectedState('mcp.resolveWorktree.noMatchForCwd', {
-      worktreeCount: String(worktrees.length),
-    });
   }
   return match;
 }

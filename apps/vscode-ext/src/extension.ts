@@ -8,28 +8,12 @@ import { installMcpServerBinary, configureClaudeCode, configureCursor } from './
 import { initLogger, log } from './logger';
 import { initGitPath } from './git/git-utils';
 import { signInToGitHub } from './github/auth';
-import { initTelemetry, closeTelemetry, reportError } from './telemetry';
 
 const mcpHttpServer = new ShiftspaceMcpHttpServer();
 
 export function activate(context: vscode.ExtensionContext) {
   initLogger(context);
   initGitPath();
-
-  // Initialize telemetry (respects opt-in setting + VSCode global telemetry).
-  // We deliberately do NOT subscribe to process.on('uncaughtException' /
-  // 'unhandledRejection') here — the extension host is shared with every
-  // other installed extension and with the editor itself, so those events
-  // routinely carry foreign errors (e.g. Cursor's `_chat.editSessions.accept`
-  // command failures). Sentry's default integrations for these are also
-  // disabled in `initTelemetry` for the same reason. All Shiftspace errors
-  // reach Sentry via explicit `reportError` calls at known call sites.
-  const ext = vscode.extensions.getExtension('shiftspace.shiftspace');
-  const version = ext?.packageJSON.version ?? 'unknown';
-  initTelemetry(version);
-
-  // Show first-run telemetry opt-in prompt (only once, ever)
-  void promptTelemetryOptIn(context, version);
 
   // Single shared git provider — both sidebar and tab subscribe to the same
   // GitDataProvider so mutations (rename, checkout, swap) are reflected
@@ -95,9 +79,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push({ dispose: () => void mcpHttpServer.stop() });
 }
 
-export async function deactivate() {
+export function deactivate() {
   void mcpHttpServer.stop();
-  await closeTelemetry();
 }
 
 async function startMcpServer(context: vscode.ExtensionContext): Promise<void> {
@@ -107,7 +90,6 @@ async function startMcpServer(context: vscode.ExtensionContext): Promise<void> {
     void promptMcpConfiguration();
   } catch (err) {
     log.error('Failed to start MCP HTTP server:', err);
-    reportError(err as Error, { context: 'mcpServerStart' });
   }
 }
 
@@ -148,30 +130,4 @@ async function promptMcpConfiguration(): Promise<void> {
 
   // Persist regardless of choice so the prompt doesn't reappear
   await config.update(MCP_CONFIGURED_KEY, true, vscode.ConfigurationTarget.Global);
-}
-
-const TELEMETRY_PROMPT_KEY = 'shiftspace.telemetryPromptShown';
-
-async function promptTelemetryOptIn(
-  context: vscode.ExtensionContext,
-  extensionVersion: string
-): Promise<void> {
-  if (context.globalState.get(TELEMETRY_PROMPT_KEY)) return;
-
-  const choice = await vscode.window.showInformationMessage(
-    'Shiftspace: Help improve the extension by sending anonymous error reports?',
-    'Enable',
-    'No thanks'
-  );
-
-  if (choice === 'Enable') {
-    await vscode.workspace
-      .getConfiguration('shiftspace')
-      .update('telemetry.enabled', true, vscode.ConfigurationTarget.Global);
-    // Re-init now that it's enabled
-    initTelemetry(extensionVersion);
-  }
-
-  // Don't show again regardless of choice
-  await context.globalState.update(TELEMETRY_PROMPT_KEY, true);
 }

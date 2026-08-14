@@ -90,13 +90,12 @@ The `badge` block renders a pill next to the worktree's name. Useful for marking
 | `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines                              |
 | `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                                           |
 | `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on)                          |
-| `shiftspace.telemetry.enabled`            | Send anonymous error reports to help improve Shiftspace (default: off, opt-in on first run) |
 | `shiftspace.pr.enabled`                   | Show pull request status (CI, approvals, comments, merged) on worktree cards (default: off) |
 | `shiftspace.pr.autoDeleteMergedWorktrees` | Delete a worktree automatically once its pull request is merged (default: off)              |
 
-## Privacy and telemetry
+## Privacy
 
-Shiftspace ships with optional, opt-in anonymous error reporting through Sentry. It's off by default. The first time the extension activates you'll see a one-time prompt asking whether to turn it on. Pick "No thanks" and you won't be asked again. No code, file contents, or personally identifiable info is ever sent. You can flip the toggle any time via `shiftspace.telemetry.enabled`, and VS Code's global `telemetry.telemetryLevel` always wins over it.
+Shiftspace collects nothing and sends nothing. It has no telemetry, no analytics, and no error reporting — everything it reads about your repository stays on your machine. Errors are written to the "Shiftspace" output channel only.
 
 ## Requirements
 

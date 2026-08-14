@@ -18,7 +18,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import type { IconMap } from '@shiftspace/renderer';
 import { log } from './logger';
-import { reportError, reportUnexpectedState } from './telemetry';
 
 // Internal types mirroring the VSCode icon-theme JSON schema
 
@@ -131,9 +130,6 @@ export class IconThemeProvider implements vscode.Disposable {
       return true;
     } catch (err) {
       log.error('IconTheme load(): error loading theme:', err);
-      reportError(err instanceof Error ? err : new Error(String(err)), {
-        context: 'iconTheme.load',
-      });
       return false;
     }
   }
@@ -324,10 +320,6 @@ export class IconThemeProvider implements vscode.Disposable {
         return dataUri;
       } catch (err) {
         log.error('IconTheme: failed to read SVG for', iconId, '| error:', err);
-        reportError(err instanceof Error ? err : new Error(String(err)), {
-          context: 'iconTheme.readSvg',
-          iconId,
-        });
         this._svgCache.set(iconId, '');
         return null;
       }
@@ -340,9 +332,6 @@ export class IconThemeProvider implements vscode.Disposable {
 
       if (!fontData) {
         log.warn('IconTheme: no font loaded for glyph icon', iconId, '| fontId:', fontId);
-        reportUnexpectedState('iconTheme.glyphMissingFont', {
-          fontId: fontId ?? 'none',
-        });
         this._svgCache.set(iconId, '');
         return null;
       }

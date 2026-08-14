@@ -1,7 +1,6 @@
 import type { WorktreeState } from '@shiftspace/renderer';
 import { log } from '../logger';
 import { diffFileChanges } from '../git/event-diff';
-import { reportError } from '../telemetry';
 import { preserveLastChangedAt } from './helpers';
 import { getFilesForMode } from './diff-mode';
 import type { GitDataProvider } from './index';
@@ -17,7 +16,6 @@ export async function loadAllFileChanges(host: GitDataProvider): Promise<void> {
         host.fileStates.set(wt.id, files);
       } catch (err) {
         log.error('loadAllFileChanges error for', wt.path, err);
-        reportError(err as Error, { context: 'loadAllFileChanges', branch: wt.branch });
       }
     })
   );
@@ -45,7 +43,6 @@ export async function reloadAllWithFilter(host: GitDataProvider): Promise<void> 
       }
     } catch (err) {
       log.error('reloadAllWithFilter error for', wt.path, err);
-      reportError(err as Error, { context: 'reloadAllWithFilter', branch: wt.branch });
     }
   }
 }
@@ -122,6 +119,5 @@ export async function refreshWorktree(host: GitDataProvider, wt: WorktreeState):
     }
   } catch (err) {
     log.error('refreshWorktree error for', wt.path, err);
-    reportError(err as Error, { context: 'refreshWorktree', branch: wt.branch });
   }
 }

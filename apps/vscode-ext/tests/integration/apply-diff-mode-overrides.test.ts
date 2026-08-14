@@ -15,11 +15,6 @@ vi.mock('child_process', () => ({
   execFile: vi.fn(),
 }));
 
-vi.mock('../../src/telemetry', () => ({
-  reportError: vi.fn(),
-  reportUnexpectedState: vi.fn(),
-}));
-
 // Stub the git status helpers so we control exactly what applyDiffModeOverrides
 // observes per mode, and we can introduce controlled delays to exercise the
 // fetch-then-commit ordering.

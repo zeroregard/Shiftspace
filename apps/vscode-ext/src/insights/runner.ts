@@ -3,7 +3,6 @@ import type { InsightSummary, InsightDetail } from './types';
 import { insightRegistry } from './registry';
 import { isInsightEnabled, getInsightSettings } from './settings-loader';
 import { log } from '../logger';
-import { reportError } from '../telemetry';
 
 interface CacheEntry {
   /** Content-based key derived from file paths and change metadata. */
@@ -90,12 +89,10 @@ export class InsightRunner {
         summaries.push(result.value.summary);
         details.push(result.value.detail);
       } else {
-        log.error('Insight plugin error:', result.reason);
-        const reason = result.reason;
-        reportError(reason instanceof Error ? reason : new Error(String(reason)), {
-          context: 'insightPlugin',
-          plugin: plugins[results.indexOf(result)]?.id ?? 'unknown',
-        });
+        log.error(
+          `Insight plugin "${plugins[results.indexOf(result)]?.id ?? 'unknown'}" error:`,
+          result.reason
+        );
       }
     }
 

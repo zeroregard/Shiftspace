@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { ShiftspaceConfig, ShiftspaceActionConfig } from './types';
 import { log } from '../logger';
-import { reportError, reportWarning } from '../telemetry';
 
 /** Parse .shiftspace.json content string. Throws on invalid JSON. */
 export function parseShiftspaceConfig(content: string): ShiftspaceConfig {
@@ -33,28 +32,20 @@ export function validateSmellRules(rules: unknown[]): import('./types').SmellRul
 
     if (!id || !label || !pattern) {
       log.warn('Smell rule missing required fields, skipping:', rule);
-      reportWarning('config.smellRule.missingFields', {
-        hasId: String(Boolean(id)),
-        hasLabel: String(Boolean(label)),
-        hasPattern: String(Boolean(pattern)),
-      });
       continue;
     }
     if (seen.has(id)) {
       log.warn(`Duplicate smell rule id "${id}", skipping`);
-      reportWarning('config.smellRule.duplicateId', { id });
       continue;
     }
     if (threshold < 1) {
       log.warn(`Smell rule "${id}" has threshold < 1, defaulting to 1`);
-      reportWarning('config.smellRule.invalidThreshold', { id });
     }
 
     try {
       new RegExp(pattern);
     } catch {
       log.warn(`Smell rule "${id}" has invalid regex pattern, skipping`);
-      reportWarning('config.smellRule.invalidRegex', { id });
       continue;
     }
 
@@ -128,10 +119,7 @@ export function readShiftspaceConfigFile(repoRoot: string): ShiftspaceConfig | n
       'code' in err &&
       (err as NodeJS.ErrnoException).code === 'ENOENT';
     if (!isNotFound) {
-      reportError(err instanceof Error ? err : new Error(String(err)), {
-        context: 'loadConfig',
-        repoRoot,
-      });
+      log.error('loadConfig error for', repoRoot, err);
     }
     return null;
   }
@@ -179,10 +167,6 @@ export class ConfigLoader implements vscode.Disposable {
     const errors = validateConfig(merged);
     if (errors.length > 0) {
       log.warn('Config validation errors:', errors);
-      reportWarning('config.validation.failed', {
-        errorCount: String(errors.length),
-        firstError: errors[0]?.slice(0, 80) ?? '',
-      });
     }
 
     this._config = merged;

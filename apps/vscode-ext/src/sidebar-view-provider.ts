@@ -3,7 +3,6 @@ import { getWebviewHtml } from './webview/html';
 import { SharedGitProvider } from './shared-git-provider';
 import { ShiftspacePanel } from './shiftspace-panel';
 import { log } from './logger';
-import { reportError, reportInvariant, reportUnexpectedState } from './telemetry';
 import type { WebviewMessage } from '@shiftspace/renderer';
 
 const VIEW_ID = 'sidebar';
@@ -107,20 +106,13 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               break;
             case 'webview-error':
               log.error(`[Webview/Sidebar] ${message.error}`);
-              reportUnexpectedState('webview.sidebar.errorReport', {
-                preview: message.error.slice(0, 120),
-              });
               break;
             default:
               log.warn(`Sidebar: unhandled message type "${message.type}"`);
-              reportInvariant('webview.sidebar.unhandledMessageType', {
-                messageType: message.type,
-              });
               break;
           }
         } catch (err) {
           log.error(`Sidebar: error handling message "${message.type}"`, err);
-          reportError(err as Error, { context: 'webviewMessage', messageType: message.type });
         }
       },
       null,

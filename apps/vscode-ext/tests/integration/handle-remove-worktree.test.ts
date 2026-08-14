@@ -37,13 +37,6 @@ vi.mock('fs', async () => {
   };
 });
 
-// git-data-provider pulls in many peripheral modules via side imports; stub the
-// ones that do real work (fs-based ignore filter, diagnostics) so tests stay pure.
-vi.mock('../../src/telemetry', () => ({
-  reportError: vi.fn(),
-  reportUnexpectedState: vi.fn(),
-}));
-
 import { GitDataProvider } from '../../src/git-data-provider';
 import { execFile } from 'child_process';
 
