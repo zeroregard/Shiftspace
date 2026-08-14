@@ -155,9 +155,12 @@ export async function handleRenameWorktree(
     const oldId = wt.id;
     await moveWorktree(wt.path, newPath, host.currentRoot!);
 
-    // Update cached worktree identity in-place
+    // Update cached worktree identity in-place, and flag the change so a
+    // worktree detection already in flight discards its now-stale snapshot
+    // instead of re-adding the worktree under its old id.
     wt.id = newPath;
     wt.path = newPath;
+    host.markWorktreesMutated();
 
     // Migrate fileStates to the new key
     const prevFiles = host.fileStates.get(oldId);
