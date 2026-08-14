@@ -48,15 +48,46 @@ type OnFileChange = (worktreeId: string) => void;
  * directly — external callers should only use the typed methods below.
  */
 export class GitDataProvider implements vscode.Disposable {
-  worktrees: WorktreeState[] = [];
   fileStates = new Map<string, FileChange[]>();
   currentRoot: string | undefined;
   defaultBranch = 'main';
   readonly fileEvents: FileEventCoordinator;
+  private _worktrees: WorktreeState[] = [];
+  private _worktreeRevision = 0;
+  private reconcilePass: Promise<void> | undefined;
+  private reconcileAgain = false;
   private readonly poller: Poller;
   private readonly prPoller: PrStatusPoller;
   /** Worktree ids already auto-deleted (or attempted) after their PR merged. */
   private readonly autoDeleted = new Set<string>();
+
+  /**
+   * The tracked worktrees. Replacing the list bumps `worktreeRevision`; after
+   * editing a worktree's identity in place (a rename), call
+   * `markWorktreesMutated()` so the bump still happens.
+   */
+  get worktrees(): WorktreeState[] {
+    return this._worktrees;
+  }
+  set worktrees(next: WorktreeState[]) {
+    this._worktrees = next;
+    this._worktreeRevision++;
+  }
+
+  /**
+   * Monotonic counter of membership/identity changes to `worktrees`. The
+   * reconciler captures it before reading `git worktree list` and refuses to
+   * apply a snapshot taken before a change it didn't see — without that, a
+   * detection racing a deletion re-adds the worktree that was just removed.
+   */
+  get worktreeRevision(): number {
+    return this._worktreeRevision;
+  }
+
+  /** Record that a worktree's identity changed in place (rename/move). */
+  markWorktreesMutated(): void {
+    this._worktreeRevision++;
+  }
 
   constructor(
     public readonly postMessage: PostMessage,
@@ -221,8 +252,33 @@ export class GitDataProvider implements vscode.Disposable {
   refreshWorktree(wt: WorktreeState): Promise<void> {
     return refreshWorktree(this, wt);
   }
+  /**
+   * Re-detect worktrees and reconcile them against the cached list.
+   *
+   * Passes never overlap. The HEAD watcher, the badge watcher, the 3s poll and
+   * the add-worktree flow all call this, and two passes running at once used
+   * to clobber each other's results — the slower one would write its older
+   * snapshot over the newer state. A caller arriving mid-pass instead marks
+   * the pass to run again and joins its promise, so the promise it gets back
+   * always resolves after a detection that started after it asked.
+   */
   checkForWorktreeChanges(): Promise<void> {
-    return checkForWorktreeChanges(this);
+    if (this.reconcilePass) {
+      this.reconcileAgain = true;
+      return this.reconcilePass;
+    }
+    this.reconcilePass = (async () => {
+      try {
+        do {
+          this.reconcileAgain = false;
+          await checkForWorktreeChanges(this);
+        } while (this.reconcileAgain);
+      } finally {
+        this.reconcilePass = undefined;
+        this.reconcileAgain = false;
+      }
+    })();
+    return this.reconcilePass;
   }
   applyDiffModeOverrides(overrides: Record<string, DiffMode>): Promise<void> {
     return applyDiffModeOverrides(this, overrides);

@@ -126,6 +126,13 @@ export function badgesEqual(a: WorktreeBadge | undefined, b: WorktreeBadge | und
 /**
  * Parse the output of `git worktree list --porcelain` into WorktreeState[].
  * Bare worktrees are skipped.
+ *
+ * Prunable worktrees are skipped too. Git annotates an entry `prunable` when
+ * its admin record still exists but the working directory it points at is
+ * gone — exactly the state a worktree sits in between the directory removal
+ * and the `git worktree prune` that clears the record. Such an entry is a
+ * worktree that no longer exists, so treating it as live would resurrect a
+ * worktree the user just deleted.
  */
 export function parseWorktreeOutput(output: string): WorktreeState[] {
   const blocks = output
@@ -140,6 +147,7 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
     let branch = '';
     let headCommit = '';
     let isBare = false;
+    let isPrunable = false;
 
     for (const line of lines) {
       if (line.startsWith('worktree ')) {
@@ -153,10 +161,15 @@ export function parseWorktreeOutput(output: string): WorktreeState[] {
         headCommit = line.slice('HEAD '.length).trim().slice(0, 8);
       } else if (line === 'bare') {
         isBare = true;
+      } else if (line === 'prunable' || line.startsWith('prunable ')) {
+        isPrunable = true;
       }
     }
 
     if (isBare || !path) continue;
+    // Git only annotates linked worktrees as prunable, but guard on the index
+    // anyway: the primary worktree is the repo itself and is never dropped.
+    if (isPrunable && i > 0) continue;
 
     // Detached HEAD: use short commit hash as branch name
     const branchName = branch || headCommit || 'HEAD';

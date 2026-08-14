@@ -72,6 +72,22 @@ describe('parseWorktreeOutput', () => {
     expect(worktrees[0]!.path).toBe('/home/user/project');
   });
 
+  it('skips prunable worktrees — the directory is already gone', () => {
+    const output = fixture('worktree-list-prunable.txt');
+    const worktrees = parseWorktreeOutput(output);
+    expect(worktrees.map((wt) => wt.path)).toEqual([
+      '/home/user/project',
+      '/home/user/project-feature-auth',
+    ]);
+  });
+
+  it('keeps the primary worktree even when annotated prunable', () => {
+    const output = ['worktree /home/user/project', 'branch refs/heads/main', 'prunable weird', ''];
+    const worktrees = parseWorktreeOutput(output.join('\n'));
+    expect(worktrees).toHaveLength(1);
+    expect(worktrees[0]!.isMainWorktree).toBe(true);
+  });
+
   it('returns empty array for empty/blank output', () => {
     expect(parseWorktreeOutput('')).toEqual([]);
     expect(parseWorktreeOutput('   \n\n  ')).toEqual([]);
