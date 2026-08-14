@@ -13,7 +13,7 @@ import type {
   ServiceState,
   SerializedActionState,
 } from './types';
-import { reportError } from '../telemetry';
+import { log } from '../logger';
 
 type PostMessage = (msg: object) => void;
 
@@ -178,7 +178,7 @@ export class ActionCoordinator implements vscode.Disposable {
         // Cancelled — leave state as-is or reset to idle
         return;
       }
-      reportError(err as Error, { context: 'runCheck', checkId: actionId });
+      log.error(`runCheck "${actionId}" error:`, err);
       this.stateManager.set(worktreeId, actionId, { type: 'check', status: 'failed' });
     }
   }

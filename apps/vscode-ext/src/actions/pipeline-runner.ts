@@ -2,7 +2,6 @@ import type { CheckResult, ShiftspaceActionConfig, PipelineConfig } from './type
 import type { RunOptions } from './runner';
 import { runCheck } from './runner';
 import { log } from '../logger';
-import { reportInvariant } from '../telemetry';
 
 interface PipelineResult {
   steps: CheckResult[];
@@ -36,10 +35,9 @@ export async function runPipeline(
 
     const action = actions.get(stepId);
     if (!action) {
-      log.warn(`Pipeline step "${stepId}" not found in actions`);
       // Config validation should have caught this during load — seeing it at
       // runtime means validation regressed or a pipeline was mutated live.
-      reportInvariant('pipeline.stepNotFound', { stepId });
+      log.warn(`Pipeline step "${stepId}" not found in actions`);
       continue;
     }
 

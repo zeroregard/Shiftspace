@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import { log } from '../logger';
 import { removeWorktree, pruneWorktrees, moveWorktree } from '../git/worktrees';
 import { gitWrite } from '../git/git-utils';
-import { reportError } from '../telemetry';
 import type { GitDataProvider } from './index';
 
 /** Add a new worktree with an auto-generated name: {repoName}-wt{index}. */
@@ -38,7 +37,6 @@ export async function handleAddWorktree(host: GitDataProvider): Promise<void> {
     await host.checkForWorktreeChanges();
   } catch (err) {
     log.error('handleAddWorktree error:', err);
-    reportError(err as Error, { context: 'handleAddWorktree' });
     host.postMessage({ type: 'event', event: { type: 'worktree-add-failed' } });
     void vscode.window.showErrorMessage(`Failed to add worktree: ${(err as Error).message}`);
   }
@@ -87,7 +85,6 @@ export async function handleRemoveWorktree(
     });
   } catch (err) {
     log.error('handleRemoveWorktree error:', err);
-    reportError(err as Error, { context: 'handleRemoveWorktree', branch: wt.branch });
     // The worktree may still be live — re-arm its watcher so file events
     // keep flowing.
     host.fileEvents.addWorktree(wt);
@@ -129,13 +126,11 @@ async function fastRemoveWorktree(worktreePath: string, gitRoot: string): Promis
     // Best-effort: keep going. Worst case, the next `git worktree list` run
     // will prune stale entries itself. We still want to delete the temp dir.
     log.error('fastRemoveWorktree: prune failed', pruneErr);
-    reportError(pruneErr as Error, { context: 'fastRemoveWorktree.prune' });
   }
 
   // Background cleanup — no one is waiting on this.
   void fs.promises.rm(tempPath, { recursive: true, force: true }).catch((rmErr) => {
     log.error('fastRemoveWorktree: background rm failed', rmErr);
-    reportError(rmErr as Error, { context: 'fastRemoveWorktree.backgroundRm' });
   });
 }
 
@@ -183,7 +178,6 @@ export async function handleRenameWorktree(
     host.fileEvents.addWorktree(wt);
   } catch (err) {
     log.error('handleRenameWorktree error:', err);
-    reportError(err as Error, { context: 'handleRenameWorktree', branch: wt.branch });
     void vscode.window.showErrorMessage(`Failed to rename worktree: ${(err as Error).message}`);
   }
 }
@@ -237,7 +231,6 @@ export async function handleFileClick(
     }
   } catch (err) {
     log.error('handleFileClick error:', err);
-    reportError(err as Error, { context: 'handleFileClick' });
   }
 }
 
@@ -287,7 +280,6 @@ export async function handleLoadPlanContent(
       });
     } catch (err) {
       log.error('handleLoadPlanContent fetch error:', err);
-      reportError(err as Error, { context: 'handleLoadPlanContent' });
       host.postMessage({
         type: 'plan-content',
         worktreeId: wt.id,
@@ -355,7 +347,6 @@ export async function handleLoadPlanContent(
     }
   } catch (err) {
     log.error('handleLoadPlanContent read error:', err);
-    reportError(err as Error, { context: 'handleLoadPlanContent' });
     host.postMessage({
       type: 'plan-content',
       worktreeId: wt.id,

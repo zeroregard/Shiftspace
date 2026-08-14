@@ -7,7 +7,6 @@ import type { InspectionSession } from './insights/inspection-session';
 import type { GitProviderHandlers } from '@shiftspace/renderer';
 import { registerGitProviderHandlers } from '@shiftspace/renderer';
 import { log } from './logger';
-import { reportUnexpectedState } from './telemetry';
 
 export interface PanelHandlerDeps {
   sharedGit: SharedGitProvider;
@@ -116,8 +115,5 @@ export function registerPanelHandlers(
 
   router.on('webview-error', (m) => {
     log.error(`[Webview/Panel] ${m.error}`);
-    reportUnexpectedState('webview.panel.errorReport', {
-      preview: m.error.slice(0, 120),
-    });
   });
 }

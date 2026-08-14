@@ -4,7 +4,6 @@ import * as path from 'path';
 import type { WorktreeState, WorktreeBadge } from '@shiftspace/renderer';
 import { gitReadOnly, gitWrite } from './git-utils';
 import { log } from '../logger';
-import { reportError, reportUnexpectedState } from '../telemetry';
 
 /** Relative path (from worktree root) of the optional per-worktree config file. */
 export const WORKTREE_CONFIG_FILENAME = '.shiftspace-worktree.json';
@@ -201,7 +200,7 @@ export async function detectWorktrees(repoRoot: string): Promise<WorktreeState[]
     );
     return worktrees;
   } catch (err) {
-    reportError(err as Error, { context: 'detectWorktrees', root: repoRoot });
+    log.error('detectWorktrees error for', repoRoot, err);
     return [];
   }
 }
@@ -407,10 +406,7 @@ export async function checkWorktreeSafety(worktreePath: string): Promise<string 
       });
     } catch (err) {
       // Couldn't delete the stale ref — surface it with the manual fix.
-      reportError(err instanceof Error ? err : new Error(String(err)), {
-        context: 'checkWorktreeSafety.staleRebaseHead',
-        worktreePath,
-      });
+      log.error('checkWorktreeSafety: failed to delete stale REBASE_HEAD:', err);
       return (
         'A rebase is in progress in this worktree. If this is a stale state, run: ' +
         `git -C ${worktreePath} update-ref -d REBASE_HEAD`
@@ -472,17 +468,11 @@ export async function recoverStuckTempBranch(worktreePath: string): Promise<bool
   log.warn(
     `recoverStuckTempBranch: ${worktreePath} is on temp branch "${currentBranch}" — recovering`
   );
-  // A stuck temp branch means a previous swap crashed mid-operation. We want
-  // to know how often this happens in the wild.
-  reportUnexpectedState('git.swap.stuckTempBranch');
 
   try {
     await gitWrite(['checkout', '-'], { cwd: worktreePath, timeout: 10_000 });
   } catch (e) {
     log.error('recoverStuckTempBranch: checkout - failed:', e);
-    reportError(e instanceof Error ? e : new Error(String(e)), {
-      context: 'recoverStuckTempBranch.checkout',
-    });
     // Continue to attempt temp branch deletion even if checkout failed
   }
 
@@ -490,9 +480,6 @@ export async function recoverStuckTempBranch(worktreePath: string): Promise<bool
     await gitWrite(['branch', '-D', currentBranch], { cwd: worktreePath, timeout: 10_000 });
   } catch (e) {
     log.error('recoverStuckTempBranch: branch -D failed:', e);
-    reportError(e instanceof Error ? e : new Error(String(e)), {
-      context: 'recoverStuckTempBranch.deleteBranch',
-    });
   }
 
   return true;
@@ -714,9 +701,6 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
         await popStashByMessage(worktreeBPath, 'shiftspace-swap-A');
       } catch (err) {
         log.error('swapBranches: failed to pop stash A on B:', err);
-        reportError(err instanceof Error ? err : new Error(String(err)), {
-          context: 'swapBranches.popStashA',
-        });
         // Non-fatal: stash is preserved in the stash list
       }
     }
@@ -725,9 +709,6 @@ export async function swapBranches(opts: SwapBranchesOptions): Promise<void> {
         await popStashByMessage(worktreeAPath, 'shiftspace-swap-B');
       } catch (err) {
         log.error('swapBranches: failed to pop stash B on A:', err);
-        reportError(err instanceof Error ? err : new Error(String(err)), {
-          context: 'swapBranches.popStashB',
-        });
       }
     }
   } catch (err) {
