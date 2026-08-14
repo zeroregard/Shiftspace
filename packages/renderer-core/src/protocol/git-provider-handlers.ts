@@ -32,8 +32,8 @@ export interface GitProviderHandlers {
  * Shared between the real VSCode host (`apps/vscode-ext/src/panel-handlers.ts`)
  * and the preview app's mock host so both exercise byte-identical routing.
  *
- * Host-specific concerns (view-settings persistence, telemetry, the action
- * coordinator, inspection) stay in each host — only the direct delegation to
+ * Host-specific concerns (view-settings persistence, the action coordinator,
+ * inspection) stay in each host — only the direct delegation to
  * `provider.handle*` methods lives here.
  *
  * NOTE: `set-diff-mode` is *not* registered here because the VSCode host

@@ -40,11 +40,6 @@ vi.mock('fs', async () => {
   };
 });
 
-vi.mock('../../src/telemetry', () => ({
-  reportError: vi.fn(),
-  reportUnexpectedState: vi.fn(),
-}));
-
 import { GitDataProvider } from '../../src/git-data-provider';
 import { execFile } from 'child_process';
 

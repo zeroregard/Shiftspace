@@ -2,7 +2,6 @@ import type { WorktreeState, DiffMode, FileChange } from '@shiftspace/renderer';
 import { log } from '../logger';
 import { getFileChanges, getBranchDiffFileChanges, getRepoFiles } from '../git/status';
 import { filterIgnoredFiles } from '../git/ignore-filter';
-import { reportError } from '../telemetry';
 import { getIgnorePatterns, isDiffModeEqual } from './helpers';
 import type { GitDataProvider } from './index';
 
@@ -87,11 +86,6 @@ export async function applyDiffModeOverrides(
         });
       } catch (err) {
         log.error('applyDiffModeOverrides error for', wt.path, err);
-        reportError(err as Error, {
-          context: 'applyDiffModeOverrides',
-          branch: wt.branch,
-          mode: override.type,
-        });
       }
     })
   );

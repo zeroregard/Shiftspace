@@ -6,7 +6,6 @@ import type { InsightRunner } from '../insights/runner';
 import { resolveCommand } from '../actions/command-resolver';
 import { runCheck } from '../actions/runner';
 import { runPipeline } from '../actions/pipeline-runner';
-import { reportError } from '../telemetry';
 import type {
   CwdParams,
   GetChangedFilesResponse,
@@ -140,7 +139,6 @@ export class McpToolHandlers {
       result = await runCheck(command, checkId, { cwd: wt.path });
     } catch (err: unknown) {
       console.error('[MCP] run_check "%s" error:', checkId, err);
-      reportError(err as Error, { context: 'mcpTool', tool: 'run_check', checkId });
       this.deps.stateManager.set(wt.id, checkId, { type: 'check', status: 'failed' });
       return { check: checkId, status: 'failed', error: 'Check execution failed' };
     }

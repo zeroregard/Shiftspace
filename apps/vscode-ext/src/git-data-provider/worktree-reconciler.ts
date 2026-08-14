@@ -1,7 +1,6 @@
 import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
 import { log } from '../logger';
 import { detectWorktrees, badgesEqual } from '../git/worktrees';
-import { reportError, reportUnexpectedState } from '../telemetry';
 import { getFilesForMode } from './diff-mode';
 import type { GitDataProvider } from './index';
 
@@ -64,12 +63,11 @@ export async function checkForWorktreeChanges(host: GitDataProvider): Promise<vo
     }
     // Something is mutating the list faster than we can read it. Dropping the
     // pass is safe — the 3s poll runs another one — but it shouldn't happen.
-    reportUnexpectedState('git.reconcile.staleAfterRetries', {
-      attempts: String(MAX_DETECT_ATTEMPTS),
-    });
+    log.warn(
+      `checkForWorktreeChanges: gave up after ${MAX_DETECT_ATTEMPTS} attempts — the worktree list kept changing mid-detection`
+    );
   } catch (err) {
     log.error('checkForWorktreeChanges error:', err);
-    reportError(err as Error, { context: 'checkForWorktreeChanges' });
   }
 }
 
@@ -91,9 +89,6 @@ async function planReconcile(host: GitDataProvider): Promise<ReconcilePlan | und
   // Skip this cycle to avoid flashing "No worktrees".
   if (fresh.length === 0 && host.worktrees.length > 0) {
     log.info('checkForWorktreeChanges: detectWorktrees returned empty, skipping');
-    reportUnexpectedState('git.detectWorktrees.transientEmpty', {
-      previousCount: String(host.worktrees.length),
-    });
     return undefined;
   }
 
@@ -147,7 +142,6 @@ async function hydrateNewWorktree(host: GitDataProvider, wt: WorktreeState): Pro
     wt.branchFiles = branchFiles;
   } catch (err) {
     log.error('getFileChanges error for new worktree', wt.path, err);
-    reportError(err as Error, { context: 'getFileChanges.newWorktree', branch: wt.branch });
   }
 }
 
@@ -196,10 +190,6 @@ async function carryOverState(
       freshWt.branchFiles = branchFiles;
     } catch (err) {
       log.error('getFileChanges error after branch change', freshWt.path, err);
-      reportError(err as Error, {
-        context: 'getFileChanges.branchChanged',
-        branch: freshWt.branch,
-      });
       freshWt.files = [];
     }
     // A checkout counts as activity; a rename or a badge edit does not.

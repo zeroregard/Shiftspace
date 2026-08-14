@@ -16,7 +16,7 @@ import type { ShiftspaceMcpHttpServer } from './mcp/http-server';
 import { registerPanelHandlers } from './panel-handlers';
 import { registerMcpHandlers } from './panel-mcp-bridge';
 import { PanelIconManager } from './panel-icon-manager';
-import { reportError } from './telemetry';
+import { log } from './logger';
 
 const VIEW_ID = 'panel';
 
@@ -139,7 +139,7 @@ export class ShiftspacePanel {
         try {
           this._router.dispatch(message);
         } catch (err) {
-          reportError(err as Error, { context: 'webviewMessage', messageType: message.type });
+          log.error(`Panel: error handling message "${message.type}"`, err);
         }
       },
       null,
