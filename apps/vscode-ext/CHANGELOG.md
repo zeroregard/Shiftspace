@@ -2,6 +2,16 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.7.0] — 2026-08-17
+
+### Added
+
+- remove error reporting so nothing leaves your machine (#170)
+
+### Fixed
+
+- deleted worktrees no longer flash back onto the canvas (#171)
+
 ## [0.6.0] — 2026-08-13
 
 ### Added
