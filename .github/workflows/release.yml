@@ -4,12 +4,17 @@
 #   1. Trigger manually from the Actions tab (workflow_dispatch)
 #   2. Pick the version bump type (patch / minor / major) and optional dry-run
 #   3. The workflow bumps the version, generates a changelog entry, builds the
-#      extension, publishes to VS Code Marketplace + Open VSX, commits the
-#      version bump, tags, and creates a GitHub Release with the .vsix attached
+#      extension, publishes to Open VSX then the VS Code Marketplace, commits
+#      the version bump, tags, and creates a GitHub Release with the .vsix
+#      attached
+#
+# Publishing order matters: Open VSX is the primary registry and gates the
+# release. The VS Code Marketplace publish runs second and is allowed to fail
+# (its API is flaky) — a Marketplace outage must never block an Open VSX release.
 #
 # Secrets required:
-#   - VSCE_PAT: Personal access token for the VS Code Marketplace
 #   - OVSX_PAT: Personal access token for the Open VSX Registry
+#   - VSCE_PAT: Personal access token for the VS Code Marketplace
 
 name: "\U0001F680 Release"
 
@@ -147,14 +152,9 @@ jobs:
           echo "::notice::Packaged ${VSIX}"
 
       # ── Publish (skipped on dry-run) ──────────────────────────────────────
-      - name: Publish to VS Code Marketplace
-        if: inputs.dry-run != true
-        run: |
-          cd apps/vscode-ext
-          npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }} --no-dependencies
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-
+      # Open VSX goes first and gates the release — it is the primary registry.
+      # The VS Code Marketplace is flaky, so it publishes afterwards and is
+      # allowed to fail without failing the release.
       - name: Publish to Open VSX Registry
         if: inputs.dry-run != true
         run: |
@@ -162,7 +162,21 @@ jobs:
           npx ovsx publish ${{ steps.package.outputs.vsix_file }} -p ${{ secrets.OVSX_PAT }}
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+      - name: Publish to VS Code Marketplace (optional)
+        id: publish-vsce
+        if: inputs.dry-run != true
         continue-on-error: true
+        run: |
+          cd apps/vscode-ext
+          npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }} --no-dependencies
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Warn if VS Code Marketplace publish failed
+        if: inputs.dry-run != true && steps.publish-vsce.outcome == 'failure'
+        run: |
+          echo "::warning::VS Code Marketplace publish failed. Open VSX published successfully, so the release continues. Re-publish to the Marketplace manually if needed."
 
       # ── Commit, tag, push (skipped on dry-run) ───────────────────────────
       - name: Commit version bump
@@ -191,7 +205,7 @@ jobs:
 
             ${{ steps.changelog.outputs.body }}
 
-            Published to the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace).
+            Published to [Open VSX](https://open-vsx.org/extension/shiftspace/shiftspace)${{ steps.publish-vsce.outcome == 'success' && ' and the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace)' || ' (VS Code Marketplace publish did not succeed for this version)' }}.
 
             ### Install
             Download the `.vsix` file below and install:
@@ -222,5 +236,10 @@ jobs:
           echo "| **Package** | \`${{ steps.package.outputs.vsix_file }}\` |" >> $GITHUB_STEP_SUMMARY
           if [ "${{ inputs.dry-run }}" != "true" ]; then
             echo "| **Tag** | \`v${{ steps.bump.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Marketplace** | [shiftspace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace) |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Open VSX** | [shiftspace](https://open-vsx.org/extension/shiftspace/shiftspace) |" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.publish-vsce.outcome }}" = "success" ]; then
+              echo "| **VS Code Marketplace** | [shiftspace](https://marketplace.visualstudio.com/items?itemName=shiftspace.shiftspace) |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| **VS Code Marketplace** | publish failed (optional - release not blocked) |" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
