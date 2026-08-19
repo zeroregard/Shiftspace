@@ -16,6 +16,20 @@
       ],
       "outputs": ["{projectRoot}/e2e/__screenshots__/controls.spec.ts"]
     },
+    "e2e:diff-mode-picker": {
+      "command": "playwright test e2e/diff-mode-picker.spec.ts",
+      "options": { "cwd": "apps/preview" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/e2e/diff-mode-picker.spec.ts",
+        "{projectRoot}/src/mock/**/*",
+        "e2eShared",
+        "rendererCore",
+        "rendererGrove",
+        "rendererInspection"
+      ],
+      "outputs": ["{projectRoot}/e2e/__screenshots__/diff-mode-picker.spec.ts"]
+    },
     "e2e:diagnostics": {
       "command": "playwright test e2e/diagnostics.spec.ts",
       "options": { "cwd": "apps/preview" },
@@ -162,6 +176,7 @@
       "dependsOn": [
         "e2e:controls",
         "e2e:diagnostics",
+        "e2e:diff-mode-picker",
         "e2e:flows",
         "e2e:graph",
         "e2e:hover-tooltips",

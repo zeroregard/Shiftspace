@@ -103,6 +103,8 @@ interface TriggerProps {
   title?: string;
   /** Stop pointer/click propagation (useful inside draggable containers) */
   stopPropagation?: boolean;
+  /** Test hook — rendered as data-testid */
+  testId?: string;
 }
 
 const TRIGGER_VARIANTS = {
@@ -117,6 +119,7 @@ function Trigger({
   className,
   title,
   stopPropagation,
+  testId,
 }: TriggerProps) {
   return (
     <Popover.Trigger asChild>
@@ -127,6 +130,7 @@ function Trigger({
           className
         )}
         title={title}
+        data-testid={testId}
         onPointerDown={stopPropagation ? (e) => e.stopPropagation() : undefined}
         onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
       >
@@ -195,15 +199,18 @@ function Search({ placeholder = 'Search branches…' }: { placeholder?: string }
 function Row({
   selected,
   onClick,
+  testId,
   children,
 }: {
   selected: boolean;
   onClick: () => void;
+  testId?: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-13 text-left cursor-pointer border-none bg-transparent hover:bg-item-hover ${selected ? 'text-text-primary' : 'text-text-secondary'}`}
+      data-testid={testId}
       onClick={onClick}
     >
       <span className="w-3 text-center text-11 shrink-0">{selected ? '✓' : ''}</span>
@@ -216,6 +223,8 @@ function Row({
 
 interface StaticOption {
   key: string;
+  /** Test hook — rendered as data-testid on the row */
+  testId?: string;
   label: string;
   /** Optional pill rendered after the label (e.g. "default") */
   badge?: string;
@@ -235,6 +244,7 @@ function Options({ options }: { options: StaticOption[] }) {
       {filtered.map((opt) => (
         <Row
           key={opt.key}
+          testId={opt.testId}
           selected={opt.selected}
           onClick={() => {
             opt.onSelect();

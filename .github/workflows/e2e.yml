@@ -87,6 +87,15 @@ jobs:
             add_spec diagnostics
           fi
 
+          # diff-mode-picker: the inspection header's comparison selector.
+          # Lives in renderer-core but is reached from a grove card, so any
+          # core/grove/inspection change or preview mock change runs it.
+          if has_changes '^apps/preview/e2e/diff-mode-picker\.spec\.ts' \
+             || has_changes '^apps/preview/src/mock/' \
+             || $E2E_SHARED || $CORE || $GROVE || $INSPECTION; then
+            add_spec diff-mode-picker
+          fi
+
           # graph: core + grove + inspection + all preview src
           if has_changes '^apps/preview/e2e/graph\.spec\.ts' \
              || has_changes '^apps/preview/src/' \

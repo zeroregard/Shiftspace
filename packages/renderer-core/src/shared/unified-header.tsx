@@ -69,6 +69,7 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
     ? [
         {
           key: 'working',
+          testId: 'diff-mode-working',
           label: 'Working changes',
           selected: diffMode.type === 'working',
           onSelect: () => actions.diffModeChange(wt.id, { type: 'working' }),
@@ -77,6 +78,7 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
           ? [
               {
                 key: `default-${defaultBranch}`,
+                testId: 'diff-mode-default-branch',
                 label: defaultBranch,
                 badge: 'default',
                 selected: isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch }),
@@ -87,6 +89,7 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
           : []),
         {
           key: 'repo',
+          testId: 'diff-mode-repo',
           label: 'All files',
           selected: diffMode.type === 'repo',
           onSelect: () => actions.diffModeChange(wt.id, { type: 'repo' }),
@@ -137,6 +140,7 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
             <BranchPicker.Trigger
               icon="git-compare"
               variant="pill"
+              testId="diff-mode-picker"
               className="text-text-muted hover:text-text-primary text-10 whitespace-nowrap"
             >
               <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
