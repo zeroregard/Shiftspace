@@ -52,6 +52,7 @@ export async function applyDiffModeOverrides(
   overrides: Record<string, DiffMode>
 ): Promise<void> {
   if (!overrides || Object.keys(overrides).length === 0) return;
+  host.diffModeOverrides = { ...host.diffModeOverrides, ...overrides };
   await Promise.all(
     host.worktrees.map(async (wt) => {
       const override = overrides[wt.branch];

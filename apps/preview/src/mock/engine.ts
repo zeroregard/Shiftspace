@@ -281,9 +281,9 @@ export class MockEngine {
       prStatus,
     } = opts;
     const isDefault = branch === DEFAULT_BRANCH;
-    const diffMode: DiffMode = isDefault
-      ? { type: 'working' }
-      : { type: 'branch', branch: DEFAULT_BRANCH };
+    // Every worktree opens on its working changes; comparing against the
+    // default branch is an explicit choice in the diff-mode picker.
+    const diffMode: DiffMode = { type: 'working' };
     // Register template before generating files (getMock* reads it)
     this.templateMap.set(id, template);
     const files = this.getMockWorkingFiles(id);

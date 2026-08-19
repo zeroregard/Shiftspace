@@ -60,6 +60,11 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
         ? 'All files'
         : `vs ${diffMode.branch}`;
 
+  // The default branch is promoted into the static options (with a "default"
+  // pill) so it sits alongside "Working changes" / "All files" instead of
+  // being buried in the branch list below.
+  const showDefaultOption = Boolean(defaultBranch) && wt?.branch !== defaultBranch;
+
   const diffModeStaticOptions = wt
     ? [
         {
@@ -68,17 +73,18 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
           selected: diffMode.type === 'working',
           onSelect: () => actions.diffModeChange(wt.id, { type: 'working' }),
         },
-        ...(branchList.includes(defaultBranch) || !defaultBranch
-          ? []
-          : [
+        ...(showDefaultOption
+          ? [
               {
                 key: `default-${defaultBranch}`,
-                label: `vs ${defaultBranch}`,
+                label: defaultBranch,
+                badge: 'default',
                 selected: isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch }),
                 onSelect: () =>
                   actions.diffModeChange(wt.id, { type: 'branch', branch: defaultBranch }),
               },
-            ]),
+            ]
+          : []),
         {
           key: 'repo',
           label: 'All files',
@@ -88,7 +94,9 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
       ]
     : [];
 
-  const diffModeBranches = wt ? branchList.filter((b) => b !== wt.branch) : [];
+  const diffModeBranches = wt
+    ? branchList.filter((b) => b !== wt.branch && !(showDefaultOption && b === defaultBranch))
+    : [];
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
@@ -140,7 +148,6 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
               <BranchPicker.Branches
                 branches={diffModeBranches}
                 selected={diffMode.type === 'branch' ? diffMode.branch : null}
-                labelFn={(b) => `vs ${b}`}
               />
             </BranchPicker.Content>
           </BranchPicker>
