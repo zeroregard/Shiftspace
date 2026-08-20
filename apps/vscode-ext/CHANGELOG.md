@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.8.0] — 2026-08-20
+
+### Added
+
+- file details now open on working changes and remember your comparison (#173)
+
 ## [0.7.0] — 2026-08-17
 
 ### Added
