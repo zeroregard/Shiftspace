@@ -14,11 +14,11 @@
  *     </BranchPicker.Content>
  *   </BranchPicker>
  */
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 import clsx from 'clsx';
 import * as Popover from '@radix-ui/react-popover';
-import { Tooltip } from '@shiftspace/ui/tooltip';
 import { Codicon } from '@shiftspace/ui/codicon';
+import { Fetch, type FetchProps } from './branch-picker-fetch';
 
 // Context — shared state between compound sub-components
 
@@ -103,6 +103,8 @@ interface TriggerProps {
   title?: string;
   /** Stop pointer/click propagation (useful inside draggable containers) */
   stopPropagation?: boolean;
+  /** Test hook — rendered as data-testid */
+  testId?: string;
 }
 
 const TRIGGER_VARIANTS = {
@@ -117,6 +119,7 @@ function Trigger({
   className,
   title,
   stopPropagation,
+  testId,
 }: TriggerProps) {
   return (
     <Popover.Trigger asChild>
@@ -127,6 +130,7 @@ function Trigger({
           className
         )}
         title={title}
+        data-testid={testId}
         onPointerDown={stopPropagation ? (e) => e.stopPropagation() : undefined}
         onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
       >
@@ -190,11 +194,40 @@ function Search({ placeholder = 'Search branches…' }: { placeholder?: string }
   );
 }
 
+// Shared row — one selectable line in the popover list
+
+function Row({
+  selected,
+  onClick,
+  testId,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  testId?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-13 text-left cursor-pointer border-none bg-transparent hover:bg-item-hover ${selected ? 'text-text-primary' : 'text-text-secondary'}`}
+      data-testid={testId}
+      onClick={onClick}
+    >
+      <span className="w-3 text-center text-11 shrink-0">{selected ? '✓' : ''}</span>
+      {children}
+    </button>
+  );
+}
+
 // Static Options
 
 interface StaticOption {
   key: string;
+  /** Test hook — rendered as data-testid on the row */
+  testId?: string;
   label: string;
+  /** Optional pill rendered after the label (e.g. "default") */
+  badge?: string;
   selected: boolean;
   onSelect: () => void;
 }
@@ -209,17 +242,22 @@ function Options({ options }: { options: StaticOption[] }) {
   return (
     <>
       {filtered.map((opt) => (
-        <button
+        <Row
           key={opt.key}
-          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-13 text-left cursor-pointer border-none bg-transparent hover:bg-item-hover ${opt.selected ? 'text-text-primary' : 'text-text-secondary'}`}
+          testId={opt.testId}
+          selected={opt.selected}
           onClick={() => {
             opt.onSelect();
             close();
           }}
         >
-          <span className="w-3 text-center text-11 shrink-0">{opt.selected ? '✓' : ''}</span>
-          {opt.label}
-        </button>
+          <span className="truncate">{opt.label}</span>
+          {opt.badge && (
+            <span className="shrink-0 px-1.5 py-0.5 rounded-full border border-border-dashed text-9 text-text-muted">
+              {opt.badge}
+            </span>
+          )}
+        </Row>
       ))}
     </>
   );
@@ -250,95 +288,22 @@ function Branches({ branches, selected, labelFn, maxVisible = 10 }: BranchesProp
 
   return (
     <>
-      {filtered.map((b) => {
-        const label = labelFn ? labelFn(b) : b;
-        const isSelected = b === selected;
-        return (
-          <button
-            key={b}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-13 text-left cursor-pointer border-none bg-transparent hover:bg-item-hover ${isSelected ? 'text-text-primary' : 'text-text-secondary'}`}
-            onClick={() => {
-              select(b);
-              close();
-            }}
-          >
-            <span className="w-3 text-center text-11 shrink-0">{isSelected ? '✓' : ''}</span>
-            {label}
-          </button>
-        );
-      })}
+      {filtered.map((b) => (
+        <Row
+          key={b}
+          selected={b === selected}
+          onClick={() => {
+            select(b);
+            close();
+          }}
+        >
+          {labelFn ? labelFn(b) : b}
+        </Row>
+      ))}
       {filtered.length === 0 && (
         <div className="px-2 py-1.5 text-11 text-text-faint italic">No branches found</div>
       )}
     </>
-  );
-}
-
-// Fetch button
-
-function timeAgo(ts: number): string {
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return 'just now';
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-
-interface FetchProps {
-  onFetch: () => void;
-  isFetching?: boolean;
-  lastFetchAt?: number;
-}
-
-function Fetch({ onFetch, isFetching, lastFetchAt }: FetchProps) {
-  const [fetchDone, setFetchDone] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevRef = useRef(isFetching);
-
-  useEffect(() => {
-    if (prevRef.current && !isFetching) {
-      setFetchDone(true);
-      timerRef.current = setTimeout(() => setFetchDone(false), 3000);
-    }
-    prevRef.current = isFetching;
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [isFetching]);
-
-  const tip = isFetching
-    ? 'Fetching…'
-    : lastFetchAt
-      ? `Last fetch: ${timeAgo(lastFetchAt)}`
-      : 'Fetch remote branches';
-
-  return (
-    <Tooltip content={tip} delayDuration={200}>
-      <button
-        disabled={isFetching}
-        className="shrink-0 flex items-center justify-center w-6 h-6 rounded border border-border-dashed text-text-muted hover:text-text-primary hover:border-border-default bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        onClick={(e) => {
-          e.stopPropagation();
-          onFetch();
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        {fetchDone ? (
-          <span className="text-status-added text-11 leading-none">✓</span>
-        ) : (
-          <span
-            style={{
-              display: 'flex',
-              animation: isFetching ? 'spin 1s linear infinite' : undefined,
-            }}
-          >
-            <Codicon name="refresh" size={11} />
-          </span>
-        )}
-      </button>
-    </Tooltip>
   );
 }
 

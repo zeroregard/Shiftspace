@@ -60,27 +60,36 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
         ? 'All files'
         : `vs ${diffMode.branch}`;
 
+  // The default branch is promoted into the static options (with a "default"
+  // pill) so it sits alongside "Working changes" / "All files" instead of
+  // being buried in the branch list below.
+  const showDefaultOption = Boolean(defaultBranch) && wt?.branch !== defaultBranch;
+
   const diffModeStaticOptions = wt
     ? [
         {
           key: 'working',
+          testId: 'diff-mode-working',
           label: 'Working changes',
           selected: diffMode.type === 'working',
           onSelect: () => actions.diffModeChange(wt.id, { type: 'working' }),
         },
-        ...(branchList.includes(defaultBranch) || !defaultBranch
-          ? []
-          : [
+        ...(showDefaultOption
+          ? [
               {
                 key: `default-${defaultBranch}`,
-                label: `vs ${defaultBranch}`,
+                testId: 'diff-mode-default-branch',
+                label: defaultBranch,
+                badge: 'default',
                 selected: isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch }),
                 onSelect: () =>
                   actions.diffModeChange(wt.id, { type: 'branch', branch: defaultBranch }),
               },
-            ]),
+            ]
+          : []),
         {
           key: 'repo',
+          testId: 'diff-mode-repo',
           label: 'All files',
           selected: diffMode.type === 'repo',
           onSelect: () => actions.diffModeChange(wt.id, { type: 'repo' }),
@@ -88,7 +97,9 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
       ]
     : [];
 
-  const diffModeBranches = wt ? branchList.filter((b) => b !== wt.branch) : [];
+  const diffModeBranches = wt
+    ? branchList.filter((b) => b !== wt.branch && !(showDefaultOption && b === defaultBranch))
+    : [];
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">
@@ -129,6 +140,7 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
             <BranchPicker.Trigger
               icon="git-compare"
               variant="pill"
+              testId="diff-mode-picker"
               className="text-text-muted hover:text-text-primary text-10 whitespace-nowrap"
             >
               <span style={{ opacity: isLoading ? 0.5 : 1 }}>{modeLabel}</span>
@@ -140,7 +152,6 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
               <BranchPicker.Branches
                 branches={diffModeBranches}
                 selected={diffMode.type === 'branch' ? diffMode.branch : null}
-                labelFn={(b) => `vs ${b}`}
               />
             </BranchPicker.Content>
           </BranchPicker>

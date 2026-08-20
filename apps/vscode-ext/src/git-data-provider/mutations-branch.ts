@@ -22,6 +22,9 @@ export async function handleSetDiffMode(
 
   log.info(`[diffMode] handleSetDiffMode: ${wt.branch} → ${JSON.stringify(diffMode)}`);
   wt.diffMode = diffMode;
+  // Remember the choice so a later re-init (checkout, swap, refresh) doesn't
+  // snap this worktree back to its initial mode.
+  host.diffModeOverrides[wt.branch] = diffMode;
 
   try {
     const { files, branchFiles } = await getFilesForMode(wt);

@@ -320,6 +320,7 @@ Each E2E spec has a corresponding Nx target in `apps/preview/project.json` with 
 | `diagnostics.spec.ts`               | core + inspection         | InspectionView, FileListPanel, annotations, mockData                                                                                                                                                     |
 | `inspector-file-categories.spec.ts` | core + inspection         | FileListPanel, listSections, mockData                                                                                                                                                                    |
 | `search-filter.spec.ts`             | core + inspection         | FileListPanel, listSections, mock                                                                                                                                                                        |
+| `diff-mode-picker.spec.ts`          | core + grove + inspection | UnifiedHeader, BranchPicker, mock — the comparison selector's default mode, its option list, and the `default` pill                                                                                      |
 | `flows.spec.ts`                     | core + grove + inspection | `MockGitProvider`, `MockWebviewBridge`, preview entry points — asserts the full UI → webview message → provider → store round-trip. No screenshots; uses `window.__shiftspaceTest` to drive the harness. |
 
 **Integration flow testing (`flows.spec.ts`):**

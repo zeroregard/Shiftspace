@@ -60,6 +60,13 @@ export class GitDataProvider implements vscode.Disposable {
   private readonly prPoller: PrStatusPoller;
   /** Worktree ids already auto-deleted (or attempted) after their PR merged. */
   private readonly autoDeleted = new Set<string>();
+  /**
+   * Per-branch diff-mode selections, kept on the provider so a re-init
+   * (checkout, branch swap, poller-driven refresh) restores what the user
+   * picked instead of snapping every worktree back to the initial mode.
+   * Seeded from persisted view settings and updated on every selection.
+   */
+  diffModeOverrides: Record<string, DiffMode> = {};
 
   /**
    * The tracked worktrees. Replacing the list bumps `worktreeRevision`; after
@@ -140,16 +147,20 @@ export class GitDataProvider implements vscode.Disposable {
     if (gitRoot === this.currentRoot) return;
     this.tearDown();
     this.currentRoot = gitRoot;
-    await this.initialize(diffModeOverrides);
+    // A different repo has its own branches — drop the previous repo's
+    // selections rather than merging them in by branch name.
+    this.diffModeOverrides = { ...diffModeOverrides };
+    await this.initialize(this.diffModeOverrides);
   }
 
   /** Re-run the full initialize flow against the current root. Used after checkout/swap. */
   reinitialize(): Promise<void> {
-    return this.initialize();
+    return this.initialize(this.diffModeOverrides);
   }
 
   private async initialize(diffModeOverrides: Record<string, DiffMode> = {}): Promise<void> {
     if (!this.currentRoot) return;
+    this.diffModeOverrides = { ...this.diffModeOverrides, ...diffModeOverrides };
 
     const gitStatus = await checkGitAvailability(this.currentRoot);
 
@@ -193,21 +204,17 @@ export class GitDataProvider implements vscode.Disposable {
       if (prevPr !== undefined) wt.prStatus = prevPr;
     }
 
-    // Set initial diff modes: feature branches diff against default branch,
-    // worktrees on the default branch show working changes. Persisted
-    // per-branch overrides win so the first file fetch matches the selector
-    // the user will see on open.
+    // Every worktree starts on working changes; per-branch selections (both
+    // persisted and made earlier this session) win so the first file fetch
+    // matches the selector the user will see on open.
     for (const wt of this.worktrees) {
       wt.defaultBranch = this.defaultBranch;
-      const override = diffModeOverrides[wt.branch];
+      const override = this.diffModeOverrides[wt.branch];
       if (override) {
         wt.diffMode = override;
         log.info(`[diffMode] init override: ${wt.branch} → ${JSON.stringify(override)}`);
-      } else if (wt.branch === this.defaultBranch) {
-        wt.diffMode = { type: 'working' };
-        log.info(`[diffMode] init: ${wt.branch} → ${JSON.stringify(wt.diffMode)}`);
       } else {
-        wt.diffMode = { type: 'branch', branch: this.defaultBranch };
+        wt.diffMode = { type: 'working' };
         log.info(`[diffMode] init: ${wt.branch} → ${JSON.stringify(wt.diffMode)}`);
       }
     }
