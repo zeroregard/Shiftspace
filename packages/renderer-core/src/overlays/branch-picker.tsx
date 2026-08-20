@@ -253,7 +253,7 @@ function Options({ options }: { options: StaticOption[] }) {
         >
           <span className="truncate">{opt.label}</span>
           {opt.badge && (
-            <span className="shrink-0 px-1.5 py-0.5 rounded-full border border-border-dashed text-9 uppercase tracking-wide text-text-muted">
+            <span className="shrink-0 px-1.5 py-0.5 rounded-full border border-border-dashed text-9 text-text-muted">
               {opt.badge}
             </span>
           )}
