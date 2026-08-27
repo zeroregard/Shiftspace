@@ -298,17 +298,25 @@ describe('getBranchDiffFileChanges (integration)', () => {
   it('returns FileChange[] from name-status + numstat + diff output', async () => {
     const nameStatus = 'A\tsrc/new-feature.ts\nM\tsrc/existing.ts\nD\tsrc/old.ts\n';
     const numstat = '50\t0\tsrc/new-feature.ts\n10\t5\tsrc/existing.ts\n0\t20\tsrc/old.ts\n';
-    const diffOutput = '';
 
-    const outputs = [nameStatus, numstat, diffOutput];
-    let callCount = 0;
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      _args: unknown,
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
-      cb(null, { stdout: outputs[callCount++] ?? '', stderr: '' });
+      const args = rawArgs.filter((a) => a !== '--no-optional-locks');
+      // Base-ref resolution: no upstream, no remote-tracking ref → local branch
+      if (args[0] === 'rev-parse') {
+        cb(Object.assign(new Error('fatal: no upstream'), { stderr: 'fatal: no upstream' }), {
+          stdout: '',
+          stderr: 'fatal: no upstream',
+        });
+        return;
+      }
+      if (args.includes('--name-status')) cb(null, { stdout: nameStatus, stderr: '' });
+      else if (args.includes('--numstat')) cb(null, { stdout: numstat, stderr: '' });
+      else cb(null, { stdout: '', stderr: '' });
     }) as any);
 
     const files = await getBranchDiffFileChanges('/some/worktree', 'main');
@@ -349,15 +357,21 @@ describe('getBranchDiffFileChanges (integration)', () => {
     const nameStatus = 'R100\tsrc/old-name.ts\tsrc/new-name.ts\n';
     const numstat = '0\t0\tsrc/new-name.ts\n';
 
-    const outputs = [nameStatus, numstat, ''];
-    let callCount = 0;
     vi.mocked(execFile).mockImplementation(((
       _cmd: unknown,
-      _args: unknown,
+      rawArgs: string[],
       _opts: unknown,
       cb: Function
     ) => {
-      cb(null, { stdout: outputs[callCount++] ?? '', stderr: '' });
+      const args = rawArgs.filter((a) => a !== '--no-optional-locks');
+      // Base-ref resolution: upstream configured → origin/main
+      if (args[0] === 'rev-parse') {
+        cb(null, { stdout: 'origin/main\n', stderr: '' });
+        return;
+      }
+      if (args.includes('--name-status')) cb(null, { stdout: nameStatus, stderr: '' });
+      else if (args.includes('--numstat')) cb(null, { stdout: numstat, stderr: '' });
+      else cb(null, { stdout: '', stderr: '' });
     }) as any);
 
     const files = await getBranchDiffFileChanges('/some/worktree', 'main');
