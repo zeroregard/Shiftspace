@@ -16,6 +16,8 @@ export {
   type DiffLine,
   type DiffHunk,
   type DiffMode,
+  type DiffStats,
+  type WorktreeDiffCountMode,
   type ActionConfig,
   type ActionState,
   type ActionStatus,

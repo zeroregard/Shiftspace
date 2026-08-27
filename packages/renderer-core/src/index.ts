@@ -13,6 +13,8 @@ export type {
   DiffLine,
   DiffHunk,
   DiffMode,
+  DiffStats,
+  WorktreeDiffCountMode,
   WorktreeSortMode,
   ActionConfig,
   ActionState,
@@ -113,6 +115,7 @@ export {
 export { getSourceLineFromHunks } from './utils/diff-line-lookup';
 export { sortWorktrees } from './utils/sort-worktrees';
 export { buildTicketUrl, extractTicketId } from './utils/ticket-url';
+export { resolveWorktreeDiffCounts, type WorktreeDiffCounts } from './utils/diff-counts';
 export { formatRelativeTime, TICK_INTERVAL } from './utils/relative-time';
 
 // UI (additional)

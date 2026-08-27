@@ -13,6 +13,7 @@ import { PrStatusPoller, prStatusEqual } from './pr-status-poller';
 import { loadAllFileChanges, refreshWorktree, reloadAllWithFilter } from './refresh';
 import { checkForWorktreeChanges } from './worktree-reconciler';
 import { applyDiffModeOverrides } from './diff-mode';
+import { refreshAllDefaultBranchStats } from './default-branch-stats';
 import {
   handleSetDiffMode,
   handleFetchBranches,
@@ -58,6 +59,7 @@ export class GitDataProvider implements vscode.Disposable {
   private reconcileAgain = false;
   private readonly poller: Poller;
   private readonly prPoller: PrStatusPoller;
+  private readonly configSubscription: vscode.Disposable;
   /** Worktree ids already auto-deleted (or attempted) after their PR merged. */
   private readonly autoDeleted = new Set<string>();
   /**
@@ -111,6 +113,14 @@ export class GitDataProvider implements vscode.Disposable {
       getWorktrees: () => this.worktrees,
       onWorktreePoll: () => this.checkForWorktreeChanges(),
       onStatusPoll: (wt) => this.refreshWorktree(wt),
+    });
+    this.configSubscription = vscode.workspace.onDidChangeConfiguration((e) => {
+      if (
+        e.affectsConfiguration('shiftspace.worktreeDiffCount') ||
+        e.affectsConfiguration('shiftspace.ignorePatterns')
+      ) {
+        void refreshAllDefaultBranchStats(this);
+      }
     });
     this.prPoller = new PrStatusPoller({
       getWorktrees: () => this.worktrees,
@@ -220,6 +230,9 @@ export class GitDataProvider implements vscode.Disposable {
     }
 
     await loadAllFileChanges(this);
+    // Before `init` so cards open on the counts the user asked for instead of
+    // flashing working-tree numbers first. No-ops unless the setting is on.
+    await refreshAllDefaultBranchStats(this);
 
     this.postMessage({ type: 'init', worktrees: this.worktrees });
     this.fileEvents.rebuildFileWatchers();
@@ -377,5 +390,6 @@ export class GitDataProvider implements vscode.Disposable {
   dispose(): void {
     this.tearDown();
     this.prPoller.dispose();
+    this.configSubscription.dispose();
   }
 }

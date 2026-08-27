@@ -245,6 +245,20 @@
           "description": "How often to poll GitHub for PR status, in seconds. Minimum 15 to respect API rate limits.",
           "scope": "resource"
         },
+        "shiftspace.worktreeDiffCount": {
+          "type": "string",
+          "enum": [
+            "working",
+            "defaultBranch"
+          ],
+          "default": "working",
+          "enumDescriptions": [
+            "Count the uncommitted changes in the worktree (staged + unstaged).",
+            "Count everything the branch would bring in a pull request against the default branch (its commits vs the base)."
+          ],
+          "description": "What the file and line counts on a worktree card measure. A worktree already on the default branch always shows its working changes.",
+          "scope": "resource"
+        },
         "shiftspace.ticketUrlTemplate": {
           "type": "string",
           "default": "",

@@ -11,6 +11,26 @@ declare global {
 }
 
 test.describe('Control panel', () => {
+  test('card counts switch between working changes and the default-branch diff', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const canvas = page.locator('.bg-canvas');
+    await canvas.waitFor();
+
+    // Default: cards count uncommitted working changes, with no base branch.
+    await expect(canvas.getByText('vs main')).toHaveCount(0);
+
+    await page.getByText('vs default').click();
+
+    // The feature worktree now reports its diff against main; the worktree
+    // sitting on main itself has no such comparison and keeps its own counts.
+    await expect(canvas.getByText('vs main')).toHaveCount(1);
+
+    await page.getByText('working', { exact: true }).click();
+    await expect(canvas.getByText('vs main')).toHaveCount(0);
+  });
+
   test('control panel is visible', async ({ page }) => {
     await page.goto('/');
 

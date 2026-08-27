@@ -22,6 +22,7 @@ import type {
   ShiftspaceEvent,
   PanZoomConfig,
   DiffMode,
+  WorktreeDiffCountMode,
   FileChange,
   ActionConfig,
   ActionStatus,
@@ -125,7 +126,11 @@ type HostMessage =
   | { type: 'diagnostics-remove'; worktreeId: string; filePaths: string[] }
   | { type: 'restore-view-settings'; mode: AppMode; selectedPackage: string }
   | { type: 'set-sort-mode'; mode: 'last-updated' | 'name' | 'branch' }
-  | { type: 'settings-update'; ticketUrlTemplate: string };
+  | {
+      type: 'settings-update';
+      ticketUrlTemplate: string;
+      worktreeDiffCount: WorktreeDiffCountMode;
+    };
 
 function handleCoreMessage(
   msg: HostMessage,
@@ -254,6 +259,7 @@ function handleActionMessage(msg: HostMessage): boolean {
       return true;
     case 'settings-update':
       useSettingsStore.getState().setTicketUrlTemplate(msg.ticketUrlTemplate);
+      useSettingsStore.getState().setWorktreeDiffCount(msg.worktreeDiffCount);
       return true;
     default:
       return false;

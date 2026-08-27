@@ -33,6 +33,7 @@ export const App: React.FC = () => {
   const { setInsightDetail, setFileDiagnostics } = useInsightStore();
   const { setSelectedPackage, setAvailablePackages } = usePackageStore();
   const setTicketUrlTemplate = useSettingsStore((s) => s.setTicketUrlTemplate);
+  const setWorktreeDiffCount = useSettingsStore((s) => s.setWorktreeDiffCount);
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -79,7 +80,8 @@ export const App: React.FC = () => {
     // Mirror the extension's `settings-update` push. Empty by default so the
     // ticket link stays hidden until a control-panel input / test hook sets it.
     setTicketUrlTemplate('');
-  }, [resetKey, setActionConfigs, setPipelines, setTicketUrlTemplate]);
+    setWorktreeDiffCount('working');
+  }, [resetKey, setActionConfigs, setPipelines, setTicketUrlTemplate, setWorktreeDiffCount]);
 
   useEffect(() => {
     const engine = engineRef.current!;

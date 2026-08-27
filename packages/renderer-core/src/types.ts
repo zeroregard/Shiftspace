@@ -59,6 +59,24 @@ export interface PrStatus {
   fetchedAt: number;
 }
 
+/**
+ * Aggregate change size for a worktree — how many files changed and how many
+ * lines were added/removed across them.
+ */
+export interface DiffStats {
+  fileCount: number;
+  linesAdded: number;
+  linesRemoved: number;
+}
+
+/**
+ * Which comparison the worktree card's change counter reflects.
+ * - `working`       → uncommitted working-tree changes (staged + unstaged)
+ * - `defaultBranch` → everything this branch would bring in a PR against the
+ *                     repo's default branch (committed work vs the base)
+ */
+export type WorktreeDiffCountMode = 'working' | 'defaultBranch';
+
 export interface WorktreeState {
   id: string;
   path: string;
@@ -70,6 +88,14 @@ export interface WorktreeState {
    * Only populated in branch diff mode. Feeds the "Committed" section.
    */
   branchFiles?: FileChange[];
+  /**
+   * Change size of this branch measured against the repo's default branch —
+   * i.e. what a PR against the default branch would show. Only populated when
+   * the user opted into `shiftspace.worktreeDiffCount: defaultBranch`, and
+   * never for a worktree already sitting on the default branch (nothing to
+   * compare). Undefined means "fall back to the working-tree counts".
+   */
+  defaultBranchStats?: DiffStats;
   process?: { port: number; command: string };
   diffMode: DiffMode;
   defaultBranch: string;
@@ -140,7 +166,12 @@ export type ShiftspaceEvent =
   | { type: 'worktree-activity'; worktreeId: string; timestamp: number }
   | { type: 'process-started'; worktreeId: string; port: number; command: string }
   | { type: 'process-stopped'; worktreeId: string }
-  | { type: 'pr-status-updated'; worktreeId: string; prStatus: PrStatus | undefined };
+  | { type: 'pr-status-updated'; worktreeId: string; prStatus: PrStatus | undefined }
+  | {
+      type: 'default-branch-stats-updated';
+      worktreeId: string;
+      stats: DiffStats | undefined;
+    };
 
 export type WorktreeSortMode = 'last-updated' | 'name' | 'branch';
 

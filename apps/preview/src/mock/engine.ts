@@ -3,6 +3,7 @@ import type {
   WorktreeState,
   WorktreeBadge,
   PrStatus,
+  DiffStats,
   FileChange,
   ShiftspaceEvent,
   DiffHunk,
@@ -346,6 +347,42 @@ export class MockEngine {
     const updated: WorktreeState = { ...wt, prStatus };
     this.worktrees.set(worktreeId, updated);
     this.emit({ type: 'pr-status-updated', worktreeId, prStatus });
+  }
+
+  /**
+   * Control-panel / test hook: set (or clear) a worktree's diff against the
+   * default branch. In the extension the host computes this from git; in the
+   * preview it stands in for that push.
+   */
+  setDefaultBranchStats(worktreeId: string, stats: DiffStats | undefined): void {
+    const wt = this.worktrees.get(worktreeId);
+    if (!wt) return;
+    const updated: WorktreeState = { ...wt, defaultBranchStats: stats };
+    this.worktrees.set(worktreeId, updated);
+    this.emit({ type: 'default-branch-stats-updated', worktreeId, stats });
+  }
+
+  /**
+   * Stand-in for the host's git computation behind the "count against the
+   * default branch" setting: derives a plausible committed-work diff from the
+   * worktree's current working changes. Deterministic for a given file state
+   * so screenshots stay stable. Worktrees on the default branch get nothing —
+   * exactly as the extension leaves them.
+   */
+  applyMockDefaultBranchStats(enabled: boolean): void {
+    for (const wt of this.worktrees.values()) {
+      if (!enabled || wt.branch === wt.defaultBranch) {
+        this.setDefaultBranchStats(wt.id, undefined);
+        continue;
+      }
+      const added = wt.files.reduce((sum, f) => sum + f.linesAdded, 0);
+      const removed = wt.files.reduce((sum, f) => sum + f.linesRemoved, 0);
+      this.setDefaultBranchStats(wt.id, {
+        fileCount: wt.files.length * 2 + 1,
+        linesAdded: added * 3 + 40,
+        linesRemoved: removed * 2 + 12,
+      });
+    }
   }
 
   addPresetWorktree(presetIndex: number) {
