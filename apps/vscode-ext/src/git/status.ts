@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { FileChange, DiffHunk, DiffLine } from '@shiftspace/renderer';
 import { gitReadOnly } from './git-utils';
+import { resolveBranchDiffBase } from './branch-base';
 
 interface ParsedStatus {
   status: FileChange['status'];
@@ -263,13 +264,15 @@ export function parseBranchNameStatus(output: string): Map<string, FileChange['s
 /**
  * Get file changes comparing the current worktree HEAD against another branch.
  * Uses three-dot diff (branch...HEAD) to show what the current branch changed
- * since it diverged from the base branch.
+ * since it diverged from the base branch. The base is resolved to its
+ * remote-tracking ref when one exists (see resolveBranchDiffBase).
  */
 export async function getBranchDiffFileChanges(
   worktreePath: string,
   baseBranch: string
 ): Promise<FileChange[]> {
-  const ref = `${baseBranch}...HEAD`;
+  const base = await resolveBranchDiffBase(worktreePath, baseBranch);
+  const ref = `${base}...HEAD`;
   const opts = { cwd: worktreePath, timeout: 10_000 };
 
   const [nameStatusResult, numstatResult, diffResult] = await Promise.allSettled([
