@@ -253,7 +253,7 @@ export function WorktreeCard({
           className="flex items-center gap-1.5"
           title={
             counts.comparedTo
-              ? `Changes on this branch compared to ${counts.comparedTo}`
+              ? `Committed and uncommitted changes on this branch, compared to ${counts.comparedTo}`
               : 'Uncommitted changes in the working tree'
           }
         >

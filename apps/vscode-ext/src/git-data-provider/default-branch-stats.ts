@@ -25,12 +25,13 @@ function statsEqual(a: DiffStats | undefined, b: DiffStats | undefined): boolean
 }
 
 /**
- * Compute a worktree's diff against the repo's default branch.
+ * Compute a worktree's diff against the repo's default branch — its commits
+ * plus whatever isn't committed yet.
  *
- * Returns undefined when the comparison says nothing: the counter is set to
- * working changes, or the worktree is already on the default branch (a PR
- * from a branch to itself is empty, so the card falls back to working changes
- * rather than flatly reporting zero).
+ * Returns undefined when that comparison says nothing new: the counter is set
+ * to working changes, or the worktree is already on the default branch, where
+ * there are no commits to add and the measure collapses to the working
+ * changes the card falls back to.
  */
 async function queryStats(wt: WorktreeState): Promise<DiffStats | undefined> {
   if (getWorktreeDiffCountMode() !== 'defaultBranch') return undefined;

@@ -13,8 +13,9 @@ export interface WorktreeDiffCounts extends DiffStats {
  * Resolve the change counts shown on a worktree card.
  *
  * In `defaultBranch` mode the counts come from the host-computed diff against
- * the repo's default branch — what a PR from this branch would contain. That
- * comparison is meaningless for a worktree already on the default branch, and
+ * the repo's default branch — the branch's commits plus its uncommitted work,
+ * i.e. what a PR would contain once the current changes are committed. That
+ * comparison adds nothing for a worktree already on the default branch, and
  * it isn't available before the host has computed it, so both cases fall back
  * to the working-tree counts.
  */

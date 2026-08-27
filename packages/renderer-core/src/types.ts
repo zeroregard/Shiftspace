@@ -73,7 +73,8 @@ export interface DiffStats {
  * Which comparison the worktree card's change counter reflects.
  * - `working`       → uncommitted working-tree changes (staged + unstaged)
  * - `defaultBranch` → everything this branch would bring in a PR against the
- *                     repo's default branch (committed work vs the base)
+ *                     repo's default branch: its commits *and* the work not
+ *                     committed yet
  */
 export type WorktreeDiffCountMode = 'working' | 'defaultBranch';
 
@@ -90,10 +91,12 @@ export interface WorktreeState {
   branchFiles?: FileChange[];
   /**
    * Change size of this branch measured against the repo's default branch —
-   * i.e. what a PR against the default branch would show. Only populated when
-   * the user opted into `shiftspace.worktreeDiffCount: defaultBranch`, and
-   * never for a worktree already sitting on the default branch (nothing to
-   * compare). Undefined means "fall back to the working-tree counts".
+   * its commits plus everything still uncommitted, i.e. what a PR would show
+   * once the current work is committed. Only populated when the user opted
+   * into `shiftspace.worktreeDiffCount: defaultBranch`, and never for a
+   * worktree already sitting on the default branch (where that measure is
+   * just the working changes). Undefined means "fall back to the
+   * working-tree counts".
    */
   defaultBranchStats?: DiffStats;
   process?: { port: number; command: string };

@@ -254,9 +254,9 @@
           "default": "working",
           "enumDescriptions": [
             "Count the uncommitted changes in the worktree (staged + unstaged).",
-            "Count everything the branch would bring in a pull request against the default branch (its commits vs the base)."
+            "Count everything the branch would bring in a pull request against the default branch: its commits plus the work not committed yet."
           ],
-          "description": "What the file and line counts on a worktree card measure. A worktree already on the default branch always shows its working changes.",
+          "description": "What the file and line counts on a worktree card measure. A worktree already on the default branch always shows its working changes — there is nothing else to compare against.",
           "scope": "resource"
         },
         "shiftspace.ticketUrlTemplate": {
