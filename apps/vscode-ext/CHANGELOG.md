@@ -2,6 +2,16 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.9.0] — 2026-08-27
+
+### Changed
+
+- Add worktree diff counter mode: working changes vs default branch
+
+### Fixed
+
+- comparing against the default branch no longer shows thousands of unrelated files (#174)
+
 ## [0.8.0] — 2026-08-20
 
 ### Added
