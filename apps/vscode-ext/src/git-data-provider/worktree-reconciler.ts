@@ -2,6 +2,7 @@ import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
 import { log } from '../logger';
 import { detectWorktrees, badgesEqual } from '../git/worktrees';
 import { getFilesForMode } from './diff-mode';
+import { computeDefaultBranchStats } from './default-branch-stats';
 import type { GitDataProvider } from './index';
 
 /**
@@ -143,6 +144,7 @@ async function hydrateNewWorktree(host: GitDataProvider, wt: WorktreeState): Pro
   } catch (err) {
     log.error('getFileChanges error for new worktree', wt.path, err);
   }
+  wt.defaultBranchStats = await computeDefaultBranchStats(wt);
 }
 
 /**
@@ -174,6 +176,7 @@ async function carryOverState(
   freshWt.branchFiles = prevWt.branchFiles;
   freshWt.lastActivityAt = prevWt.lastActivityAt;
   if (prevWt.prStatus) freshWt.prStatus = prevWt.prStatus;
+  freshWt.defaultBranchStats = prevWt.defaultBranchStats;
 
   const pathChanged = prevWt.path !== freshWt.path;
   const badgeChanged = !badgesEqual(prevWt.badge, freshWt.badge);
@@ -194,6 +197,8 @@ async function carryOverState(
     }
     // A checkout counts as activity; a rename or a badge edit does not.
     freshWt.lastActivityAt = Date.now();
+    // The new branch has its own diff against the default branch.
+    freshWt.defaultBranchStats = await computeDefaultBranchStats(freshWt);
   } else if (pathChanged) {
     log.info(`[path] worktree path changed: ${prevWt.path} → ${freshWt.path}`);
   }

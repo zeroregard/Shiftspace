@@ -17,6 +17,7 @@ import { registerPanelHandlers } from './panel-handlers';
 import { registerMcpHandlers } from './panel-mcp-bridge';
 import { PanelIconManager } from './panel-icon-manager';
 import { log } from './logger';
+import { affectsRendererSettings, rendererSettingsMessage } from './renderer-settings';
 
 const VIEW_ID = 'panel';
 
@@ -146,10 +147,11 @@ export class ShiftspacePanel {
       this._disposables
     );
 
-    // Re-send renderer settings (e.g. the ticket URL template) whenever they change.
+    // Re-send renderer settings (ticket URL template, worktree diff counter)
+    // whenever they change.
     vscode.workspace.onDidChangeConfiguration(
       (e) => {
-        if (e.affectsConfiguration('shiftspace.ticketUrlTemplate')) this.sendSettings();
+        if (affectsRendererSettings(e)) this.sendSettings();
       },
       null,
       this._disposables
@@ -160,10 +162,7 @@ export class ShiftspacePanel {
 
   /** Read renderer-facing settings from config and push them to the webview. */
   private sendSettings(): void {
-    const ticketUrlTemplate = vscode.workspace
-      .getConfiguration('shiftspace')
-      .get<string>('ticketUrlTemplate', '');
-    void this._panel.webview.postMessage({ type: 'settings-update', ticketUrlTemplate });
+    void this._panel.webview.postMessage(rendererSettingsMessage());
   }
 
   // Initialization (called when webview sends "ready")

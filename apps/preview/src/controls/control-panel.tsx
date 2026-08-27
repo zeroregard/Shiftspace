@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
+import { useSettingsStore, type WorktreeDiffCountMode } from '@shiftspace/renderer';
 import type { MockEngine } from '../mock/engine';
 import type { AgentPersona } from '../mock/types';
 
@@ -87,6 +88,8 @@ export const ControlPanel: React.FC<Props> = ({
   const [paused, setPaused] = useState(false);
   const [agentStates, setAgentStates] = useState<Record<string, AgentPersona | null>>({});
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
+  const diffCountMode = useSettingsStore((s) => s.worktreeDiffCount);
+  const setDiffCountMode = useSettingsStore((s) => s.setWorktreeDiffCount);
 
   // Auto-collapse on mobile
   useEffect(() => {
@@ -105,6 +108,13 @@ export const ControlPanel: React.FC<Props> = ({
     const next = !paused;
     setPaused(next);
     engine.setPaused(next);
+  };
+
+  // Mirrors the host: flipping `shiftspace.worktreeDiffCount` pushes the
+  // setting and (re)computes the per-worktree stats the cards read.
+  const handleDiffCountMode = (mode: WorktreeDiffCountMode) => {
+    setDiffCountMode(mode);
+    engine.applyMockDefaultBranchStats(mode === 'defaultBranch');
   };
 
   const toggleAgent = (worktreeId: string, persona: AgentPersona) => {
@@ -181,6 +191,25 @@ export const ControlPanel: React.FC<Props> = ({
         <button onClick={onAddWorktree} className={ctrlBtn(false)}>
           + wt
         </button>
+      </div>
+
+      {/* Diff counter comparison */}
+      <div className="mb-2.5">
+        <div className="text-[9px] text-text-faint mb-1">Card diff count</div>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => handleDiffCountMode('working')}
+            className={ctrlBtn(diffCountMode === 'working', true)}
+          >
+            working
+          </button>
+          <button
+            onClick={() => handleDiffCountMode('defaultBranch')}
+            className={ctrlBtn(diffCountMode === 'defaultBranch', true)}
+          >
+            vs default
+          </button>
+        </div>
       </div>
 
       {/* Worktree agent controls */}

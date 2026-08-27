@@ -4,6 +4,8 @@ import {
   useSettingsStore,
   type WebviewMessage,
   type PrStatus,
+  type DiffStats,
+  type WorktreeDiffCountMode,
 } from '@shiftspace/renderer';
 import type { MockGitProvider, OpName } from './mock-git-provider';
 import type { MockEngine } from './engine';
@@ -82,6 +84,14 @@ export class MockWebviewBridge {
       },
       setTicketTemplate: (template: string) => {
         useSettingsStore.getState().setTicketUrlTemplate(template);
+      },
+      // Mirror the host's `settings-update` push plus the stats it computes,
+      // so the default-branch counter can be exercised end to end.
+      setWorktreeDiffCount: (mode: WorktreeDiffCountMode) => {
+        useSettingsStore.getState().setWorktreeDiffCount(mode);
+      },
+      setDefaultBranchStats: (worktreeId: string, stats: DiffStats | undefined) => {
+        this.engine.setDefaultBranchStats(worktreeId, stats);
       },
     };
   }

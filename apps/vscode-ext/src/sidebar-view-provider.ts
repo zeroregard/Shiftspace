@@ -3,6 +3,7 @@ import { getWebviewHtml } from './webview/html';
 import { SharedGitProvider } from './shared-git-provider';
 import { ShiftspacePanel } from './shiftspace-panel';
 import { log } from './logger';
+import { affectsRendererSettings, rendererSettingsMessage } from './renderer-settings';
 import type { WebviewMessage } from '@shiftspace/renderer';
 
 const VIEW_ID = 'sidebar';
@@ -119,13 +120,30 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
       this._disposables
     );
 
+    // Keep the sidebar's copy of the renderer settings (ticket URL template,
+    // worktree diff counter) in sync with the panel's.
+    vscode.workspace.onDidChangeConfiguration(
+      (e) => {
+        if (affectsRendererSettings(e)) this.sendSettings();
+      },
+      null,
+      this._disposables
+    );
+
     webviewView.onDidDispose(() => this.tearDown(), null, this._disposables);
+  }
+
+  /** Read renderer-facing settings from config and push them to the webview. */
+  private sendSettings(): void {
+    void this._view?.webview.postMessage(rendererSettingsMessage());
   }
 
   private async onReady(): Promise<void> {
     const postMessage = (msg: object) => {
       void this._view?.webview.postMessage(msg);
     };
+
+    this.sendSettings();
 
     // Re-register on every "ready" (the webview reference may have changed)
     this._sharedGit.registerView(VIEW_ID, postMessage);

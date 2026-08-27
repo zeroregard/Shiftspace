@@ -116,6 +116,20 @@ export function applyEventReducer(
       }
       return next;
     }
+    case 'default-branch-stats-updated': {
+      const wt = worktrees.get(event.worktreeId);
+      if (!wt) return worktrees;
+      // Recomputed from committed history, not a local edit — leave
+      // lastActivityAt alone.
+      const next = new Map(worktrees);
+      if (event.stats === undefined) {
+        const { defaultBranchStats: _dropped, ...rest } = wt;
+        next.set(event.worktreeId, rest);
+      } else {
+        next.set(event.worktreeId, { ...wt, defaultBranchStats: event.stats });
+      }
+      return next;
+    }
     default:
       return worktrees;
   }

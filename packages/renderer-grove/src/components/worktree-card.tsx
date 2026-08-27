@@ -12,6 +12,7 @@ import {
   TicketLinkButton,
   useSettingsStore,
   buildTicketUrl,
+  resolveWorktreeDiffCounts,
   filterCheckoutableBranches,
   useActions,
   useWorktreeRename,
@@ -108,8 +109,8 @@ export function WorktreeCard({
     isOperationPending(s.operations, opKey.removeWorktree(wt.id))
   );
 
-  const totalAdded = wt.files.reduce((s, f) => s + f.linesAdded, 0);
-  const totalRemoved = wt.files.reduce((s, f) => s + f.linesRemoved, 0);
+  const diffCountMode = useSettingsStore((s) => s.worktreeDiffCount);
+  const counts = resolveWorktreeDiffCounts(wt, diffCountMode);
   const relativeTime = useRelativeTime(wt.lastActivityAt);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
   const ticketUrlTemplate = useSettingsStore((s) => s.ticketUrlTemplate);
@@ -248,12 +249,22 @@ export function WorktreeCard({
 
       {/* Stats */}
       <div className="flex items-center justify-between text-11">
-        <span className="flex items-center gap-1.5">
+        <span
+          className="flex items-center gap-1.5"
+          title={
+            counts.comparedTo
+              ? `Changes on this branch compared to ${counts.comparedTo}`
+              : 'Uncommitted changes in the working tree'
+          }
+        >
           <span className="text-text-muted">
-            {wt.files.length} file{wt.files.length !== 1 ? 's' : ''}
+            {counts.fileCount} file{counts.fileCount !== 1 ? 's' : ''}
           </span>
-          <span className="text-status-added">+{totalAdded}</span>
-          <span className="text-status-deleted">-{totalRemoved}</span>
+          <span className="text-status-added">+{counts.linesAdded}</span>
+          <span className="text-status-deleted">-{counts.linesRemoved}</span>
+          {counts.comparedTo && (
+            <span className="text-text-muted truncate">vs {counts.comparedTo}</span>
+          )}
         </span>
         <AnimatedTimestamp value={relativeTime} />
       </div>

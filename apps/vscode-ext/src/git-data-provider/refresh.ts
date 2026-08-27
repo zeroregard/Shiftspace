@@ -3,6 +3,7 @@ import { log } from '../logger';
 import { diffFileChanges } from '../git/event-diff';
 import { preserveLastChangedAt } from './helpers';
 import { getFilesForMode } from './diff-mode';
+import { refreshDefaultBranchStats } from './default-branch-stats';
 import type { GitDataProvider } from './index';
 
 /** Initial file-change load for every tracked worktree. */
@@ -116,6 +117,9 @@ export async function refreshWorktree(host: GitDataProvider, wt: WorktreeState):
     // Notify stale callback if working files or branch diff changed
     if (events.length > 0 || branchChanged) {
       host.onFileChange?.(wt.id);
+      // A commit moves the branch diff; recompute only when something actually
+      // changed so the 2s status poll doesn't run a git diff per worktree.
+      void refreshDefaultBranchStats(host, wt);
     }
   } catch (err) {
     log.error('refreshWorktree error for', wt.path, err);
