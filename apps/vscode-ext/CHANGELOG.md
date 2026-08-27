@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.9.1] — 2026-08-27
+
+### Fixed
+
+- worktree cards in the sidebar now follow the diff-count setting (#176)
+
 ## [0.9.0] — 2026-08-27
 
 ### Changed
