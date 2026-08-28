@@ -235,7 +235,7 @@
         "shiftspace.pr.autoDeleteMergedWorktrees": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically delete a worktree as soon as its pull request is merged, instead of showing the merged indicator and waiting for you to delete it. Requires PR status polling ('shiftspace.pr.enabled'). The primary worktree is never deleted.",
+          "description": "Automatically delete a worktree as soon as its pull request is merged, instead of showing the merged indicator and waiting for you to delete it. Requires PR status polling ('shiftspace.pr.enabled'). Only feature-branch worktrees are deleted — the primary worktree, a worktree on the repo's default branch, and a worktree with no branch checked out are always kept.",
           "scope": "resource"
         },
         "shiftspace.pr.pollIntervalSeconds": {
