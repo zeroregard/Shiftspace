@@ -106,6 +106,11 @@ describe('computeBaseDiff', () => {
     expect(getBranchDiffStats).not.toHaveBeenCalled();
   });
 
+  it('reports nothing when there is no merge base (shallow clone), instead of garbage', async () => {
+    getBranchDiffStats.mockResolvedValue(null);
+    expect(await computeBaseDiff(makeWt())).toBeUndefined();
+  });
+
   it('reports nothing when git fails', async () => {
     getBranchDiffStats.mockRejectedValue(new Error('not a git repository'));
     expect(await computeBaseDiff(makeWt())).toBeUndefined();
@@ -153,6 +158,17 @@ describe('refreshBaseDiff', () => {
     await refreshBaseDiff(host as never, wt);
     expect(wt.baseDiff).toEqual({ base: 'main', fileCount: 3, linesAdded: 10, linesRemoved: 1 });
     expect(posted).toHaveLength(0);
+  });
+
+  it('clears previous counts once the diff becomes unmeasurable, so garbage self-heals', async () => {
+    const wt = makeWt({
+      baseDiff: { base: 'main', fileCount: 589, linesAdded: 5305, linesRemoved: 9434 },
+    });
+    const { host, posted } = makeHost([wt]);
+    getBranchDiffStats.mockResolvedValue(null);
+    await refreshBaseDiff(host as never, wt);
+    expect(wt.baseDiff).toBeUndefined();
+    expect(posted).toHaveLength(1);
   });
 
   it('clears stale counts once the counter is switched back to working changes', async () => {

@@ -9,6 +9,7 @@ import {
   swapBranches,
 } from '../git/worktrees';
 import { getFilesForMode } from './diff-mode';
+import { refreshAllBaseDiffs } from './base-diff';
 import type { GitDataProvider } from './index';
 
 /**
@@ -66,6 +67,10 @@ export async function handleFetchBranches(
     await fetchRemote(host.currentRoot);
     const branches = await listBranches(host.currentRoot);
     host.postMessage({ type: 'fetch-done', worktreeId, timestamp: Date.now(), branches });
+    // The fetch may have moved every origin/* ref (or repaired a shallow
+    // history), which shifts what the cards are measured against — nothing
+    // else recomputes that until a file changes.
+    void refreshAllBaseDiffs(host);
   } catch (err) {
     log.error('handleFetchBranches error:', err);
     host.postMessage({ type: 'fetch-loading', worktreeId, loading: false });

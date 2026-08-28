@@ -29,7 +29,9 @@ function normalize(args: string[]): string[] {
   return args[0] === '--no-optional-locks' ? args.slice(1) : args;
 }
 
-function recorder(handler?: (args: string[]) => { stdout?: string } | { error: string } | void) {
+type MockResponse = { stdout?: string } | { error: string } | { exitCode: number } | void;
+
+function recorder(handler?: (args: string[]) => MockResponse) {
   const calls: string[][] = [];
   vi.mocked(execFile).mockImplementation(((
     _cmd: string,
@@ -44,6 +46,14 @@ function recorder(handler?: (args: string[]) => { stdout?: string } | { error: s
       cb(Object.assign(new Error(resp.error), { stderr: resp.error }), {
         stdout: '',
         stderr: resp.error,
+      });
+      return;
+    }
+    if (resp && 'exitCode' in resp) {
+      // How `git merge-base` reports "no common ancestor": exit 1, silent.
+      cb(Object.assign(new Error('Command failed'), { code: resp.exitCode, stderr: '' }), {
+        stdout: '',
+        stderr: '',
       });
       return;
     }
@@ -77,7 +87,7 @@ describe('getBranchDiffStats', () => {
     expect(calls).toContainEqual(['merge-base', 'main', 'HEAD']);
     // The merge base alone (no `...HEAD`), so uncommitted work is included.
     expect(calls).toContainEqual(['diff', '--numstat', 'abc1234']);
-    expect(perFile.get('src/app.ts')).toEqual({ added: 10, removed: 4 });
+    expect(perFile!.get('src/app.ts')).toEqual({ added: 10, removed: 4 });
   });
 
   it('counts untracked files, which git diff never reports', async () => {
@@ -92,7 +102,7 @@ describe('getBranchDiffStats', () => {
       Promise.resolve(p.endsWith('new.ts') ? 'a\nb\nc\n' : 'one line')
     );
 
-    expect(toDiffStats(await getBranchDiffStats('/repo/wt', 'main'))).toEqual({
+    expect(toDiffStats((await getBranchDiffStats('/repo/wt', 'main'))!)).toEqual({
       fileCount: 3,
       linesAdded: 14, // 10 tracked + 3 + 1 untracked
       linesRemoved: 4,
@@ -107,22 +117,35 @@ describe('getBranchDiffStats', () => {
       if (args[0] === 'ls-files') return { stdout: 'logo.png\n' };
     });
 
-    expect(toDiffStats(await getBranchDiffStats('/repo/wt', 'main'))).toEqual({
+    expect(toDiffStats((await getBranchDiffStats('/repo/wt', 'main'))!)).toEqual({
       fileCount: 1,
       linesAdded: 0,
       linesRemoved: 0,
     });
   });
 
-  it('falls back to the base ref when there is no merge base', async () => {
+  it('reports the diff as unmeasurable when there is no merge base, instead of diffing the base tip', async () => {
+    // Shallow clone whose history stops before the branch point: merge-base
+    // exits 1. Diffing against the base tip here would show everyone else's
+    // work on the base reversed — the 589-files-for-a-20-file-branch bug.
     const calls = recorder((args) => {
       const fail = baseLookupFailure(args);
       if (fail) return fail;
-      if (args[0] === 'merge-base') return { error: 'fatal: no merge base' };
+      if (args[0] === 'merge-base') return { exitCode: 1 };
     });
 
-    await getBranchDiffStats('/repo/wt', 'main');
-    expect(calls).toContainEqual(['diff', '--numstat', 'main']);
+    expect(await getBranchDiffStats('/repo/wt', 'main')).toBeNull();
+    expect(calls.some((args) => args[0] === 'diff')).toBe(false);
+  });
+
+  it('propagates a transient merge-base failure so callers keep their previous counts', async () => {
+    recorder((args) => {
+      const fail = baseLookupFailure(args);
+      if (fail) return fail;
+      if (args[0] === 'merge-base') return { error: 'fatal: index.lock exists' };
+    });
+
+    await expect(getBranchDiffStats('/repo/wt', 'main')).rejects.toThrow();
   });
 
   it('reports the tracked changes it has when listing untracked files fails', async () => {
@@ -134,7 +157,7 @@ describe('getBranchDiffStats', () => {
       if (args[0] === 'ls-files') return { error: 'fatal: boom' };
     });
 
-    expect(toDiffStats(await getBranchDiffStats('/repo/wt', 'main'))).toEqual({
+    expect(toDiffStats((await getBranchDiffStats('/repo/wt', 'main'))!)).toEqual({
       fileCount: 1,
       linesAdded: 7,
       linesRemoved: 2,

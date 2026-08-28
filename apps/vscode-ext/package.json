@@ -254,7 +254,7 @@
           "default": "working",
           "enumDescriptions": [
             "Count the uncommitted changes in the worktree (staged + unstaged).",
-            "Count everything the branch would bring in a pull request: its commits plus the work not committed yet, measured against the branch it merges into — an open pull request's base branch when there is one (requires PR status polling), otherwise the default branch."
+            "Count everything the branch would bring in a pull request: its commits plus the work not committed yet, measured against the branch it merges into — an open pull request's base branch when there is one (requires PR status polling), otherwise the default branch. If the comparison cannot be measured (e.g. a shallow clone with no shared history), the card shows working changes instead."
           ],
           "description": "What the file and line counts on a worktree card measure. A worktree already sitting on the branch it would merge into always shows its working changes — there is nothing else to compare against.",
           "scope": "resource"

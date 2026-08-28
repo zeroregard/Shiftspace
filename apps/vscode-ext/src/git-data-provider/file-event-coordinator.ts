@@ -9,6 +9,8 @@ export interface FileEventCallbacks {
   onRefresh: (wt: WorktreeState) => void;
   onWorktreesChanged: () => void;
   onConfigChanged: () => void;
+  /** A fetch updated the remote-tracking refs (any worktree, any terminal). */
+  onRemoteChanged: () => void;
   getCurrentRoot: () => string | undefined;
   getWorktrees: () => WorktreeState[];
 }
@@ -23,6 +25,7 @@ const DEBOUNCE_MS = 1000;
  *  - Per-worktree `**\/*` watchers (content changes → debounced refresh)
  *  - `.git/HEAD` + `.git/worktrees/*\/HEAD` (branch checkout detection)
  *  - `.git/index` + `.git/worktrees/*\/index` (staging/unstaging detection)
+ *  - `.git/FETCH_HEAD` + `.git/worktrees/*\/FETCH_HEAD` (fetch detection)
  *  - Workspace `.shiftspace-worktree.json` (agent-written badge propagation)
  *  - `shiftspace.ignorePatterns` configuration changes
  *
@@ -31,6 +34,7 @@ const DEBOUNCE_MS = 1000;
  */
 export class FileEventCoordinator implements vscode.Disposable {
   private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private fetchDebounce: ReturnType<typeof setTimeout> | undefined;
   private fileWatchersByWorktree = new Map<string, vscode.Disposable[]>();
   private auxDisposables: vscode.Disposable[] = [];
 
@@ -40,6 +44,7 @@ export class FileEventCoordinator implements vscode.Disposable {
   startAuxWatchers(): void {
     this.setupHeadWatcher();
     this.setupIndexWatcher();
+    this.setupFetchWatcher();
     this.setupConfigWatcher();
     this.setupWorktreeBadgeWatcher();
   }
@@ -150,6 +155,28 @@ export class FileEventCoordinator implements vscode.Disposable {
     );
   }
 
+  private setupFetchWatcher(): void {
+    const root = this.cb.getCurrentRoot();
+    if (!root) return;
+    const gitDir = path.join(root, '.git');
+    // Every fetch rewrites FETCH_HEAD — in the private dir of whichever
+    // worktree ran it. Debounced: one fetch can touch it more than once, and
+    // the recompute runs a git diff per worktree.
+    const onFetch = () => {
+      if (this.fetchDebounce) clearTimeout(this.fetchDebounce);
+      this.fetchDebounce = setTimeout(() => {
+        this.fetchDebounce = undefined;
+        this.cb.onRemoteChanged();
+      }, DEBOUNCE_MS);
+    };
+    for (const pattern of ['FETCH_HEAD', 'worktrees/*/FETCH_HEAD']) {
+      const watcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(gitDir, pattern)
+      );
+      this.auxDisposables.push(watcher, watcher.onDidChange(onFetch), watcher.onDidCreate(onFetch));
+    }
+  }
+
   private setupConfigWatcher(): void {
     this.auxDisposables.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
@@ -174,6 +201,8 @@ export class FileEventCoordinator implements vscode.Disposable {
   dispose(): void {
     for (const t of this.debounceTimers.values()) clearTimeout(t);
     this.debounceTimers.clear();
+    if (this.fetchDebounce) clearTimeout(this.fetchDebounce);
+    this.fetchDebounce = undefined;
     for (const [, disposables] of this.fileWatchersByWorktree) {
       for (const d of disposables) d.dispose();
     }
