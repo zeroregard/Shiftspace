@@ -17,6 +17,7 @@ export {
   type DiffHunk,
   type DiffMode,
   type DiffStats,
+  type BaseDiff,
   type WorktreeDiffCountMode,
   type ActionConfig,
   type ActionState,
@@ -59,6 +60,8 @@ export {
   PackageSwitcher,
   SortPicker,
   sortWorktrees,
+  getComparisonBase,
+  type ComparisonBase,
   // UI
   AnnotationBadges,
   Badge,

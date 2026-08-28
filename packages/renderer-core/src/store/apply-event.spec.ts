@@ -173,26 +173,24 @@ describe('applyEventReducer – lastActivityAt', () => {
     expect(next.get('wt-1')!.prStatus).toBeUndefined();
   });
 
-  it('sets defaultBranchStats on default-branch-stats-updated without touching lastActivityAt', () => {
+  it('sets baseDiff on base-diff-updated without touching lastActivityAt', () => {
     const map = seed(makeWt({ lastActivityAt: 1_000 }));
-    const stats = { fileCount: 4, linesAdded: 90, linesRemoved: 12 };
-    const next = applyEventReducer(map, {
-      type: 'default-branch-stats-updated',
-      worktreeId: 'wt-1',
-      stats,
-    });
-    expect(next.get('wt-1')!.defaultBranchStats).toEqual(stats);
+    const diff = { base: 'main', fileCount: 4, linesAdded: 90, linesRemoved: 12 };
+    const next = applyEventReducer(map, { type: 'base-diff-updated', worktreeId: 'wt-1', diff });
+    expect(next.get('wt-1')!.baseDiff).toEqual(diff);
     expect(next.get('wt-1')!.lastActivityAt).toBe(1_000);
   });
 
-  it('clears defaultBranchStats when the event carries undefined', () => {
-    const wt = makeWt({ defaultBranchStats: { fileCount: 4, linesAdded: 90, linesRemoved: 12 } });
-    const next = applyEventReducer(seed(wt), {
-      type: 'default-branch-stats-updated',
-      worktreeId: 'wt-1',
-      stats: undefined,
+  it('clears baseDiff when the event carries undefined', () => {
+    const wt = makeWt({
+      baseDiff: { base: 'main', fileCount: 4, linesAdded: 90, linesRemoved: 12 },
     });
-    expect(next.get('wt-1')!.defaultBranchStats).toBeUndefined();
+    const next = applyEventReducer(seed(wt), {
+      type: 'base-diff-updated',
+      worktreeId: 'wt-1',
+      diff: undefined,
+    });
+    expect(next.get('wt-1')!.baseDiff).toBeUndefined();
   });
 
   it('preserves lastActivityAt on worktree-renamed', () => {

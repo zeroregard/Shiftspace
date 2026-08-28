@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { WorktreeState, DiffMode, FileChange } from '@shiftspace/renderer';
+import { getComparisonBase } from '@shiftspace/renderer';
 import { log } from '../logger';
 import {
   detectWorktrees,
@@ -13,7 +14,7 @@ import { PrStatusPoller, prStatusEqual } from './pr-status-poller';
 import { loadAllFileChanges, refreshWorktree, reloadAllWithFilter } from './refresh';
 import { checkForWorktreeChanges } from './worktree-reconciler';
 import { applyDiffModeOverrides } from './diff-mode';
-import { refreshAllDefaultBranchStats } from './default-branch-stats';
+import { refreshAllBaseDiffs, refreshBaseDiff } from './base-diff';
 import {
   handleSetDiffMode,
   handleFetchBranches,
@@ -119,7 +120,7 @@ export class GitDataProvider implements vscode.Disposable {
         e.affectsConfiguration('shiftspace.worktreeDiffCount') ||
         e.affectsConfiguration('shiftspace.ignorePatterns')
       ) {
-        void refreshAllDefaultBranchStats(this);
+        void refreshAllBaseDiffs(this);
       }
     });
     this.prPoller = new PrStatusPoller({
@@ -128,11 +129,18 @@ export class GitDataProvider implements vscode.Disposable {
         const wt = this.worktrees.find((w) => w.id === worktreeId);
         if (!wt) return;
         if (!prStatusEqual(wt.prStatus, prStatus)) {
+          const previousBase = getComparisonBase(wt).branch;
           wt.prStatus = prStatus;
           this.postMessage({
             type: 'event',
             event: { type: 'pr-status-updated', worktreeId, prStatus },
           });
+          // A PR appearing, landing, or being retargeted moves the branch this
+          // worktree is measured and diffed against.
+          const nextBase = getComparisonBase(wt).branch;
+          if (nextBase !== previousBase) {
+            void this.retargetBaseComparison(wt, previousBase, nextBase);
+          }
         }
         // Checked on every poll, not just on change, so turning the setting on
         // also cleans up worktrees whose PR merged earlier in the session.
@@ -232,7 +240,7 @@ export class GitDataProvider implements vscode.Disposable {
     await loadAllFileChanges(this);
     // Before `init` so cards open on the counts the user asked for instead of
     // flashing working-tree numbers first. No-ops unless the setting is on.
-    await refreshAllDefaultBranchStats(this);
+    await refreshAllBaseDiffs(this);
 
     this.postMessage({ type: 'init', worktrees: this.worktrees });
     this.fileEvents.rebuildFileWatchers();
@@ -253,6 +261,38 @@ export class GitDataProvider implements vscode.Disposable {
    * failure, so a worktree we can't remove (dirty state, permissions) doesn't
    * re-prompt on every poll.
    */
+  /**
+   * Follow a worktree's comparison base when its pull request establishes or
+   * changes one.
+   *
+   * The counts always follow — they are a measurement, not a choice. The
+   * inspection view's selector only follows while it is still pointing at the
+   * base it was given: a mode the user picked themselves is recorded in
+   * `diffModeOverrides` and is left alone, as is a comparison against some
+   * unrelated branch they navigated to.
+   */
+  private async retargetBaseComparison(
+    wt: WorktreeState,
+    previousBase: string,
+    nextBase: string
+  ): Promise<void> {
+    const follows =
+      !this.diffModeOverrides[wt.branch] &&
+      wt.diffMode.type === 'branch' &&
+      wt.diffMode.branch === previousBase &&
+      nextBase !== wt.branch;
+    if (follows) {
+      log.info(`[diffMode] following PR base: ${wt.branch} → ${nextBase}`);
+      await handleSetDiffMode(
+        this,
+        wt.id,
+        { type: 'branch', branch: nextBase },
+        { remember: false }
+      );
+    }
+    await refreshBaseDiff(this, wt);
+  }
+
   private autoDeleteMergedWorktree(wt: WorktreeState): void {
     if (wt.isMainWorktree || this.autoDeleted.has(wt.id)) return;
     const enabled = vscode.workspace

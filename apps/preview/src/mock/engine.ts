@@ -3,7 +3,7 @@ import type {
   WorktreeState,
   WorktreeBadge,
   PrStatus,
-  DiffStats,
+  BaseDiff,
   FileChange,
   ShiftspaceEvent,
   DiffHunk,
@@ -354,26 +354,31 @@ export class MockEngine {
    * default branch. In the extension the host computes this from git; in the
    * preview it stands in for that push.
    */
-  setDefaultBranchStats(worktreeId: string, stats: DiffStats | undefined): void {
+  setBaseDiff(worktreeId: string, diff: BaseDiff | undefined): void {
     const wt = this.worktrees.get(worktreeId);
     if (!wt) return;
-    const updated: WorktreeState = { ...wt, defaultBranchStats: stats };
+    const updated: WorktreeState = { ...wt, baseDiff: diff };
     this.worktrees.set(worktreeId, updated);
-    this.emit({ type: 'default-branch-stats-updated', worktreeId, stats });
+    this.emit({ type: 'base-diff-updated', worktreeId, diff });
   }
 
   /**
    * Stand-in for the host's git computation behind the "count against the
    * default branch" setting: the worktree's uncommitted changes plus a
-   * plausible amount of committed work on top, which is what that setting
-   * measures. Deterministic for a given file state so screenshots stay
-   * stable. Worktrees on the default branch get nothing — exactly as the
-   * extension leaves them.
+   * plausible amount of committed work on top, measured against an open PR's
+   * base branch when there is one. Deterministic for a given file state so
+   * screenshots stay stable. Worktrees already on their base get nothing —
+   * exactly as the extension leaves them.
    */
-  applyMockDefaultBranchStats(enabled: boolean): void {
+  applyMockBaseDiff(enabled: boolean): void {
     for (const wt of this.worktrees.values()) {
-      if (!enabled || wt.branch === wt.defaultBranch) {
-        this.setDefaultBranchStats(wt.id, undefined);
+      // Mirrors the host: an open PR's base wins over the repo default.
+      const base =
+        wt.prStatus?.state !== 'merged'
+          ? (wt.prStatus?.baseRef ?? wt.defaultBranch)
+          : wt.defaultBranch;
+      if (!enabled || wt.branch === base) {
+        this.setBaseDiff(wt.id, undefined);
         continue;
       }
       const working = wt.files.reduce(
@@ -385,7 +390,8 @@ export class MockEngine {
         { fileCount: 0, linesAdded: 0, linesRemoved: 0 }
       );
       // Committed-on-the-branch portion, invented but stable.
-      this.setDefaultBranchStats(wt.id, {
+      this.setBaseDiff(wt.id, {
+        base,
         fileCount: working.fileCount + 5,
         linesAdded: working.linesAdded + 120,
         linesRemoved: working.linesRemoved + 35,

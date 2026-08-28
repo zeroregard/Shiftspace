@@ -11,8 +11,8 @@ vi.mock('../../src/git/branch-stats', async () => {
   return { ...actual, getBranchDiffStats: (...args: unknown[]) => getBranchDiffStats(...args) };
 });
 
-const { computeDefaultBranchStats, refreshDefaultBranchStats, getWorktreeDiffCountMode } =
-  await import('../../src/git-data-provider/default-branch-stats');
+const { computeBaseDiff, refreshBaseDiff, getWorktreeDiffCountMode } =
+  await import('../../src/git-data-provider/base-diff');
 
 function mockConfig(settings: Record<string, unknown>): void {
   (vscode.workspace as Record<string, unknown>).getConfiguration = vi.fn(() => ({
@@ -57,9 +57,10 @@ describe('getWorktreeDiffCountMode', () => {
   });
 });
 
-describe('computeDefaultBranchStats', () => {
+describe('computeBaseDiff', () => {
   it('totals the branch diff against the default branch', async () => {
-    expect(await computeDefaultBranchStats(makeWt())).toEqual({
+    expect(await computeBaseDiff(makeWt())).toEqual({
+      base: 'main',
       fileCount: 2,
       linesAdded: 930,
       linesRemoved: 405,
@@ -69,7 +70,8 @@ describe('computeDefaultBranchStats', () => {
 
   it('leaves out files hidden by the ignore patterns', async () => {
     mockConfig({ worktreeDiffCount: 'defaultBranch', ignorePatterns: ['*.yaml'] });
-    expect(await computeDefaultBranchStats(makeWt())).toEqual({
+    expect(await computeBaseDiff(makeWt())).toEqual({
+      base: 'main',
       fileCount: 1,
       linesAdded: 30,
       linesRemoved: 5,
@@ -78,22 +80,39 @@ describe('computeDefaultBranchStats', () => {
 
   it('runs no git command when the counter shows working changes', async () => {
     mockConfig({ worktreeDiffCount: 'working' });
-    expect(await computeDefaultBranchStats(makeWt())).toBeUndefined();
+    expect(await computeBaseDiff(makeWt())).toBeUndefined();
     expect(getBranchDiffStats).not.toHaveBeenCalled();
   });
 
-  it('skips a worktree already on the default branch', async () => {
-    expect(await computeDefaultBranchStats(makeWt({ branch: 'main' }))).toBeUndefined();
+  it('measures against an open PR base instead of the default branch', async () => {
+    const wt = makeWt({
+      prStatus: {
+        number: 7,
+        url: 'u',
+        state: 'open',
+        baseRef: 'stack/part-2',
+        conflicts: false,
+        approved: false,
+        ciStatus: 'none',
+        fetchedAt: 0,
+      },
+    });
+    expect(await computeBaseDiff(wt)).toMatchObject({ base: 'stack/part-2' });
+    expect(getBranchDiffStats).toHaveBeenCalledWith('/repo/feature', 'stack/part-2');
+  });
+
+  it('skips a worktree already sitting on its base branch', async () => {
+    expect(await computeBaseDiff(makeWt({ branch: 'main' }))).toBeUndefined();
     expect(getBranchDiffStats).not.toHaveBeenCalled();
   });
 
   it('reports nothing when git fails', async () => {
     getBranchDiffStats.mockRejectedValue(new Error('not a git repository'));
-    expect(await computeDefaultBranchStats(makeWt())).toBeUndefined();
+    expect(await computeBaseDiff(makeWt())).toBeUndefined();
   });
 });
 
-describe('refreshDefaultBranchStats', () => {
+describe('refreshBaseDiff', () => {
   function makeHost(worktrees: WorktreeState[]) {
     const posted: unknown[] = [];
     return { host: { worktrees, postMessage: (m: unknown) => posted.push(m) }, posted };
@@ -102,39 +121,48 @@ describe('refreshDefaultBranchStats', () => {
   it('stores the stats and tells the views once', async () => {
     const wt = makeWt();
     const { host, posted } = makeHost([wt]);
-    await refreshDefaultBranchStats(host as never, wt);
-    expect(wt.defaultBranchStats).toEqual({ fileCount: 2, linesAdded: 930, linesRemoved: 405 });
+    await refreshBaseDiff(host as never, wt);
+    expect(wt.baseDiff).toEqual({
+      base: 'main',
+      fileCount: 2,
+      linesAdded: 930,
+      linesRemoved: 405,
+    });
     expect(posted).toEqual([
       {
         type: 'event',
         event: {
-          type: 'default-branch-stats-updated',
+          type: 'base-diff-updated',
           worktreeId: 'wt-1',
-          stats: { fileCount: 2, linesAdded: 930, linesRemoved: 405 },
+          diff: { base: 'main', fileCount: 2, linesAdded: 930, linesRemoved: 405 },
         },
       },
     ]);
 
     // Same numbers on the next pass → no redundant message.
-    await refreshDefaultBranchStats(host as never, wt);
+    await refreshBaseDiff(host as never, wt);
     expect(posted).toHaveLength(1);
   });
 
   it('keeps the previous counts when git fails', async () => {
-    const wt = makeWt({ defaultBranchStats: { fileCount: 3, linesAdded: 10, linesRemoved: 1 } });
+    const wt = makeWt({
+      baseDiff: { base: 'main', fileCount: 3, linesAdded: 10, linesRemoved: 1 },
+    });
     const { host, posted } = makeHost([wt]);
     getBranchDiffStats.mockRejectedValue(new Error('index.lock exists'));
-    await refreshDefaultBranchStats(host as never, wt);
-    expect(wt.defaultBranchStats).toEqual({ fileCount: 3, linesAdded: 10, linesRemoved: 1 });
+    await refreshBaseDiff(host as never, wt);
+    expect(wt.baseDiff).toEqual({ base: 'main', fileCount: 3, linesAdded: 10, linesRemoved: 1 });
     expect(posted).toHaveLength(0);
   });
 
   it('clears stale counts once the counter is switched back to working changes', async () => {
-    const wt = makeWt({ defaultBranchStats: { fileCount: 3, linesAdded: 10, linesRemoved: 1 } });
+    const wt = makeWt({
+      baseDiff: { base: 'main', fileCount: 3, linesAdded: 10, linesRemoved: 1 },
+    });
     const { host, posted } = makeHost([wt]);
     mockConfig({ worktreeDiffCount: 'working' });
-    await refreshDefaultBranchStats(host as never, wt);
-    expect(wt.defaultBranchStats).toBeUndefined();
+    await refreshBaseDiff(host as never, wt);
+    expect(wt.baseDiff).toBeUndefined();
     expect(posted).toHaveLength(1);
   });
 });

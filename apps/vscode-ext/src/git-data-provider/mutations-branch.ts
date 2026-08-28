@@ -11,11 +11,19 @@ import {
 import { getFilesForMode } from './diff-mode';
 import type { GitDataProvider } from './index';
 
-/** Handle a diff mode change from the webview. */
+/**
+ * Apply a diff mode to a worktree and push the matching files to the views.
+ *
+ * `remember` records the mode as the user's choice for this branch, which
+ * survives a re-init and stops Shiftspace from moving the selector on its own
+ * later. Pass false for a mode Shiftspace chose itself (following a pull
+ * request's base branch), so the user's own pick still wins if they make one.
+ */
 export async function handleSetDiffMode(
   host: GitDataProvider,
   worktreeId: string,
-  diffMode: DiffMode
+  diffMode: DiffMode,
+  { remember = true }: { remember?: boolean } = {}
 ): Promise<void> {
   const wt = host.worktrees.find((w) => w.id === worktreeId);
   if (!wt) return;
@@ -24,7 +32,7 @@ export async function handleSetDiffMode(
   wt.diffMode = diffMode;
   // Remember the choice so a later re-init (checkout, swap, refresh) doesn't
   // snap this worktree back to its initial mode.
-  host.diffModeOverrides[wt.branch] = diffMode;
+  if (remember) host.diffModeOverrides[wt.branch] = diffMode;
 
   try {
     const { files, branchFiles } = await getFilesForMode(wt);

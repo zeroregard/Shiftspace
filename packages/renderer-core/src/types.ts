@@ -39,6 +39,13 @@ export type PrState = 'open' | 'merged';
 export interface PrStatus {
   /** PR number, e.g. 1234. */
   number: number;
+  /**
+   * Branch the PR merges into. For a stacked PR this is the slice below it,
+   * not the repo's default branch — which is what makes each worktree in a
+   * stack measurable on its own. Undefined for a merged PR, and for a status
+   * cached before this field existed.
+   */
+  baseRef?: string;
   /** Full html URL to the PR. */
   url: string;
   /**
@@ -69,12 +76,22 @@ export interface DiffStats {
   linesRemoved: number;
 }
 
+/** A worktree's change size together with the branch it was measured against. */
+export interface BaseDiff extends DiffStats {
+  /**
+   * The branch these counts compare against — an open PR's base branch when
+   * there is one, otherwise the repo's default branch.
+   */
+  base: string;
+}
+
 /**
  * Which comparison the worktree card's change counter reflects.
  * - `working`       → uncommitted working-tree changes (staged + unstaged)
- * - `defaultBranch` → everything this branch would bring in a PR against the
- *                     repo's default branch: its commits *and* the work not
- *                     committed yet
+ * - `defaultBranch` → everything this branch would bring in a pull request —
+ *                     its commits *and* the work not committed yet — measured
+ *                     against the branch it merges into: an open PR's base
+ *                     branch when there is one, else the repo's default
  */
 export type WorktreeDiffCountMode = 'working' | 'defaultBranch';
 
@@ -90,15 +107,15 @@ export interface WorktreeState {
    */
   branchFiles?: FileChange[];
   /**
-   * Change size of this branch measured against the repo's default branch —
+   * Change size of this branch measured against the branch it merges into —
    * its commits plus everything still uncommitted, i.e. what a PR would show
-   * once the current work is committed. Only populated when the user opted
-   * into `shiftspace.worktreeDiffCount: defaultBranch`, and never for a
-   * worktree already sitting on the default branch (where that measure is
-   * just the working changes). Undefined means "fall back to the
-   * working-tree counts".
+   * once the current work is committed, and which branch that was measured
+   * against. Only populated when the user opted into
+   * `shiftspace.worktreeDiffCount: defaultBranch`, and never for a worktree
+   * already sitting on its base branch (where that measure is just the
+   * working changes). Undefined means "fall back to the working-tree counts".
    */
-  defaultBranchStats?: DiffStats;
+  baseDiff?: BaseDiff;
   process?: { port: number; command: string };
   diffMode: DiffMode;
   defaultBranch: string;
@@ -170,11 +187,7 @@ export type ShiftspaceEvent =
   | { type: 'process-started'; worktreeId: string; port: number; command: string }
   | { type: 'process-stopped'; worktreeId: string }
   | { type: 'pr-status-updated'; worktreeId: string; prStatus: PrStatus | undefined }
-  | {
-      type: 'default-branch-stats-updated';
-      worktreeId: string;
-      stats: DiffStats | undefined;
-    };
+  | { type: 'base-diff-updated'; worktreeId: string; diff: BaseDiff | undefined };
 
 export type WorktreeSortMode = 'last-updated' | 'name' | 'branch';
 
