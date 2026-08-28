@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.10.1] — 2026-08-28
+
+### Fixed
+
+- change counts no longer explode when git can't see the branch point (#180)
+
 ## [0.10.0] — 2026-08-28
 
 ### Added
