@@ -364,10 +364,11 @@ export class MockEngine {
 
   /**
    * Stand-in for the host's git computation behind the "count against the
-   * default branch" setting: derives a plausible committed-work diff from the
-   * worktree's current working changes. Deterministic for a given file state
-   * so screenshots stay stable. Worktrees on the default branch get nothing —
-   * exactly as the extension leaves them.
+   * default branch" setting: the worktree's uncommitted changes plus a
+   * plausible amount of committed work on top, which is what that setting
+   * measures. Deterministic for a given file state so screenshots stay
+   * stable. Worktrees on the default branch get nothing — exactly as the
+   * extension leaves them.
    */
   applyMockDefaultBranchStats(enabled: boolean): void {
     for (const wt of this.worktrees.values()) {
@@ -375,12 +376,19 @@ export class MockEngine {
         this.setDefaultBranchStats(wt.id, undefined);
         continue;
       }
-      const added = wt.files.reduce((sum, f) => sum + f.linesAdded, 0);
-      const removed = wt.files.reduce((sum, f) => sum + f.linesRemoved, 0);
+      const working = wt.files.reduce(
+        (acc, f) => ({
+          fileCount: acc.fileCount + 1,
+          linesAdded: acc.linesAdded + f.linesAdded,
+          linesRemoved: acc.linesRemoved + f.linesRemoved,
+        }),
+        { fileCount: 0, linesAdded: 0, linesRemoved: 0 }
+      );
+      // Committed-on-the-branch portion, invented but stable.
       this.setDefaultBranchStats(wt.id, {
-        fileCount: wt.files.length * 2 + 1,
-        linesAdded: added * 3 + 40,
-        linesRemoved: removed * 2 + 12,
+        fileCount: working.fileCount + 5,
+        linesAdded: working.linesAdded + 120,
+        linesRemoved: working.linesRemoved + 35,
       });
     }
   }
