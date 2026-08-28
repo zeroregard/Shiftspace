@@ -2,6 +2,17 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.10.0] — 2026-08-28
+
+### Added
+
+- worktrees in a stack compare against their pull request's base branch (#178)
+
+### Fixed
+
+- auto-delete only removes worktrees on feature branches (#179)
+- counting against the default branch now includes uncommitted work (#177)
+
 ## [0.9.1] — 2026-08-27
 
 ### Fixed
