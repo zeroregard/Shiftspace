@@ -84,15 +84,15 @@ The `badge` block renders a pill next to the worktree's name. Useful for marking
 
 ## Configuration
 
-| Setting                                   | Description                                                                                                                |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`)                                                         |
-| `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines                                                             |
-| `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                                                                          |
-| `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on)                                                         |
-| `shiftspace.pr.enabled`                   | Show pull request status (CI, approvals, comments, merged) on worktree cards (default: off)                                |
-| `shiftspace.pr.autoDeleteMergedWorktrees` | Delete a worktree automatically once its pull request is merged (default: off)                                             |
-| `shiftspace.worktreeDiffCount`            | Count a worktree's uncommitted changes (default), or its commits plus uncommitted work measured against the default branch |
+| Setting                                   | Description                                                                                                                                                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shiftspace.ignorePatterns`               | Glob patterns for files to hide (e.g., `*.lock`, `**/lang/*.json`)                                                                                                                                      |
+| `shiftspace.additionalActions`            | Personal action buttons beyond what `.shiftspace.json` defines                                                                                                                                          |
+| `shiftspace.insights.codeSmells.enabled`  | Enable/disable code smell detection (default: on)                                                                                                                                                       |
+| `shiftspace.insights.diagnostics.enabled` | Show compiler errors and lint warnings on file nodes (default: on)                                                                                                                                      |
+| `shiftspace.pr.enabled`                   | Show pull request status (CI, approvals, comments, merged) on worktree cards (default: off)                                                                                                             |
+| `shiftspace.pr.autoDeleteMergedWorktrees` | Delete a worktree automatically once its pull request is merged (default: off)                                                                                                                          |
+| `shiftspace.worktreeDiffCount`            | Count a worktree's uncommitted changes (default), or its commits plus uncommitted work measured against the branch it merges into — an open PR's base branch when there is one, else the default branch |
 
 ## Privacy
 

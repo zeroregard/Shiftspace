@@ -114,7 +114,7 @@ export const ControlPanel: React.FC<Props> = ({
   // setting and (re)computes the per-worktree stats the cards read.
   const handleDiffCountMode = (mode: WorktreeDiffCountMode) => {
     setDiffCountMode(mode);
-    engine.applyMockDefaultBranchStats(mode === 'defaultBranch');
+    engine.applyMockBaseDiff(mode === 'defaultBranch');
   };
 
   const toggleAgent = (worktreeId: string, persona: AgentPersona) => {

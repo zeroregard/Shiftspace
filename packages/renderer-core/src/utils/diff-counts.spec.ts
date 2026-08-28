@@ -31,7 +31,7 @@ describe('resolveWorktreeDiffCounts', () => {
 
   it('reports the branch diff, labelled with its base, in default-branch mode', () => {
     const wt = worktree({
-      defaultBranchStats: { fileCount: 7, linesAdded: 120, linesRemoved: 30 },
+      baseDiff: { base: 'main', fileCount: 7, linesAdded: 120, linesRemoved: 30 },
     });
     expect(resolveWorktreeDiffCounts(wt, 'defaultBranch')).toEqual({
       fileCount: 7,
@@ -43,13 +43,20 @@ describe('resolveWorktreeDiffCounts', () => {
 
   it('ignores the branch diff when the counter is set to working changes', () => {
     const wt = worktree({
-      defaultBranchStats: { fileCount: 7, linesAdded: 120, linesRemoved: 30 },
+      baseDiff: { base: 'main', fileCount: 7, linesAdded: 120, linesRemoved: 30 },
     });
     expect(resolveWorktreeDiffCounts(wt, 'working').fileCount).toBe(2);
   });
 
+  it('labels the counts with the PR base the host measured against', () => {
+    const wt = worktree({
+      baseDiff: { base: 'feature/part-2', fileCount: 3, linesAdded: 100, linesRemoved: 10 },
+    });
+    expect(resolveWorktreeDiffCounts(wt, 'defaultBranch').comparedTo).toBe('feature/part-2');
+  });
+
   it('falls back to working changes when the host has no branch diff to show', () => {
-    // A worktree on the default branch, or one whose stats haven't arrived yet.
+    // A worktree on its base branch, or one whose stats haven't arrived yet.
     expect(resolveWorktreeDiffCounts(worktree({ branch: 'main' }), 'defaultBranch')).toEqual({
       fileCount: 2,
       linesAdded: 12,

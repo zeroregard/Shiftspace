@@ -6,6 +6,7 @@ declare global {
       enablePlanPath: (worktreeId: string, planPath?: string, planContent?: string) => void;
       disablePlanPath: (worktreeId: string) => void;
       enableBadgeDescription: (worktreeId: string, description: string) => void;
+      enablePrStatus: (worktreeId: string, prStatus: unknown) => void;
     };
   }
 }
@@ -28,6 +29,31 @@ test.describe('Control panel', () => {
     await expect(canvas.getByText('vs main')).toHaveCount(1);
 
     await page.getByText('working', { exact: true }).click();
+    await expect(canvas.getByText('vs main')).toHaveCount(0);
+  });
+
+  test('card counts follow an open PR base instead of the default branch', async ({ page }) => {
+    await page.goto('/');
+    const canvas = page.locator('.bg-canvas');
+    await canvas.waitFor();
+
+    // A stacked PR: this slice merges into the slice below it, not into main.
+    await page.evaluate(() => {
+      window.__shiftspaceTest?.enablePrStatus('wt-1', {
+        number: 7,
+        url: 'https://github.com/acme/app/pull/7',
+        state: 'open',
+        baseRef: 'stack/part-2',
+        conflicts: false,
+        approved: false,
+        ciStatus: 'passing',
+        fetchedAt: Date.now(),
+      });
+    });
+
+    await page.getByText('vs default').click();
+
+    await expect(canvas.getByText('vs stack/part-2')).toHaveCount(1);
     await expect(canvas.getByText('vs main')).toHaveCount(0);
   });
 

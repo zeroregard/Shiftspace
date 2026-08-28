@@ -1,13 +1,14 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useWorktreeStore, useInspectionStore, useOperationStore } from '../store';
 import { opKey, isOperationPending } from '../store/operation-store';
-import type { DiffMode } from '../types';
+import type { DiffMode, WorktreeState } from '../types';
 import { BranchPicker } from '../overlays/branch-picker';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { PackageSwitcher } from './package-switcher';
 import { SortPicker } from './sort-picker';
-import { useActions } from '../ui/actions-context';
+import { useActions, type ShiftspaceActions } from '../ui/actions-context';
 import { filterCheckoutableBranches } from '../utils/worktree-utils';
+import { getComparisonBase } from '../utils/comparison-base';
 
 const EMPTY_BRANCHES: string[] = [];
 
@@ -20,6 +21,69 @@ function isDiffModeEqual(a: DiffMode, b: DiffMode): boolean {
 interface UnifiedHeaderProps {
   showPackageSwitcher: boolean;
   onSortChange?: (mode: import('../types').WorktreeSortMode) => void;
+}
+
+interface DiffModeOption {
+  key: string;
+  testId: string;
+  label: string;
+  badge?: string;
+  selected: boolean;
+  onSelect: () => void;
+}
+
+/**
+ * The comparison choices offered for a worktree.
+ *
+ * The branch it merges into is promoted next to "Working changes" / "All
+ * files" instead of being buried in the branch list, with a pill naming where
+ * that branch came from: an open pull request's base (so a stacked PR is
+ * compared against the slice below it) or the repo default.
+ */
+function buildDiffModeOptions(
+  wt: WorktreeState | undefined,
+  diffMode: DiffMode,
+  branchList: string[],
+  actions: ShiftspaceActions
+): { staticOptions: DiffModeOption[]; branches: string[] } {
+  if (!wt) return { staticOptions: [], branches: [] };
+
+  const base = getComparisonBase(wt);
+  const showBaseOption = Boolean(base.branch) && wt.branch !== base.branch;
+
+  const staticOptions: DiffModeOption[] = [
+    {
+      key: 'working',
+      testId: 'diff-mode-working',
+      label: 'Working changes',
+      selected: diffMode.type === 'working',
+      onSelect: () => actions.diffModeChange(wt.id, { type: 'working' }),
+    },
+    ...(showBaseOption
+      ? [
+          {
+            key: `default-${base.branch}`,
+            testId: 'diff-mode-default-branch',
+            label: base.branch,
+            badge: base.fromPr ? 'pr base' : 'default',
+            selected: isDiffModeEqual(diffMode, { type: 'branch', branch: base.branch }),
+            onSelect: () => actions.diffModeChange(wt.id, { type: 'branch', branch: base.branch }),
+          },
+        ]
+      : []),
+    {
+      key: 'repo',
+      testId: 'diff-mode-repo',
+      label: 'All files',
+      selected: diffMode.type === 'repo',
+      onSelect: () => actions.diffModeChange(wt.id, { type: 'repo' }),
+    },
+  ];
+
+  return {
+    staticOptions,
+    branches: branchList.filter((b) => b !== wt.branch && !(showBaseOption && b === base.branch)),
+  };
 }
 
 export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHeaderProps) {
@@ -52,54 +116,18 @@ export function UnifiedHeader({ showPackageSwitcher, onSortChange }: UnifiedHead
 
   const checkoutBranches = filterCheckoutableBranches(branchList, occupiedBranches);
   const diffMode: DiffMode = wt?.diffMode ?? { type: 'working' };
-  const defaultBranch = wt?.defaultBranch ?? 'main';
   const modeLabel =
     diffMode.type === 'working'
       ? 'Working changes'
       : diffMode.type === 'repo'
         ? 'All files'
         : `vs ${diffMode.branch}`;
-
-  // The default branch is promoted into the static options (with a "default"
-  // pill) so it sits alongside "Working changes" / "All files" instead of
-  // being buried in the branch list below.
-  const showDefaultOption = Boolean(defaultBranch) && wt?.branch !== defaultBranch;
-
-  const diffModeStaticOptions = wt
-    ? [
-        {
-          key: 'working',
-          testId: 'diff-mode-working',
-          label: 'Working changes',
-          selected: diffMode.type === 'working',
-          onSelect: () => actions.diffModeChange(wt.id, { type: 'working' }),
-        },
-        ...(showDefaultOption
-          ? [
-              {
-                key: `default-${defaultBranch}`,
-                testId: 'diff-mode-default-branch',
-                label: defaultBranch,
-                badge: 'default',
-                selected: isDiffModeEqual(diffMode, { type: 'branch', branch: defaultBranch }),
-                onSelect: () =>
-                  actions.diffModeChange(wt.id, { type: 'branch', branch: defaultBranch }),
-              },
-            ]
-          : []),
-        {
-          key: 'repo',
-          testId: 'diff-mode-repo',
-          label: 'All files',
-          selected: diffMode.type === 'repo',
-          onSelect: () => actions.diffModeChange(wt.id, { type: 'repo' }),
-        },
-      ]
-    : [];
-
-  const diffModeBranches = wt
-    ? branchList.filter((b) => b !== wt.branch && !(showDefaultOption && b === defaultBranch))
-    : [];
+  const { staticOptions: diffModeStaticOptions, branches: diffModeBranches } = buildDiffModeOptions(
+    wt,
+    diffMode,
+    branchList,
+    actions
+  );
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dashed shrink-0">

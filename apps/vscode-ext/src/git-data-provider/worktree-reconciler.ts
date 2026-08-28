@@ -2,7 +2,8 @@ import type { WorktreeState, ShiftspaceEvent } from '@shiftspace/renderer';
 import { log } from '../logger';
 import { detectWorktrees, badgesEqual } from '../git/worktrees';
 import { getFilesForMode } from './diff-mode';
-import { computeDefaultBranchStats } from './default-branch-stats';
+import { computeBaseDiff } from './base-diff';
+import { getComparisonBase } from '@shiftspace/renderer';
 import type { GitDataProvider } from './index';
 
 /**
@@ -133,10 +134,8 @@ async function planReconcile(host: GitDataProvider): Promise<ReconcilePlan | und
 /** Configure a worktree seen for the first time and load its file changes. */
 async function hydrateNewWorktree(host: GitDataProvider, wt: WorktreeState): Promise<void> {
   wt.defaultBranch = host.defaultBranch;
-  wt.diffMode =
-    wt.branch === host.defaultBranch
-      ? { type: 'working' }
-      : { type: 'branch', branch: host.defaultBranch };
+  const base = getComparisonBase(wt).branch;
+  wt.diffMode = wt.branch === base ? { type: 'working' } : { type: 'branch', branch: base };
   try {
     const { files, branchFiles } = await getFilesForMode(wt);
     wt.files = files;
@@ -144,7 +143,7 @@ async function hydrateNewWorktree(host: GitDataProvider, wt: WorktreeState): Pro
   } catch (err) {
     log.error('getFileChanges error for new worktree', wt.path, err);
   }
-  wt.defaultBranchStats = await computeDefaultBranchStats(wt);
+  wt.baseDiff = await computeBaseDiff(wt);
 }
 
 /**
@@ -166,17 +165,20 @@ async function carryOverState(
   // explicitly and a checkout shouldn't silently override it.
   const branchChanged = prevWt.branch !== freshWt.branch;
   freshWt.defaultBranch = host.defaultBranch;
-  freshWt.diffMode =
-    !branchChanged || prevWt.diffMode.type === 'repo'
-      ? prevWt.diffMode
-      : freshWt.branch === host.defaultBranch
-        ? { type: 'working' }
-        : { type: 'branch', branch: host.defaultBranch };
   freshWt.files = prevWt.files;
   freshWt.branchFiles = prevWt.branchFiles;
   freshWt.lastActivityAt = prevWt.lastActivityAt;
+  // Carried over before the base is resolved: a PR's base branch decides what
+  // a checkout compares against.
   if (prevWt.prStatus) freshWt.prStatus = prevWt.prStatus;
-  freshWt.defaultBranchStats = prevWt.defaultBranchStats;
+  const base = getComparisonBase(freshWt).branch;
+  freshWt.diffMode =
+    !branchChanged || prevWt.diffMode.type === 'repo'
+      ? prevWt.diffMode
+      : freshWt.branch === base
+        ? { type: 'working' }
+        : { type: 'branch', branch: base };
+  freshWt.baseDiff = prevWt.baseDiff;
 
   const pathChanged = prevWt.path !== freshWt.path;
   const badgeChanged = !badgesEqual(prevWt.badge, freshWt.badge);
@@ -197,8 +199,8 @@ async function carryOverState(
     }
     // A checkout counts as activity; a rename or a badge edit does not.
     freshWt.lastActivityAt = Date.now();
-    // The new branch has its own diff against the default branch.
-    freshWt.defaultBranchStats = await computeDefaultBranchStats(freshWt);
+    // The new branch has its own diff against its base.
+    freshWt.baseDiff = await computeBaseDiff(freshWt);
   } else if (pathChanged) {
     log.info(`[path] worktree path changed: ${prevWt.path} → ${freshWt.path}`);
   }

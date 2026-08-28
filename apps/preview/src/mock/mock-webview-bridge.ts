@@ -4,7 +4,7 @@ import {
   useSettingsStore,
   type WebviewMessage,
   type PrStatus,
-  type DiffStats,
+  type BaseDiff,
   type WorktreeDiffCountMode,
 } from '@shiftspace/renderer';
 import type { MockGitProvider, OpName } from './mock-git-provider';
@@ -90,8 +90,8 @@ export class MockWebviewBridge {
       setWorktreeDiffCount: (mode: WorktreeDiffCountMode) => {
         useSettingsStore.getState().setWorktreeDiffCount(mode);
       },
-      setDefaultBranchStats: (worktreeId: string, stats: DiffStats | undefined) => {
-        this.engine.setDefaultBranchStats(worktreeId, stats);
+      setBaseDiff: (worktreeId: string, diff: BaseDiff | undefined) => {
+        this.engine.setBaseDiff(worktreeId, diff);
       },
     };
   }

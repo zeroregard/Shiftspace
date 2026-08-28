@@ -30,6 +30,8 @@ export interface RawPrListItem {
   number: number;
   html_url: string;
   head: { sha: string };
+  /** Branch the PR merges into — the slice below it in a stack. */
+  base: { ref: string };
   state: 'open' | 'closed';
   /** ISO timestamp when the PR was merged, null if it was closed unmerged. */
   merged_at: string | null;
@@ -111,6 +113,8 @@ export function mapCiStatus(checks: RawCheckRun[]): CiStatus {
 export interface PrStatusInputs {
   number: number;
   url: string;
+  /** Branch the PR merges into, when the listing reported one. */
+  baseRef?: string;
   detail: RawPrDetail;
   reviews: RawReview[];
   threads: RawReviewThread[] | null;
@@ -123,6 +127,7 @@ export function mapToPrStatus(inputs: PrStatusInputs): PrStatus {
   return {
     number: inputs.number,
     url: inputs.url,
+    baseRef: inputs.baseRef,
     state: 'open',
     conflicts: mapMergeable(inputs.detail),
     approved: mapApproval(inputs.reviews),
@@ -185,7 +190,15 @@ export class GitHubClient {
       this.getReviewThreads(ref, pr.number).catch(() => null), // soft-fail (GraphQL)
       this.getCheckRuns(ref, pr.head.sha),
     ]);
-    return mapToPrStatus({ number: pr.number, url: pr.html_url, detail, reviews, threads, checks });
+    return mapToPrStatus({
+      number: pr.number,
+      url: pr.html_url,
+      baseRef: pr.base?.ref,
+      detail,
+      reviews,
+      threads,
+      checks,
+    });
   }
 
   private async findPr(ref: GitHubRepoRef, branch: string): Promise<RawPrListItem | null> {
