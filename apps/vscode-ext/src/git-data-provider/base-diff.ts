@@ -45,10 +45,28 @@ async function queryBaseDiff(wt: WorktreeState): Promise<BaseDiff | undefined> {
   if (!base || base === wt.branch) return undefined;
   const patterns = getIgnorePatterns();
   const perFile = await getBranchDiffStats(wt.path, base);
+  if (perFile === null) {
+    warnUnmeasurable(wt, base);
+    return undefined;
+  }
   for (const filePath of perFile.keys()) {
     if (isIgnoredByPatterns(filePath, patterns)) perFile.delete(filePath);
   }
   return { base, ...toDiffStats(perFile) };
+}
+
+/** Once per worktree+base per session — this fires on every refresh otherwise. */
+const warnedUnmeasurable = new Set<string>();
+
+function warnUnmeasurable(wt: WorktreeState, base: string): void {
+  const key = `${wt.path} vs ${base}`;
+  if (warnedUnmeasurable.has(key)) return;
+  warnedUnmeasurable.add(key);
+  log.warn(
+    `[baseDiff] ${wt.branch} shares no reachable history with ${base} — ` +
+      `the card falls back to working changes. A shallow clone usually causes ` +
+      `this; \`git fetch --unshallow\` repairs it.`
+  );
 }
 
 /** Error-swallowing wrapper for callers that have no previous value to keep. */

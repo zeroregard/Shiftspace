@@ -112,6 +112,7 @@ export class GitDataProvider implements vscode.Disposable {
       onRefresh: (wt) => void this.refreshWorktree(wt),
       onWorktreesChanged: () => void this.checkForWorktreeChanges(),
       onConfigChanged: () => void reloadAllWithFilter(this),
+      onRemoteChanged: () => void refreshAllBaseDiffs(this),
     });
     this.poller = new Poller({
       getWorktrees: () => this.worktrees,
