@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
-import { useSettingsStore, type WorktreeDiffCountMode } from '@shiftspace/renderer';
+import {
+  useSettingsStore,
+  type WorktreeDiffCountMode,
+  type WorktreeVisibility,
+  type WorktreeVisibilityMode,
+} from '@shiftspace/renderer';
 import type { MockEngine } from '../mock/engine';
 import type { AgentPersona } from '../mock/types';
 
@@ -13,6 +18,14 @@ interface Props {
   resolvedTheme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
+
+const VISIBILITY_MODES: WorktreeVisibilityMode[] = ['always', 'hover', 'off'];
+const VISIBILITY_SECTIONS: { key: keyof WorktreeVisibility; label: string }[] = [
+  { key: 'actions', label: 'actions' },
+  { key: 'githubStatus', label: 'github status' },
+  { key: 'diffCount', label: 'diff count' },
+  { key: 'timestamp', label: 'timestamp' },
+];
 
 const PERSONAS: AgentPersona[] = ['refactor', 'feature', 'bugfix'];
 const PERSONA_LABELS: Record<AgentPersona, string> = {
@@ -90,6 +103,8 @@ export const ControlPanel: React.FC<Props> = ({
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
   const diffCountMode = useSettingsStore((s) => s.worktreeDiffCount);
   const setDiffCountMode = useSettingsStore((s) => s.setWorktreeDiffCount);
+  const visibility = useSettingsStore((s) => s.worktreeVisibility);
+  const setVisibility = useSettingsStore((s) => s.setWorktreeVisibility);
 
   // Auto-collapse on mobile
   useEffect(() => {
@@ -115,6 +130,11 @@ export const ControlPanel: React.FC<Props> = ({
   const handleDiffCountMode = (mode: WorktreeDiffCountMode) => {
     setDiffCountMode(mode);
     engine.applyMockBaseDiff(mode === 'defaultBranch');
+  };
+
+  // Mirrors the host pushing `shiftspace.worktree.visibility.*` to the webview.
+  const handleVisibility = (key: keyof WorktreeVisibility, mode: WorktreeVisibilityMode) => {
+    setVisibility({ ...visibility, [key]: mode });
   };
 
   const toggleAgent = (worktreeId: string, persona: AgentPersona) => {
@@ -210,6 +230,28 @@ export const ControlPanel: React.FC<Props> = ({
             vs default
           </button>
         </div>
+      </div>
+
+      {/* Card section visibility */}
+      <div className="mb-2.5">
+        <div className="text-[9px] text-text-faint mb-1">Card sections</div>
+        {VISIBILITY_SECTIONS.map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-1.5 mb-1">
+            <span className="text-[9px] text-text-faint w-18 shrink-0">{label}</span>
+            <div className="flex gap-1 flex-1">
+              {VISIBILITY_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  data-testid={`visibility-${key}-${mode}`}
+                  onClick={() => handleVisibility(key, mode)}
+                  className={ctrlBtn(visibility[key] === mode, true)}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Worktree agent controls */}

@@ -259,6 +259,70 @@
           "description": "What the file and line counts on a worktree card measure. A worktree already sitting on the branch it would merge into always shows its working changes — there is nothing else to compare against.",
           "scope": "resource"
         },
+        "shiftspace.worktree.visibility.actions": {
+          "type": "string",
+          "enum": [
+            "always",
+            "hover",
+            "off"
+          ],
+          "default": "hover",
+          "enumDescriptions": [
+            "Always visible.",
+            "Fades in while the card is hovered or focused.",
+            "Never shown."
+          ],
+          "description": "When the run buttons for checks and services appear on a worktree card.",
+          "scope": "resource"
+        },
+        "shiftspace.worktree.visibility.githubStatus": {
+          "type": "string",
+          "enum": [
+            "always",
+            "hover",
+            "off"
+          ],
+          "default": "always",
+          "enumDescriptions": [
+            "Always visible.",
+            "Fades in while the card is hovered or focused.",
+            "Never shown."
+          ],
+          "description": "When the pull request status badges — CI, merge conflicts, approval, unresolved comments — appear on a worktree card.",
+          "scope": "resource"
+        },
+        "shiftspace.worktree.visibility.diffCount": {
+          "type": "string",
+          "enum": [
+            "always",
+            "hover",
+            "off"
+          ],
+          "default": "always",
+          "enumDescriptions": [
+            "Always visible.",
+            "Fades in while the card is hovered or focused.",
+            "Never shown."
+          ],
+          "description": "When the changed-file and line counts appear on a worktree card.",
+          "scope": "resource"
+        },
+        "shiftspace.worktree.visibility.timestamp": {
+          "type": "string",
+          "enum": [
+            "always",
+            "hover",
+            "off"
+          ],
+          "default": "always",
+          "enumDescriptions": [
+            "Always visible.",
+            "Fades in while the card is hovered or focused.",
+            "Never shown."
+          ],
+          "description": "When the last-activity timestamp appears on a worktree card.",
+          "scope": "resource"
+        },
         "shiftspace.ticketUrlTemplate": {
           "type": "string",
           "default": "",

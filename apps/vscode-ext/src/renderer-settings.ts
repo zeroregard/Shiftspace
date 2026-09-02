@@ -1,13 +1,32 @@
 import * as vscode from 'vscode';
-import type { WorktreeDiffCountMode } from '@shiftspace/renderer';
+import type { WorktreeDiffCountMode, WorktreeVisibility } from '@shiftspace/renderer';
+import { DEFAULT_WORKTREE_VISIBILITY, toWorktreeVisibilityMode } from '@shiftspace/renderer';
 
 /** Settings the renderer reads directly, pushed to every webview on open and on change. */
 export interface RendererSettings {
   ticketUrlTemplate: string;
   worktreeDiffCount: WorktreeDiffCountMode;
+  worktreeVisibility: WorktreeVisibility;
 }
 
-const KEYS = ['shiftspace.ticketUrlTemplate', 'shiftspace.worktreeDiffCount'];
+const VISIBILITY_KEYS = ['actions', 'githubStatus', 'diffCount', 'timestamp'] as const;
+
+const KEYS = [
+  'shiftspace.ticketUrlTemplate',
+  'shiftspace.worktreeDiffCount',
+  ...VISIBILITY_KEYS.map((k) => `shiftspace.worktree.visibility.${k}`),
+];
+
+function readWorktreeVisibility(cfg: vscode.WorkspaceConfiguration): WorktreeVisibility {
+  const visibility = { ...DEFAULT_WORKTREE_VISIBILITY };
+  for (const key of VISIBILITY_KEYS) {
+    visibility[key] = toWorktreeVisibilityMode(
+      cfg.get<string>(`worktree.visibility.${key}`),
+      DEFAULT_WORKTREE_VISIBILITY[key]
+    );
+  }
+  return visibility;
+}
 
 export function readRendererSettings(): RendererSettings {
   const cfg = vscode.workspace.getConfiguration('shiftspace');
@@ -15,6 +34,7 @@ export function readRendererSettings(): RendererSettings {
   return {
     ticketUrlTemplate: cfg.get<string>('ticketUrlTemplate', ''),
     worktreeDiffCount: diffCount === 'defaultBranch' ? 'defaultBranch' : 'working',
+    worktreeVisibility: readWorktreeVisibility(cfg),
   };
 }
 

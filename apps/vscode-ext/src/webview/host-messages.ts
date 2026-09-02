@@ -14,6 +14,7 @@ import type {
   ShiftspaceEvent,
   DiffMode,
   WorktreeDiffCountMode,
+  WorktreeVisibility,
   FileChange,
   ActionConfig,
   ActionStatus,
@@ -95,6 +96,7 @@ export type HostMessage =
       type: 'settings-update';
       ticketUrlTemplate: string;
       worktreeDiffCount: WorktreeDiffCountMode;
+      worktreeVisibility: WorktreeVisibility;
     };
 
 export function handleCoreMessage(
@@ -155,6 +157,7 @@ export function handleCoreMessage(
     case 'settings-update':
       useSettingsStore.getState().setTicketUrlTemplate(msg.ticketUrlTemplate);
       useSettingsStore.getState().setWorktreeDiffCount(msg.worktreeDiffCount);
+      useSettingsStore.getState().setWorktreeVisibility(msg.worktreeVisibility);
       return true;
     default:
       return false;

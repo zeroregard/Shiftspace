@@ -6,6 +6,7 @@ import {
   type PrStatus,
   type BaseDiff,
   type WorktreeDiffCountMode,
+  type WorktreeVisibility,
 } from '@shiftspace/renderer';
 import type { MockGitProvider, OpName } from './mock-git-provider';
 import type { MockEngine } from './engine';
@@ -89,6 +90,11 @@ export class MockWebviewBridge {
       // so the default-branch counter can be exercised end to end.
       setWorktreeDiffCount: (mode: WorktreeDiffCountMode) => {
         useSettingsStore.getState().setWorktreeDiffCount(mode);
+      },
+      // Mirror the host's `settings-update` push of `shiftspace.worktree.visibility.*`.
+      setWorktreeVisibility: (visibility: Partial<WorktreeVisibility>) => {
+        const store = useSettingsStore.getState();
+        store.setWorktreeVisibility({ ...store.worktreeVisibility, ...visibility });
       },
       setBaseDiff: (worktreeId: string, diff: BaseDiff | undefined) => {
         this.engine.setBaseDiff(worktreeId, diff);

@@ -16,6 +16,8 @@ export type {
   DiffStats,
   BaseDiff,
   WorktreeDiffCountMode,
+  WorktreeVisibility,
+  WorktreeVisibilityMode,
   WorktreeSortMode,
   ActionConfig,
   ActionState,
@@ -30,6 +32,7 @@ export type {
   InsightDetail,
   FileDiagnosticSummary,
 } from './types';
+export { DEFAULT_WORKTREE_VISIBILITY } from './types';
 
 // Canvas
 export { TreeCanvas, type LayoutNode, type LayoutEdge, type PanZoomConfig } from './tree-canvas';
@@ -102,6 +105,7 @@ export { ConfirmPopover } from './overlays/confirm-popover';
 
 // Utils
 export { storeKey, storeKeyPrefix } from './utils/store-keys';
+export { worktreeVisibilityClass, toWorktreeVisibilityMode } from './utils/worktree-visibility';
 export { filterCheckoutableBranches } from './utils/worktree-utils';
 export { deriveActionType, statusIcon, statusColor } from './utils/action-utils';
 export {

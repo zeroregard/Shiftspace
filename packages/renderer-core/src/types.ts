@@ -95,6 +95,37 @@ export interface BaseDiff extends DiffStats {
  */
 export type WorktreeDiffCountMode = 'working' | 'defaultBranch';
 
+/**
+ * How much of a worktree card is on screen at rest.
+ * - `always` → the section is always visible
+ * - `hover`  → the section fades in while the card is hovered or focused, so
+ *              the card stays quiet at rest without changing height
+ * - `off`    → the section is never rendered
+ *
+ * The worktree name and its branch are not configurable — a card without them
+ * is unidentifiable, so they always show.
+ */
+export type WorktreeVisibilityMode = 'always' | 'hover' | 'off';
+
+/** Per-section visibility for the worktree card (`shiftspace.worktree.visibility.*`). */
+export interface WorktreeVisibility {
+  /** The check / service action buttons. */
+  actions: WorktreeVisibilityMode;
+  /** Pull request status badges: CI, conflicts, approval, unresolved comments. */
+  githubStatus: WorktreeVisibilityMode;
+  /** The file / line change counter. */
+  diffCount: WorktreeVisibilityMode;
+  /** The relative "last activity" timestamp. */
+  timestamp: WorktreeVisibilityMode;
+}
+
+export const DEFAULT_WORKTREE_VISIBILITY: WorktreeVisibility = {
+  actions: 'hover',
+  githubStatus: 'always',
+  diffCount: 'always',
+  timestamp: 'always',
+};
+
 export interface WorktreeState {
   id: string;
   path: string;
