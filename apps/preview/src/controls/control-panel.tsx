@@ -185,96 +185,101 @@ export const ControlPanel: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Speed */}
-      <div className="mb-2.5">
-        <div className="text-[9px] text-text-faint mb-1">Speed: {speed.toFixed(1)}x</div>
-        <input
-          type="range"
-          min={0.1}
-          max={5}
-          step={0.1}
-          value={speed}
-          onChange={(e) => handleSpeedChange(Number(e.target.value))}
-          style={{ accentColor: 'var(--color-teal)' }}
-          className="w-full h-0.5"
-        />
-      </div>
+      {/* Everything below the header scrolls. The panel is a fixed overlay on
+          top of the canvas, so an uncapped height would creep up over the
+          worktree cards and swallow clicks meant for them. */}
+      <div className="max-h-72 overflow-y-auto">
+        {/* Speed */}
+        <div className="mb-2.5">
+          <div className="text-[9px] text-text-faint mb-1">Speed: {speed.toFixed(1)}x</div>
+          <input
+            type="range"
+            min={0.1}
+            max={5}
+            step={0.1}
+            value={speed}
+            onChange={(e) => handleSpeedChange(Number(e.target.value))}
+            style={{ accentColor: 'var(--color-teal)' }}
+            className="w-full h-0.5"
+          />
+        </div>
 
-      {/* Pause / Reset / Add */}
-      <div className="flex gap-1.5 mb-2.5">
-        <button onClick={handlePause} className={ctrlBtn(paused)}>
-          {paused ? '▶ resume' : '⏸ pause'}
-        </button>
-        <button onClick={onReset} className={ctrlBtn(false)}>
-          ↻ reset
-        </button>
-        <button onClick={onAddWorktree} className={ctrlBtn(false)}>
-          + wt
-        </button>
-      </div>
-
-      {/* Diff counter comparison */}
-      <div className="mb-2.5">
-        <div className="text-[9px] text-text-faint mb-1">Card diff count</div>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => handleDiffCountMode('working')}
-            className={ctrlBtn(diffCountMode === 'working', true)}
-          >
-            working
+        {/* Pause / Reset / Add */}
+        <div className="flex gap-1.5 mb-2.5">
+          <button onClick={handlePause} className={ctrlBtn(paused)}>
+            {paused ? '▶ resume' : '⏸ pause'}
           </button>
-          <button
-            onClick={() => handleDiffCountMode('defaultBranch')}
-            className={ctrlBtn(diffCountMode === 'defaultBranch', true)}
-          >
-            vs default
+          <button onClick={onReset} className={ctrlBtn(false)}>
+            ↻ reset
+          </button>
+          <button onClick={onAddWorktree} className={ctrlBtn(false)}>
+            + wt
           </button>
         </div>
-      </div>
 
-      {/* Card section visibility */}
-      <div className="mb-2.5">
-        <div className="text-[9px] text-text-faint mb-1">Card sections</div>
-        {VISIBILITY_SECTIONS.map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-1.5 mb-1">
-            <span className="text-[9px] text-text-faint w-18 shrink-0">{label}</span>
-            <div className="flex gap-1 flex-1">
-              {VISIBILITY_MODES.map((mode) => (
-                <button
-                  key={mode}
-                  data-testid={`visibility-${key}-${mode}`}
-                  onClick={() => handleVisibility(key, mode)}
-                  className={ctrlBtn(visibility[key] === mode, true)}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
+        {/* Diff counter comparison */}
+        <div className="mb-2.5">
+          <div className="text-[9px] text-text-faint mb-1">Card diff count</div>
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => handleDiffCountMode('working')}
+              className={ctrlBtn(diffCountMode === 'working', true)}
+            >
+              working
+            </button>
+            <button
+              onClick={() => handleDiffCountMode('defaultBranch')}
+              className={ctrlBtn(diffCountMode === 'defaultBranch', true)}
+            >
+              vs default
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Worktree agent controls */}
-      <div>
-        {worktreeIds.map((id) => (
-          <div key={id} className="mb-1.5 pb-1.5 border-b border-border-default/50">
-            <div className="text-[9px] text-text-faint mb-1">{id}</div>
-            <div className="flex gap-1 items-center">
-              {PERSONAS.map((persona) => (
-                <button
-                  key={persona}
-                  onClick={() => toggleAgent(id, persona)}
-                  className={ctrlBtn(agentStates[id] === persona, true)}
-                >
-                  {PERSONA_LABELS[persona]}
-                </button>
-              ))}
-              <button onClick={() => onRemoveWorktree(id)} className={ctrlBtn(false, true)}>
-                ✕
-              </button>
+        {/* Card section visibility */}
+        <div className="mb-2.5">
+          <div className="text-[9px] text-text-faint mb-1">Card sections</div>
+          {VISIBILITY_SECTIONS.map(({ key, label }) => (
+            <div key={key} className="flex items-center gap-1.5 mb-1">
+              <span className="text-[9px] text-text-faint w-18 shrink-0">{label}</span>
+              <div className="flex gap-1 flex-1">
+                {VISIBILITY_MODES.map((mode) => (
+                  <button
+                    key={mode}
+                    data-testid={`visibility-${key}-${mode}`}
+                    onClick={() => handleVisibility(key, mode)}
+                    className={ctrlBtn(visibility[key] === mode, true)}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Worktree agent controls */}
+        <div>
+          {worktreeIds.map((id) => (
+            <div key={id} className="mb-1.5 pb-1.5 border-b border-border-default/50">
+              <div className="text-[9px] text-text-faint mb-1">{id}</div>
+              <div className="flex gap-1 items-center">
+                {PERSONAS.map((persona) => (
+                  <button
+                    key={persona}
+                    onClick={() => toggleAgent(id, persona)}
+                    className={ctrlBtn(agentStates[id] === persona, true)}
+                  >
+                    {PERSONA_LABELS[persona]}
+                  </button>
+                ))}
+                <button onClick={() => onRemoveWorktree(id)} className={ctrlBtn(false, true)}>
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
