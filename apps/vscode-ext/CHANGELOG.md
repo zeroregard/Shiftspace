@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.11.0] — 2026-09-03
+
+### Added
+
+- choose which parts of a worktree card show at rest, on hover, or not at all (#181)
+
 ## [0.10.1] — 2026-08-28
 
 ### Fixed
