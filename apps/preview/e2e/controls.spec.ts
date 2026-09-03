@@ -7,6 +7,7 @@ declare global {
       disablePlanPath: (worktreeId: string) => void;
       enableBadgeDescription: (worktreeId: string, description: string) => void;
       enablePrStatus: (worktreeId: string, prStatus: unknown) => void;
+      setWorktreeVisibility: (visibility: Record<string, string>) => void;
     };
   }
 }
@@ -55,6 +56,52 @@ test.describe('Control panel', () => {
 
     await expect(canvas.getByText('vs stack/part-2')).toHaveCount(1);
     await expect(canvas.getByText('vs main')).toHaveCount(0);
+  });
+
+  test('card sections follow their visibility setting', async ({ page }) => {
+    await page.goto('/');
+    const canvas = page.locator('.bg-canvas');
+    await canvas.waitFor();
+
+    const opacity = (testId: string) =>
+      page.getByTestId(testId).evaluate((el) => getComputedStyle(el).opacity);
+
+    // Defaults: the run buttons stay out of the way until the card is hovered,
+    // everything else reads at rest.
+    expect(await opacity('worktree-actions-wt-0')).toBe('0');
+    expect(await opacity('worktree-diff-count-wt-0')).toBe('1');
+    expect(await opacity('worktree-timestamp-wt-0')).toBe('1');
+
+    // Hovering the card brings the run buttons in.
+    await page.getByTestId('worktree-diff-count-wt-0').hover();
+    await expect.poll(() => opacity('worktree-actions-wt-0'), { timeout: 2000 }).toBe('1');
+
+    // 'always' pins a section on screen regardless of the pointer.
+    await page.getByTestId('visibility-actions-always').click();
+    await page.getByTestId('visibility-timestamp-hover').click();
+    await page.mouse.move(0, 0);
+    await expect.poll(() => opacity('worktree-actions-wt-0'), { timeout: 2000 }).toBe('1');
+    await expect.poll(() => opacity('worktree-timestamp-wt-0'), { timeout: 2000 }).toBe('0');
+
+    // 'off' removes the section entirely rather than fading it.
+    await page.getByTestId('visibility-diffCount-off').click();
+    await page.getByTestId('visibility-actions-off').click();
+    await expect(page.getByTestId('worktree-diff-count-wt-0')).toHaveCount(0);
+    await expect(page.getByTestId('worktree-actions-wt-0')).toHaveCount(0);
+  });
+
+  test('worktree name and branch are always shown', async ({ page }) => {
+    await page.goto('/');
+    const canvas = page.locator('.bg-canvas');
+    await canvas.waitFor();
+
+    // Every configurable section off — the card must still identify itself.
+    for (const key of ['actions', 'githubStatus', 'diffCount', 'timestamp']) {
+      await page.getByTestId(`visibility-${key}-off`).click();
+    }
+
+    await expect(page.getByTestId('enter-inspection-wt-0')).toBeVisible();
+    await expect(canvas.getByTitle('feature/auth')).toBeVisible();
   });
 
   test('control panel is visible', async ({ page }) => {

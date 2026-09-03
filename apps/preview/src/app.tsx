@@ -5,13 +5,12 @@ import {
   useActionStore,
   useInsightStore,
   usePackageStore,
-  useSettingsStore,
 } from '@shiftspace/renderer';
 import type { ShiftspaceEvent } from '@shiftspace/renderer';
 import { MockEngine } from './mock/engine';
 import { MockGitProvider } from './mock/mock-git-provider';
 import { MockWebviewBridge } from './mock/mock-webview-bridge';
-import { MOCK_ACTION_CONFIGS, MOCK_PIPELINES, getMockInitialStates } from './mock/actions';
+import { getMockInitialStates } from './mock/actions';
 import { ControlPanel } from './controls/control-panel';
 import {
   MOCK_CODE_SMELL_DETAIL_WT0,
@@ -19,6 +18,7 @@ import {
   MOCK_DIAGNOSTICS_WT0,
   MOCK_DIAGNOSTICS_WT1,
 } from './mock-data';
+import { useMockHostDefaults } from './use-mock-host-defaults';
 import { useSimulationHandlers } from './use-simulation-handlers';
 import { useTheme } from './use-theme';
 
@@ -29,11 +29,9 @@ export const App: React.FC = () => {
   const [resetKey, setResetKey] = useState(0);
   const theme = useTheme();
 
-  const { setActionConfigs, setPipelines, setActionState } = useActionStore();
+  const { setActionState } = useActionStore();
   const { setInsightDetail, setFileDiagnostics } = useInsightStore();
   const { setSelectedPackage, setAvailablePackages } = usePackageStore();
-  const setTicketUrlTemplate = useSettingsStore((s) => s.setTicketUrlTemplate);
-  const setWorktreeDiffCount = useSettingsStore((s) => s.setWorktreeDiffCount);
 
   if (!engineRef.current) {
     engineRef.current = new MockEngine();
@@ -73,15 +71,7 @@ export const App: React.FC = () => {
     bridgeRef.current?.postMessage({ type: 'file-click', worktreeId, filePath, line });
   };
 
-  // Initialize mock action configs and pipelines once on mount / reset
-  useEffect(() => {
-    setActionConfigs(MOCK_ACTION_CONFIGS);
-    setPipelines(MOCK_PIPELINES);
-    // Mirror the extension's `settings-update` push. Empty by default so the
-    // ticket link stays hidden until a control-panel input / test hook sets it.
-    setTicketUrlTemplate('');
-    setWorktreeDiffCount('working');
-  }, [resetKey, setActionConfigs, setPipelines, setTicketUrlTemplate, setWorktreeDiffCount]);
+  useMockHostDefaults(resetKey);
 
   useEffect(() => {
     const engine = engineRef.current!;

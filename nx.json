@@ -15,6 +15,7 @@
       "{workspaceRoot}/apps/preview/index.html",
       "{workspaceRoot}/apps/preview/vite.config.ts",
       "{workspaceRoot}/apps/preview/src/app.tsx",
+      "{workspaceRoot}/apps/preview/src/use-mock-host-defaults.ts",
       "{workspaceRoot}/apps/preview/src/main.tsx",
       "{workspaceRoot}/apps/preview/src/styles.css",
       "sharedGlobals"

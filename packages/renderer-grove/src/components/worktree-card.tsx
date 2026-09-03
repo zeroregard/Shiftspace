@@ -17,6 +17,7 @@ import {
   useActions,
   useWorktreeRename,
   useRelativeTime,
+  worktreeVisibilityClass,
   AnimatedTimestamp,
   opKey,
   isOperationPending,
@@ -110,6 +111,11 @@ export function WorktreeCard({
   );
 
   const diffCountMode = useSettingsStore((s) => s.worktreeDiffCount);
+  const visibility = useSettingsStore((s) => s.worktreeVisibility);
+  const actionsClass = worktreeVisibilityClass(visibility.actions);
+  const githubStatusClass = worktreeVisibilityClass(visibility.githubStatus);
+  const diffCountClass = worktreeVisibilityClass(visibility.diffCount);
+  const timestampClass = worktreeVisibilityClass(visibility.timestamp);
   const counts = resolveWorktreeDiffCounts(wt, diffCountMode);
   const relativeTime = useRelativeTime(wt.lastActivityAt);
   const folderName = wt.path.split('/').filter(Boolean).pop() ?? wt.path;
@@ -218,12 +224,14 @@ export function WorktreeCard({
           )}
           {wt.planPath && !isRenaming && <PlanButton worktreeId={wt.id} planPath={wt.planPath} />}
           {ticketUrl && !isRenaming && <TicketLinkButton worktreeId={wt.id} url={ticketUrl} />}
-          {wt.prStatus && !isRenaming && (
-            <PrStatusBadges
-              prStatus={wt.prStatus}
-              worktreeId={wt.id}
-              canDelete={!wt.isMainWorktree}
-            />
+          {wt.prStatus && !isRenaming && githubStatusClass !== null && (
+            <span className={githubStatusClass}>
+              <PrStatusBadges
+                prStatus={wt.prStatus}
+                worktreeId={wt.id}
+                canDelete={!wt.isMainWorktree}
+              />
+            </span>
           )}
           {wt.badge && !isRenaming && (
             <WorktreeBadge
@@ -237,9 +245,10 @@ export function WorktreeCard({
       </div>
 
       {/* Action buttons (hidden in slim variant) */}
-      {variant === 'full' && (
+      {variant === 'full' && actionsClass !== null && (
         <div
-          className="flex flex-col"
+          className={`flex flex-col ${actionsClass}`}
+          data-testid={`worktree-actions-${wt.id}`}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -248,26 +257,38 @@ export function WorktreeCard({
       )}
 
       {/* Stats */}
-      <div className="flex items-center justify-between text-11">
-        <span
-          className="flex items-center gap-1.5"
-          title={
-            counts.comparedTo
-              ? `Committed and uncommitted changes on this branch, compared to ${counts.comparedTo}`
-              : 'Uncommitted changes in the working tree'
-          }
-        >
-          <span className="text-text-muted">
-            {counts.fileCount} file{counts.fileCount !== 1 ? 's' : ''}
-          </span>
-          <span className="text-status-added">+{counts.linesAdded}</span>
-          <span className="text-status-deleted">-{counts.linesRemoved}</span>
-          {counts.comparedTo && (
-            <span className="text-text-muted truncate">vs {counts.comparedTo}</span>
+      {(diffCountClass !== null || timestampClass !== null) && (
+        <div className="flex items-center justify-between text-11">
+          {diffCountClass !== null && (
+            <span
+              className={`flex items-center gap-1.5 ${diffCountClass}`}
+              data-testid={`worktree-diff-count-${wt.id}`}
+              title={
+                counts.comparedTo
+                  ? `Committed and uncommitted changes on this branch, compared to ${counts.comparedTo}`
+                  : 'Uncommitted changes in the working tree'
+              }
+            >
+              <span className="text-text-muted">
+                {counts.fileCount} file{counts.fileCount !== 1 ? 's' : ''}
+              </span>
+              <span className="text-status-added">+{counts.linesAdded}</span>
+              <span className="text-status-deleted">-{counts.linesRemoved}</span>
+              {counts.comparedTo && (
+                <span className="text-text-muted truncate">vs {counts.comparedTo}</span>
+              )}
+            </span>
           )}
-        </span>
-        <AnimatedTimestamp value={relativeTime} />
-      </div>
+          {timestampClass !== null && (
+            <span
+              className={`ml-auto ${timestampClass}`}
+              data-testid={`worktree-timestamp-${wt.id}`}
+            >
+              <AnimatedTimestamp value={relativeTime} />
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

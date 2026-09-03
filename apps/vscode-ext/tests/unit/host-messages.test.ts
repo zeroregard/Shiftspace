@@ -6,7 +6,11 @@
  * comparison, and ticket links never appeared there either.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useSettingsStore, useWorktreeStore } from '@shiftspace/renderer';
+import {
+  DEFAULT_WORKTREE_VISIBILITY,
+  useSettingsStore,
+  useWorktreeStore,
+} from '@shiftspace/renderer';
 import {
   handleCoreMessage,
   handleHostMessage,
@@ -16,7 +20,11 @@ import {
 const noop = () => {};
 
 beforeEach(() => {
-  useSettingsStore.setState({ ticketUrlTemplate: '', worktreeDiffCount: 'working' });
+  useSettingsStore.setState({
+    ticketUrlTemplate: '',
+    worktreeDiffCount: 'working',
+    worktreeVisibility: DEFAULT_WORKTREE_VISIBILITY,
+  });
 });
 
 describe('handleCoreMessage', () => {
@@ -28,6 +36,12 @@ describe('handleCoreMessage', () => {
         type: 'settings-update',
         ticketUrlTemplate: 'https://linear.app/acme/issue/{ticket}',
         worktreeDiffCount: 'defaultBranch',
+        worktreeVisibility: {
+          actions: 'always',
+          githubStatus: 'off',
+          diffCount: 'hover',
+          timestamp: 'off',
+        },
       },
       noop
     );
@@ -35,6 +49,12 @@ describe('handleCoreMessage', () => {
     expect(useSettingsStore.getState()).toMatchObject({
       ticketUrlTemplate: 'https://linear.app/acme/issue/{ticket}',
       worktreeDiffCount: 'defaultBranch',
+      worktreeVisibility: {
+        actions: 'always',
+        githubStatus: 'off',
+        diffCount: 'hover',
+        timestamp: 'off',
+      },
     });
   });
 
