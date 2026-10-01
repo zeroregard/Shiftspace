@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.11.1] — 2026-10-01
+
+### Fixed
+
+- renaming a worktree no longer flashes an empty slot in the list (#182)
+
 ## [0.11.0] — 2026-09-03
 
 ### Added
