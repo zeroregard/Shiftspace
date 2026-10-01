@@ -16,6 +16,7 @@ import type {
 export function resetAllStores(): void {
   useWorktreeStore.setState({
     worktrees: new Map(),
+    cardKeys: new Map(),
     branchLists: new Map(),
     lastFetchAt: new Map(),
     planContents: new Map(),

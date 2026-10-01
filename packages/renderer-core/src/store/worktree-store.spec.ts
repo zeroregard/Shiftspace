@@ -135,3 +135,102 @@ describe('useWorktreeStore – worktree removal lifecycle', () => {
     expect(secondRef.get(opKey.removeWorktree('wt-1'))?.status).toBe('pending');
   });
 });
+
+describe('useWorktreeStore – card keys', () => {
+  beforeEach(() => {
+    useWorktreeStore.setState({ worktrees: new Map(), cardKeys: new Map() });
+  });
+
+  const keyOf = (id: string) => useWorktreeStore.getState().cardKeys.get(id);
+
+  function seedThree() {
+    useWorktreeStore
+      .getState()
+      .setWorktrees([
+        makeWt({ id: '/repo/a', path: '/repo/a', branch: 'a' }),
+        makeWt({ id: '/repo/b', path: '/repo/b', branch: 'b' }),
+        makeWt({ id: '/repo/c', path: '/repo/c', branch: 'c' }),
+      ]);
+  }
+
+  function rename(from: string, to: string) {
+    const prev = useWorktreeStore.getState().worktrees.get(from)!;
+    useWorktreeStore.getState().applyEvent({
+      type: 'worktree-renamed',
+      oldWorktreeId: from,
+      worktree: { ...prev, id: to, path: to },
+    });
+  }
+
+  it('gives every worktree its own key', () => {
+    seedThree();
+    const keys = ['/repo/a', '/repo/b', '/repo/c'].map(keyOf);
+    expect(keys.every(Boolean)).toBe(true);
+    expect(new Set(keys).size).toBe(3);
+  });
+
+  it('carries the key over to the new id on rename, so the card is not re-mounted', () => {
+    seedThree();
+    const before = keyOf('/repo/c');
+    rename('/repo/c', '/repo/z');
+    expect(keyOf('/repo/z')).toBe(before);
+    expect(keyOf('/repo/c')).toBeUndefined();
+    expect(useWorktreeStore.getState().cardKeys.size).toBe(3);
+  });
+
+  it('keeps the key through repeated renames and a full re-init', () => {
+    seedThree();
+    const before = keyOf('/repo/c');
+    rename('/repo/c', '/repo/z');
+    rename('/repo/z', '/repo/y');
+    useWorktreeStore.getState().setWorktrees([...useWorktreeStore.getState().worktrees.values()]);
+    expect(keyOf('/repo/y')).toBe(before);
+  });
+
+  it('keeps the key when the branch changes', () => {
+    seedThree();
+    const before = keyOf('/repo/b');
+    const prev = useWorktreeStore.getState().worktrees.get('/repo/b')!;
+    useWorktreeStore.getState().applyEvent({
+      type: 'worktree-added',
+      worktree: { ...prev, branch: 'other' },
+    });
+    expect(keyOf('/repo/b')).toBe(before);
+  });
+
+  it('gives a new worktree at a renamed-away path a fresh key', () => {
+    seedThree();
+    rename('/repo/c', '/repo/z');
+    useWorktreeStore.getState().applyEvent({
+      type: 'worktree-added',
+      worktree: makeWt({ id: '/repo/c', path: '/repo/c', branch: 'c2' }),
+    });
+    expect(keyOf('/repo/c')).toBeDefined();
+    expect(keyOf('/repo/c')).not.toBe(keyOf('/repo/z'));
+  });
+
+  it('drops the key of a removed worktree', () => {
+    seedThree();
+    useWorktreeStore.getState().applyEvent({ type: 'worktree-removed', worktreeId: '/repo/b' });
+    expect(keyOf('/repo/b')).toBeUndefined();
+    expect(useWorktreeStore.getState().cardKeys.size).toBe(2);
+  });
+
+  it('leaves the key map untouched for events that do not add, remove or rename', () => {
+    seedThree();
+    const before = useWorktreeStore.getState().cardKeys;
+    useWorktreeStore.getState().applyEvent({
+      type: 'file-changed',
+      worktreeId: '/repo/a',
+      file: {
+        path: 'x.ts',
+        status: 'modified',
+        staged: false,
+        linesAdded: 1,
+        linesRemoved: 0,
+        lastChangedAt: 2_000,
+      },
+    });
+    expect(useWorktreeStore.getState().cardKeys).toBe(before);
+  });
+});

@@ -31,6 +31,7 @@ function WorktreeCardError() {
 export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   const initialized = useWorktreeStore((s) => s.initialized);
   const sortMode = useWorktreeStore((s) => s.sortMode);
+  const cardKeys = useWorktreeStore((s) => s.cardKeys);
   const addingWorktree = useOperationStore((s) =>
     isOperationPending(s.operations, opKey.addWorktree)
   );
@@ -54,28 +55,31 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
           <LayoutGroup>
             <div className="flex flex-col gap-3">
               <AnimatePresence>
-                {sorted.map((wt) => (
-                  <motion.div
-                    key={wt.id}
-                    layout
-                    layoutId={wt.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  >
-                    <ErrorBoundary
-                      resetKey={`${wt.branch}:${wt.path}`}
-                      fallback={<WorktreeCardError />}
+                {sorted.map((wt) => {
+                  const cardKey = cardKeys.get(wt.id) ?? wt.id;
+                  return (
+                    <motion.div
+                      key={cardKey}
+                      layout
+                      layoutId={cardKey}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     >
-                      <WorktreeCard
-                        worktree={wt}
-                        variant="slim"
-                        onWorktreeClick={onWorktreeClick}
-                      />
-                    </ErrorBoundary>
-                  </motion.div>
-                ))}
+                      <ErrorBoundary
+                        resetKey={`${wt.branch}:${wt.path}`}
+                        fallback={<WorktreeCardError />}
+                      >
+                        <WorktreeCard
+                          worktree={wt}
+                          variant="slim"
+                          onWorktreeClick={onWorktreeClick}
+                        />
+                      </ErrorBoundary>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           </LayoutGroup>

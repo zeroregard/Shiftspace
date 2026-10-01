@@ -28,6 +28,7 @@ function WorktreeCardError() {
 export function GroveView({ worktrees }: GroveViewProps) {
   const actions = useActions();
   const sortMode = useWorktreeStore((s) => s.sortMode);
+  const cardKeys = useWorktreeStore((s) => s.cardKeys);
   const addingWorktree = useOperationStore((s) =>
     isOperationPending(s.operations, opKey.addWorktree)
   );
@@ -42,24 +43,27 @@ export function GroveView({ worktrees }: GroveViewProps) {
           <LayoutGroup>
             <div className="flex flex-row flex-wrap gap-4 items-start">
               <AnimatePresence>
-                {sorted.map((wt) => (
-                  <motion.div
-                    key={wt.branch}
-                    layout
-                    layoutId={wt.branch}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  >
-                    <ErrorBoundary
-                      resetKey={`${wt.branch}:${wt.path}`}
-                      fallback={<WorktreeCardError />}
+                {sorted.map((wt) => {
+                  const cardKey = cardKeys.get(wt.id) ?? wt.id;
+                  return (
+                    <motion.div
+                      key={cardKey}
+                      layout
+                      layoutId={cardKey}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     >
-                      <WorktreeCard worktree={wt} />
-                    </ErrorBoundary>
-                  </motion.div>
-                ))}
+                      <ErrorBoundary
+                        resetKey={`${wt.branch}:${wt.path}`}
+                        fallback={<WorktreeCardError />}
+                      >
+                        <WorktreeCard worktree={wt} />
+                      </ErrorBoundary>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
               {addingWorktree ? (
                 <IconButton
