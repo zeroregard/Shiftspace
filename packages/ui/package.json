@@ -63,6 +63,10 @@
       "import": "./src/loader.tsx",
       "types": "./src/loader.tsx"
     },
+    "./loader-markup": {
+      "import": "./src/loader-markup.ts",
+      "types": "./src/loader-markup.ts"
+    },
     "./worktree-badge": {
       "import": "./src/worktree-badge.tsx",
       "types": "./src/worktree-badge.tsx"

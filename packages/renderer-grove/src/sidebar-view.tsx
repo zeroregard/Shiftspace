@@ -13,6 +13,7 @@ import { WorktreeCard } from './components/worktree-card';
 import { ErrorBoundary } from '@shiftspace/ui/error-boundary';
 import { IconButton } from '@shiftspace/ui/icon-button';
 import { Loader } from '@shiftspace/ui/loader';
+import { SIDEBAR_LOADER_SIZE } from '@shiftspace/ui/loader-markup';
 
 interface SidebarViewProps {
   worktrees: WorktreeState[];
@@ -41,7 +42,7 @@ export function SidebarView({ worktrees, onWorktreeClick }: SidebarViewProps) {
   if (!initialized) {
     return (
       <div className="w-full h-full">
-        <Loader />
+        <Loader size={SIDEBAR_LOADER_SIZE} />
       </div>
     );
   }
