@@ -96,4 +96,5 @@ export {
 export { GroveView, SidebarView, WorktreeCard } from '@shiftspace/renderer-grove';
 export { TooltipProvider } from '@shiftspace/ui/tooltip';
 export { setComponentErrorReporter } from '@shiftspace/ui/error-boundary';
+export { loaderMarkup, SIDEBAR_LOADER_SIZE } from '@shiftspace/ui/loader-markup';
 export { InspectionView } from '@shiftspace/renderer-inspection';
