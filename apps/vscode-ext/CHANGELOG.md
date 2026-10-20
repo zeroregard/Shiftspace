@@ -2,6 +2,12 @@
 
 All notable changes to Shiftspace will be documented in this file.
 
+## [0.12.0] — 2026-10-20
+
+### Changed
+
+- Extract loader markup to static HTML string for boot performance
+
 ## [0.11.1] — 2026-10-01
 
 ### Fixed
